@@ -173,23 +173,33 @@
         console.log("📡 Gọi /api/ai/ai-events...");
         const res = await Utils.makeRequest("/api/ai/ai-events", "GET");
 
+        console.log("📦 Response object keys:", Object.keys(res));
         console.log("📦 AI events response:", {
           success: res.success,
           count: res.data?.length || 0,
+          data: res.data,
         });
 
         if (res.success && Array.isArray(res.data)) {
           const events = res.data;
 
           console.log(`✅ Got ${events.length} AI events from API`);
+          if (events.length === 0) {
+            console.warn(
+              "⚠️ API returned 0 AI events - check if AI_DeXuat = 1 in database"
+            );
+            return [];
+          }
 
           // Chuyển đổi sang định dạng FullCalendar với màu sắc đầy đủ
-          const calendarEvents = events.map((ev) => {
+          const calendarEvents = events.map((ev, idx) => {
             // LẤY MÀU CHÍNH XÁC
             const color =
               ev.Color || this.getPriorityColor(ev.priority) || "#8B5CF6";
 
-            console.log(`🎨 Event "${ev.TieuDe}" - color: ${color}`);
+            console.log(
+              `   [${idx}] "${ev.TieuDe}" | ${ev.GioBatDau} | color: ${color}`
+            );
 
             return {
               id: ev.MaLichTrinh || `ai-${Date.now()}-${Math.random()}`,
@@ -216,9 +226,10 @@
 
           console.log(`✅ Converted ${calendarEvents.length} AI events`);
           return calendarEvents;
+        } else {
+          console.warn("❌ Response not success or data not array:", res);
+          return [];
         }
-
-        return [];
       } catch (error) {
         console.error("❌ Error loading AI events:", error);
         return [];
@@ -253,22 +264,22 @@
           return [];
         }
 
-        // 1. XÓA AI EVENTS CŨ
-        await this.clearOldAISuggestions();
+        // ✅ KHÔNG XÓA TỪ DATABASE - chúng ta vừa mới lưu!
+        // Chỉ xóa từ calendar DOM là đủ
 
-        // 2. KIỂM TRA CALENDAR
+        // 1. KIỂM TRA CALENDAR
         if (!this.calendar) {
           console.error("❌ Calendar chưa được khởi tạo");
           throw new Error("Calendar chưa sẵn sàng");
         }
 
-        // 3. XÓA CÁC AI EVENTS CŨ TRONG CALENDAR
+        // 2. XÓA CÁC AI EVENTS CŨ TRONG CALENDAR DOM (không xóa DB)
         const existingAIEvents = this.calendar
           .getEvents()
           .filter((event) => event.extendedProps?.aiSuggested === true);
 
         console.log(
-          `🗑️ Removing ${existingAIEvents.length} old AI events from calendar...`
+          `🗑️ Removing ${existingAIEvents.length} old AI events from calendar DOM...`
         );
         existingAIEvents.forEach((event) => {
           try {
@@ -278,7 +289,7 @@
           }
         });
 
-        // 4. LẤY THÔNG TIN CÔNG VIỆC ĐỂ HIỂN THỊ TÊN
+        // 3. LẤY THÔNG TIN CÔNG VIỆC ĐỂ HIỂN THỊ TÊN
         const taskTitles = {};
         try {
           const res = await Utils.makeRequest("/api/tasks", "GET");
@@ -294,7 +305,7 @@
           console.warn("⚠️ Không thể lấy thông tin công việc:", err);
         }
 
-        // 5. THÊM AI EVENTS MỚI VỚI TÊN CÔNG VIỆC
+        // 4. THÊM AI EVENTS MỚI VỚI TÊN CÔNG VIỆC
         const aiEvents = suggestions.map((suggestion, index) => {
           const start = new Date(suggestion.scheduledTime);
           const end = new Date(
@@ -397,34 +408,6 @@
     },
 
     // SỬA FILE: aiModule.js - THÊM HÀM clearOldAISuggestions()
-    async clearOldAISuggestions() {
-      try {
-        console.log("🗑️ Clearing old AI suggestions from database...");
-
-        if (!Utils?.makeRequest) {
-          console.warn("Utils.makeRequest không tồn tại");
-          return false;
-        }
-
-        // Gọi API để xóa tất cả AI events cũ
-        const res = await Utils.makeRequest(
-          "/api/ai/clear-old-suggestions",
-          "DELETE"
-        );
-
-        if (res.success) {
-          console.log(`✅ Cleared ${res.clearedCount || 0} old AI suggestions`);
-          return true;
-        } else {
-          console.warn("⚠️ Could not clear old AI suggestions:", res.message);
-          return false;
-        }
-      } catch (error) {
-        console.error("❌ Error clearing old AI suggestions:", error);
-        return false;
-      }
-    },
-
     async clearOldAISuggestions() {
       try {
         console.log("🗑️ Clearing old AI suggestions from database...");
@@ -951,6 +934,7 @@
         const aiEvents = await this.loadEventsForAI();
 
         console.log(`📊 AI events loaded: ${aiEvents.length}`);
+        console.log("🔍 Detailed events:", aiEvents);
 
         if (aiEvents.length === 0) {
           console.log("📭 Không có AI events để hiển thị");

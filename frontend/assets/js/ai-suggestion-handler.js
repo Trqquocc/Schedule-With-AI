@@ -396,13 +396,24 @@
         // Xóa listener cũ để tránh trùng lặp
         item.removeEventListener("click", this.handleTaskItemClick);
 
-        // Thêm listener mới
+        // Thêm listener mới - click vào bất kỳ phần nào của item đều toggle selection
         item.addEventListener("click", (e) => {
-          // Không xử lý nếu click vào checkbox
-          if (e.target.type === "checkbox") return;
-
+          // Nếu click vào checkbox, để browser handle nó rồi toggle
+          if (e.target.type === "checkbox") {
+            e.preventDefault();
+          }
+          // Toggle selection cho toàn bộ item
           this.toggleTaskSelection(item);
         });
+
+        // Setup checkbox riêng
+        const checkbox = item.querySelector(".task-checkbox");
+        if (checkbox) {
+          checkbox.addEventListener("change", (e) => {
+            e.stopPropagation();
+            this.toggleTaskSelection(item);
+          });
+        }
       });
     },
 
@@ -1330,6 +1341,7 @@
         }
 
         // 1. LƯU VÀO DATABASE
+        console.log("💾 Saving suggestions to database...");
         const saveResult = await this.saveAISuggestionsToDatabase(suggestions);
 
         if (!saveResult.success) {
@@ -1341,20 +1353,34 @@
             saveResult.savedCount || suggestions.length
           } AI suggestions vào database`
         );
+        console.log("💾 Save result details:", {
+          success: saveResult.success,
+          savedCount: saveResult.savedCount,
+          savedIds: saveResult.savedIds,
+        });
 
         // 2. CHỜ MỘT CHÚT ĐỂ DATABASE ĐỒNG BỘ
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        console.log("⏳ Waiting 800ms for DB sync...");
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
         // 3. LOAD VÀO CALENDAR AI
         if (window.AIModule && window.AIModule.loadAISuggestions) {
           console.log("🤖 Loading suggestions vào AIModule...");
           await AIModule.loadAISuggestions(suggestions);
+          console.log("✅ Suggestions đã được load vào AIModule");
+        } else {
+          console.warn("⚠️ AIModule không sẵn sàng, skip load");
         }
 
         // 4. REFRESH CALENDAR TỪ DATABASE
         if (window.AIModule && window.AIModule.refreshFromDatabase) {
           console.log("🔄 Refreshing AI calendar từ database...");
-          await AIModule.refreshFromDatabase();
+          const refreshResult = await AIModule.refreshFromDatabase();
+          console.log(
+            `✅ AI calendar đã refresh từ database (${refreshResult} events added)`
+          );
+        } else {
+          console.warn("⚠️ refreshFromDatabase không sẵn sàng");
         }
 
         // 5. HIỂN THỊ THÀNH CÔNG

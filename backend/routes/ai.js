@@ -72,15 +72,15 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
       .input("userId", sql.Int, userId)
       .query(query);
 
-    const taskDetails = result.recordset.map((task) => {
-      const timeMap = {
-        1: "morning",
-        2: "noon",
-        3: "afternoon",
-        4: "evening",
-        5: "anytime",
-      };
+    const timeMap = {
+      1: "morning",
+      2: "noon",
+      3: "afternoon",
+      4: "evening",
+      5: "anytime",
+    };
 
+    const taskDetails = result.recordset.map((task) => {
       return {
         id: task.id,
         title: task.title,
@@ -89,7 +89,7 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
         complexity: task.complexity || 2,
         focusLevel: task.focusLevel || 2,
         suitableTime: timeMap[task.suitableTimeCode] || "anytime",
-        color: task.color || this.getColorByPriority(task.priority || 2), // Dùng màu từ database hoặc fallback
+        color: task.color || getColorByPriority(task.priority || 2), // Dùng màu từ database hoặc fallback
       };
     });
 
@@ -102,22 +102,6 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
 }
 
 // Thêm hàm helper để tạo màu từ priority (fallback)
-function getColorByPriority(priority) {
-  switch (priority) {
-    case 1:
-      return "#10B981"; // Xanh lá
-    case 2:
-      return "#3B82F6"; // Xanh dương
-    case 3:
-      return "#F59E0B"; // Vàng cam
-    case 4:
-      return "#EF4444"; // Đỏ
-    default:
-      return "#8B5CF6"; // Tím
-  }
-}
-
-// Thêm hàm helper (nếu chưa có)
 function getColorByPriority(priority) {
   switch (priority) {
     case 1:
@@ -618,6 +602,11 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
   const { suggestions } = req.body;
   const userId = req.userId;
 
+  console.log(`\n📝 SAVE AI SUGGESTIONS REQUEST`);
+  console.log(`   User: ${userId}`);
+  console.log(`   Suggestions: ${suggestions?.length || 0}`);
+  console.log(`   Data:`, JSON.stringify(suggestions?.[0], null, 2));
+
   if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) {
     return res.status(400).json({ success: false, message: "Danh sách rỗng" });
   }
@@ -626,16 +615,25 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
     const pool = await dbPoolPromise;
 
     // ✅ 1. XÓA TẤT CẢ AI SUGGESTIONS CŨ
-    await pool.request().input("userId", sql.Int, userId).query(`
-        DELETE FROM LichTrinh 
-        WHERE UserID = @userId AND AI_DeXuat = 1
-      `);
+    const deleteResult = await pool
+      .request()
+      .input("userId", sql.Int, userId)
+      .query(`DELETE FROM LichTrinh WHERE UserID = @userId AND AI_DeXuat = 1`);
+
+    console.log(
+      `🗑️ Deleted ${deleteResult.rowsAffected?.[0] || 0} old AI events`
+    );
 
     // ✅ 2. LƯU AI SUGGESTIONS MỚI
     const savedIds = [];
     for (const s of suggestions) {
       const start = new Date(s.scheduledTime);
       const end = new Date(start.getTime() + s.durationMinutes * 60000);
+
+      console.log(`\n   Saving: "${s.title}" (Task ${s.taskId})`);
+      console.log(`   Start: ${start.toISOString()}`);
+      console.log(`   End: ${end.toISOString()}`);
+      console.log(`   Duration: ${s.durationMinutes} min`);
 
       const result = await pool
         .request()
@@ -653,13 +651,16 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
         `);
 
       if (result.recordset[0]) {
-        savedIds.push(result.recordset[0].MaLichTrinh);
+        const newId = result.recordset[0].MaLichTrinh;
+        savedIds.push(newId);
+        console.log(`   ✅ Saved with ID: ${newId}`);
       }
     }
 
     console.log(
-      `✅ Đã lưu ${savedIds.length} lịch AI mới, xóa lịch cũ cho user ${userId}`
+      `\n✅ Đã lưu ${savedIds.length}/${suggestions.length} lịch AI mới`
     );
+    console.log(`   IDs: ${savedIds.join(", ")}`);
 
     res.json({
       success: true,
@@ -676,6 +677,7 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
 router.get("/ai-events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
+    console.log(`\n📡 GET /ai-events - User ${userId} đang yêu cầu AI events`);
     const pool = await dbPoolPromise;
 
     const result = await pool.request().input("userId", sql.Int, userId).query(`
@@ -702,6 +704,13 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
         AND lt.AI_DeXuat = 1
       ORDER BY lt.GioBatDau DESC
     `);
+
+    console.log(`   📦 Raw DB records: ${result.recordset.length}`);
+    result.recordset.forEach((r, i) => {
+      console.log(
+        `      [${i}] ${r.TieuDe} | ${r.GioBatDau} -> ${r.GioKetThuc} | AI_DeXuat=${r.AI_DeXuat}`
+      );
+    });
 
     const events = result.recordset.map((ev) => ({
       MaLichTrinh: ev.MaLichTrinh,
