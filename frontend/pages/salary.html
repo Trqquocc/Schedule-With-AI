@@ -1,36 +1,81 @@
-<!-- pages/salary.html - FIXED & HOÀN CHỈNH -->
-<div class="p-6">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Tính lương</h1>
-    <div class="flex gap-2">
-      <button
-        id="salary-tab"
-        class="tab-btn px-5 py-2 bg-blue-600 text-white rounded-l-lg font-medium"
-      >
-        Tính lương
-      </button>
-      <button
-        id="salary-stats-tab"
-        class="tab-btn px-5 py-2 bg-gray-200 text-gray-700 rounded-r-lg font-medium"
-      >
-        Thống kê
-      </button>
+<!-- pages/salary.html - Trang Tính lương & Thống kê -->
+<link rel="stylesheet" href="/frontend/assets/css/salary.css" />
+
+<div class="salary-page container p-6">
+  <div class="header flex items-center justify-between mb-6">
+    <h1 class="title">Tính lương</h1>
+    <div class="tabs">
+      <button id="salary-tab" class="tab active">Tính lương</button>
+      <button id="salary-stats-tab" class="tab">Thống kê</button>
     </div>
   </div>
 
-  <!-- CONTAINER CHÍNH - BẮT BUỘC PHẢI CÓ -->
-  <div id="salary-container">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div class="text-center py-12">
-        <div
-          class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"
-        ></div>
-        <p class="text-lg text-gray-600">Đang tải dữ liệu lương...</p>
+  <div class="grid grid-cols-12 gap-6">
+    <!-- Main column -->
+    <div class="col-main col-span-9">
+      <div id="salary-container" class="card">
+        <div class="controls">
+          <label>Chọn mốc thời gian:</label>
+          <input type="date" id="salary-from" />
+          <span>đến</span>
+          <input type="date" id="salary-to" />
+          <button id="calculate-salary-btn" class="btn">Áp dụng</button>
+        </div>
+
+        <div id="salary-table-area" class="mt-4"></div>
+
+        <div id="salary-total" class="total-box mt-6"></div>
+      </div>
+
+      <div id="salary-stats-content" class="card mt-6 hidden">
+        <div class="stats-header mb-4">
+          <label>Chọn mốc thời gian:</label>
+          <input type="date" id="stats-from" />
+          <span>đến</span>
+          <input type="date" id="stats-to" />
+          <button id="apply-stats-btn" class="btn">Áp dụng</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stats-summary card-sm">
+            <div>Tổng số công việc:</div>
+            <div id="stats-total" class="stat-number">0</div>
+            <div>Đã hoàn thành: <span id="stats-completed">0</span></div>
+            <div>Chưa hoàn thành: <span id="stats-pending">0</span></div>
+            <div>Phần trăm hoàn thành: <strong id="stats-percent">0%</strong></div>
+          </div>
+
+          <div class="stats-charts card">
+            <canvas id="stats-bar" height="120"></canvas>
+          </div>
+
+          <div class="stats-charts card">
+            <canvas id="stats-donut" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="col-side col-span-3">
+      <div class="side-panel card">
+        <div class="side-tabs">
+          <button class="side-tab active">Tuần</button>
+          <button class="side-tab">Tháng</button>
+          <button class="side-tab">Quý</button>
+          <button class="side-tab">Năm</button>
+        </div>
+        <div class="side-content mt-4">
+          <div class="side-title">Tổng tuần</div>
+          <div class="side-stat">Tổng số công việc: <strong id="side-total">0</strong></div>
+          <div class="side-stat">Đã hoàn thành: <strong id="side-completed">0</strong></div>
+          <div class="side-stat">Chưa hoàn thành: <strong id="side-pending">0</strong></div>
+          <div class="side-note mt-4">Phần trăm hoàn thành: <strong id="side-percent">0%</strong></div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Tab content sẽ được SalaryManager đè lên -->
-<div id="salary-content" class="tab-content hidden"></div>
-<div id="salary-stats-content" class="tab-content hidden"></div>
+<!-- Elements used by salaryManager.js -->
+<div id="salary-content" class="hidden"></div>

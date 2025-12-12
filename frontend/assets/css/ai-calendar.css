@@ -239,24 +239,6 @@
 }
 
 /* Dark Mode Support (Optional) */
-@media (prefers-color-scheme: dark) {
-  #ai-section {
-    background: #1f2937;
-  }
-
-  #ai-calendar {
-    background: #111827 !important;
-  }
-
-  #ai-section nav {
-    background: #111827;
-    border-color: #374151;
-  }
-
-  #ai-calendar-title {
-    color: #f9fafb;
-  }
-}
 
 .task-item {
   display: flex;
