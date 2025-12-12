@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý công việc</title>
+
+    <!-- ✅ Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ Font Awesome 6.4.0 - Load with high priority -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- ✅ FullCalendar 6 -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/calendar.css" />
+    <link rel="stylesheet" href="assets/css/ai-calendar.css" />
+    <link rel="stylesheet" href="assets/css/work.css" />
+
+    <style>
+      /* ✅ Clean, modern styling */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+      }
+
+      /* Loading screen */
+      #auth-loading {
+        position: fixed;
+        inset: 0;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      #main-app {
+        display: none;
+      }
+
+      #main-app.ready {
+        display: block;
+      }
+
+      /* ✅ Hide ONLY icon elements until Font Awesome loads */
+      body:not(.fa-loaded) i[class*="fa-"],
+      body:not(.fa-loaded) span[class*="fa-"] {
+        opacity: 0;
+      }
+
+      body.fa-loaded i[class*="fa-"],
+      body.fa-loaded span[class*="fa-"] {
+        opacity: 1;
+        transition: opacity 0.2s ease-in-out;
+      }
+
+      /* Calendar height */
+      #calendar {
+        min-height: 600px;
+        height: calc(100vh - 200px);
+      }
+
+      /* Drag & drop */
+      .fc-event-dragging {
+        opacity: 0.7;
+        cursor: move !important;
+      }
+
+      [draggable="true"] {
+        cursor: move;
+        transition: opacity 0.2s;
+      }
+
+      [draggable="true"]:hover {
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="auth-loading">
+      <div class="text-center">
+        <div class="loading-spinner mx-auto"></div>
+        <p class="mt-4 text-gray-600">Đang kiểm tra đăng nhập...</p>
+      </div>
+    </div>
+
+    <div id="main-app">
+      <div class="flex min-h-screen">
+        <div id="sidebar-container"></div>
+        <div class="flex-1 flex flex-col">
+          <div class="flex-1 overflow-auto">
+            <main id="schedule-section" class="section active"></main>
+            <main id="work-section" class="section"></main>
+            <main id="ai-section" class="section"></main>
+            <main id="salary-section" class="section"></main>
+            <main id="profile-section" class="section"></main>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="createTaskModal" class="modal"></div>
+    <div id="settingsModal" class="modal"></div>
+
+    <!-- 1. utils.js - Phải load ĐẦU TIÊN vì mọi thứ dùng nó -->
+    <script src="assets/js/utils.js"></script>
+
+    <!-- 2. Các module core khác (nếu có) -->
+    <script src="assets/js/modalManager.js"></script>
+    <script src="assets/js/AppNavigation.js"></script>
+    <script src="assets/js/componentLoader.js"></script>
+    <!-- phụ thuộc Utils -->
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+    <!-- 3. Các module lớn (có thể load song song được) -->
+    <script src="assets/js/calendarModule.js"></script>
+    <script src="assets/js/workManager.js"></script>
+    <script src="assets/js/ai-suggestion-handler.js"></script>
+    <script src="assets/js/aiModule.js"></script>
+    <script src="assets/js/salaryManager.js"></script>
+    <script src="assets/js/tabManager.js"></script>
+    <script src="assets/js/profile.js"></script>
+    <script src="assets/js/create-task-modal.js"></script>
+    <script src="assets/js/settings-modal.js"></script>
+    <div id="eventDetailModal" class="modal"></div>
+    <div id="aiSuggestionModal" class="modal"></div>
+    <div id="createCategoryModal" class="modal"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- 4. app.js - Phải load CUỐI CÙNG vì nó khởi động toàn bộ app -->
+    <script src="assets/js/app.js"></script>
+
+    <script>
+      // ✅ Auth check and Font Awesome wait
+      (function () {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return (location.href = "/login.html");
+
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          if (payload.exp * 1000 < Date.now()) throw new Error("Token expired");
+
+          // ✅ Wait for Font Awesome
+          function waitForFA(callback, maxWait = 3000) {
+            const start = Date.now();
+
+            function check() {
+              // Test if FA renders icons
+              const test = document.createElement("i");
+              test.className = "fas fa-check";
+              test.style.cssText = "position:absolute;left:-9999px;";
+              document.body.appendChild(test);
+
+              const style = window.getComputedStyle(test, ":before");
+              const loaded =
+                style.content &&
+                style.content !== "none" &&
+                style.content !== '""';
+
+              document.body.removeChild(test);
+
+              if (loaded) {
+                console.log("✅ Font Awesome ready");
+                document.body.classList.add("fa-loaded");
+                callback();
+              } else if (Date.now() - start < maxWait) {
+                setTimeout(check, 50);
+              } else {
+                console.warn("⚠️ FA timeout, continuing...");
+                document.body.classList.add("fa-loaded");
+                callback();
+              }
+            }
+
+            check();
+          }
+
+          // Start app
+          waitForFA(() => {
+            document.getElementById("auth-loading")?.remove();
+            document.getElementById("main-app")?.classList.add("ready");
+
+            function startApp() {
+              if (window.App?.init) {
+                App.init();
+              } else {
+                setTimeout(startApp, 100);
+              }
+            }
+
+            if (document.readyState === "loading") {
+              document.addEventListener("DOMContentLoaded", startApp);
+            } else {
+              startApp();
+            }
+          });
+        } catch (err) {
+          console.error("Auth error:", err);
+          localStorage.clear();
+          location.href = "/login.html";
+        }
+      })();
+      (function () {
+        const script = document.createElement("script");
+        script.src = "/js/ai-modal-handler.js";
+        script.onload = function () {
+          console.log("✅ AI Modal Handler loaded");
+        };
+        document.head.appendChild(script);
+      })();
+    </script>
+  </body>
+</html>

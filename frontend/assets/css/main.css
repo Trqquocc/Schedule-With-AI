@@ -1,0 +1,1808 @@
+/* ===================================
+   RESET & BASE STYLES
+   =================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ===================================
+   SECTION VISIBILITY
+   =================================== */
+
+#createCategoryModal {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#createCategoryModal.hidden {
+  display: none !important;
+}
+
+#createCategoryModal:not(.hidden) {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+/* Override class .modal for category modal */
+
+.section {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+.section.active {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#schedule-section.active {
+  display: flex !important;
+  flex-direction: column;
+}
+
+/* AI Section đặc biệt quan trọng */
+#ai-section.active {
+  display: block !important;
+  width: 100% !important;
+  min-height: 100vh !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ===================================
+   MODAL STYLES - FIXED VERSION
+   =================================== */
+
+/* LỖI CHÍNH: Bạn có modal bị nested trong modal. Sửa: */
+
+/* Modal container CHÍNH */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000; /* Tăng z-index */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Khi modal hiển thị */
+.modal.active,
+.modal.show {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Modal overlay - QUAN TRỌNG: phải là direct child */
+.modal > .modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+#createCategoryModal .relative {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-parent-blur {
+  filter: blur(2px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Modal content - QUAN TRỌNG: phải là direct child */
+.modal > .modal-content {
+  position: relative;
+  z-index: 10001;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Đặc biệt cho AI Suggestion Modal */
+#aiSuggestionModal {
+  z-index: 10001 !important; /* Cao hơn modal khác */
+}
+
+#aiSuggestionModal.active {
+  display: flex !important;
+}
+
+#aiSuggestionModal .modal-content {
+  max-width: 700px; /* Rộng hơn cho AI modal */
+  padding: 30px;
+}
+
+/* Animation */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ngăn body scroll khi modal mở */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===================================
+   FIX NESTED MODAL ISSUE
+   =================================== */
+/* Nếu có modal trong modal, ẩn modal cha khi mở modal con */
+.modal.active .modal {
+  display: none !important;
+}
+
+/* Khi mở modal con, ẩn modal cha */
+.modal-child-active .modal-parent {
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+}
+
+/* ===================================
+   FORM STYLES
+   =================================== */
+.modal input,
+.modal select,
+.modal textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* AI Form đặc biệt */
+#aiSuggestionForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+#aiSuggestionForm .form-group {
+  margin-bottom: 0;
+}
+
+#aiSuggestionForm label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* ===================================
+   BUTTON STYLES
+   =================================== */
+.modal .btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 14px;
+  text-align: center;
+}
+
+.modal .btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.modal .btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.modal .btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.modal .btn-secondary:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.modal .btn-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  font-size: 18px;
+  z-index: 10;
+}
+
+.modal .btn-close:hover {
+  background: #e5e7eb;
+}
+
+/* ===================================
+   UTILITY CLASSES
+   =================================== */
+.hidden {
+  display: none !important;
+}
+
+.flex {
+  display: flex !important;
+}
+
+.block {
+  display: block !important;
+}
+
+.opacity-0 {
+  opacity: 0 !important;
+}
+
+.opacity-100 {
+  opacity: 1 !important;
+}
+
+.visible {
+  visibility: visible !important;
+}
+
+.invisible {
+  visibility: hidden !important;
+}
+
+.z-50 {
+  z-index: 50 !important;
+}
+
+.z-100 {
+  z-index: 100 !important;
+}
+
+/* ===================================
+   CALENDAR FIXES FOR AI SECTION
+   =================================== */
+#ai-section #calendar {
+  width: 100% !important;
+  height: calc(100vh - 180px) !important;
+  min-height: 500px !important;
+  background: white !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  margin-top: 20px;
+}
+
+/* FullCalendar custom */
+#ai-section .fc {
+  height: 100% !important;
+  font-size: 14px !important;
+}
+
+#ai-section .fc-toolbar {
+  padding: 15px !important;
+  margin-bottom: 15px !important;
+}
+
+#ai-section .fc-view-harness {
+  height: calc(100% - 70px) !important;
+}
+
+/* ===================================
+   RESPONSIVE DESIGN
+   =================================== */
+@media (max-width: 768px) {
+  .modal {
+    padding: 10px;
+  }
+
+  .modal-content {
+    max-width: 95%;
+    max-height: 95vh;
+    padding: 20px;
+  }
+
+  #aiSuggestionModal .modal-content {
+    padding: 20px;
+  }
+
+  #ai-section #calendar {
+    height: calc(100vh - 150px) !important;
+    min-height: 400px !important;
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  #ai-section #calendar {
+    height: calc(100vh - 130px) !important;
+    min-height: 350px !important;
+    padding: 10px;
+  }
+}
+
+/* ===================================
+   DEBUG HELPERS (tạm thời)
+   =================================== */
+.debug-modal {
+  border: 3px solid red !important;
+  background: rgba(255, 0, 0, 0.1) !important;
+}
+
+.debug-modal::before {
+  content: "MODAL DEBUG";
+  position: absolute;
+  top: -25px;
+  left: 0;
+  background: red;
+  color: white;
+  padding: 2px 8px;
+  font-size: 10px;
+  border-radius: 3px;
+  z-index: 99999;
+}
+
+/* ===================================
+   FIX CHO SPECIFIC MODAL ISSUES
+   =================================== */
+/* Đảm bảo modal không bị ẩn bởi parent opacity */
+.modal.active {
+  opacity: 1 !important;
+}
+
+/* Fix cho modal bị nested */
+#eventDetailModal {
+  z-index: 10002 !important; /* Cao nhất */
+}
+
+#eventDetailModal .modal-content {
+  max-width: 500px;
+}
+
+/* Loading state cho AI */
+.ai-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.ai-loading i {
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #3b82f6;
+}
+
+/* ===================================
+   SCROLLBAR STYLES
+   =================================== */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ===================================
+   FONT AWESOME FIX (giữ nguyên)
+   =================================== */
+i.fas,
+i.far,
+i.fab,
+i.fa,
+span.fas,
+span.far,
+span.fab,
+span.fa {
+  font-style: normal;
+  display: inline-block;
+}
+
+body:not(.fa-loaded) i[class*="fa-"],
+body:not(.fa-loaded) span[class*="fa-"] {
+  opacity: 0;
+}
+
+body.fa-loaded i[class*="fa-"],
+body.fa-loaded span[class*="fa-"] {
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+/* ===================================
+   FORCE DISPLAY OVERRIDES
+   =================================== */
+.force-show {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+}
+
+.force-flex {
+  display: flex !important;
+}
+
+/* ===================================
+   PRINT STYLES
+   =================================== */
+@media print {
+  .modal {
+    display: none !important;
+  }
+
+  .section:not(.active) {
+    display: none !important;
+  }
+}
+/* ===================================
+   AI MODAL SPECIFIC STYLES
+   =================================== */
+
+/* Modal structure đã có, chỉ cần thêm styles cho content */
+
+/* ===================================
+   AI SUGGESTION MODAL STYLES
+   =================================== */
+
+/* AI Modal Specific */
+.ai-modal .modal-content {
+  max-width: 800px;
+  width: 95%;
+  max-height: 85vh;
+}
+
+.ai-modal-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal Header */
+.ai-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.modal-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.modal-title h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.modal-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 4px 0 0 0;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+/* Modal Body */
+.ai-modal-body {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title i {
+  color: #8b5cf6;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Date Range */
+.date-range-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+.date-input {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: white;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Task List Container */
+.task-list-container {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.task-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* Task Item */
+.task-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.task-item:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.task-item:last-child {
+  margin-bottom: 0;
+}
+
+.task-checkbox-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-right: 16px;
+}
+
+.task-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.task-checkbox:checked ~ .checkmark {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+.task-checkbox:checked ~ .checkmark::after {
+  content: "✓";
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title {
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.task-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.task-priority {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.priority-1 {
+  background: #d1fae5;
+  color: #065f46;
+}
+.priority-2 {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.priority-3 {
+  background: #fef3c7;
+  color: #92400e;
+}
+.priority-4 {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.task-duration {
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-left: 12px;
+}
+
+/* Task Stats */
+.task-stats {
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-top: 2px solid #e5e7eb;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.task-stats strong {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+/* AI Options Grid */
+.ai-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.ai-option {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.ai-option:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
+}
+
+.ai-option input {
+  display: none;
+}
+
+.ai-option input:checked + .option-content {
+  opacity: 1;
+}
+
+.ai-option input:checked ~ .option-content .option-icon {
+  background: #8b5cf6;
+  color: white;
+}
+
+.option-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.option-icon {
+  width: 40px;
+  height: 40px;
+  background: #f5f3ff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #8b5cf6;
+  transition: all 0.2s;
+}
+
+.option-text {
+  flex: 1;
+}
+
+.option-text strong {
+  display: block;
+  font-size: 14px;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.option-text small {
+  font-size: 12px;
+  color: #6b7280;
+  display: block;
+}
+
+/* Buttons */
+.btn-select-all {
+  background: #f5f3ff;
+  color: #8b5cf6;
+  border: 2px solid #ddd6fe;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-select-all:hover {
+  background: #ede9fe;
+  border-color: #8b5cf6;
+}
+
+/* Loading States */
+.loading-state,
+.empty-state,
+.error-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  font-size: 24px;
+  color: #8b5cf6;
+  margin-bottom: 16px;
+}
+
+.empty-state i,
+.error-state i {
+  font-size: 48px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.retry-btn {
+  margin-top: 16px;
+  padding: 8px 20px;
+  background: #f3f4f6;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: #e5e7eb;
+}
+
+/* Success Summary */
+.ai-summary-section {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summary-header.success {
+  color: #065f46;
+}
+
+.summary-header.success i {
+  font-size: 24px;
+}
+
+.suggestions-preview {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.suggestions-preview h5 {
+  margin: 0 0 12px 0;
+  color: #111827;
+  font-size: 14px;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.suggestion-item i {
+  color: #8b5cf6;
+}
+
+.suggestion-info {
+  flex: 1;
+}
+
+.suggestion-info strong {
+  font-size: 13px;
+  color: #374151;
+  display: block;
+}
+
+.suggestion-info small {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.suggestion-more {
+  text-align: center;
+  padding: 8px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.summary-note {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color: #065f46;
+  font-size: 13px;
+}
+
+.summary-note i {
+  margin-right: 8px;
+}
+
+/* Error Section */
+.error-section {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #991b1b;
+}
+
+.error-message {
+  color: #7f1d1d;
+  font-size: 14px;
+}
+
+/* Modal Footer */
+.ai-modal-footer {
+  padding: 20px 24px;
+  background: #f9fafb;
+  border-top: 2px solid #e5e7eb;
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Button Styles */
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 2px solid #d1d5db;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Utility Classes */
+.hidden {
+  display: none !important;
+}
+
+/* Scrollbar Styling */
+.task-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.task-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.task-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.task-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ai-modal .modal-content {
+    width: 98%;
+    max-height: 90vh;
+    margin: 10px;
+  }
+
+  .ai-modal-header {
+    padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .modal-header-left {
+    gap: 12px;
+  }
+
+  .modal-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .date-range-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ai-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-modal-body {
+    padding: 16px;
+  }
+
+  .ai-modal-footer {
+    padding: 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .ai-modal .modal-content {
+    border-radius: 8px;
+  }
+
+  .ai-modal-header {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .task-list {
+    max-height: 200px;
+  }
+}
+
+/* ===================================
+   CALENDAR SIDEBAR TASK STYLES
+   =================================== */
+
+/* Sidebar Container */
+#calendar-sidebar {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  box-shadow: inset 1px 0 0 #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+#calendar-sidebar:hover {
+  box-shadow: inset 1px 0 0 #cbd5e1, 2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar Header */
+#calendar-sidebar .p-4 {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+#calendar-sidebar h3 {
+  color: #1e293b;
+  font-size: 17px;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+#calendar-sidebar h3 + p {
+  color: #64748b;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+
+/* Refresh Button */
+#refresh-tasks-btn {
+  background: transparent;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: #64748b;
+}
+
+#refresh-tasks-btn:hover {
+  background: #f1f5f9;
+  border-color: #3b82f6;
+  color: #3b82f6;
+  transform: rotate(180deg);
+}
+
+#refresh-tasks-btn.animate-spin {
+  animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Task List Container */
+#task-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 300px;
+}
+
+/* Task Item - Modern Card Design */
+.task-item {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grab;
+  position: relative;
+  overflow: hidden;
+}
+
+.task-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.05) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+}
+
+.task-item:hover::before {
+  opacity: 1;
+}
+
+.task-item:hover .fa-grip-vertical {
+  color: #3b82f6;
+  transform: scale(1.1);
+}
+
+.task-item:active {
+  cursor: grabbing;
+  transform: translateY(-1px) scale(0.995);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Task Item when dragging */
+.task-item.dragging-task {
+  opacity: 0.6;
+  transform: scale(0.98);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  border-style: dashed;
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+/* Task Color Indicator */
+.task-item {
+  border-left-width: 5px;
+  border-left-style: solid;
+}
+
+.task-color-indicator {
+  width: 6px;
+  height: 60%;
+  border-radius: 0 3px 3px 0;
+  position: absolute;
+  right: -1px;
+  top: 20%;
+  background: inherit;
+  opacity: 0.7;
+}
+
+/* Task Content */
+.task-item .flex-1 {
+  margin-left: 12px;
+}
+
+.task-item .font-medium {
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  display: -webkit-box;
+
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.task-item .text-sm {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 6px;
+  display: -webkit-box;
+
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Task Meta Info */
+.task-item .flex.items-center.gap-3 {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.task-item .px-2.py-1 {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.task-item:hover .px-2.py-1 {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.task-item .text-gray-500 {
+  color: #94a3b8;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-item .fa-calendar-plus {
+  color: #3b82f6;
+  font-size: 10px;
+}
+
+/* Grip Icon */
+.task-item .fa-grip-vertical {
+  color: #cbd5e1;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  padding: 4px;
+  border-radius: 4px;
+  background: #f8fafc;
+}
+
+/* Empty State */
+#task-list .text-center {
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+#task-list .text-center .fas.fa-inbox {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #cbd5e1;
+  opacity: 0.7;
+}
+
+#task-list .text-center p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0;
+}
+
+#task-list .text-center .text-xs {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Loading State */
+#task-list .animate-pulse {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+#task-list .animate-pulse .inline-block {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: pulse-spin 1s linear infinite;
+}
+
+@keyframes pulse-spin {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0.5;
+  }
+}
+
+#task-list .animate-pulse p {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Error State */
+#task-list .text-red-600 {
+  padding: 40px 20px;
+  text-align: center;
+  background: #fef2f2;
+  border-radius: 12px;
+  margin: 8px;
+}
+
+#task-list .text-red-600 .fas {
+  font-size: 32px;
+  margin-bottom: 12px;
+  color: #ef4444;
+}
+
+#task-list .text-red-600 p {
+  color: #dc2626;
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+#task-list .text-red-600 button {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 12px;
+  transition: all 0.2s;
+}
+
+#task-list .text-red-600 button:hover {
+  background: #fecaca;
+  transform: translateY(-1px);
+}
+
+/* Task Priority Badges */
+.task-priority-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px white;
+}
+
+.task-priority-badge.priority-high {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px white, 0 0 6px #ef4444;
+}
+
+.task-priority-badge.priority-medium {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px white, 0 0 6px #f59e0b;
+}
+
+.task-priority-badge.priority-low {
+  background: #10b981;
+  box-shadow: 0 0 0 2px white, 0 0 6px #10b981;
+}
+
+/* Task Time Estimate */
+.task-time-estimate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0f9ff;
+  color: #0369a1;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.task-time-estimate i {
+  font-size: 10px;
+}
+
+/* Hover Effects for Task Items */
+.task-item:hover .task-title {
+  color: #3b82f6;
+}
+
+.task-item:hover .task-time-estimate {
+  background: #dbeafe;
+}
+
+/* Drag Preview */
+.task-item-drag-preview {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  border: 2px dashed #3b82f6;
+  box-shadow: 0 12px 32px rgba(59, 130, 246, 0.15);
+  opacity: 0.9;
+  transform: rotate(2deg);
+  pointer-events: none;
+  position: fixed;
+  z-index: 9999;
+}
+
+/* Scrollbar for Task List */
+#task-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#task-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+#task-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+#task-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  #calendar-sidebar {
+    width: 300px;
+  }
+
+  .task-item {
+    padding: 14px;
+  }
+
+  .task-item .font-medium {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  #calendar-sidebar {
+    width: 280px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    z-index: 100;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.1);
+  }
+
+  #calendar-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .task-item {
+    padding: 12px;
+  }
+
+  #task-list {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  #calendar-sidebar {
+    width: 260px;
+  }
+
+  .task-item .font-medium {
+    font-size: 12px;
+  }
+
+  .task-item .text-sm {
+    font-size: 11px;
+  }
+}
+
+/* Animation for task addition/removal */
+@keyframes taskSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.task-item {
+  animation: taskSlideIn 0.3s ease-out;
+}
+
+@keyframes taskSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 200px;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.task-item.task-removing {
+  animation: taskSlideOut 0.3s ease-in forwards;
+}
+
+/* Task category colors */
+.task-item.category-work {
+  border-left-color: #3b82f6;
+}
+
+.task-item.category-personal {
+  border-left-color: #10b981;
+}
+
+.task-item.category-meeting {
+  border-left-color: #8b5cf6;
+}
+
+.task-item.category-study {
+  border-left-color: #f59e0b;
+}
+
+.task-item.category-other {
+  border-left-color: #94a3b8;
+}
+
+/* Task status indicator */
+.task-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.task-status-dot.pending {
+  background: #f59e0b;
+  box-shadow: 0 0 4px #f59e0b;
+}
+
+.task-status-dot.in-progress {
+  background: #3b82f6;
+  box-shadow: 0 0 4px #3b82f6;
+}
+
+.task-status-dot.completed {
+  background: #10b981;
+  box-shadow: 0 0 4px #10b981;
+}
+
+/* Task action buttons (if added later) */
+.task-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.task-item:hover .task-actions {
+  opacity: 1;
+}
+
+.task-action-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.task-action-btn:hover {
+  background: #f1f5f9;
+  color: #3b82f6;
+  border-color: #cbd5e1;
+}
+
+/* Ngăn không cho kéo thả trong work section */
+#work-items-container [draggable="true"],
+#work-items-container [data-task-id] {
+  user-select: auto !important;
+  cursor: default !important;
+}
+
+#work-items-container [draggable="true"]:hover,
+#work-items-container [data-task-id]:hover {
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Chỉ cho phép kéo thả trong sidebar */
+#task-list [draggable="true"],
+#task-list [data-task-id] {
+  user-select: none;
+  cursor: grab;
+}
+
+#task-list [draggable="true"]:hover,
+#task-list [data-task-id]:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}

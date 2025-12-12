@@ -1,0 +1,132 @@
+<!-- File: frontend/pages/calendar-content.html - COMPLETE FIXED VERSION -->
+<div class="flex h-full">
+  <!-- LEFT: Calendar Sidebar (loaded separately by ComponentLoader) -->
+  <div
+    id="calendar-sidebar"
+    class="calendar-sidebar w-80 bg-white border-r border-gray-200"
+  ></div>
+
+  <!-- RIGHT: Calendar Main Area -->
+  <div class="flex-1 flex flex-col bg-white">
+    <!-- Calendar Navigation Bar -->
+    <nav class="bg-white border-b border-gray-200 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <!-- Navigation Controls -->
+          <div class="flex items-center gap-2">
+            <button
+              id="cal-prev-btn"
+              class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Tháng trước"
+            >
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button
+              id="cal-today-btn"
+              class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+            >
+              Hôm nay
+            </button>
+            <button
+              id="cal-next-btn"
+              class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Tháng sau"
+            >
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <!-- Current Date Display -->
+          <div
+            id="calendar-title"
+            class="text-xl font-semibold text-gray-800 min-w-[200px]"
+          >
+            Tháng 12 năm 2025
+          </div>
+        </div>
+
+        <!-- View Switcher -->
+        <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <button
+            id="cal-day-view"
+            class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
+            data-view="timeGridDay"
+          >
+            Ngày
+          </button>
+          <button
+            id="cal-week-view"
+            class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
+            data-view="timeGridWeek"
+          >
+            Tuần
+          </button>
+          <button
+            id="cal-month-view"
+            class="px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm transition-colors"
+            data-view="dayGridMonth"
+          >
+            Tháng
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ✅ CRITICAL: FullCalendar Container -->
+    <div id="calendar" class="flex-1 overflow-hidden">
+      <div class="flex items-center justify-center h-full">
+        <div class="text-center text-gray-500">
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
+          ></div>
+          <p>Đang tải lịch trình...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    console.log("📅 Calendar content loaded");
+
+    // ✅ Wait for dependencies and initialize
+    function initCalendar() {
+      console.log("🔧 Initializing calendar...");
+
+      // Check if CalendarModule is available
+      if (typeof CalendarModule === "undefined") {
+        console.warn("⚠️ CalendarModule not loaded yet, waiting...");
+        setTimeout(initCalendar, 200);
+        return;
+      }
+
+      // Check if FullCalendar is loaded
+      if (typeof FullCalendar === "undefined") {
+        console.warn("⚠️ FullCalendar not loaded yet, waiting...");
+        setTimeout(initCalendar, 200);
+        return;
+      }
+
+      // Check if Utils is loaded
+      if (typeof Utils === "undefined") {
+        console.warn("⚠️ Utils not loaded yet, waiting...");
+        setTimeout(initCalendar, 200);
+        return;
+      }
+
+      // Everything is ready, initialize calendar
+      console.log("✅ All dependencies ready, initializing CalendarModule...");
+      CalendarModule.init()
+        .then(() => {
+          console.log("✅ Calendar initialized successfully!");
+        })
+        .catch((err) => {
+          console.error("❌ Calendar initialization failed:", err);
+        });
+    }
+
+    // Start initialization after a short delay to ensure DOM is ready
+    setTimeout(initCalendar, 100);
+  })();
+</script>

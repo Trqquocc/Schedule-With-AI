@@ -1,0 +1,36 @@
+<!-- pages/salary.html - FIXED & HOÀN CHỈNH -->
+<div class="p-6">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Tính lương</h1>
+    <div class="flex gap-2">
+      <button
+        id="salary-tab"
+        class="tab-btn px-5 py-2 bg-blue-600 text-white rounded-l-lg font-medium"
+      >
+        Tính lương
+      </button>
+      <button
+        id="salary-stats-tab"
+        class="tab-btn px-5 py-2 bg-gray-200 text-gray-700 rounded-r-lg font-medium"
+      >
+        Thống kê
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTAINER CHÍNH - BẮT BUỘC PHẢI CÓ -->
+  <div id="salary-container">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div class="text-center py-12">
+        <div
+          class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"
+        ></div>
+        <p class="text-lg text-gray-600">Đang tải dữ liệu lương...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab content sẽ được SalaryManager đè lên -->
+<div id="salary-content" class="tab-content hidden"></div>
+<div id="salary-stats-content" class="tab-content hidden"></div>

@@ -1,0 +1,172 @@
+<div class="modal-content p-6 w-80 max-w-full">
+  <div class="flex justify-between items-center mb-6">
+    <h3 class="text-lg font-semibold text-gray-800">Cài đặt</h3>
+    <button
+      id="settingsBtn"
+      class="text-gray-500 hover:text-gray-700 text-xl"
+      type="button"
+    >
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <div class="space-y-4">
+    <!-- User Profile Section -->
+    <div class="bg-gray-50 p-4 rounded-lg">
+      <div class="flex items-center space-x-3">
+        <div
+          class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center"
+        >
+          <span class="text-white font-semibold text-sm">U</span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-gray-800">Người dùng</p>
+          <p class="text-xs text-gray-500">user@example.com</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Options -->
+    <div class="space-y-2">
+      <!-- Update Profile -->
+      <button
+        id="updateProfileBtn"
+        class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+      >
+        <span class="flex items-center">
+          <i class="fas fa-user-edit text-gray-400 mr-3 text-xs"></i>
+          Cập nhật hồ sơ
+        </span>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      </button>
+
+      <!-- Notification Settings -->
+      <button
+        class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+      >
+        <span class="flex items-center">
+          <i class="fas fa-bell text-gray-400 mr-3 text-xs"></i>
+          Thông báo
+        </span>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      </button>
+
+      <!-- Appearance -->
+      <button
+        class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+      >
+        <span class="flex items-center">
+          <i class="fas fa-palette text-gray-400 mr-3 text-xs"></i>
+          Giao diện
+        </span>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      </button>
+
+      <!-- Language -->
+      <button
+        class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+      >
+        <span class="flex items-center">
+          <i class="fas fa-globe text-gray-400 mr-3 text-xs"></i>
+          Ngôn ngữ
+        </span>
+        <span class="text-xs text-gray-500">Tiếng Việt</span>
+      </button>
+
+      <!-- Help & Support -->
+      <button
+        class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+      >
+        <span class="flex items-center">
+          <i class="fas fa-question-circle text-gray-400 mr-3 text-xs"></i>
+          Trợ giúp & Hỗ trợ
+        </span>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      </button>
+    </div>
+
+    <!-- Divider -->
+    <div class="border-t border-gray-200 my-4"></div>
+
+    <!-- Account Actions -->
+    <div class="space-y-2">
+      <!-- Privacy Policy -->
+      <button
+        class="w-full text-left p-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+      >
+        <i class="fas fa-shield-alt text-gray-400 mr-3 text-xs"></i>
+        Chính sách bảo mật
+      </button>
+
+      <!-- Terms of Service -->
+      <button
+        class="w-full text-left p-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+      >
+        <i class="fas fa-file-contract text-gray-400 mr-3 text-xs"></i>
+        Điều khoản dịch vụ
+      </button>
+
+      <!-- Logout -->
+      <button
+        id="logoutBtn"
+        class="w-full text-left p-3 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors mt-2"
+      >
+        <i class="fas fa-sign-out-alt text-red-500 mr-3 text-xs"></i>
+        Đăng xuất
+      </button>
+    </div>
+  </div>
+
+  <!-- App Version -->
+  <div class="mt-6 pt-4 border-t border-gray-200 text-center">
+    <p class="text-xs text-gray-500">Phiên bản 1.0.0</p>
+  </div>
+</div>
+
+<style>
+  /* Additional styles for settings modal */
+  .settings-option {
+    transition: all 0.2s ease;
+  }
+
+  .settings-option:hover {
+    transform: translateX(2px);
+  }
+</style>
+
+<script>
+  // Initialize settings modal interactions
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add hover effects programmatically
+    const settingButtons = document.querySelectorAll(
+      "#settingsModal button:not(#closeSettingsBtn)"
+    );
+    settingButtons.forEach((button) => {
+      button.addEventListener("mouseenter", function () {
+        this.classList.add("settings-option");
+      });
+
+      button.addEventListener("mouseleave", function () {
+        this.classList.remove("settings-option");
+      });
+    });
+
+    // Handle update profile button
+    const updateProfileBtn = document.getElementById("updateProfileBtn");
+    if (updateProfileBtn) {
+      updateProfileBtn.addEventListener("click", function () {
+        console.log("Navigate to profile section");
+        // This will be handled by the main ModalManager
+      });
+    }
+
+    // Handle logout button
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", function () {
+        console.log("Logout requested");
+        // This will be handled by the main ModalManager
+      });
+    }
+  });
+</script>

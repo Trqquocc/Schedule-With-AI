@@ -1,0 +1,115 @@
+<!-- work.html -->
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý công việc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/frontend/assets/css/work.css" />
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+      <!-- Header đơn giản -->
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800">Quản lý công việc</h1>
+          <p class="text-gray-600 mt-1">
+            Quản lý và theo dõi tất cả công việc của bạn
+          </p>
+        </div>
+        <button
+          id="create-task-btn"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 font-medium shadow-md transition-all hover:shadow-lg"
+        >
+          <i class="fas fa-plus"></i>
+          Tạo công việc mới
+        </button>
+      </div>
+
+      <!-- Filters và Search -->
+      <div
+        class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6"
+      >
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <input
+              type="text"
+              id="task-search"
+              placeholder="Tìm kiếm theo tiêu đề, mô tả..."
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div class="flex flex-col md:flex-row gap-4">
+            <div>
+              <select
+                id="status-filter"
+                class="w-full md:w-auto px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="pending">Đang chờ</option>
+                <option value="completed">Hoàn thành</option>
+              </select>
+            </div>
+
+            <div>
+              <select
+                id="priority-filter"
+                class="w-full md:w-auto px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              >
+                <option value="all">Tất cả ưu tiên</option>
+                <option value="low">Thấp</option>
+                <option value="medium">Trung bình</option>
+                <option value="high">Cao</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Table Container -->
+      <div id="work-items-container" class="min-w-full">
+        <!-- Loading state -->
+        <div class="text-center py-12" id="loading-indicator">
+          <div
+            class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"
+          ></div>
+          <p class="text-gray-600 font-medium">Đang tải công việc...</p>
+        </div>
+        <!-- Table sẽ được render bởi JavaScript -->
+      </div>
+    </div>
+
+    <script src="/frontend/assets/js/work.js"></script>
+    <script>
+      // Khởi tạo ngay khi page load
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("📋 Work page loaded");
+
+        // Xử lý nút tạo công việc - CHỈ MỘT NÚT DUY NHẤT
+        const createBtn = document.getElementById("create-task-btn");
+        if (createBtn) {
+          createBtn.addEventListener("click", function () {
+            if (window.ModalManager) {
+              window.ModalManager.showModalById("createTaskModal");
+            }
+          });
+        }
+
+        // Khởi tạo WorkManager
+        setTimeout(() => {
+          if (window.WorkManager && !window.WorkManager.initialized) {
+            window.WorkManager.init();
+          } else if (window.WorkManager && window.WorkManager.loadTasks) {
+            window.WorkManager.loadTasks();
+          }
+        }, 300);
+      });
+    </script>
+  </body>
+</html>

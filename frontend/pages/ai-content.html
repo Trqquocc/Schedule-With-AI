@@ -1,0 +1,163 @@
+<div class="h-full w-full bg-white">
+  <!-- Calendar Navigation Bar -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-4 w-full">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <!-- Navigation Controls -->
+        <div class="flex items-center gap-2">
+          <button
+            id="ai-cal-prev-btn"
+            class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Tháng trước"
+          >
+            <
+          </button>
+          <button
+            id="ai-cal-today-btn"
+            class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+          >
+            Hôm nay
+          </button>
+          <button
+            id="ai-cal-next-btn"
+            class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Tháng sau"
+          >
+            >
+          </button>
+        </div>
+
+        <!-- Current Date Display -->
+        <div
+          id="ai-calendar-title"
+          class="text-xl font-semibold text-gray-800 min-w-[200px]"
+        >
+          Tháng 11 năm 2025
+        </div>
+      </div>
+
+      <!-- Nút AI và View Switcher -->
+      <div class="flex items-center gap-4">
+        <!-- Nút Tham khảo AI -->
+        <button
+          id="ai-suggest-btn"
+          class="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-md flex items-center gap-2"
+        >
+          <span>Tham Khảo AI</span>
+        </button>
+
+        <!-- View Switcher -->
+        <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <button
+            id="ai-cal-day-view"
+            class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
+            data-view="timeGridDay"
+          >
+            Ngày
+          </button>
+          <button
+            id="ai-cal-week-view"
+            class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
+            data-view="timeGridWeek"
+          >
+            Tuần
+          </button>
+          <button
+            id="ai-cal-month-view"
+            class="px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm transition-colors"
+            data-view="dayGridMonth"
+          >
+            Tháng
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Calendar Container với ID riêng cho AI -->
+  <div id="ai-calendar" class="flex-1 overflow-hidden bg-white">
+    <!-- Loading spinner -->
+    <div class="flex items-center justify-center h-full bg-gray-50">
+      <div class="text-center text-gray-500">
+        <div
+          class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"
+        ></div>
+        <p class="text-lg font-medium">Đang tải lịch trình AI...</p>
+        <p class="text-sm mt-2 text-gray-400">
+          Nhấn "Tham Khảo AI" để tạo lịch trình thông minh
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    // Biến kiểm soát trạng thái khởi tạo
+    let isInitializing = false;
+    let isInitialized = false;
+
+    // Đợi AIModule load
+    function waitForAIModule() {
+      if (window.AIModule) {
+        // Kiểm tra nếu đang khởi tạo thì không làm gì
+        if (isInitializing) {
+          return;
+        }
+
+        // Kiểm tra nếu đã khởi tạo rồi thì chỉ refresh UI
+        if (isInitialized && AIModule.isInitialized && AIModule.calendar) {
+          AIModule.refreshUI();
+          return;
+        }
+
+        // Đánh dấu đang khởi tạo
+        isInitializing = true;
+
+        // Config IDs riêng cho trang AI
+        AIModule.calendarElementId = "ai-calendar";
+        AIModule.titleElementId = "ai-calendar-title";
+        AIModule.prevBtnId = "ai-cal-prev-btn";
+        AIModule.nextBtnId = "ai-cal-next-btn";
+        AIModule.todayBtnId = "ai-cal-today-btn";
+        AIModule.dayBtnId = "ai-cal-day-view";
+        AIModule.weekBtnId = "ai-cal-week-view";
+        AIModule.monthBtnId = "ai-cal-month-view";
+
+        // Trigger init
+        AIModule.init()
+          .then(() => {
+            isInitialized = true;
+            isInitializing = false;
+          })
+          .catch((error) => {
+            isInitialized = false;
+            isInitializing = false;
+          });
+      } else {
+        setTimeout(waitForAIModule, 100);
+      }
+    }
+
+    setTimeout(waitForAIModule, 300);
+
+    // LISTEN FOR TAB CHANGES - REFRESH WHEN AI TAB IS SHOWN
+    let tabChangeListenerAdded = false;
+    if (!tabChangeListenerAdded) {
+      tabChangeListenerAdded = true;
+      document.addEventListener(
+        "section-changed",
+        (e) => {
+          if (e.detail && e.detail.section === "ai") {
+            setTimeout(() => {
+              if (window.AIModule && AIModule.refreshFromDatabase) {
+                AIModule.refreshFromDatabase();
+              }
+            }, 1000);
+          }
+        },
+        { once: false }
+      );
+    }
+  })();
+</script>

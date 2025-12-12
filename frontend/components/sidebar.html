@@ -1,0 +1,288 @@
+<!-- components/sidebar.html -->
+<aside
+  class="flex flex-col justify-between bg-white w-64 border-r border-gray-200 py-4 px-3 select-none min-h-screen"
+>
+  <div>
+    <nav class="space-y-1">
+      <button
+        type="button"
+        class="nav-btn w-full flex items-center gap-3 text-sm font-medium text-gray-900 rounded-lg px-4 py-3 bg-gray-200"
+        data-section="schedule"
+      >
+        <i class="far fa-calendar-alt"></i>
+        <span>Lịch trình</span>
+      </button>
+      <button
+        type="button"
+        class="nav-btn w-full flex items-center gap-3 text-sm text-gray-600 rounded-lg px-4 py-3 hover:bg-gray-100"
+        data-section="work"
+      >
+        <i class="far fa-clipboard"></i>
+        <span>Công việc</span>
+      </button>
+      <button
+        type="button"
+        class="nav-btn w-full flex items-center gap-3 text-sm text-gray-600 rounded-lg px-4 py-3 hover:bg-gray-100"
+        data-section="ai"
+      >
+        <i class="fas fa-magic"></i>
+        <span>Tham Khảo AI</span>
+      </button>
+      <button
+        type="button"
+        class="nav-btn w-full flex items-center gap-3 text-sm text-gray-600 rounded-lg px-4 py-3 hover:bg-gray-100"
+        data-section="salary"
+      >
+        <i class="fas fa-calculator"></i>
+        <span>Tính lương</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- USER INFO -->
+  <div class="border-t border-gray-200 pt-4 mt-4">
+    <div class="flex items-center gap-3 px-4">
+      <div
+        class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold"
+      >
+        <span class="avatar-letter">?</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-gray-900 truncate user-name">
+          Người dùng
+        </p>
+        <p class="text-xs text-gray-500 truncate user-email">
+          email@example.com
+        </p>
+      </div>
+    </div>
+    <div class="mt-3 px-4 space-y-2">
+      <button
+        id="settingsBtn"
+        class="w-full text-left text-xs text-gray-500 hover:text-gray-700 flex items-center gap-2"
+      >
+        <i class="fas fa-cog"></i>
+        <span>Cài đặt</span>
+      </button>
+      <button
+        data-logout
+        class="w-full text-left text-xs text-gray-500 hover:text-red-600 flex items-center gap-2"
+      >
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Đăng xuất</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- MODAL CÀI ĐẶT -->
+<div
+  id="settingsModal"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center"
+>
+  <div
+    class="modal-content bg-white rounded-xl shadow-2xl w-96 max-w-full mx-4 transform transition-all scale-95 opacity-0"
+  >
+    <div class="flex justify-between items-center p-6 border-b border-gray-200">
+      <h3 class="text-xl font-semibold text-gray-800">Cài đặt</h3>
+      <button
+        id="closeSettingsModal"
+        class="text-gray-500 hover:text-gray-700 text-2xl"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="p-6 space-y-6">
+      <!-- User Info -->
+      <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
+        <div
+          class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg"
+        >
+          <span class="settings-avatar-letter">?</span>
+        </div>
+        <div>
+          <p class="font-medium text-gray-900 settings-user-name">Người dùng</p>
+          <p class="text-sm text-gray-500 settings-user-email">
+            email@example.com
+          </p>
+        </div>
+      </div>
+
+      <!-- Settings List -->
+      <div class="space-y-2">
+        <button
+          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+        >
+          <div class="flex items-center gap-3">
+            <i class="fas fa-user-edit text-gray-500"></i>
+            <span>Cập nhật hồ sơ</span>
+          </div>
+          <i class="fas fa-chevron-right text-gray-400"></i>
+        </button>
+        <button
+          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+        >
+          <div class="flex items-center gap-3">
+            <i class="fas fa-bell text-gray-500"></i>
+            <span>Thông báo</span>
+          </div>
+          <i class="fas fa-chevron-right text-gray-400"></i>
+        </button>
+        <button
+          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+        >
+          <div class="flex items-center gap-3">
+            <i class="fas fa-palette text-gray-500"></i>
+            <span>Giao diện</span>
+          </div>
+          <i class="fas fa-chevron-right text-gray-400"></i>
+        </button>
+        <button
+          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+        >
+          <div class="flex items-center gap-3">
+            <i class="fas fa-globe text-gray-500"></i>
+            <span>Ngôn ngữ</span>
+          </div>
+          <span class="text-sm text-gray-500">Tiếng Việt</span>
+        </button>
+      </div>
+
+      <div class="border-t border-gray-200 pt-4">
+        <button
+          id="modalLogoutBtn"
+          class="w-full text-left p-4 rounded-lg hover:bg-red-50 transition flex items-center gap-3 text-red-600 font-medium"
+        >
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Đăng xuất</span>
+        </button>
+      </div>
+
+      <div class="text-center text-xs text-gray-500 pt-4">Phiên bản 1.0.0</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    console.log("Sidebar + Settings Modal loaded");
+
+    const settingsModal = document.getElementById("settingsModal");
+    const modalContent = settingsModal.querySelector(".modal-content");
+    const openBtn = document.getElementById("settingsBtn");
+    const closeBtn = document.getElementById("closeSettingsModal");
+    const modalLogoutBtn = document.getElementById("modalLogoutBtn");
+
+    // Hàm cập nhật thông tin người dùng (dùng chung)
+    function updateUserInfo(user) {
+      if (!user) return;
+
+      // Sidebar
+      document.querySelector(".user-name").textContent =
+        user.hoten || user.username || "Người dùng";
+      document.querySelector(".user-email").textContent =
+        user.email || "email@example.com";
+      document.querySelector(".avatar-letter").textContent = (
+        user.hoten ||
+        user.username ||
+        "?"
+      )
+        .charAt(0)
+        .toUpperCase();
+
+      // Modal
+      document.querySelector(".settings-user-name").textContent =
+        user.hoten || user.username || "Người dùng";
+      document.querySelector(".settings-user-email").textContent =
+        user.email || "email@example.com";
+      document.querySelector(".settings-avatar-letter").textContent = (
+        user.hoten ||
+        user.username ||
+        "?"
+      )
+        .charAt(0)
+        .toUpperCase();
+    }
+
+    // Load user khi mở trang
+    document.addEventListener("DOMContentLoaded", () => {
+      const userData = localStorage.getItem("user_data");
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          updateUserInfo(user);
+        } catch (e) {
+          console.error("Lỗi parse user_data:", e);
+        }
+      }
+    });
+
+    // Mở modal
+    openBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      settingsModal.classList.remove("hidden");
+      requestAnimationFrame(() => {
+        modalContent.classList.replace("scale-95", "scale-100");
+        modalContent.classList.replace("opacity-0", "opacity-100");
+      });
+    });
+
+    // Đóng modal
+    const closeModal = () => {
+      modalContent.classList.replace("scale-100", "scale-95");
+      modalContent.classList.replace("opacity-100", "opacity-0");
+      setTimeout(() => settingsModal.classList.add("hidden"), 300);
+    };
+    closeBtn?.addEventListener("click", closeModal);
+    settingsModal.addEventListener("click", (e) => {
+      if (e.target === settingsModal) closeModal();
+    });
+
+    // Đăng xuất (cả sidebar và modal)
+    const handleLogout = async (e) => {
+      e.preventDefault();
+      if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
+
+      try {
+        if (typeof Utils !== "undefined") {
+          await Utils.makeRequest("/api/auth/logout", "POST");
+        }
+      } catch (err) {
+        /* không sao */
+      }
+
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user_data");
+
+      if (typeof Utils !== "undefined") {
+        Utils.showToast("Đã đăng xuất thành công", "success");
+      }
+
+      setTimeout(() => (window.location.href = "/login.html"), 800);
+    };
+
+    document
+      .querySelector("[data-logout]")
+      ?.addEventListener("click", handleLogout);
+    modalLogoutBtn?.addEventListener("click", handleLogout);
+
+    // Export để dùng ở nơi khác
+    window.updateSidebarUser = updateUserInfo;
+
+    // Navigation
+    const initNav = setInterval(() => {
+      if (window.AppNavigation?.navigateToSection) {
+        clearInterval(initNav);
+        document.querySelectorAll("[data-section]").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            AppNavigation.navigateToSection(btn.dataset.section);
+          });
+        });
+      }
+    }, 100);
+    setTimeout(() => clearInterval(initNav), 5000);
+  })();
+</script>

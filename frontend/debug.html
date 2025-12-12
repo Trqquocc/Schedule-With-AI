@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Debug Tasks API</title>
+    <script src="/js/utils.js"></script>
+  </head>
+  <body>
+    <h1>Debug Tasks API</h1>
+    <button onclick="testTasksAPI()">Test Tasks API</button>
+    <button onclick="testCalendarAPI()">Test Calendar API</button>
+    <button onclick="testAIAPI()">Test AI API</button>
+    <pre id="result"></pre>
+
+    <script>
+      async function testTasksAPI() {
+        const token = localStorage.getItem("auth_token");
+        const endpoints = [
+          "/api/tasks",
+          "/api/tasks?status=pending",
+          "/api/tasks?status=0",
+          "/api/tasks?TrangThai=0",
+          "/api/congviec",
+          "/api/congviec?TrangThaiThucHien=0",
+          "/api/congviec?status=0",
+          "/api/congviec?userId=4008",
+        ];
+
+        let html = "<h2>Tasks API Results:</h2>";
+
+        for (let endpoint of endpoints) {
+          try {
+            const response = await fetch(endpoint, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
+              },
+            });
+
+            html += `<h3>${endpoint} (${response.status})</h3>`;
+
+            if (response.ok) {
+              const data = await response.json();
+              html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+              console.log(`${endpoint}:`, data);
+
+              // Show sample data structure
+              if (data.data && data.data.length > 0) {
+                html += `<h4>First item structure:</h4>`;
+                html += `<pre>${JSON.stringify(data.data[0], null, 2)}</pre>`;
+              }
+            } else {
+              const text = await response.text();
+              html += `<p>Error: ${text}</p>`;
+            }
+          } catch (err) {
+            html += `<h3>${endpoint} - ERROR</h3>`;
+            html += `<p>${err.message}</p>`;
+            console.error(`${endpoint}:`, err);
+          }
+        }
+
+        document.getElementById("result").innerHTML = html;
+      }
+
+      async function testCalendarAPI() {
+        const token = localStorage.getItem("auth_token");
+        const response = await fetch("/api/calendar/events", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        console.log("Calendar API:", data);
+        alert(
+          "Calendar API: " + JSON.stringify(data.success ? "Success" : "Error")
+        );
+      }
+
+      async function testAIAPI() {
+        const token = localStorage.getItem("auth_token");
+        const response = await fetch("/api/ai/test", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        console.log("AI API:", data);
+        alert("AI API: " + JSON.stringify(data));
+      }
+    </script>
+  </body>
+</html>

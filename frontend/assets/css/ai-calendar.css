@@ -1,0 +1,259 @@
+/* ===================================
+   AI CALENDAR SPECIFIC STYLES
+   =================================== */
+
+/* AI Section Container */
+#ai-section {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+#ai-section.active {
+  display: flex !important;
+  flex-direction: column;
+}
+
+/* AI Calendar Container */
+#ai-calendar {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 600px !important;
+  background: white !important;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* FullCalendar inside AI section */
+#ai-calendar .fc {
+  height: 100% !important;
+  font-size: 14px !important;
+}
+
+#ai-calendar .fc-view-harness {
+  height: 100% !important;
+}
+
+/* AI Suggested Events - Special Styling */
+.fc-event.event-ai-suggested {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  border-color: #7c3aed !important;
+  border-left: 4px solid #a78bfa !important;
+  color: white !important;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+  position: relative;
+}
+
+.fc-event.event-ai-suggested:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* AI Badge on events */
+.fc-event.event-ai-suggested::after {
+  content: "AI";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+/* AI Button Styling */
+#ai-suggest-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#ai-suggest-btn::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+#ai-suggest-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+#ai-suggest-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+#ai-suggest-btn:active {
+  transform: translateY(0);
+}
+
+/* Loading Animation for AI Calendar */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.ai-calendar-loading {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* AI Event Details Modal */
+#aiEventDetailModal {
+  z-index: 10001 !important;
+}
+
+#aiEventDetailModal .fa-robot {
+  color: #8b5cf6;
+  font-size: 20px;
+}
+
+/* Success Animation */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-summary-section {
+  animation: slideInUp 0.4s ease-out;
+}
+
+/* Calendar Navigation Bar Styling */
+#ai-section nav {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#ai-section nav button {
+  transition: all 0.2s ease;
+}
+
+#ai-section nav button:hover {
+  transform: translateY(-1px);
+}
+
+/* View Switcher Active State */
+#ai-section .bg-gray-100 button.bg-white {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  #ai-calendar {
+    min-height: 500px !important;
+    border-radius: 8px;
+  }
+
+  #ai-suggest-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  #ai-suggest-btn span {
+    display: none;
+  }
+
+  #ai-suggest-btn i {
+    margin: 0;
+  }
+
+  #ai-section nav {
+    padding: 12px 16px;
+  }
+
+  #ai-calendar-title {
+    font-size: 16px;
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  #ai-calendar {
+    min-height: 400px !important;
+    padding: 8px;
+  }
+
+  #ai-section nav .flex.gap-2 {
+    gap: 4px;
+  }
+
+  #ai-section nav button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  #ai-suggest-btn,
+  #ai-section nav .flex.gap-2 {
+    display: none !important;
+  }
+
+  #ai-calendar {
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  .fc-event.event-ai-suggested {
+    background: white !important;
+    border: 2px solid #8b5cf6 !important;
+    color: #8b5cf6 !important;
+  }
+}
+
+/* Accessibility */
+#ai-suggest-btn:focus {
+  outline: 3px solid rgba(139, 92, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.fc-event.event-ai-suggested:focus {
+  outline: 3px solid #8b5cf6;
+  outline-offset: 2px;
+  z-index: 10;
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+  #ai-section {
+    background: #1f2937;
+  }
+
+  #ai-calendar {
+    background: #111827 !important;
+  }
+
+  #ai-section nav {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  #ai-calendar-title {
+    color: #f9fafb;
+  }
+}
