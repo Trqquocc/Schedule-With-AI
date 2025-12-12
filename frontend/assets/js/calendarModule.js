@@ -270,13 +270,41 @@
       }
 
       try {
+        console.log("📅 Loading calendar events...");
         const res = await Utils.makeRequest("/api/calendar/events", "GET");
-        if (!res.success || !Array.isArray(res.data)) return [];
+        if (!res.success || !Array.isArray(res.data)) {
+          console.warn("⚠️ Invalid response from /api/calendar/events");
+          return [];
+        }
+
+        console.log(`📊 Received ${res.data.length} total events from server`);
+
+        // Log AI events để debug
+        const aiEvents = res.data.filter(
+          (ev) => ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1"
+        );
+        if (aiEvents.length > 0) {
+          console.log(
+            `🤖 Found ${aiEvents.length} AI events that will be FILTERED OUT:`,
+            aiEvents.map((e) => ({
+              title: e.TieuDe || e.title,
+              AI_DeXuat: e.AI_DeXuat,
+            }))
+          );
+        }
 
         // ✅ FILTER LOẠI BỎ AI EVENTS VÀ ĐẢM BẢO MÀU SẮC
         const normalEvents = res.data
           .filter((ev) => {
-            const isAI = ev.AI_DeXuat === 1;
+            // Loại bỏ nếu AI_DeXuat = 1
+            const isAI = ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1";
+            if (isAI) {
+              console.log(
+                `⏭️ Skipping AI event: ${ev.TieuDe || ev.title} (AI_DeXuat=${
+                  ev.AI_DeXuat
+                })`
+              );
+            }
             return !isAI;
           })
           .map((ev) => {
