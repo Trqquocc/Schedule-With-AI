@@ -50,7 +50,7 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
     const pool = await dbPoolPromise;
     const taskIdList = taskIds.join(",");
 
-    // SỬA QUERY NÀY - LOẠI BỎ lc.MauSac vì cột không tồn tại
+    // SỬA QUERY NÀY - LẤY MauSac TỪ CongViec
     const query = `
       SELECT 
         cv.MaCongViec as id,
@@ -60,7 +60,7 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
         cv.MucDoPhucTap as complexity,
         cv.MucDoTapTrung as focusLevel,
         cv.ThoiDiemThichHop as suitableTimeCode,
-        '' as color  -- Thay vì lấy từ bảng LoaiCongViec, để trống
+        cv.MauSac as color  -- LẤY TỪ CongViec
       FROM CongViec cv
       WHERE cv.MaCongViec IN (${taskIdList}) 
         AND cv.UserID = @userId
@@ -81,22 +81,6 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
         5: "anytime",
       };
 
-      // Tạo màu dựa trên độ ưu tiên
-      const getColorByPriority = (priority) => {
-        switch (priority) {
-          case 1:
-            return "#10B981"; // Xanh lá
-          case 2:
-            return "#3B82F6"; // Xanh dương
-          case 3:
-            return "#F59E0B"; // Vàng cam
-          case 4:
-            return "#EF4444"; // Đỏ
-          default:
-            return "#8B5CF6"; // Tím
-        }
-      };
-
       return {
         id: task.id,
         title: task.title,
@@ -105,7 +89,7 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
         complexity: task.complexity || 2,
         focusLevel: task.focusLevel || 2,
         suitableTime: timeMap[task.suitableTimeCode] || "anytime",
-        color: getColorByPriority(task.priority || 2), // Tạo màu từ priority
+        color: task.color || this.getColorByPriority(task.priority || 2), // Dùng màu từ database hoặc fallback
       };
     });
 
@@ -117,15 +101,50 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
   }
 }
 
+// Thêm hàm helper để tạo màu từ priority (fallback)
+function getColorByPriority(priority) {
+  switch (priority) {
+    case 1:
+      return "#10B981"; // Xanh lá
+    case 2:
+      return "#3B82F6"; // Xanh dương
+    case 3:
+      return "#F59E0B"; // Vàng cam
+    case 4:
+      return "#EF4444"; // Đỏ
+    default:
+      return "#8B5CF6"; // Tím
+  }
+}
+
+// Thêm hàm helper (nếu chưa có)
+function getColorByPriority(priority) {
+  switch (priority) {
+    case 1:
+      return "#10B981"; // Xanh lá
+    case 2:
+      return "#3B82F6"; // Xanh dương
+    case 3:
+      return "#F59E0B"; // Vàng cam
+    case 4:
+      return "#EF4444"; // Đỏ
+    default:
+      return "#8B5CF6"; // Tím
+  }
+}
+
 async function getExistingEvents(userId, startDate, endDate) {
   try {
     const pool = await dbPoolPromise;
 
     const query = `
       SELECT 
+        lt.MaLichTrinh as id,
         lt.GioBatDau as start_time,
         lt.GioKetThuc as end_time,
-        cv.TieuDe as title
+        cv.TieuDe as title,
+        cv.MucDoUuTien as priority,
+        lt.AI_DeXuat as ai_suggested
       FROM LichTrinh lt
       INNER JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
       WHERE cv.UserID = @userId
@@ -146,6 +165,7 @@ async function getExistingEvents(userId, startDate, endDate) {
       ...event,
       start: event.start_time,
       end: event.end_time,
+      AI_DeXuat: event.ai_suggested,
     }));
   } catch (error) {
     console.error("Error fetching existing events:", error.message);
@@ -652,6 +672,65 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
   }
 });
 
+// SỬA ENDPOINT GET /ai-events
+router.get("/ai-events", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const pool = await dbPoolPromise;
+
+    const result = await pool.request().input("userId", sql.Int, userId).query(`
+      SELECT 
+        lt.MaLichTrinh,
+        lt.MaCongViec,
+        lt.GioBatDau,
+        lt.GioKetThuc,
+        lt.GhiChu,
+        lt.AI_DeXuat,
+        cv.TieuDe,
+        cv.MucDoUuTien,
+        ISNULL(cv.MauSac, 
+          CASE cv.MucDoUuTien
+            WHEN 1 THEN '#34D399'
+            WHEN 2 THEN '#60A5FA'
+            WHEN 3 THEN '#FBBF24'
+            WHEN 4 THEN '#F87171'
+            ELSE '#8B5CF6'
+          END) AS Color
+      FROM LichTrinh lt
+      LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
+      WHERE lt.UserID = @userId
+        AND lt.AI_DeXuat = 1
+      ORDER BY lt.GioBatDau DESC
+    `);
+
+    const events = result.recordset.map((ev) => ({
+      MaLichTrinh: ev.MaLichTrinh,
+      MaCongViec: ev.MaCongViec,
+      TieuDe: ev.TieuDe || "AI Đề xuất",
+      GioBatDau: ev.GioBatDau,
+      GioKetThuc: ev.GioKetThuc,
+      GhiChu: ev.GhiChu || "Được đề xuất bởi AI",
+      Color: ev.Color, // SỬA: Lấy trực tiếp từ query
+      priority: ev.MucDoUuTien,
+      AI_DeXuat: ev.AI_DeXuat,
+    }));
+
+    console.log(`✅ Trả về ${events.length} AI events với màu sắc`);
+
+    res.json({
+      success: true,
+      data: events,
+    });
+  } catch (error) {
+    console.error("❌ Lỗi lấy AI events:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy AI events",
+      error: error.message,
+    });
+  }
+});
+
 router.get("/test", authenticateToken, (req, res) => {
   res.json({
     success: true,
@@ -717,12 +796,11 @@ router.get("/events/ai", authenticateToken, async (req, res) => {
           lt.GhiChu,
           cv.TieuDe,
           cv.MucDoUuTien,
-          cv.MauSac AS Color
+          cv.MauSac AS Color  -- ĐÚNG: Lấy từ CongViec
         FROM LichTrinh lt
         INNER JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE cv.UserID = @userId 
+        WHERE lt.UserID = @userId  -- SỬA: Dùng lt.UserID thay vì cv.UserID
           AND lt.AI_DeXuat = 1
-          AND lt.GioBatDau >= DATEADD(day, -30, GETDATE()) -- Chỉ lấy 30 ngày gần nhất
         ORDER BY lt.GioBatDau DESC
       `);
 
@@ -733,14 +811,126 @@ router.get("/events/ai", authenticateToken, async (req, res) => {
       GioBatDau: ev.GioBatDau,
       GioKetThuc: ev.GioKetThuc,
       GhiChu: ev.GhiChu || "AI đề xuất",
-      Color: ev.Color || "#8B5CF6",
+      Color: ev.Color || getColorByPriority(ev.MucDoUuTien || 2),
       priority: ev.MucDoUuTien,
+      AI_DeXuat: 1,
     }));
+
+    console.log(`✅ Trả về ${events.length} AI events cho user ${userId}`);
 
     res.json({ success: true, data: events });
   } catch (err) {
     console.error("Lỗi lấy lịch AI:", err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
+router.get("/debug-ai-events", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const pool = await dbPoolPromise;
+
+    // Debug 1: Kiểm tra có AI events không
+    const countResult = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+      SELECT COUNT(*) as count 
+      FROM LichTrinh 
+      WHERE UserID = @userId AND AI_DeXuat = 1
+    `);
+
+    // Debug 2: Lấy danh sách chi tiết
+    const detailResult = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+      SELECT 
+        lt.MaLichTrinh,
+        lt.MaCongViec,
+        lt.GioBatDau,
+        lt.GioKetThuc,
+        lt.AI_DeXuat,
+        cv.TieuDe,
+        cv.UserID as TaskUserID
+      FROM LichTrinh lt
+      LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
+      WHERE lt.UserID = @userId
+        AND lt.AI_DeXuat = 1
+      ORDER BY lt.GioBatDau DESC
+    `);
+
+    res.json({
+      success: true,
+      debug: {
+        totalAIEvents: countResult.recordset[0]?.count || 0,
+        events: detailResult.recordset,
+        queryConditions: {
+          userId: userId,
+          AI_DeXuat: 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+router.get("/test-database-ai", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const pool = await dbPoolPromise;
+
+    // 1. Kiểm tra tất cả events của user
+    const allEvents = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+      SELECT 
+        MaLichTrinh,
+        MaCongViec,
+        GioBatDau,
+        GioKetThuc,
+        AI_DeXuat,
+        UserID
+      FROM LichTrinh
+      WHERE UserID = @userId
+      ORDER BY GioBatDau DESC
+    `);
+
+    // 2. Kiểm tra events vừa được tạo (last 10)
+    const recentEvents = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+      SELECT TOP 10 
+        MaLichTrinh,
+        MaCongViec,
+        GioBatDau,
+        GioKetThuc,
+        AI_DeXuat
+      FROM LichTrinh
+      WHERE UserID = @userId
+      ORDER BY MaLichTrinh DESC
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        totalEvents: allEvents.recordset.length,
+        allEvents: allEvents.recordset,
+        recentEvents: recentEvents.recordset,
+        userInfo: {
+          userId: userId,
+          hasAIEvents: allEvents.recordset.some((e) => e.AI_DeXuat === 1),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Test database error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 module.exports = router;

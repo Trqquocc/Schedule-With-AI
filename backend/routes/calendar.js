@@ -33,89 +33,57 @@ const PRIORITY_COLORS = {
   4: "#F87171", // Đỏ - Rất cao
 };
 
-// GET tất cả lịch trình - ĐÃ SỬA để lấy màu theo độ ưu tiên
 router.get("/events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
-    const result = await pool.request().input("UserID", sql.Int, userId).query(`
-        SELECT 
-          lt.MaLichTrinh,
-          lt.MaCongViec,
-          lt.UserID,
-          lt.TieuDe AS LichTrinhTieuDe,
-          lt.GioBatDau,
-          lt.GioKetThuc,
-          lt.DaHoanThanh,
-          lt.GhiChu,
-          lt.AI_DeXuat,
-          lt.NgayTao AS LichTrinhNgayTao,
-          cv.TieuDe AS CongViecTieuDe,
-          cv.MoTa,
-          cv.MucDoUuTien,
-          -- Lấy màu theo độ ưu tiên của công việc
+    // SỬA QUERY NÀY - THÊM VIỆC LẤY MÀU SẮC
+    const result = await pool.request().input("userId", sql.Int, userId).query(`
+      SELECT 
+        lt.MaLichTrinh,
+        lt.MaCongViec,
+        lt.GioBatDau,
+        lt.GioKetThuc,
+        lt.GhiChu,
+        lt.AI_DeXuat,
+        lt.DaHoanThanh,
+        cv.TieuDe,
+        cv.MucDoUuTien,
+        ISNULL(cv.MauSac, 
           CASE cv.MucDoUuTien
-            WHEN 1 THEN '#34D399'  -- Thấp: Xanh lá
-            WHEN 2 THEN '#60A5FA'  -- Trung bình: Xanh lam
-            WHEN 3 THEN '#FBBF24'  -- Cao: Vàng
-            WHEN 4 THEN '#F87171'  -- Rất cao: Đỏ
-            ELSE '#60A5FA'         -- Mặc định: Xanh lam
-          END AS MauSac
-        FROM LichTrinh lt
-        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @UserID
-        ORDER BY lt.GioBatDau DESC
-      `);
+            WHEN 1 THEN '#34D399'
+            WHEN 2 THEN '#60A5FA'
+            WHEN 3 THEN '#FBBF24'
+            WHEN 4 THEN '#F87171'
+            ELSE '#3788d8'
+          END) AS MauSac
+      FROM LichTrinh lt
+      LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
+      WHERE cv.UserID = @userId
+        AND lt.GioBatDau >= DATEADD(day, -30, GETDATE())
+      ORDER BY lt.GioBatDau DESC
+    `);
 
-    // Xử lý dữ liệu để đảm bảo format phù hợp với frontend
-    const events = result.recordset.map((event) => {
-      // Ưu tiên tiêu đề từ công việc, nếu không có thì dùng tiêu đề lịch trình
-      const title =
-        event.CongViecTieuDe || event.LichTrinhTieuDe || "Không có tiêu đề";
+    const events = result.recordset.map((ev) => ({
+      MaLichTrinh: ev.MaLichTrinh,
+      MaCongViec: ev.MaCongViec,
+      TieuDe: ev.TieuDe,
+      GioBatDau: ev.GioBatDau,
+      GioKetThuc: ev.GioKetThuc,
+      GhiChu: ev.GhiChu,
+      MauSac: ev.MauSac || "#3788d8", // ĐẢM BẢO LUÔN CÓ MÀU
+      DaHoanThanh: ev.DaHoanThanh,
+      MucDoUuTien: ev.MucDoUuTien,
+      AI_DeXuat: ev.AI_DeXuat || 0,
+    }));
 
-      return {
-        id: event.MaLichTrinh,
-        MaLichTrinh: event.MaLichTrinh,
-        MaCongViec: event.MaCongViec,
-        UserID: event.UserID,
-        title: title,
-        TieuDe: title,
-        start: event.GioBatDau ? new Date(event.GioBatDau).toISOString() : null,
-        end: event.GioKetThuc ? new Date(event.GioKetThuc).toISOString() : null,
-        GioBatDau: event.GioBatDau,
-        GioKetThuc: event.GioKetThuc,
-        DaHoanThanh: event.DaHoanThanh || false,
-        GhiChu: event.GhiChu || "",
-        AI_DeXuat: event.AI_DeXuat || false,
-        NgayTao: event.LichTrinhNgayTao,
-        // Màu sắc theo độ ưu tiên
-        backgroundColor: event.MauSac || "#60A5FA",
-        borderColor: event.MauSac || "#60A5FA",
-        textColor: "#FFFFFF",
-        extendedProps: {
-          note: event.GhiChu || "",
-          completed: event.DaHoanThanh || false,
-          aiSuggested: event.AI_DeXuat || false,
-          taskId: event.MaCongViec || null,
-          description: event.MoTa || "",
-          priority: event.MucDoUuTien || 2,
-          priorityColor: event.MauSac || "#60A5FA",
-        },
-      };
-    });
+    console.log(`✅ Trả về ${events.length} events với màu sắc`);
 
-    res.json({
-      success: true,
-      data: events,
-    });
+    res.json({ success: true, data: events });
   } catch (error) {
-    console.error("Lỗi load lịch:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server khi tải lịch trình",
-      error: error.message,
-    });
+    console.error("Lỗi lấy events:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
@@ -160,7 +128,7 @@ router.get("/range", authenticateToken, async (req, res) => {
             WHEN 3 THEN '#FBBF24'
             WHEN 4 THEN '#F87171'
             ELSE '#60A5FA'
-          END AS MauSac
+          END AS MaMau
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
         WHERE lt.UserID = @UserID
