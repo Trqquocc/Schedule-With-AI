@@ -560,7 +560,17 @@
 
     async handleFormSubmitAction() {
       try {
-        console.log("📤 Bắt đầu submit form AI...");
+        // ⏳ Logging độ trễ giữa các lần gọi
+        const now = Date.now();
+        if (!this._lastSubmitTime) this._lastSubmitTime = 0;
+        const timeSinceLastSubmit = now - this._lastSubmitTime;
+        this._lastSubmitTime = now;
+
+        const clickCount = (this._submitClickCount =
+          (this._submitClickCount || 0) + 1);
+        console.log(
+          `📤 SUBMIT CLICK #${clickCount} | Thời gian kể từ lần trước: ${timeSinceLastSubmit}ms | Giờ: ${new Date().toLocaleTimeString()}`
+        );
 
         // TÌM MODAL
         const modal = document.getElementById("aiSuggestionModal");
@@ -1340,9 +1350,20 @@
           applyBtn.disabled = true;
         }
 
-        // 1. LƯU VÀO DATABASE
-        console.log("💾 Saving suggestions to database...");
+        // 1. LƯU VÀO DATABASE (backend sẽ xóa AI events cũ trong transaction)
+        console.log(
+          "💾 Saving suggestions to database (with clearing old events)..."
+        );
         const saveResult = await this.saveAISuggestionsToDatabase(suggestions);
+        if (!saveResult || !saveResult.success) {
+          this.showError("Lỗi lưu lịch trình AI");
+          return;
+        }
+        console.log(`✅ Saved ${suggestions.length} suggestions to database`);
+
+        // 2. CHỜ DATABASE TRANSACTION HOÀN THÀNH
+        console.log("⏳ Waiting for database transaction...");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         if (!saveResult.success) {
           throw new Error(saveResult.message || "Lỗi lưu vào database");
@@ -1359,28 +1380,21 @@
           savedIds: saveResult.savedIds,
         });
 
-        // 2. CHỜ MỘT CHÚT ĐỂ DATABASE ĐỒNG BỘ
-        console.log("⏳ Waiting 800ms for DB sync...");
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        // 2. CHỜ DATABASE TRANSACTION HOÀN THÀNH VÀ SYNC
+        console.log("⏳ Waiting 1500ms for DB transaction & sync...");
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
         // 3. LOAD VÀO CALENDAR AI
         if (window.AIModule && window.AIModule.loadAISuggestions) {
           console.log("🤖 Loading suggestions vào AIModule...");
           await AIModule.loadAISuggestions(suggestions);
           console.log("✅ Suggestions đã được load vào AIModule");
+
+          // ❌ KHÔNG GỌI refreshFromDatabase ở đây vì loadAISuggestions đã thêm vào calendar
+          // Nếu gọi lại sẽ gây DUPLICATE
+          console.log("⏭️ Skipping refreshFromDatabase to avoid duplicates");
         } else {
           console.warn("⚠️ AIModule không sẵn sàng, skip load");
-        }
-
-        // 4. REFRESH CALENDAR TỪ DATABASE
-        if (window.AIModule && window.AIModule.refreshFromDatabase) {
-          console.log("🔄 Refreshing AI calendar từ database...");
-          const refreshResult = await AIModule.refreshFromDatabase();
-          console.log(
-            `✅ AI calendar đã refresh từ database (${refreshResult} events added)`
-          );
-        } else {
-          console.warn("⚠️ refreshFromDatabase không sẵn sàng");
         }
 
         // 5. HIỂN THỊ THÀNH CÔNG

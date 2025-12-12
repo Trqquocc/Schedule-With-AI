@@ -662,6 +662,30 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
     );
     console.log(`   IDs: ${savedIds.join(", ")}`);
 
+    // ✅ 3. TRACK AI PROPOSAL VÀO PhienAIDeXuat TABLE (NẾU TỒN TẠI)
+    try {
+      const summaryContent = suggestions
+        .map((s) => `- ${s.title} (${s.durationMinutes} phút)`)
+        .join("\n");
+
+      const trackResult = await pool
+        .request()
+        .input("userId", sql.Int, userId)
+        .input("content", sql.NVarChar, summaryContent)
+        .input("applyTime", sql.DateTime, new Date()).query(`
+          IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='PhienAIDeXuat')
+          BEGIN
+            INSERT INTO PhienAIDeXuat (UserID, NgayDeXuat, NoiDungYeuCau, DaApDung, ThoiGianApDung)
+            VALUES (@userId, GETDATE(), @content, 1, @applyTime)
+          END
+        `);
+
+      console.log("✅ Tracked AI proposal to PhienAIDeXuat");
+    } catch (trackError) {
+      console.warn("⚠️ Could not track to PhienAIDeXuat:", trackError.message);
+      // Không fail request, vì table có thể chưa tồn tại
+    }
+
     res.json({
       success: true,
       saved: savedIds.length,
@@ -942,4 +966,242 @@ router.get("/test-database-ai", authenticateToken, async (req, res) => {
     });
   }
 });
+
+// ====================================================
+// GET /api/ai/history - Lấy lịch sử AI proposals
+// ====================================================
+// Mục đích: Xem tất cả các lần AI đã đề xuất cho user
+// Response: Danh sách proposals với trạng thái apply
+router.get("/history", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { limit = 20, offset = 0 } = req.query;
+
+    const pool = await dbPoolPromise;
+
+    // Kiểm tra table có tồn tại không
+    const tableCheckResult = await pool.request().query(`
+      SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_NAME='PhienAIDeXuat'
+    `);
+
+    if (tableCheckResult.recordset.length === 0) {
+      console.warn("⚠️ PhienAIDeXuat table không tồn tại");
+      return res.json({
+        success: true,
+        data: [],
+        message: "PhienAIDeXuat table chưa được tạo",
+      });
+    }
+
+    // Lấy lịch sử proposals
+    const result = await pool
+      .request()
+      .input("userId", sql.Int, userId)
+      .input("limit", sql.Int, parseInt(limit))
+      .input("offset", sql.Int, parseInt(offset)).query(`
+        SELECT TOP (@limit)
+          MaPhienDeXuat,
+          UserID,
+          NgayDeXuat,
+          NoiDungYeuCau,
+          DaApDung,
+          ThoiGianApDung,
+          GhiChu
+        FROM PhienAIDeXuat
+        WHERE UserID = @userId
+        ORDER BY NgayDeXuat DESC
+        OFFSET @offset ROWS
+      `);
+
+    // Đếm tổng số proposals
+    const countResult = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+        SELECT COUNT(*) as total FROM PhienAIDeXuat WHERE UserID = @userId
+      `);
+
+    const total = countResult.recordset[0]?.total || 0;
+
+    // Thống kê
+    const stats = await pool.request().input("userId", sql.Int, userId).query(`
+        SELECT 
+          COUNT(*) as totalProposals,
+          SUM(CASE WHEN DaApDung = 1 THEN 1 ELSE 0 END) as appliedCount,
+          SUM(CASE WHEN DaApDung = 0 THEN 1 ELSE 0 END) as pendingCount
+        FROM PhienAIDeXuat
+        WHERE UserID = @userId
+      `);
+
+    const statsData = stats.recordset[0] || {
+      totalProposals: 0,
+      appliedCount: 0,
+      pendingCount: 0,
+    };
+
+    console.log(
+      `📊 Got AI proposal history for user ${userId}: ${result.recordset.length} records`
+    );
+
+    res.json({
+      success: true,
+      data: result.recordset,
+      stats: {
+        total: total,
+        totalProposals: statsData.totalProposals || 0,
+        appliedCount: statsData.appliedCount || 0,
+        pendingCount: statsData.pendingCount || 0,
+        appliedPercentage: statsData.totalProposals
+          ? Math.round(
+              ((statsData.appliedCount || 0) / statsData.totalProposals) * 100
+            )
+          : 0,
+      },
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: total,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error getting AI history:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// ====================================================
+// PUT /api/ai/history/:id - Cập nhật trạng thái apply
+// ====================================================
+// Mục đích: Đánh dấu proposal đã được apply
+router.put("/history/:id", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const proposalId = req.params.id;
+    const { DaApDung } = req.body;
+
+    const pool = await dbPoolPromise;
+
+    // Kiểm tra quyền sở hữu
+    const checkResult = await pool
+      .request()
+      .input("id", sql.Int, proposalId)
+      .input("userId", sql.Int, userId).query(`
+        SELECT 1 FROM PhienAIDeXuat 
+        WHERE MaPhienDeXuat = @id AND UserID = @userId
+      `);
+
+    if (checkResult.recordset.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: "Không có quyền truy cập proposal này",
+      });
+    }
+
+    // Cập nhật
+    const updateResult = await pool
+      .request()
+      .input("id", sql.Int, proposalId)
+      .input("DaApDung", sql.Bit, DaApDung ? 1 : 0)
+      .input("ThoiGianApDung", sql.DateTime2, new Date()).query(`
+        UPDATE PhienAIDeXuat
+        SET DaApDung = @DaApDung,
+            ThoiGianApDung = CASE WHEN @DaApDung = 1 THEN @ThoiGianApDung ELSE NULL END
+        WHERE MaPhienDeXuat = @id
+      `);
+
+    console.log(
+      `✅ Updated proposal ${proposalId}: DaApDung=${DaApDung ? 1 : 0}`
+    );
+
+    res.json({
+      success: true,
+      message: `Đã cập nhật proposal #${proposalId}`,
+    });
+  } catch (error) {
+    console.error("❌ Error updating proposal:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// ====================================================
+// GET /api/ai/stats - Thống kê AI usage
+// ====================================================
+// Mục đích: Hiển thị dashboard về AI usage của user
+router.get("/stats", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const pool = await dbPoolPromise;
+
+    // Kiểm tra table
+    const tableCheckResult = await pool.request().query(`
+      SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_NAME='PhienAIDeXuat'
+    `);
+
+    if (tableCheckResult.recordset.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          totalRequests: 0,
+          appliedRequests: 0,
+          pendingRequests: 0,
+          appliedPercentage: 0,
+          lastUsed: null,
+        },
+        message: "PhienAIDeXuat table chưa được tạo",
+      });
+    }
+
+    // Lấy thống kê
+    const result = await pool.request().input("userId", sql.Int, userId).query(`
+        SELECT 
+          COUNT(*) as totalRequests,
+          SUM(CASE WHEN DaApDung = 1 THEN 1 ELSE 0 END) as appliedRequests,
+          SUM(CASE WHEN DaApDung = 0 THEN 1 ELSE 0 END) as pendingRequests,
+          MAX(CASE WHEN DaApDung = 1 THEN ThoiGianApDung END) as lastApplied,
+          MAX(NgayDeXuat) as lastRequested
+        FROM PhienAIDeXuat
+        WHERE UserID = @userId
+      `);
+
+    const stats = result.recordset[0] || {
+      totalRequests: 0,
+      appliedRequests: 0,
+      pendingRequests: 0,
+    };
+
+    const appliedPercentage = stats.totalRequests
+      ? Math.round((stats.appliedRequests / stats.totalRequests) * 100)
+      : 0;
+
+    console.log(`📈 AI stats for user ${userId}:`, {
+      total: stats.totalRequests,
+      applied: stats.appliedRequests,
+      appliedPercent: appliedPercentage,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalRequests: stats.totalRequests || 0,
+        appliedRequests: stats.appliedRequests || 0,
+        pendingRequests: stats.pendingRequests || 0,
+        appliedPercentage: appliedPercentage,
+        lastUsed: stats.lastApplied || stats.lastRequested || null,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error getting AI stats:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
