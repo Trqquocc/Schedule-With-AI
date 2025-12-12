@@ -1002,76 +1002,6 @@
       });
     },
 
-    // HÀM MỚI: Áp dụng suggestions
-    async applyAISuggestions(suggestions) {
-      try {
-        console.log("📤 Applying AI suggestions...", suggestions.length);
-
-        if (!suggestions || suggestions.length === 0) {
-          this.showError("Không có đề xuất nào để áp dụng");
-          return;
-        }
-
-        // HIỂN THỊ LOADING
-        const applyBtn = document.getElementById("aiApplyBtn");
-        if (applyBtn) {
-          applyBtn.innerHTML =
-            '<i class="fas fa-spinner fa-spin"></i> Đang áp dụng...';
-          applyBtn.disabled = true;
-        }
-
-        // 1. LƯU VÀO DATABASE
-        const saveResult = await this.saveAISuggestionsToDatabase(suggestions);
-
-        if (!saveResult.success) {
-          throw new Error(saveResult.message || "Lỗi lưu vào database");
-        }
-
-        // 2. LOAD VÀO CALENDAR AI
-        if (window.AIModule && window.AIModule.loadAISuggestions) {
-          await AIModule.loadAISuggestions(suggestions);
-        }
-
-        // 3. REFRESH CALENDAR
-        if (window.AIModule && window.AIModule.refreshFromDatabase) {
-          await AIModule.refreshFromDatabase();
-        }
-
-        // 4. HIỂN THỊ THÀNH CÔNG
-        this.showSuccess(`✅ Đã áp dụng ${suggestions.length} lịch trình AI!`);
-
-        // 5. ĐÓNG MODAL VÀ RESET FORM
-        setTimeout(() => {
-          // RESET FORM TRƯỚC KHI ĐÓNG
-          this.resetModalForm();
-
-          // ĐÓNG MODAL
-          const modal = document.getElementById("aiSuggestionModal");
-          if (modal) {
-            modal.classList.remove("active", "show");
-            modal.style.display = "none";
-            document.body.classList.remove("modal-open");
-          }
-
-          // CHUYỂN SANG TAB AI
-          setTimeout(() => {
-            document.querySelector('[data-tab="ai"]')?.click();
-          }, 300);
-        }, 1500);
-      } catch (error) {
-        console.error("❌ Error applying suggestions:", error);
-        this.showError("Lỗi áp dụng lịch trình: " + error.message);
-
-        // RESET BUTTON
-        const applyBtn = document.getElementById("aiApplyBtn");
-        if (applyBtn) {
-          applyBtn.innerHTML =
-            '<i class="fas fa-check-circle"></i> Áp dụng lịch trình';
-          applyBtn.disabled = false;
-        }
-      }
-    },
-
     resetModalForm() {
       console.log("🔄 Resetting AI modal form...");
 
@@ -1382,8 +1312,6 @@
         this.showError("Lỗi khi reset form: " + error.message);
       }
     },
-
-    // 3. SỬA HÀM applyAISuggestions
     async applyAISuggestions(suggestions) {
       try {
         console.log("📤 Applying AI suggestions...", suggestions.length);
@@ -1396,63 +1324,67 @@
         // HIỂN THỊ LOADING
         const applyBtn = document.getElementById("aiApplyBtn");
         if (applyBtn) {
-          const originalHTML = applyBtn.innerHTML;
           applyBtn.innerHTML =
             '<i class="fas fa-spinner fa-spin"></i> Đang áp dụng...';
           applyBtn.disabled = true;
-
-          try {
-            // 1. LƯU VÀO DATABASE
-            const saveResult = await this.saveAISuggestionsToDatabase(
-              suggestions
-            );
-
-            if (!saveResult.success) {
-              throw new Error(saveResult.message || "Lỗi lưu vào database");
-            }
-
-            // 2. LOAD VÀO CALENDAR AI
-            if (window.AIModule && window.AIModule.loadAISuggestions) {
-              await AIModule.loadAISuggestions(suggestions);
-            }
-
-            // 3. REFRESH CALENDAR
-            if (window.AIModule && window.AIModule.refreshFromDatabase) {
-              await AIModule.refreshFromDatabase();
-            }
-
-            // 4. HIỂN THỊ THÀNH CÔNG
-            this.showSuccess(
-              `✅ Đã áp dụng ${suggestions.length} lịch trình AI!`
-            );
-
-            // 5. ĐÓNG MODAL VÀ RESET FORM
-            setTimeout(() => {
-              // ĐÓNG MODAL
-              ModalManager.hideModalById("aiSuggestionModal");
-
-              // RESET FORM SAU KHI ĐÓNG
-              setTimeout(() => {
-                this.resetModalForm();
-              }, 300);
-
-              // CHUYỂN SANG TAB AI
-              setTimeout(() => {
-                document.querySelector('[data-tab="ai"]')?.click();
-              }, 500);
-            }, 1500);
-          } finally {
-            // RESET BUTTON
-            applyBtn.innerHTML = originalHTML;
-            applyBtn.disabled = false;
-          }
         }
+
+        // 1. LƯU VÀO DATABASE
+        const saveResult = await this.saveAISuggestionsToDatabase(suggestions);
+
+        if (!saveResult.success) {
+          throw new Error(saveResult.message || "Lỗi lưu vào database");
+        }
+
+        console.log(
+          `✅ Đã lưu ${
+            saveResult.savedCount || suggestions.length
+          } AI suggestions vào database`
+        );
+
+        // 2. CHỜ MỘT CHÚT ĐỂ DATABASE ĐỒNG BỘ
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // 3. LOAD VÀO CALENDAR AI
+        if (window.AIModule && window.AIModule.loadAISuggestions) {
+          console.log("🤖 Loading suggestions vào AIModule...");
+          await AIModule.loadAISuggestions(suggestions);
+        }
+
+        // 4. REFRESH CALENDAR TỪ DATABASE
+        if (window.AIModule && window.AIModule.refreshFromDatabase) {
+          console.log("🔄 Refreshing AI calendar từ database...");
+          await AIModule.refreshFromDatabase();
+        }
+
+        // 5. HIỂN THỊ THÀNH CÔNG
+        this.showSuccess(`✅ Đã áp dụng ${suggestions.length} lịch trình AI!`);
+
+        // 6. ĐÓNG MODAL SAU 1.5 GIÂY
+        setTimeout(() => {
+          this.closeModal();
+
+          // CHUYỂN SANG TAB AI SAU KHI ĐÓNG MODAL
+          setTimeout(() => {
+            const aiTabBtn = document.querySelector('[data-tab="ai"]');
+            if (aiTabBtn) {
+              aiTabBtn.click();
+            }
+          }, 300);
+        }, 1500);
       } catch (error) {
         console.error("❌ Error applying suggestions:", error);
         this.showError("Lỗi áp dụng lịch trình: " + error.message);
+
+        // RESET BUTTON
+        const applyBtn = document.getElementById("aiApplyBtn");
+        if (applyBtn) {
+          applyBtn.innerHTML =
+            '<i class="fas fa-check-circle"></i> Áp dụng lịch trình';
+          applyBtn.disabled = false;
+        }
       }
     },
-
     resetModalForm() {
       console.log("🔄 Resetting AI modal form...");
 

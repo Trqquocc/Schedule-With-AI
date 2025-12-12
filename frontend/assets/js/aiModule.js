@@ -159,56 +159,68 @@
       }
     },
 
-    // ==========================================================
-    // LOAD EVENTS FOR AI CALENDAR - CHỈ LẤY AI SUGGESTIONS
-    // ==========================================================
-    // THAY THẾ HÀM NÀY
+    // SỬA HÀM loadEventsForAI()
     async loadEventsForAI() {
       try {
-        console.log("Đang tải lịch AI từ database...");
+        console.log("🤖 Đang tải lịch AI từ database...");
 
         if (!Utils?.makeRequest) {
           console.warn("Utils.makeRequest không tồn tại");
           return [];
         }
 
-        // DÙNG API ĐÚNG
-        const res = await Utils.makeRequest("/api/ai/events/ai", "GET");
+        // Gọi endpoint AI events
+        console.log("📡 Gọi /api/ai/ai-events...");
+        const res = await Utils.makeRequest("/api/ai/ai-events", "GET");
 
-        if (!res.success || !Array.isArray(res.data)) {
-          console.log("Không có lịch AI nào", res);
-          return [];
-        }
-
-        const events = res.data.map((ev) => {
-          // ĐẢM BẢO CÓ MÀU
-          const color =
-            ev.Color ||
-            ev.color ||
-            this.getPriorityColor(ev.priority) ||
-            "#8B5CF6";
-
-          return {
-            id: ev.MaLichTrinh || `ai-${ev.MaCongViec}-${Date.now()}`,
-            title: ev.TieuDe || "AI Đề xuất",
-            start: ev.GioBatDau,
-            end: ev.GioKetThuc,
-            backgroundColor: color,
-            borderColor: color,
-            classNames: ["event-ai-suggested"],
-            extendedProps: {
-              taskId: ev.MaCongViec,
-              reason: ev.GhiChu,
-              aiSuggested: true,
-              priority: ev.priority,
-            },
-          };
+        console.log("📦 AI events response:", {
+          success: res.success,
+          count: res.data?.length || 0,
         });
 
-        console.log(`✅ Đã tải ${events.length} lịch AI`);
-        return events;
-      } catch (err) {
-        console.error("Lỗi load lịch AI:", err);
+        if (res.success && Array.isArray(res.data)) {
+          const events = res.data;
+
+          console.log(`✅ Got ${events.length} AI events from API`);
+
+          // Chuyển đổi sang định dạng FullCalendar với màu sắc đầy đủ
+          const calendarEvents = events.map((ev) => {
+            // LẤY MÀU CHÍNH XÁC
+            const color =
+              ev.Color || this.getPriorityColor(ev.priority) || "#8B5CF6";
+
+            console.log(`🎨 Event "${ev.TieuDe}" - color: ${color}`);
+
+            return {
+              id: ev.MaLichTrinh || `ai-${Date.now()}-${Math.random()}`,
+              title: ev.TieuDe || "AI Đề xuất",
+              start: ev.GioBatDau,
+              end:
+                ev.GioKetThuc ||
+                new Date(
+                  new Date(ev.GioBatDau).getTime() + 60 * 60000
+                ).toISOString(),
+              backgroundColor: color,
+              borderColor: color,
+              classNames: ["event-ai-suggested"],
+              extendedProps: {
+                taskId: ev.MaCongViec,
+                reason: ev.GhiChu || "Đề xuất bởi AI",
+                aiSuggested: true,
+                priority: ev.priority || 2,
+                AI_DeXuat: ev.AI_DeXuat || 1,
+                originalColor: color, // Lưu màu gốc
+              },
+            };
+          });
+
+          console.log(`✅ Converted ${calendarEvents.length} AI events`);
+          return calendarEvents;
+        }
+
+        return [];
+      } catch (error) {
+        console.error("❌ Error loading AI events:", error);
         return [];
       }
     },
@@ -935,10 +947,39 @@
           return 0;
         }
 
-        // 1. Lấy events từ API AI (chỉ lịch AI)
+        // 1. Lấy events từ database
         const aiEvents = await this.loadEventsForAI();
 
         console.log(`📊 AI events loaded: ${aiEvents.length}`);
+
+        if (aiEvents.length === 0) {
+          console.log("📭 Không có AI events để hiển thị");
+
+          // Vẫn xóa các events cũ nếu có
+          const existingEvents = this.calendar.getEvents();
+          const aiEventsToRemove = existingEvents.filter(
+            (event) => event.extendedProps?.aiSuggested === true
+          );
+
+          if (aiEventsToRemove.length > 0) {
+            console.log(
+              `🗑️ Removing ${aiEventsToRemove.length} old AI events...`
+            );
+            aiEventsToRemove.forEach((event) => {
+              try {
+                event.remove();
+              } catch (e) {
+                console.warn(
+                  `⚠️ Failed to remove event ${event.id}:`,
+                  e.message
+                );
+              }
+            });
+            this.calendar.render();
+          }
+
+          return 0;
+        }
 
         // 2. Xóa chỉ các events AI cũ
         const existingEvents = this.calendar.getEvents();
@@ -951,26 +992,7 @@
           try {
             event.remove();
           } catch (e) {
-            console.warn(`⚠️ Failed to remove event ${event.id}:`, {
-              error: error.message,
-              title: event.title,
-              // Có thể thêm recovery logic ở đây
-            });
-
-            // Optional: Try alternative removal
-            try {
-              // Nếu calendar có phương thức getEventById
-              const eventById = this.calendar.getEventById(event.id);
-              if (eventById) {
-                eventById.remove();
-                console.log(`✅ Removed via fallback: ${event.id}`);
-              }
-            } catch (fallbackError) {
-              console.error(
-                `❌ Fallback also failed for ${event.id}:`,
-                fallbackError
-              );
-            }
+            console.warn(`⚠️ Failed to remove event ${event.id}:`, e.message);
           }
         });
 
@@ -978,25 +1000,43 @@
         let addedCount = 0;
         aiEvents.forEach((event) => {
           try {
-            this.calendar.addEvent(event);
-            addedCount++;
+            // Kiểm tra xem event đã tồn tại chưa
+            const existingEvent = this.calendar.getEventById(event.id);
+            if (!existingEvent) {
+              this.calendar.addEvent(event);
+              addedCount++;
+              console.log(`➕ Added AI event: ${event.title} (${event.id})`);
+            } else {
+              console.log(
+                `⏭️ Event already exists: ${event.title} (${event.id})`
+              );
+            }
           } catch (error) {
-            console.error("Error adding AI event:", error);
+            console.error("❌ Error adding AI event:", error, event);
           }
         });
 
         // 4. Cập nhật danh sách và render
         this.suggestedEvents = aiEvents;
 
-        if (aiEvents.length > 0) {
+        if (addedCount > 0) {
           this.calendar.render();
           console.log(`✅ Added ${addedCount} AI events to calendar`);
         } else {
-          console.log("📭 Không có AI events để hiển thị");
+          console.log("📭 Không có AI events mới để thêm");
         }
 
         // 5. Cập nhật title
         this.updateCalendarTitle();
+
+        // 6. Debug: Hiển thị tất cả events hiện có
+        const allEvents = this.calendar.getEvents();
+        const aiEventsCount = allEvents.filter(
+          (e) => e.extendedProps?.aiSuggested
+        ).length;
+        console.log(
+          `📋 Total events in calendar: ${allEvents.length}, AI events: ${aiEventsCount}`
+        );
 
         return addedCount;
       } catch (error) {
@@ -1293,6 +1333,84 @@
 
         // Refresh nếu cần
         this.refreshUI();
+      }
+    },
+
+    // Thêm vào cuối file aiModule.js
+    debugAIModule: function () {
+      console.log("=== AI Module Debug ===");
+      console.log("Calendar exists:", !!this.calendar);
+      console.log(
+        "Calendar element:",
+        document.getElementById(this.calendarElementId)
+      );
+      console.log("Is initialized:", this.isInitialized);
+      console.log("Suggested events count:", this.suggestedEvents.length);
+
+      // Test API endpoint
+      Utils.makeRequest("/api/ai/ai-events", "GET")
+        .then((res) => {
+          console.log("AI events API response:", res);
+        })
+        .catch((err) => {
+          console.log("AI events API error:", err);
+        });
+
+      Utils.makeRequest("/api/calendar/ai-events", "GET")
+        .then((res) => {
+          console.log("Calendar AI events API response:", res);
+        })
+        .catch((err) => {
+          console.log("Calendar AI events API error:", err);
+        });
+    },
+
+    // Thêm vào cuối file aiModule.js
+    debugDatabaseAIEvents: async function () {
+      try {
+        console.log("🔍 Debugging AI events in database...");
+
+        // Kiểm tra API endpoints
+        const endpoints = [
+          "/api/calendar/events",
+          "/api/ai/ai-events",
+          "/api/calendar/ai-events",
+        ];
+
+        for (const endpoint of endpoints) {
+          try {
+            const res = await Utils.makeRequest(endpoint, "GET");
+            console.log(`📡 ${endpoint}:`, {
+              success: res.success,
+              count: Array.isArray(res.data) ? res.data.length : "N/A",
+              data: Array.isArray(res.data) ? res.data.slice(0, 2) : res.data,
+            });
+
+            // Nếu có data, kiểm tra AI_DeXuat
+            if (res.success && Array.isArray(res.data)) {
+              const aiEvents = res.data.filter(
+                (ev) =>
+                  ev.AI_DeXuat === 1 ||
+                  ev.AI_DeXuat === true ||
+                  ev.extendedProps?.aiSuggested === true
+              );
+              console.log(`   AI events in response: ${aiEvents.length}`);
+
+              if (aiEvents.length > 0) {
+                console.log("   Sample AI event:", {
+                  id: aiEvents[0].MaLichTrinh || aiEvents[0].ID,
+                  title: aiEvents[0].TieuDe || aiEvents[0].title,
+                  AI_DeXuat: aiEvents[0].AI_DeXuat,
+                  start: aiEvents[0].GioBatDau || aiEvents[0].start,
+                });
+              }
+            }
+          } catch (err) {
+            console.log(`❌ ${endpoint} error:`, err.message);
+          }
+        }
+      } catch (error) {
+        console.error("Debug error:", error);
       }
     },
   };

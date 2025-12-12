@@ -112,41 +112,36 @@
           taskElement.dataset.dragInitialized = "true";
 
           taskElement.innerHTML = `
-        <div class="flex items-start gap-3">
-          <div class="mt-1 text-gray-400">
-            <i class="fas fa-grip-vertical"></i>
-          </div>
-          <div class="flex-1">
-            <div class="font-medium text-gray-800 truncate">${title}</div>
-            ${
-              description
-                ? `<div class="text-sm text-gray-600 mt-1 line-clamp-2">${description}</div>`
-                : ""
-            }
-            <div class="flex items-center gap-3 mt-2 text-xs">
-              ${
-                tag
-                  ? `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded">${tag}</span>`
-                  : ""
-              }
-              <span class="text-gray-500"><i class="fas fa-calendar-plus mr-1"></i>Kéo vào lịch</span>
-            </div>
-          </div>
+    <div class="flex items-start gap-3">
+      <div class="mt-1 text-gray-400">
+        <i class="fas fa-grip-vertical"></i>
+      </div>
+      <div class="flex-1">
+        <div class="font-medium text-gray-800 truncate">${title}</div>
+        ${
+          description
+            ? `<div class="text-sm text-gray-600 mt-1 line-clamp-2">${description}</div>`
+            : ""
+        }
+        <div class="flex items-center gap-3 mt-2 text-xs">
+          ${
+            tag
+              ? `<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded">${tag}</span>`
+              : ""
+          }
+          <span class="text-gray-500"><i class="fas fa-calendar-plus mr-1"></i>Kéo vào lịch</span>
         </div>
-      `;
+      </div>
+    </div>
+  `;
 
-          // Thêm drag events
+          // Bind drag events trực tiếp
           taskElement.addEventListener("dragstart", (e) => {
             console.log(`🎯 Drag start: ${title} (ID: ${taskId})`);
             e.dataTransfer.setData("text/plain", taskId.toString());
             e.dataTransfer.setData(
               "application/json",
-              JSON.stringify({
-                taskId: taskId,
-                title: title,
-                color: color,
-                description: description,
-              })
+              JSON.stringify({ taskId, title, color, description })
             );
             e.dataTransfer.effectAllowed = "move";
             taskElement.classList.add("opacity-50", "bg-blue-50");
@@ -162,10 +157,25 @@
 
         console.log(`✅ Rendered ${pendingTasks.length} tasks in sidebar`);
 
-        // Setup lại drag & drop
+        // Gọi enhanceDragAndDrop sau render
+        enhanceDragAndDrop();
+
+        // Setup calendar drag nếu có
         setTimeout(() => {
-          enhanceDragAndDrop();
-        }, 100);
+          if (
+            window.CalendarModule &&
+            typeof CalendarModule.setupExternalDraggable === "function"
+          ) {
+            console.log("Re-setup external draggable after task reload");
+            CalendarModule.setupExternalDraggable();
+          }
+          if (
+            window.CalendarModule &&
+            typeof CalendarModule.setupNativeDragDrop === "function"
+          ) {
+            CalendarModule.setupNativeDragDrop();
+          }
+        }, 200);
       } catch (error) {
         console.error("❌ Error loading tasks in sidebar:", error);
 
@@ -189,7 +199,7 @@
     window.setupTaskEventListeners = function () {
       console.log("🔧 Setting up global task event listeners");
 
-      // Lắng nghe sự kiện từ localStorage (cách đơn giản nhất để giao tiếp giữa các tab)
+      // Lắng nghe sự kiện từ localStorage
       window.addEventListener("storage", function (e) {
         if (
           e.key === "task-updated" ||
@@ -197,71 +207,85 @@
           e.key === "task-deleted"
         ) {
           console.log("📢 Storage event detected:", e.key);
-          setTimeout(() => {
-            window.loadUserTasks(true); // Force refresh
-          }, 300);
+          setTimeout(() => window.loadUserTasks(true), 1000); // Tăng delay
         }
       });
 
-      // Lắng nghe sự kiện custom từ các tab khác
+      // Hợp nhất listener custom events
       document.addEventListener("task-changed", function (e) {
         console.log("📢 Custom task-changed event received:", e.detail);
-        setTimeout(() => {
-          window.loadUserTasks(true);
-        }, 300);
+        setTimeout(() => window.loadUserTasks(true), 1000);
       });
 
-      // Lắng nghe message từ các iframe/ tab khác
+      document.addEventListener("taskCreated", function () {
+        console.log("📢 Task created → force reload sidebar");
+        setTimeout(() => window.loadUserTasks(true), 1000);
+      });
+
+      // Lắng nghe message
       window.addEventListener("message", function (e) {
         if (e.data && e.data.type === "task-update") {
           console.log("📢 Message event received:", e.data.type);
-          setTimeout(() => {
-            window.loadUserTasks(true);
-          }, 300);
+          setTimeout(() => window.loadUserTasks(true), 1000);
         }
       });
 
-      // Tạo một interval để kiểm tra thay đổi (fallback)
+      // Interval auto-check (sửa để force reload nếu count thay đổi)
       let lastTaskCount = 0;
       setInterval(() => {
         const taskItems = document.querySelectorAll(".task-item");
-        if (taskItems.length !== lastTaskCount) {
+        if (taskItems.length !== lastTaskCount || taskItems.length === 0) {
+          // Thêm check nếu empty
+          console.log("🔄 Task count changed or empty, force reloading...");
           lastTaskCount = taskItems.length;
-          console.log("🔄 Task count changed, checking for updates...");
-          // Không tự động reload ở đây, chỉ log
+          window.loadUserTasks(true);
         }
-      }, 5000);
+      }, 3000);
+
+      // Reload khi chuyển tab
+      document.addEventListener("section-changed", (e) => {
+        if (e.detail?.section === "schedule") {
+          console.log("Switched to Schedule tab → reload sidebar tasks");
+          setTimeout(() => window.loadUserTasks(true), 500);
+        }
+      });
     };
   })();
 
+  function enhanceDragAndDrop() {
+    console.log("🔧 Enhancing drag and drop for tasks...");
+    const taskItems = document.querySelectorAll(".task-item");
+    taskItems.forEach((item) => {
+      if (item.dataset.dragInitialized !== "true") {
+        item.addEventListener("dragstart", handleDragStart);
+        item.addEventListener("dragend", handleDragEnd);
+        item.dataset.dragInitialized = "true";
+        console.log(`✅ Drag enabled for task: ${item.dataset.taskTitle}`);
+      }
+    });
+  }
+
   (function initSidebar() {
     console.log("📋 Calendar sidebar loaded - Initializing tasks...");
-
-    // Chờ DOM sẵn sàng
     setTimeout(() => {
       if (typeof window.loadUserTasks === "function") {
         console.log("🔄 Auto-loading tasks for sidebar...");
         window.loadUserTasks();
-
-        // Setup event listeners
         if (typeof window.setupTaskEventListeners === "function") {
           window.setupTaskEventListeners();
         }
       } else {
         console.error("❌ loadUserTasks function not found!");
-
-        // Fallback: Hiển thị thông báo lỗi
         const taskList = document.getElementById("task-list");
         if (taskList) {
           taskList.innerHTML = `
-          <div class="text-red-600 text-center py-4">
-            <i class="fas fa-exclamation-triangle text-xl mb-2"></i>
-            <p>Lỗi khởi tạo sidebar</p>
-            <button onclick="location.reload()" 
-                    class="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 rounded text-sm">
-              Tải lại
-            </button>
-          </div>`;
+        <div class="text-red-600 text-center py-4">
+          <i class="fas fa-exclamation-triangle text-xl mb-2"></i>
+          <p>Lỗi khởi tạo sidebar</p>
+          <button onclick="location.reload()" class="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 rounded text-sm">
+            Tải lại
+          </button>
+        </div>`;
         }
       }
     }, 1000);
@@ -366,84 +390,75 @@
     }, 60000); // 60 seconds
   });
 
-  // Listen for task events to re-enhance drag & drop
-  ["taskCreated", "taskUpdated", "taskDeleted"].forEach((eventName) => {
-    document.addEventListener(eventName, () => {
-      setTimeout(() => {
-        enhanceDragAndDrop();
-      }, 600);
-    });
-  });
-
   // Keyboard shortcuts for accessibility
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "r" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      const refreshBtn = document.getElementById("refresh-tasks-btn");
-      if (refreshBtn) {
-        refreshBtn.click();
-      }
-    }
+  // document.addEventListener("keydown", (e) => {
+  //   if (e.key === "r" && (e.ctrlKey || e.metaKey)) {
+  //     e.preventDefault();
+  //     const refreshBtn = document.getElementById("refresh-tasks-btn");
+  //     if (refreshBtn) {
+  //       refreshBtn.click();
+  //     }
+  //   }
 
-    // Space bar to toggle drag mode for accessibility
-    if (
-      e.key === " " &&
-      document.activeElement.classList.contains("task-item")
-    ) {
-      e.preventDefault();
-      const taskItem = document.activeElement;
-      taskItem.draggable = !taskItem.draggable;
-      if (taskItem.draggable) {
-        taskItem.setAttribute("aria-grabbed", "true");
-      } else {
-        taskItem.setAttribute("aria-grabbed", "false");
-      }
-    }
-  });
+  //   // Space bar to toggle drag mode for accessibility
+  //   if (
+  //     e.key === " " &&
+  //     document.activeElement.classList.contains("task-item")
+  //   ) {
+  //     e.preventDefault();
+  //     const taskItem = document.activeElement;
+  //     taskItem.draggable = !taskItem.draggable;
+  //     if (taskItem.draggable) {
+  //       taskItem.setAttribute("aria-grabbed", "true");
+  //     } else {
+  //       taskItem.setAttribute("aria-grabbed", "false");
+  //     }
+  //   }
+  // });
 
   // Accessibility improvements
-  document.querySelectorAll(".task-item").forEach((item) => {
-    item.setAttribute("role", "button");
-    item.setAttribute("tabindex", "0");
-    item.setAttribute(
-      "aria-label",
-      `Công việc: ${item.dataset.taskTitle}. Kéo thả vào lịch để lên kế hoạch.`
-    );
-  });
+  // document.querySelectorAll(".task-item").forEach((item) => {
+  //   item.setAttribute("role", "button");
+  //   item.setAttribute("tabindex", "0");
+  //   item.setAttribute(
+  //     "aria-label",
+  //     `Công việc: ${item.dataset.taskTitle}. Kéo thả vào lịch để lên kế hoạch.`
+  //   );
+  // });
 
-  const initNav = setInterval(() => {
-    if (window.AppNavigation?.navigateToSection) {
-      clearInterval(initNav);
-      document.querySelectorAll("[data-section]").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.preventDefault();
-          const section = btn.dataset.section;
+  // const initNav = setInterval(() => {
+  //   if (window.AppNavigation?.navigateToSection) {
+  //     clearInterval(initNav);
+  //     document.querySelectorAll("[data-section]").forEach((btn) => {
+  //       btn.addEventListener("click", (e) => {
+  //         e.preventDefault();
+  //         const section = btn.dataset.section;
 
-          // Gọi navigation
-          AppNavigation.navigateToSection(section);
+  //         // Gọi navigation
+  //         AppNavigation.navigateToSection(section);
 
-          // Nếu là tab công việc, trigger reload
-          if (section === "work") {
-            setTimeout(() => {
-              // Dispatch event để các module khác biết
-              const event = new CustomEvent("work-tab-activated");
-              document.dispatchEvent(event);
+  //         // Nếu là tab công việc, trigger reload
+  //         if (section === "work") {
+  //           setTimeout(() => {
+  //             // Dispatch event để các module khác biết
+  //             const event = new CustomEvent("work-tab-activated");
+  //             document.dispatchEvent(event);
 
-              // Gọi trực tiếp WorkManager nếu có
-              if (
-                window.WorkManager &&
-                typeof WorkManager.loadTasks === "function"
-              ) {
-                console.log("🔄 Sidebar: Triggering WorkManager.loadTasks()");
-                WorkManager.loadTasks();
-              }
-            }, 100);
-          }
-        });
-      });
-    }
-  }, 100);
-  setTimeout(() => clearInterval(initNav), 5000);
+  //             // Gọi trực tiếp WorkManager nếu có
+  //             if (
+  //               window.WorkManager &&
+  //               typeof WorkManager.loadTasks === "function"
+  //             ) {
+  //               console.log("🔄 Sidebar: Triggering WorkManager.loadTasks()");
+  //               WorkManager.loadTasks();
+  //             }
+  //           }, 100);
+  //         }
+  //       });
+  //     });
+  //   }
+  // }, 100);
+  // setTimeout(() => clearInterval(initNav), 5000);
 
   // Export để dùng ở nơi khác
   window.updateSidebarUser = updateUserInfo;
@@ -459,10 +474,51 @@
     }
   };
 
-  // Lắng nghe sự kiện từ nơi khác để reload
-  document.addEventListener("refresh-work-data", () => {
-    window.reloadWorkData();
+  // 2. Lắng nghe khi tạo task từ modal (tạo công việc mới (phổ biến nhất)
+  document.addEventListener("taskCreated", () => {
+    console.log("Task created → force reload sidebar");
+    setTimeout(() => window.loadUserTasks(true), 400);
   });
+
+  // 3. Đảm bảo sau mỗi lần load tasks → gọi lại setup drag & drop cho FullCalendar
+  const originalLoadUserTasks = window.loadUserTasks;
+  window.loadUserTasks = async function (forceRefresh = false) {
+    await originalLoadUserTasks(forceRefresh);
+
+    // Sau khi render xong → bật lại kéo thả vào lịch
+    setTimeout(() => {
+      {
+        if (
+          window.CalendarModule &&
+          typeof CalendarModule.setupExternalDraggable === "function"
+        ) {
+          console.log("Re-setup external draggable after task reload");
+          CalendarModule.setupExternalDraggable();
+        }
+
+        if (
+          window.CalendarModule &&
+          typeof CalendarModule.setupNativeDragDrop === "function"
+        ) {
+          CalendarModule.setupNativeDragDrop();
+        }
+      }
+    }, 200);
+  };
+
+  // 4. Trigger reload ngay khi chuyển sang tab Lịch (schedule)
+  document.addEventListener("section-changed", (e) => {
+    if (e.detail?.section === "schedule") {
+      console.log("Switched to Schedule tab → reload sidebar tasks");
+      setTimeout(() => window.loadUserTasks(true), 500);
+    }
+  });
+
+  console.log("FIXED: Sidebar auto-reload + drag-to-calendar restored");
+  // Lắng nghe sự kiện từ nơi khác để reload
+  // document.addEventListener("refresh-work-data", () => {
+  //   window.reloadWorkData();
+  // });
 </script>
 
 <style>

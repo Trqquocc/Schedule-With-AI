@@ -20,16 +20,108 @@
     async init() {
       if (this.isInitialized && this.calendar) this.destroy();
 
-      console.log("Khởi tạo CalendarModule v6.5 FIXED...");
+      console.log("🚀 Khởi tạo CalendarModule với kéo thả...");
 
       try {
         await this._initInternal();
         this.isInitialized = true;
-        console.log("CalendarModule v6.5 FIXED khởi tạo thành công!");
+
+        // ✅ ĐẢM BẢO SETUP DROP ZONE SAU KHI INIT
+        setTimeout(() => {
+          this.setupDropZone();
+          this.setupTaskDragListeners(); // ĐÃ SỬA TỪ etupTaskDragListeners
+        }, 1000);
+
+        console.log("✅ CalendarModule khởi tạo thành công với kéo thả!");
       } catch (err) {
         console.error("Calendar initialization failed:", err);
         this.showError(err);
       }
+    },
+
+    setupTaskDragListeners() {
+      console.log("🔗 Setting up task drag listeners...");
+
+      // Theo dõi thay đổi DOM để bind drag events cho task mới
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === 1) {
+                // Element node
+                const taskItems = node.querySelectorAll
+                  ? node.querySelectorAll(
+                      '.task-item, [data-task-id], [draggable="true"]'
+                    )
+                  : [];
+
+                taskItems.forEach((item) => {
+                  if (!item.hasAttribute("data-drag-bound")) {
+                    this.bindDragEvents(item);
+                  }
+                });
+
+                // Nếu chính node là task item
+                if (
+                  node.classList &&
+                  (node.classList.contains("task-item") ||
+                    node.hasAttribute("data-task-id") ||
+                    node.hasAttribute("draggable"))
+                ) {
+                  this.bindDragEvents(node);
+                }
+              }
+            });
+          }
+        });
+      });
+
+      // Quan sát task-list container
+      const taskList = document.getElementById("task-list");
+      if (taskList) {
+        observer.observe(taskList, {
+          childList: true,
+          subtree: true,
+        });
+      }
+
+      // Bind events cho task hiện có
+      document
+        .querySelectorAll('.task-item, [data-task-id], [draggable="true"]')
+        .forEach((item) => {
+          this.bindDragEvents(item);
+        });
+
+      console.log("✅ Task drag listeners setup complete");
+    },
+
+    bindDragEvents(element) {
+      if (element.hasAttribute("data-drag-bound")) return;
+
+      element.setAttribute("draggable", "true");
+      element.setAttribute("data-drag-bound", "true");
+
+      element.addEventListener("dragstart", (e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", element.dataset.taskId || "");
+
+        const dragData = {
+          taskId: element.dataset.taskId,
+          title: element.dataset.taskTitle || element.textContent.trim(),
+          color: element.dataset.taskColor || "#3B82F6",
+          description: element.dataset.taskDescription || "",
+        };
+
+        e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+        element.classList.add("dragging");
+
+        console.log(`📤 Started dragging: ${dragData.title}`);
+      });
+
+      element.addEventListener("dragend", () => {
+        element.classList.remove("dragging");
+        console.log("📥 Ended dragging");
+      });
     },
 
     // ==========================================================
@@ -47,10 +139,8 @@
 
       // Setup cả hai phương thức kéo thả
       setTimeout(() => {
-        this.setupExternalDraggable();
-        this.setupNativeDragDrop();
         this.initializeNavbarEvents();
-      }, 500);
+      }, 200);
     },
 
     // ==========================================================
@@ -119,10 +209,7 @@
       `;
     },
 
-    // ==========================================================
-    // LOAD EVENTS FROM SERVER - FIXED FIELD NAMES
-    // ==========================================================
-    // SỬA FILE: calendarModule.js - HÀM loadEvents()
+    // SỬA HÀM loadEvents()
     async loadEvents() {
       if (!Utils?.makeRequest) {
         console.warn("Utils.makeRequest không tồn tại → trả về mảng rỗng");
@@ -133,38 +220,57 @@
         const res = await Utils.makeRequest("/api/calendar/events", "GET");
         if (!res.success || !Array.isArray(res.data)) return [];
 
-        // ✅ THÊM FILTER ĐỂ LOẠI BỎ AI EVENTS KHỎI LỊCH THƯỜNG
-        const normalEvents = res.data.filter((ev) => {
-          const isAI =
-            ev.AI_DeXuat === 1 ||
-            ev.extendedProps?.aiSuggested === true ||
-            ev.isAISuggestion === true;
-          return !isAI; // Chỉ lấy events không phải AI
-        });
+        // ✅ FILTER LOẠI BỎ AI EVENTS VÀ ĐẢM BẢO MÀU SẮC
+        const normalEvents = res.data
+          .filter((ev) => {
+            const isAI = ev.AI_DeXuat === 1;
+            return !isAI;
+          })
+          .map((ev) => {
+            // ĐẢM BẢO LUÔN CÓ MÀU SẮC
+            const color =
+              ev.MauSac || this.getPriorityColor(ev.MucDoUuTien) || "#3788d8";
 
-        return normalEvents.map((ev) => ({
-          id: ev.id || ev.MaLichTrinh || 0,
-          title: ev.title || ev.TieuDe || "Không tiêu đề",
-          start: ev.start || ev.GioBatDau || new Date().toISOString(),
-          end: ev.end || ev.GioKetThuc || null,
-          backgroundColor: ev.backgroundColor || ev.MauSac || "#3788d8",
-          borderColor: ev.borderColor || ev.MauSac || "#3788d8",
-          allDay: ev.allDay || false,
-          extendedProps: {
-            note: ev.GhiChu || ev.extendedProps?.note || "",
-            completed:
-              ev.DaHoanThanh === 1 || ev.extendedProps?.completed || false,
-            taskId: ev.MaCongViec || ev.extendedProps?.taskId || null,
-            isFromDrag: ev.isFromDrag || false,
-            // ✅ THÊM FLAG ĐỂ PHÂN BIỆT AI/THƯỜNG
-            isAIEvent:
-              ev.AI_DeXuat === 1 || ev.extendedProps?.aiSuggested || false,
-          },
-        }));
+            return {
+              id: ev.id || ev.MaLichTrinh || 0,
+              title: ev.title || ev.TieuDe || "Không tiêu đề",
+              start: ev.start || ev.GioBatDau || new Date().toISOString(),
+              end: ev.end || ev.GioKetThuc || null,
+              backgroundColor: color,
+              borderColor: color,
+              allDay: ev.allDay || false,
+              extendedProps: {
+                note: ev.GhiChu || ev.extendedProps?.note || "",
+                completed:
+                  ev.DaHoanThanh === 1 || ev.extendedProps?.completed || false,
+                taskId: ev.MaCongViec || ev.extendedProps?.taskId || null,
+                isFromDrag: ev.isFromDrag || false,
+                isAIEvent: ev.AI_DeXuat === 1,
+                priority: ev.MucDoUuTien || 2,
+                originalColor: color, // Lưu màu gốc
+              },
+            };
+          });
+
+        console.log(
+          `📊 Loaded ${normalEvents.length} normal events with colors`
+        );
+        return normalEvents;
       } catch (err) {
         console.error("Load events error:", err);
         return [];
       }
+    },
+
+    // THÊM HÀM HELPER ĐỂ LẤY MÀU THEO ĐỘ ƯU TIÊN
+    getPriorityColor(priority) {
+      const colors = {
+        1: "#34D399", // Xanh lá - Thấp
+        2: "#60A5FA", // Xanh dương - Trung bình
+        3: "#FBBF24", // Vàng - Cao
+        4: "#F87171", // Đỏ - Rất cao
+      };
+      return colors[priority] || "#3788d8"; // Màu mặc định
     },
 
     // ==========================================================
@@ -188,13 +294,16 @@
         locale: "vi",
         height: "100%",
         editable: true,
-        droppable: true,
+        droppable: true, // ✅ BẬT CHẾ ĐỘ DROP
         selectable: true,
         selectMirror: true,
         dayMaxEvents: true,
         headerToolbar: false,
         nowIndicator: true,
         events: events,
+
+        // ✅ THÊM CẤU HÌNH ĐỂ NHẬN DRAG TỪ NGOÀI
+        dropAccept: ".task-item, [draggable='true'], [data-task-id]",
 
         slotMinTime: "06:00:00",
         slotMaxTime: "23:00:00",
@@ -212,9 +321,10 @@
         moreLinkText: (n) => `+ ${n} thêm`,
         noEventsText: "Không có sự kiện",
 
-        // ===== FIXED: Sử dụng arrow functions để giữ context =====
-        eventReceive: async (info) => {
-          await this._handleEventReceive(info);
+        // ✅ THÊM HÀM eventReceive ĐỂ XỬ LÝ KÉO THẢ
+        eventReceive: (info) => {
+          console.log("🎯 Task dropped onto calendar!", info);
+          this._handleEventReceive(info);
         },
 
         eventDrop: async (info) => {
@@ -264,30 +374,39 @@
       this.calendar.render();
       window.calendar = this.calendar;
       this.updateCalendarTitle();
-      console.log("FullCalendar đã render thành công");
+
+      // ✅ KÍCH HOẠT DROP ZONES
+      this.setupDropZone();
+
+      console.log("✅ FullCalendar đã render với chức năng kéo thả");
     },
 
     // ==========================================================
     // TIME CONFLICT CHECK
     // ==========================================================
-    hasTimeConflict(newEvent) {
+    hasTimeConflict(newEvent, excludeTempEvents = true) {
       const events = this.calendar.getEvents();
       const s1 = newEvent.start;
-      const e1 = newEvent.end || new Date(s1.getTime() + 3600000);
+      const e1 = newEvent.end || new Date(s1.getTime() + 3600000); // 1 giờ mặc định
 
       for (const ev of events) {
+        // Bỏ qua event cần kiểm tra
         if (ev.id === newEvent.id) continue;
+
+        // Bỏ qua event tạm nếu cần
+        if (excludeTempEvents && ev.id?.startsWith("temp-")) continue;
+
         const s2 = ev.start;
         const e2 = ev.end || new Date(s2.getTime() + 3600000);
 
-        // Kiểm tra overlap
+        // Kiểm tra overlap chính xác
         if (s1 < e2 && e1 > s2) {
           console.log(`⛔ Overlap detected with event: "${ev.title}"`);
           console.log(
-            `   New event: ${s1.toLocaleString()} - ${e1.toLocaleString()}`
+            `   New event: ${this.formatDate(s1)} - ${this.formatDate(e1)}`
           );
           console.log(
-            `   Existing:  ${s2.toLocaleString()} - ${e2.toLocaleString()}`
+            `   Existing:  ${this.formatDate(s2)} - ${this.formatDate(e2)}`
           );
           return true;
         }
@@ -295,166 +414,87 @@
       return false;
     },
 
+    // Thêm hàm formatDate helper
+    formatDate(date) {
+      if (!date) return "N/A";
+      return date.toLocaleString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
+
     // ==========================================================
     // EVENT RECEIVE (drag from task list) - FIXED
     // ==========================================================
     async _handleEventReceive(info) {
       try {
-        console.log("🎯 Event received from drag & drop:", info);
+        console.log("🎯 FullCalendar eventReceive triggered:", info);
 
-        // Check time conflict
-        if (this.hasTimeConflict(info.event)) {
+        // Lấy thông tin từ dragged element
+        const draggedEl = info.draggedEl;
+        let taskId, title, color;
+
+        if (draggedEl) {
+          taskId = draggedEl.dataset.taskId;
+          title = draggedEl.dataset.taskTitle || "Công việc";
+          color = draggedEl.dataset.taskColor || "#3B82F6";
+        } else {
+          // Fallback: lấy từ dataTransfer
+          taskId = info.jsEvent?.dataTransfer?.getData("text/plain");
+          const jsonData =
+            info.jsEvent?.dataTransfer?.getData("application/json");
+          if (jsonData) {
+            const data = JSON.parse(jsonData);
+            title = data.title || "Công việc";
+            color = data.color || "#3B82F6";
+          }
+        }
+
+        if (!taskId) {
+          console.error("❌ No taskId found");
+          info.event.remove();
+          Utils.showToast?.("Lỗi: Không tìm thấy ID công việc", "error");
+          return;
+        }
+
+        console.log("📥 Task dropped from sidebar:", { taskId, title, color });
+
+        const start = info.event.start;
+        const end =
+          info.event.end || new Date(start.getTime() + 60 * 60 * 1000);
+
+        // Kiểm tra trùng lịch - SỬA CÁCH KIỂM TRA
+        const existingEvents = this.calendar.getEvents();
+        const hasConflict = existingEvents.some((existingEvent) => {
+          // Bỏ qua chính event này và các event tạm
+          if (existingEvent.id === info.event.id) return false;
+          if (existingEvent.id?.startsWith("temp-")) return false;
+
+          const s1 = start;
+          const e1 = end;
+          const s2 = existingEvent.start;
+          const e2 =
+            existingEvent.end || new Date(s2.getTime() + 60 * 60 * 1000);
+
+          // Kiểm tra overlap
+          return s1 < e2 && e1 > s2;
+        });
+
+        if (hasConflict) {
           Utils.showToast?.("⛔ Thời gian này đã có sự kiện khác!", "error");
           info.event.remove();
           return;
         }
 
-        const taskId =
-          info.draggedEl?.dataset?.taskId ||
-          info.dragInfo?.draggedEl?.dataset?.taskId ||
-          info.event.extendedProps?.taskId;
-
-        let taskTitle = info.event.title || "Công việc mới";
-
-        // Nếu có taskId, lấy thông tin từ server
-        if (taskId) {
-          try {
-            // Hiển thị loading thông báo
-            Utils.showToast?.("🔄 Đang thêm vào lịch...", "info");
-
-            // THỬ CÁC ENDPOINT KHÁC NHAU:
-            let taskData = null;
-
-            // CÁCH 1: Gọi API lấy tất cả tasks rồi filter
-            const allTasks = await Utils.makeRequest("/api/tasks", "GET");
-            if (allTasks.success && Array.isArray(allTasks.data)) {
-              taskData = allTasks.data.find(
-                (task) =>
-                  task.ID == taskId ||
-                  task.MaCongViec == taskId ||
-                  task.id == taskId
-              );
-            }
-
-            // CÁCH 2: Nếu cách 1 không tìm thấy, thử endpoint khác
-            if (!taskData) {
-              try {
-                const singleTask = await Utils.makeRequest(
-                  `/api/tasks/${taskId}`,
-                  "GET"
-                );
-                if (singleTask.success && singleTask.data) {
-                  taskData = singleTask.data;
-                }
-              } catch (singleTaskErr) {
-                console.log("Endpoint /api/tasks/${taskId} không khả dụng");
-              }
-            }
-
-            // CÁCH 3: Thử với query parameter
-            if (!taskData) {
-              try {
-                const queryTask = await Utils.makeRequest(
-                  `/api/tasks?id=${taskId}`,
-                  "GET"
-                );
-                if (queryTask.success && queryTask.data) {
-                  taskData = Array.isArray(queryTask.data)
-                    ? queryTask.data[0]
-                    : queryTask.data;
-                }
-              } catch (queryErr) {
-                console.log("Endpoint /api/tasks?id=${taskId} không khả dụng");
-              }
-            }
-
-            if (taskData) {
-              taskTitle = taskData.TieuDe || taskData.title || taskTitle;
-            }
-          } catch (err) {
-            console.warn(
-              "Không thể lấy thông tin task, sử dụng tiêu đề mặc định:",
-              err.message
-            );
-            // Vẫn tiếp tục với tiêu đề mặc định
-          }
-        }
-
-        // Tạo event data với field names ĐÚNG theo backend (calendar.js)
-        const eventData = {
-          TieuDe: taskTitle,
-          GioBatDau: info.event.start.toISOString(),
-          GioKetThuc: info.event.end
-            ? info.event.end.toISOString()
-            : new Date(
-                info.event.start.getTime() + 60 * 60 * 1000
-              ).toISOString(),
-          GhiChu: `Tạo từ công việc: ${taskTitle}`,
-          MaCongViec: taskId ? parseInt(taskId) : null,
-          DaHoanThanh: 0,
-          AI_DeXuat: 0,
-        };
-
-        console.log("📤 Creating event from drag & drop:", eventData);
-
-        // Gọi API tạo event
-        const result = await Utils.makeRequest(
-          "/api/calendar/events",
-          "POST",
-          eventData
-        );
-
-        if (!result.success) {
-          throw new Error(result.message || "Tạo sự kiện thất bại");
-        }
-
-        // Cập nhật ID cho event trên calendar
-        const newEventId =
-          result.eventId || result.data?.id || result.data?.MaLichTrinh;
-        if (newEventId) {
-          info.event.setProp("id", newEventId);
-        }
-        info.event.setExtendedProp("taskId", taskId ? parseInt(taskId) : null);
-        info.event.setExtendedProp("isFromDrag", true);
-
-        // Thông báo thành công với biểu tượng
-        Utils.showToast?.("✅ Đã thêm vào lịch thành công!", "success");
-
-        // Thêm hiệu ứng visual cho event mới
-        setTimeout(() => {
-          const eventElement = document.querySelector(
-            `[data-event-id="${newEventId}"]`
-          );
-          if (eventElement) {
-            eventElement.classList.add("animate-pulse");
-            setTimeout(() => {
-              eventElement.classList.remove("animate-pulse");
-            }, 2000);
-          }
-        }, 100);
-
-        console.log("✅ Event created successfully:", result);
-      } catch (error) {
-        console.error("❌ Error in eventReceive:", error);
-
-        // Thông báo lỗi chi tiết
-        let errorMessage = "Lỗi khi thêm vào lịch";
-        if (
-          error.message.includes("conflict") ||
-          error.message.includes("trùng")
-        ) {
-          errorMessage = "⛔ Thời gian này đã có sự kiện khác!";
-        } else if (
-          error.message.includes("validation") ||
-          error.message.includes("validate")
-        ) {
-          errorMessage = "⚠️ Dữ liệu không hợp lệ!";
-        } else {
-          errorMessage = error.message || "Lỗi khi thêm vào lịch";
-        }
-
-        Utils.showToast?.(errorMessage, "error");
+        // Gọi hàm save
+        await this.saveDroppedEvent(taskId, title, color, start, end);
+      } catch (err) {
+        console.error("❌ Event receive error:", err);
         info.event.remove();
+        Utils.showToast?.("Lỗi kéo thả công việc", "error");
       }
     },
 
@@ -539,111 +579,269 @@
       }
     },
 
-    // ==========================================================
-    // SETUP NATIVE DRAG & DROP (từ phiên bản cũ)
-    // ==========================================================
-    setupNativeDragDrop() {
-      console.log("🔍 Searching for draggable items...");
+    setupDropZone() {
+      console.log("🎯 Setting up calendar drop zone...");
 
-      // TÌM TASK TỪ NHIỀU NGUỒN
-      const selectors = [
-        // Từ work section
-        "#work-items-container .work-item",
-        "#work-items-container [draggable='true']",
-        "#work-items-container [data-task-id]",
-
-        // Từ calendar sidebar
-        "#task-list div[draggable='true']",
-        "#task-list > div",
-        "#task-list [data-task-id]",
-
-        // General selectors
-        ".work-item",
-        "[draggable='true']",
-        "[data-task-id]",
-      ];
-
-      let foundItems = [];
-
-      // Tìm tất cả items
-      selectors.forEach((selector) => {
-        try {
-          const items = document.querySelectorAll(selector);
-          if (items.length > 0) {
-            console.log(
-              `📦 Found ${items.length} items with selector: ${selector}`
-            );
-            items.forEach((item) => {
-              // Kiểm tra không trùng và có data-task-id
-              if (!foundItems.includes(item) && item.dataset.taskId) {
-                foundItems.push(item);
-              }
-            });
-          }
-        } catch (e) {
-          console.warn(`Error with selector ${selector}:`, e);
-        }
-      });
-
-      console.log(`🎯 Total draggable items found: ${foundItems.length}`);
-
-      if (foundItems.length === 0) {
-        console.warn("⚠️ No draggable items found!");
+      const calendarEl = document.getElementById("calendar");
+      if (!calendarEl) {
+        console.error("❌ Calendar element not found");
         return;
       }
 
-      // Áp dụng drag events
-      foundItems.forEach((item) => {
-        const hasListener = item.getAttribute("data-drag-initialized");
-        if (hasListener) return;
+      // Xóa event listeners cũ
+      calendarEl.removeEventListener("dragover", this.handleDragOver);
+      calendarEl.removeEventListener("dragleave", this.handleDragLeave);
+      calendarEl.removeEventListener("drop", this.handleDrop);
 
-        item.setAttribute("draggable", "true");
-        item.setAttribute("data-drag-initialized", "true");
+      // Thêm event listeners mới
+      calendarEl.addEventListener("dragover", this.handleDragOver.bind(this));
+      calendarEl.addEventListener("dragleave", this.handleDragLeave.bind(this));
+      calendarEl.addEventListener("drop", this.handleDrop.bind(this));
 
-        // Drag start
-        // Drag start - thêm hiệu ứng
-        item.addEventListener("dragstart", (e) => {
-          this.isDragging = true;
-          const taskId = item.dataset.taskId;
-          const taskTitle = item.dataset.taskTitle || "Công việc";
+      // Thêm CSS cho drop zone
+      const style = document.createElement("style");
+      style.textContent = `
+    .drop-zone-active {
+      background-color: rgba(59, 130, 246, 0.1) !important;
+      border: 2px dashed #3b82f6 !important;
+    }
+    .task-item.dragging {
+      opacity: 0.7;
+      transform: scale(0.95);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+  `;
+      document.head.appendChild(style);
 
-          console.log(`🔄 Drag started for task ${taskId}: ${taskTitle}`);
+      console.log("✅ Drop zone setup complete");
+    },
 
-          // Set data
-          e.dataTransfer.setData("text/plain", taskId);
-          e.dataTransfer.setData(
-            "application/json",
-            JSON.stringify({
-              taskId: taskId,
-              title: taskTitle,
-              color: item.dataset.taskColor || "#3B82F6",
-            })
+    handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+
+      const calendarEl = document.getElementById("calendar");
+      if (calendarEl) {
+        calendarEl.classList.add("drop-zone-active");
+      }
+    },
+
+    handleDragLeave(e) {
+      e.preventDefault();
+
+      const calendarEl = document.getElementById("calendar");
+      if (calendarEl && !calendarEl.contains(e.relatedTarget)) {
+        calendarEl.classList.remove("drop-zone-active");
+      }
+    },
+
+    async handleDrop(e) {
+      e.preventDefault();
+
+      const calendarEl = document.getElementById("calendar");
+      if (calendarEl) {
+        calendarEl.classList.remove("drop-zone-active");
+      }
+
+      try {
+        // Lấy dữ liệu từ drag
+        const taskId = e.dataTransfer.getData("text/plain");
+        const jsonData = e.dataTransfer.getData("application/json");
+        let taskData = {};
+
+        if (jsonData) {
+          taskData = JSON.parse(jsonData);
+        }
+
+        if (!taskId && !taskData.taskId) {
+          console.error("❌ No task ID found in drop data");
+          return;
+        }
+
+        const finalTaskId = taskId || taskData.taskId;
+        const title = taskData.title || "Công việc mới";
+        const color = taskData.color || "#3B82F6";
+
+        console.log(`🎯 Dropping task ${finalTaskId}: ${title}`);
+
+        // Lấy thông tin vị trí drop từ FullCalendar
+        const calendar = this.calendar;
+
+        // Chuyển tọa độ chuột sang tọa độ calendar
+        const point = {
+          clientX: e.clientX,
+          clientY: e.clientY,
+        };
+
+        // Dùng FullCalendar's public API để lấy date từ điểm drop
+        let dropDate = new Date(); // Mặc định
+
+        try {
+          // Thử lấy date từ calendar
+          const calendarApi = calendar;
+          const calendarElRect = calendar.el.getBoundingClientRect();
+
+          // Tính toán relative position
+          const relativeX = point.clientX - calendarElRect.left;
+          const relativeY = point.clientY - calendarElRect.top;
+
+          // Tìm cell tại vị trí drop
+          const dateStr = calendarApi.currentData.viewApi.dateEnv
+            .toDate(new Date())
+            .toISOString();
+
+          // Tạo event với thời gian hợp lý (bắt đầu từ giờ hiện tại)
+          dropDate = new Date();
+          dropDate.setMinutes(0); // Làm tròn đến giờ
+          dropDate.setSeconds(0);
+          dropDate.setMilliseconds(0);
+        } catch (err) {
+          console.warn(
+            "Could not calculate drop position, using current time:",
+            err
           );
-          e.dataTransfer.effectAllowed = "move";
+        }
 
-          // Visual feedback cho task đang kéo
-          item.classList.add("dragging-task");
+        // Tạo event mới
+        const newEvent = {
+          id: `temp-${Date.now()}`,
+          title: title,
+          start: dropDate,
+          end: new Date(dropDate.getTime() + 60 * 60 * 1000), // 1 giờ mặc định
+          backgroundColor: color,
+          borderColor: color,
+          extendedProps: {
+            taskId: finalTaskId,
+            isFromDrag: true,
+            color: color,
+          },
+        };
 
-          // Thông báo đang kéo
-          Utils.showToast?.(`📤 Đang kéo: "${taskTitle}"`, "info");
+        // Kiểm tra conflict (CHỈ KIỂM TRA NẾU EVENT ĐÃ CÓ TRONG CALENDAR)
+        const existingEvents = calendar.getEvents();
+        const hasConflict = existingEvents.some((existingEvent) => {
+          // Bỏ qua event tạm thời
+          if (existingEvent.id?.startsWith("temp-")) return false;
+
+          const s1 = newEvent.start;
+          const e1 = newEvent.end;
+          const s2 = existingEvent.start;
+          const e2 =
+            existingEvent.end || new Date(s2.getTime() + 60 * 60 * 1000);
+
+          // Kiểm tra overlap
+          return s1 < e2 && e1 > s2;
         });
 
-        // Drag end
-        item.addEventListener("dragend", () => {
-          this.isDragging = false;
-          item.classList.remove("dragging-task");
-          console.log("🔄 Drag ended");
-        });
+        if (hasConflict) {
+          Utils.showToast?.("⛔ Thời gian này đã có sự kiện khác!", "error");
+          return;
+        }
 
-        // Drag end
-        item.addEventListener("dragend", () => {
-          this.isDragging = false;
-          item.classList.remove("opacity-50", "scale-95");
-          console.log("🔄 Drag ended");
-        });
-      });
+        // Thêm event vào calendar
+        calendar.addEvent(newEvent);
 
-      console.log(`✅ Setup drag for ${foundItems.length} items`);
+        // Lưu vào server
+        await this.saveDroppedEvent(
+          finalTaskId,
+          title,
+          color,
+          newEvent.start,
+          newEvent.end
+        );
+      } catch (error) {
+        console.error("❌ Drop error:", error);
+        Utils.showToast?.("Lỗi khi kéo thả công việc", "error");
+      }
+    },
+
+    async saveDroppedEvent(taskId, title, color, start, end) {
+      try {
+        console.log("💾 Saving dropped event to server...");
+
+        const eventData = {
+          MaCongViec: parseInt(taskId),
+          TieuDe: title,
+          GioBatDau: start.toISOString(),
+          GioKetThuc: end.toISOString(),
+          MauSac: color,
+          AI_DeXuat: 0,
+        };
+
+        const res = await Utils.makeRequest(
+          "/api/calendar/events",
+          "POST",
+          eventData
+        );
+
+        if (res.success) {
+          const newEventId =
+            res.eventId || res.data?.MaLichTrinh || res.data?.id;
+
+          // Cập nhật event trong calendar với ID thật
+          const events = this.calendar.getEvents();
+          const tempEvent = events.find((e) => e.id?.startsWith(`temp-`));
+          if (tempEvent) {
+            tempEvent.setProp("id", newEventId);
+          }
+
+          // Cập nhật trạng thái task thành "đang thực hiện"
+          await Utils.makeRequest(`/api/tasks/${taskId}`, "PUT", {
+            TrangThaiThucHien: 1,
+          });
+
+          Utils.showToast?.("✅ Đã lên lịch thành công!", "success");
+
+          // Reload sidebar để ẩn task đã lên lịch
+          if (window.loadUserTasks) {
+            window.loadUserTasks(true);
+          }
+
+          // Trigger refresh
+          this.triggerSidebarRefresh();
+        } else {
+          throw new Error(res.message || "Lỗi thêm vào lịch");
+        }
+      } catch (error) {
+        console.error("❌ Error saving dropped event:", error);
+
+        // Xóa event tạm nếu lỗi
+        const events = this.calendar.getEvents();
+        const tempEvent = events.find((e) => e.id?.startsWith(`temp-`));
+        if (tempEvent) {
+          tempEvent.remove();
+        }
+
+        Utils.showToast?.(error.message || "Lỗi khi lưu sự kiện", "error");
+      }
+    },
+
+    triggerSidebarRefresh() {
+      console.log("📢 Triggering sidebar refresh...");
+
+      // Cách 1: Dispatch event
+      document.dispatchEvent(
+        new CustomEvent("task-scheduled", {
+          detail: { action: "refresh" },
+        })
+      );
+
+      // Cách 2: Gọi trực tiếp nếu hàm tồn tại
+      if (window.loadUserTasks && typeof window.loadUserTasks === "function") {
+        setTimeout(() => {
+          window.loadUserTasks(true);
+        }, 500);
+      }
+
+      // Cách 3: Storage event
+      try {
+        localStorage.setItem("__calendar_refresh", Date.now().toString());
+        setTimeout(() => {
+          localStorage.removeItem("__calendar_refresh");
+        }, 100);
+      } catch (e) {
+        console.log("Cannot use localStorage:", e);
+      }
     },
 
     linkWorkTasksToCalendar() {
@@ -677,18 +875,15 @@
           }
         }
       });
-
-      // Refresh drag & drop
-      this.setupNativeDragDrop();
     },
 
-    refreshDragDrop() {
-      console.log("🔄 Refreshing drag & drop...");
-      setTimeout(() => {
-        this.setupNativeDragDrop();
-        this.setupExternalDraggable();
-      }, 100);
-    },
+    // refreshDragDrop() {
+    //   console.log("🔄 Refreshing drag & drop...");
+    //   setTimeout(() => {
+    //     this.setupNativeDragDrop();
+    //     this.setupExternalDraggable();
+    //   }, 100);
+    // },
 
     // ==========================================================
     // SHOW EVENT DETAILS MODAL - SIMPLIFIED VERSION
@@ -1112,36 +1307,36 @@
     // ==========================================================
     // EXTERNAL DRAGGABLE (FullCalendar method)
     // ==========================================================
-    setupExternalDraggable() {
-      console.log("🔍 Searching for draggable items...");
+    // setupExternalDraggable() {
+    //   console.log("🔍 Searching for draggable items...");
 
-      // CHỈ TÌM KIẾM TRONG SIDEBAR, KHÔNG PHẢI TOÀN BỘ TRANG
-      const selectors = [
-        '#task-list div[draggable="true"]',
-        "#task-list > div",
-        "#task-list [data-task-id]",
-      ];
+    //   // CHỈ TÌM KIẾM TRONG SIDEBAR, KHÔNG PHẢI TOÀN BỘ TRANG
+    //   const selectors = [
+    //     '#task-list div[draggable="true"]',
+    //     "#task-list > div",
+    //     "#task-list [data-task-id]",
+    //   ];
 
-      let draggableItems = [];
+    //   let draggableItems = [];
 
-      selectors.forEach((selector) => {
-        const items = document.querySelectorAll(selector);
-        console.log(
-          `📦 Found ${items.length} items with selector: ${selector}`
-        );
-        items.forEach((item) => draggableItems.push(item));
-      });
+    //   selectors.forEach((selector) => {
+    //     const items = document.querySelectorAll(selector);
+    //     console.log(
+    //       `📦 Found ${items.length} items with selector: ${selector}`
+    //     );
+    //     items.forEach((item) => draggableItems.push(item));
+    //   });
 
-      console.log(`🎯 Total draggable items found: ${draggableItems.length}`);
+    //   console.log(`🎯 Total draggable items found: ${draggableItems.length}`);
 
-      if (draggableItems.length === 0) {
-        console.log("⚠️ No draggable items found!");
-        return;
-      }
+    //   if (draggableItems.length === 0) {
+    //     console.log("⚠️ No draggable items found!");
+    //     return;
+    //   }
 
-      // CHỈ SETUP DRAG CHO ITEMS TRONG SIDEBAR
-      this.setupDragForItems(draggableItems);
-    },
+    //   // CHỈ SETUP DRAG CHO ITEMS TRONG SIDEBAR
+    //   this.setupDragForItems(draggableItems);
+    // },
 
     // ==========================================================
     // NAVBAR BUTTONS
@@ -1204,38 +1399,45 @@
         titleEl.textContent = this.calendar.view.title;
     },
 
-    setupDragForItems(items) {
-      if (!items || items.length === 0) return;
+    // setupDragForItems(items) {
+    //   if (!items || items.length === 0) return;
 
-      items.forEach((item) => {
-        // Xóa listener cũ nếu có
-        item.removeEventListener("dragstart", this.handleDragStart);
+    //   items.forEach((item) => {
+    //     // Xóa listener cũ nếu có
+    //     item.removeEventListener("dragstart", this.handleDragStart);
 
-        item.addEventListener("dragstart", this.handleDragStart.bind(this));
-        item.setAttribute("draggable", "true");
+    //     item.addEventListener("dragstart", this.handleDragStart.bind(this));
+    //     item.setAttribute("draggable", "true");
 
-        // Thêm data để biết task ID
-        const taskId = item.dataset.taskId || item.getAttribute("data-task-id");
-        if (taskId) {
-          item.dataset.taskId = taskId;
-        }
-      });
+    //     // Thêm data để biết task ID
+    //     const taskId = item.dataset.taskId || item.getAttribute("data-task-id");
+    //     if (taskId) {
+    //       item.dataset.taskId = taskId;
+    //     }
+    //   });
 
-      console.log(`Setup drag cho ${items.length} task items`);
-    },
+    //   console.log(`Setup drag cho ${items.length} task items`);
+    // },
 
-    handleDragStart(e) {
-      const taskId = e.target.dataset.taskId;
-      const title =
-        e.target.querySelector(".task-title")?.textContent || "Công việc";
+    // handleDragStart(e) {
+    //   const taskItem = e.target.closest(".task-item"); // Tìm item gần nhất để lấy đầy đủ data
+    //   const taskId = taskItem.dataset.taskId;
+    //   const title = taskItem.dataset.taskTitle || "Công việc";
+    //   const priority = parseInt(taskItem.dataset.taskPriority) || 2; // Lấy từ dataset (nếu sidebar set)
+    //   const color =
+    //     taskItem.dataset.taskColor || this.getPriorityColor(priority); // Ưu tiên color từ dataset
 
-      if (taskId) {
-        e.dataTransfer.setData("text/plain", taskId);
-        e.dataTransfer.setData("taskId", taskId);
-        e.dataTransfer.setData("title", title);
-        console.log("Dragging task:", taskId, title);
-      }
-    },
+    //   if (taskId) {
+    //     e.dataTransfer.setData("text/plain", taskId);
+    //     e.dataTransfer.setData("taskId", taskId);
+    //     e.dataTransfer.setData("title", title);
+    //     e.dataTransfer.setData("priority", priority);
+    //     e.dataTransfer.setData("color", color);
+    //     console.log("Dragging task:", { taskId, title, priority, color });
+    //   } else {
+    //     console.error("No taskId found");
+    //   }
+    // },
 
     // ==========================================================
     // DESTROY & REFRESH

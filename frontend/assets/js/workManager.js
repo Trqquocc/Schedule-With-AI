@@ -186,12 +186,9 @@
     hideSuccessOverlay() {
       const overlay = document.getElementById("success-overlay");
       if (overlay) {
-        const content = overlay.querySelector("div > div");
-        content.classList.remove("scale-100", "opacity-100");
-        content.classList.add("scale-95", "opacity-0");
-
-        this.hideSuccessOverlayTimeout = setTimeout(() => {
-          overlay.classList.add("hidden");
+        overlay.classList.add("opacity-0"); // Fade out
+        setTimeout(() => {
+          overlay.remove(); // Remove khỏi DOM hoàn toàn
         }, 300);
       }
     },
