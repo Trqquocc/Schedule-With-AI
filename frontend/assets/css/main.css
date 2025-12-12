@@ -23,10 +23,22 @@ body {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
+  z-index: 10050 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(2px) !important;
 }
 
 #createCategoryModal.hidden {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 #createCategoryModal:not(.hidden) {
@@ -34,8 +46,15 @@ body {
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
-/* Override class .modal for category modal */
+
+/* Ensure category container is visible */
+#category-container {
+  display: block !important;
+  visibility: visible !important;
+}
 
 .section {
   display: none;
@@ -68,8 +87,6 @@ body {
    MODAL STYLES - FIXED VERSION
    =================================== */
 
-/* LỖI CHÍNH: Bạn có modal bị nested trong modal. Sửa: */
-
 /* Modal container CHÍNH */
 .modal {
   position: fixed;
@@ -77,16 +94,43 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 10000; /* Tăng z-index */
+  z-index: 10000;
   display: none;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
 }
 
 /* Khi modal hiển thị */
 .modal.active,
 .modal.show {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Specific modal styling */
+#createTaskModal,
+#createTaskModal.modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+}
+
+#createTaskModal.hidden {
+  display: none !important;
+}
+
+#createTaskModal.active,
+#createTaskModal.show {
   display: flex !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -107,6 +151,11 @@ body {
 #createCategoryModal .relative {
   max-height: 90vh;
   overflow-y: auto;
+  z-index: 10051 !important;
+  position: relative !important;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .modal-parent-blur {
@@ -131,7 +180,7 @@ body {
 
 /* Đặc biệt cho AI Suggestion Modal */
 #aiSuggestionModal {
-  z-index: 10001 !important; /* Cao hơn modal khác */
+  z-index: 10001 !important;
 }
 
 #aiSuggestionModal.active {
@@ -139,7 +188,7 @@ body {
 }
 
 #aiSuggestionModal .modal-content {
-  max-width: 700px; /* Rộng hơn cho AI modal */
+  max-width: 700px;
   padding: 30px;
 }
 

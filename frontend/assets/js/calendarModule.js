@@ -40,36 +40,32 @@
     },
 
     setupTaskDragListeners() {
-      console.log("🔗 Setting up task drag listeners...");
+      console.log(
+        "🔗 Setting up task drag listeners with FullCalendar.Draggable..."
+      );
 
-      // Theo dõi thay đổi DOM để bind drag events cho task mới
+      // Setup draggable cho tasks hiện có
+      this.initializeExternalDraggable();
+
+      // Theo dõi thay đổi DOM để bind Draggable cho task mới
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.addedNodes.length) {
             mutation.addedNodes.forEach((node) => {
               if (node.nodeType === 1) {
-                // Element node
+                // Nếu chính node là task item
+                if (node.classList && node.classList.contains("task-item")) {
+                  this.makeTaskDraggable(node);
+                }
+
+                // Hoặc tìm task items bên trong
                 const taskItems = node.querySelectorAll
-                  ? node.querySelectorAll(
-                      '.task-item, [data-task-id], [draggable="true"]'
-                    )
+                  ? node.querySelectorAll(".task-item")
                   : [];
 
                 taskItems.forEach((item) => {
-                  if (!item.hasAttribute("data-drag-bound")) {
-                    this.bindDragEvents(item);
-                  }
+                  this.makeTaskDraggable(item);
                 });
-
-                // Nếu chính node là task item
-                if (
-                  node.classList &&
-                  (node.classList.contains("task-item") ||
-                    node.hasAttribute("data-task-id") ||
-                    node.hasAttribute("draggable"))
-                ) {
-                  this.bindDragEvents(node);
-                }
               }
             });
           }
@@ -85,42 +81,99 @@
         });
       }
 
-      // Bind events cho task hiện có
-      document
-        .querySelectorAll('.task-item, [data-task-id], [draggable="true"]')
-        .forEach((item) => {
-          this.bindDragEvents(item);
-        });
-
       console.log("✅ Task drag listeners setup complete");
     },
 
-    bindDragEvents(element) {
-      if (element.hasAttribute("data-drag-bound")) return;
+    initializeExternalDraggable() {
+      console.log(
+        "🏄 Initializing FullCalendar.Draggable for sidebar tasks..."
+      );
+
+      const taskList = document.getElementById("task-list");
+      if (!taskList) {
+        console.warn("⚠️ task-list container not found");
+        return;
+      }
+
+      const taskItems = taskList.querySelectorAll(".task-item");
+      console.log(`📦 Found ${taskItems.length} task items to make draggable`);
+
+      taskItems.forEach((item) => {
+        this.makeTaskDraggable(item);
+      });
+    },
+
+    makeTaskDraggable(element) {
+      // Skip if already draggable
+      if (element.hasAttribute("data-draggable-init")) return;
+
+      const taskId = element.dataset.taskId;
+      const title = element.dataset.taskTitle || element.textContent.trim();
+      const color = element.dataset.taskColor || "#3B82F6";
+      const description = element.dataset.taskDescription || "";
+
+      if (!taskId) {
+        console.warn("⚠️ Task element missing taskId");
+        return;
+      }
+
+      // Sử dụng FullCalendar.Draggable
+      try {
+        if (typeof FullCalendar !== "undefined" && FullCalendar.Draggable) {
+          const draggable = new FullCalendar.Draggable(element, {
+            eventData: {
+              id: `drag-${taskId}`,
+              title: title,
+              color: color,
+              extendedProps: {
+                taskId: taskId,
+                description: description,
+                isFromDrag: true,
+              },
+            },
+          });
+
+          element.setAttribute("data-draggable-init", "true");
+          console.log(`✅ Made draggable: ${title} (ID: ${taskId})`);
+        } else {
+          // Fallback: HTML5 drag/drop nếu FullCalendar.Draggable không available
+          this.bindHTML5DragEvents(element);
+        }
+      } catch (err) {
+        console.warn(
+          "⚠️ Error creating FullCalendar.Draggable, using HTML5 fallback:",
+          err
+        );
+        this.bindHTML5DragEvents(element);
+      }
+    },
+
+    bindHTML5DragEvents(element) {
+      if (element.hasAttribute("data-html5-drag-bound")) return;
 
       element.setAttribute("draggable", "true");
-      element.setAttribute("data-drag-bound", "true");
+      element.setAttribute("data-html5-drag-bound", "true");
 
       element.addEventListener("dragstart", (e) => {
+        const taskId = element.dataset.taskId;
+        const title = element.dataset.taskTitle || element.textContent.trim();
+        const color = element.dataset.taskColor || "#3B82F6";
+
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", element.dataset.taskId || "");
+        e.dataTransfer.setData("text/plain", taskId);
+        e.dataTransfer.setData("taskId", taskId);
+        e.dataTransfer.setData(
+          "application/json",
+          JSON.stringify({ taskId, title, color })
+        );
 
-        const dragData = {
-          taskId: element.dataset.taskId,
-          title: element.dataset.taskTitle || element.textContent.trim(),
-          color: element.dataset.taskColor || "#3B82F6",
-          description: element.dataset.taskDescription || "",
-        };
-
-        e.dataTransfer.setData("application/json", JSON.stringify(dragData));
         element.classList.add("dragging");
-
-        console.log(`📤 Started dragging: ${dragData.title}`);
+        console.log(`📤 HTML5 drag start: ${title} (ID: ${taskId})`);
       });
 
       element.addEventListener("dragend", () => {
         element.classList.remove("dragging");
-        console.log("📥 Ended dragging");
+        console.log("📥 HTML5 drag end");
       });
     },
 
@@ -510,6 +563,29 @@
           throw new Error("Event không có ID");
         }
 
+        // ✅ QUAN TRỌNG: Nếu event ID vẫn là temp-xxx hoặc drag-xxx thì chưa được lưu server
+        // Chỉ cập nhật local, không gửi lên server, và KHÔNG báo toast (đây là hành động bình thường)
+        if (
+          eventId.toString().startsWith("temp-") ||
+          eventId.toString().startsWith("drag-")
+        ) {
+          console.log(
+            `⏳ Event ${eventId} chưa lưu server, cập nhật local. POST sẽ gửi lên sau...`
+          );
+          // ⚠️ ĐẶC BIỆT: Không báo toast ở đây vì user đang drag/resize, event sẽ được lưu server
+          // trong callback eventReceive. Chỉ báo toast khi có thực sự lỗi
+          return; // Không gửi request, FullCalendar sẽ tự update local
+        }
+
+        // Chỉ gửi update nếu ID là số hợp lệ
+        const eventIdNum = parseInt(eventId, 10);
+        if (isNaN(eventIdNum)) {
+          console.warn(
+            `⚠️ Event ID ${eventId} không hợp lệ, chỉ cập nhật local`
+          );
+          return;
+        }
+
         const newStart = info.event.start;
         const newEnd =
           info.event.end || new Date(newStart.getTime() + 60 * 60 * 1000);
@@ -530,10 +606,10 @@
           end: newEnd.toISOString(),
         };
 
-        console.log(`📤 Updating event ${eventId}:`, updateData);
+        console.log(`📤 Updating event ${eventIdNum}:`, updateData);
 
         const result = await Utils.makeRequest(
-          `/api/calendar/events/${eventId}`,
+          `/api/calendar/events/${eventIdNum}`,
           "PUT",
           updateData
         );
@@ -588,15 +664,35 @@
         return;
       }
 
-      // Xóa event listeners cũ
-      calendarEl.removeEventListener("dragover", this.handleDragOver);
-      calendarEl.removeEventListener("dragleave", this.handleDragLeave);
-      calendarEl.removeEventListener("drop", this.handleDrop);
+      // Xóa event listeners cũ (nếu đã bind trước đó)
+      try {
+        if (this._boundCalendarDragOver) {
+          calendarEl.removeEventListener(
+            "dragover",
+            this._boundCalendarDragOver
+          );
+        }
+        if (this._boundCalendarDragLeave) {
+          calendarEl.removeEventListener(
+            "dragleave",
+            this._boundCalendarDragLeave
+          );
+        }
+        if (this._boundCalendarDrop) {
+          calendarEl.removeEventListener("drop", this._boundCalendarDrop);
+        }
+      } catch (e) {
+        /* ignore */
+      }
 
-      // Thêm event listeners mới
-      calendarEl.addEventListener("dragover", this.handleDragOver.bind(this));
-      calendarEl.addEventListener("dragleave", this.handleDragLeave.bind(this));
-      calendarEl.addEventListener("drop", this.handleDrop.bind(this));
+      // Thêm event listeners mới (lưu reference để dễ remove sau này)
+      this._boundCalendarDragOver = this.handleDragOver.bind(this);
+      this._boundCalendarDragLeave = this.handleDragLeave.bind(this);
+      this._boundCalendarDrop = this.handleDrop.bind(this);
+
+      calendarEl.addEventListener("dragover", this._boundCalendarDragOver);
+      calendarEl.addEventListener("dragleave", this._boundCalendarDragLeave);
+      calendarEl.addEventListener("drop", this._boundCalendarDrop);
 
       // Thêm CSS cho drop zone
       const style = document.createElement("style");
@@ -612,6 +708,32 @@
     }
   `;
       document.head.appendChild(style);
+
+      // ✅ Document-level fallback for drops that escape calendar element
+      try {
+        if (this._docDropListener) {
+          document.removeEventListener("drop", this._docDropListener);
+        }
+
+        this._docDropListener = (e) => {
+          const calendarRect = calendarEl.getBoundingClientRect();
+          const isOverCalendar =
+            e.clientX >= calendarRect.left &&
+            e.clientX <= calendarRect.right &&
+            e.clientY >= calendarRect.top &&
+            e.clientY <= calendarRect.bottom;
+
+          if (isOverCalendar) {
+            console.log("📥 Document-level drop handler activated");
+            e.preventDefault();
+            this.handleDrop(e);
+          }
+        };
+
+        document.addEventListener("drop", this._docDropListener);
+      } catch (e) {
+        console.warn("Could not attach document-level drop listener:", e);
+      }
 
       console.log("✅ Drop zone setup complete");
     },
@@ -636,33 +758,54 @@
     },
 
     async handleDrop(e) {
-      e.preventDefault();
-
-      const calendarEl = document.getElementById("calendar");
-      if (calendarEl) {
-        calendarEl.classList.remove("drop-zone-active");
+      // Guard against duplicate handling
+      if (this._handlingDrop) {
+        console.log("⚠️ Drop already being handled, ignoring duplicate");
+        return;
       }
+      this._handlingDrop = true;
 
       try {
-        // Lấy dữ liệu từ drag
-        const taskId = e.dataTransfer.getData("text/plain");
-        const jsonData = e.dataTransfer.getData("application/json");
-        let taskData = {};
+        e.preventDefault();
 
-        if (jsonData) {
-          taskData = JSON.parse(jsonData);
+        const calendarEl = document.getElementById("calendar");
+        if (calendarEl) {
+          calendarEl.classList.remove("drop-zone-active");
         }
 
-        if (!taskId && !taskData.taskId) {
+        console.log(
+          "📥 handleDrop called, dataTransfer types:",
+          e.dataTransfer?.types
+        );
+
+        // Lấy dữ liệu từ drag - try multiple sources
+        let taskId = e.dataTransfer.getData("text/plain");
+        let taskData = {};
+
+        const jsonData = e.dataTransfer.getData("application/json");
+        if (jsonData) {
+          try {
+            taskData = JSON.parse(jsonData);
+          } catch (err) {
+            console.warn("Could not parse JSON drag data:", err);
+          }
+        }
+
+        // Fallback: check for taskId in alternate data key
+        if (!taskId) {
+          taskId = e.dataTransfer.getData("taskId") || taskData.taskId;
+        }
+
+        if (!taskId) {
           console.error("❌ No task ID found in drop data");
+          console.log("Available dataTransfer types:", e.dataTransfer.types);
           return;
         }
 
-        const finalTaskId = taskId || taskData.taskId;
         const title = taskData.title || "Công việc mới";
         const color = taskData.color || "#3B82F6";
 
-        console.log(`🎯 Dropping task ${finalTaskId}: ${title}`);
+        console.log(`🎯 Dropping task ${taskId}: ${title}`);
 
         // Lấy thông tin vị trí drop từ FullCalendar
         const calendar = this.calendar;
@@ -710,8 +853,11 @@
           end: new Date(dropDate.getTime() + 60 * 60 * 1000), // 1 giờ mặc định
           backgroundColor: color,
           borderColor: color,
+          editable: true, // ✅ QUAN TRỌNG: Cho phép kéo dịch chuyển
+          durationEditable: true, // Cho phép thay đổi độ dài
+          startEditable: true, // Cho phép thay đổi thời gian bắt đầu
           extendedProps: {
-            taskId: finalTaskId,
+            taskId: taskId,
             isFromDrag: true,
             color: color,
           },
@@ -743,7 +889,7 @@
 
         // Lưu vào server
         await this.saveDroppedEvent(
-          finalTaskId,
+          taskId,
           title,
           color,
           newEvent.start,
@@ -752,6 +898,8 @@
       } catch (error) {
         console.error("❌ Drop error:", error);
         Utils.showToast?.("Lỗi khi kéo thả công việc", "error");
+      } finally {
+        this._handlingDrop = false;
       }
     },
 
@@ -778,11 +926,43 @@
           const newEventId =
             res.eventId || res.data?.MaLichTrinh || res.data?.id;
 
-          // Cập nhật event trong calendar với ID thật
+          console.log(`📌 New event created with ID: ${newEventId}`);
+
+          // ✅ FIX: Tìm event chính xác theo ID
+          // Thường là drag-{taskId} từ FullCalendar.Draggable
           const events = this.calendar.getEvents();
-          const tempEvent = events.find((e) => e.id?.startsWith(`temp-`));
+          let tempEvent = events.find((e) => e.id === `drag-${taskId}`);
+
+          // Fallback: Nếu không tìm được exact match, tìm event đầu tiên bắt đầu với temp- hoặc drag-
+          if (!tempEvent) {
+            tempEvent = events.find(
+              (e) => e.id?.startsWith(`temp-`) || e.id?.startsWith(`drag-`)
+            );
+          }
+
           if (tempEvent) {
+            console.log(
+              `🔄 Updating event ${tempEvent.id} with real ID ${newEventId}...`
+            );
+
+            // Cập nhật tất cả properties để FullCalendar re-render
             tempEvent.setProp("id", newEventId);
+            tempEvent.setExtendedProp("taskId", taskId);
+            tempEvent.setExtendedProp("isFromDrag", true);
+
+            // ✅ QUAN TRỌNG: Đảm bảo event editable
+            tempEvent.setProp("editable", true);
+            tempEvent.setProp("durationEditable", true);
+            tempEvent.setProp("startEditable", true);
+
+            console.log(
+              `✅ Event ${newEventId} now has real ID and is draggable`
+            );
+          } else {
+            console.warn(
+              `⚠️ Could not find event with ID drag-${taskId}. Available events:`,
+              events.map((e) => e.id)
+            );
           }
 
           // Cập nhật trạng thái task thành "đang thực hiện"

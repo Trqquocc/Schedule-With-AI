@@ -1,78 +1,110 @@
 <!-- Modal tạo danh mục mới -->
+<!-- Overlay -->
 <div
-  id="createCategoryModal"
-  class="modal hidden fixed inset-0 z-[10050] flex items-center justify-center"
->
-  <!-- Overlay -->
-  <div
-    class="absolute inset-0 bg-black bg-opacity-50"
-    id="categoryModalOverlay"
-  ></div>
+  class="absolute inset-0 bg-black bg-opacity-50"
+  id="categoryModalOverlay"
+></div>
 
-  <!-- Modal Content -->
-  <div
-    class="relative z-[10051] bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6"
-  >
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-800">Tạo danh mục mới</h3>
-      <button
-        type="button"
-        id="closeCategoryModalBtn"
-        class="text-gray-400 hover:text-gray-600 transition-colors"
+<!-- Modal Content -->
+<div
+  class="relative z-[10051] bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6"
+>
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold text-gray-800">Tạo danh mục mới</h3>
+    <button
+      type="button"
+      id="closeCategoryModalBtn"
+      class="text-gray-400 hover:text-gray-600 transition-colors"
+    >
+      <i class="fas fa-times text-xl"></i>
+    </button>
+  </div>
+
+  <!-- Form -->
+  <form id="createCategoryForm" class="space-y-4">
+    <div>
+      <label
+        for="newCategoryName"
+        class="block text-sm font-medium text-gray-700 mb-1"
       >
-        <i class="fas fa-times text-xl"></i>
-      </button>
+        Tên danh mục *
+      </label>
+      <input
+        id="newCategoryName"
+        type="text"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        placeholder="VD: Công việc, Học tập..."
+        required
+      />
     </div>
 
-    <!-- Form -->
-    <form id="createCategoryForm" class="space-y-4">
-      <div>
-        <label
-          for="newCategoryName"
-          class="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Tên danh mục *
-        </label>
-        <input
-          id="newCategoryName"
-          type="text"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="VD: Công việc, Học tập..."
-          required
-        />
-      </div>
+    <div>
+      <label
+        for="newCategoryDesc"
+        class="block text-sm font-medium text-gray-700 mb-1"
+      >
+        Mô tả (tùy chọn)
+      </label>
+      <textarea
+        id="newCategoryDesc"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        rows="2"
+        placeholder="Mô tả ngắn về danh mục..."
+      ></textarea>
+    </div>
 
-      <div>
-        <label
-          for="newCategoryDesc"
-          class="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Mô tả (tùy chọn)
-        </label>
-        <textarea
-          id="newCategoryDesc"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows="2"
-          placeholder="Mô tả ngắn về danh mục..."
-        ></textarea>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button
-          type="button"
-          id="cancelCategoryBtn"
-          class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Hủy
-        </button>
-        <button
-          type="submit"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Tạo danh mục
-        </button>
-      </div>
-    </form>
-  </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <button
+        type="button"
+        id="cancelCategoryBtn"
+        class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+      >
+        Hủy
+      </button>
+      <button
+        type="submit"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Tạo danh mục
+      </button>
+    </div>
+  </form>
 </div>
+
+<script>
+  // Setup close button handlers cho create-category-modal
+  document.addEventListener("DOMContentLoaded", function () {
+    // Setup close button
+    const closeBtn = document.getElementById("closeCategoryModalBtn");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const modal = document.getElementById("createCategoryModal");
+        if (modal) {
+          modal.classList.add("hidden");
+          if (window.ModalManager && ModalManager.close) {
+            ModalManager.close("createCategoryModal");
+          }
+        }
+      });
+    }
+
+    // Setup cancel button
+    const cancelBtn = document.getElementById("cancelCategoryBtn");
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const modal = document.getElementById("createCategoryModal");
+        if (modal) {
+          modal.classList.add("hidden");
+          if (window.ModalManager && ModalManager.close) {
+            ModalManager.close("createCategoryModal");
+          }
+        }
+      });
+    }
+  });
+</script>

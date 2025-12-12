@@ -395,29 +395,50 @@
     }
   }
 
+  let loadCategoriesRetries = 0;
+  const MAX_RETRIES = 5;
+
   async function loadCategoriesForModal() {
     console.log("🔄 [CREATE-TASK-MODAL] Loading categories...");
 
     const container = document.getElementById("category-container");
     if (!container) {
-      console.error("❌ [CREATE-TASK-MODAL] Category container not found");
-      return;
+      if (loadCategoriesRetries < MAX_RETRIES) {
+        loadCategoriesRetries++;
+        console.error(
+          `❌ [CREATE-TASK-MODAL] Category container not found (retry ${loadCategoriesRetries}/${MAX_RETRIES})...`
+        );
+        // Retry sau 100ms nếu container chưa load
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return loadCategoriesForModal();
+      } else {
+        console.error(
+          "❌ [CREATE-TASK-MODAL] Category container not found after max retries"
+        );
+        return;
+      }
     }
+
+    // Reset retries counter khi thành công tìm container
+    loadCategoriesRetries = 0;
 
     // Hiển thị loading
     container.innerHTML = `
-    <div id="category-loading" class="text-gray-500 text-center py-4">
-      <i class="fas fa-spinner fa-spin mr-2"></i>
-      Đang tải danh mục...
-    </div>
-  `;
+      <div id="category-loading" class="text-gray-500 text-center py-4">
+        <i class="fas fa-spinner fa-spin mr-2"></i>
+        Đang tải danh mục...
+      </div>
+    `;
 
     try {
       const token = localStorage.getItem("auth_token");
       if (!token) {
-        throw new Error("No auth token");
+        throw new Error("No auth token - please login first");
       }
 
+      console.log(
+        "📡 [CREATE-TASK-MODAL] Fetching categories from /api/categories..."
+      );
       const response = await fetch("/api/categories", {
         method: "GET",
         headers: {
@@ -427,7 +448,7 @@
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -441,14 +462,15 @@
     } catch (error) {
       console.error("❌ [CREATE-TASK-MODAL] Error loading categories:", error);
       container.innerHTML = `
-      <div class="text-red-500 text-center p-3">
-        <i class="fas fa-exclamation-triangle mr-2"></i>
-        Lỗi tải danh mục: ${error.message}
-        <button onclick="loadCategoriesForModal()" class="block mx-auto mt-2 text-blue-500 text-sm hover:underline">
-          <i class="fas fa-redo mr-1"></i> Thử lại
-        </button>
-      </div>
-    `;
+        <div class="text-red-500 text-center p-3">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          <div class="text-sm font-semibold mb-2">Lỗi tải danh mục</div>
+          <div class="text-xs mb-2">${error.message}</div>
+          <button onclick="loadCategoriesForModal()" class="text-blue-500 text-sm hover:underline">
+            <i class="fas fa-redo mr-1"></i> Thử lại
+          </button>
+        </div>
+      `;
     }
   }
 
@@ -720,6 +742,7 @@
     const createCategoryBtn = document.getElementById("createNewCategoryBtn");
     const categoryModal = document.getElementById("createCategoryModal");
     const categoryOverlay = document.getElementById("categoryModalOverlay");
+    const categoryForm = document.getElementById("createCategoryForm"); // Move up trước
 
     if (fixedTimeCheckbox) {
       fixedTimeCheckbox.addEventListener("change", function () {
@@ -745,13 +768,22 @@
     createCategoryBtn.addEventListener("click", function (e) {
       e.preventDefault();
       e.stopPropagation();
+      console.log("🎯 Create category button clicked");
 
-      if (window.ModalManager) {
+      // Sử dụng ModalManager nếu có
+      if (
+        window.ModalManager &&
+        typeof ModalManager.showModalById === "function"
+      ) {
         ModalManager.showModalById("createCategoryModal");
+      } else if (window.openCategoryModal) {
+        // Fallback sử dụng hàm global
+        window.openCategoryModal();
       } else {
-        // Fallback nếu không có ModalManager
+        // Fallback thứ 3
         const categoryModal = document.getElementById("createCategoryModal");
         if (categoryModal) {
+          categoryModal.classList.remove("hidden");
           categoryModal.style.display = "flex";
         }
       }
@@ -759,41 +791,69 @@
 
     // Đóng modal category
     const closeModal = () => {
+      // Xoá inline styles thay vì chỉ thêm class
       categoryModal.classList.add("hidden");
-
-      // Khôi phục modal tạo công việc
-      const mainModal = document.getElementById("createTaskModalContent");
-      const mainOverlay = document.querySelector(
-        ".modal-overlay[data-modal-close]"
-      );
-
-      if (mainModal) mainModal.style.opacity = "1";
-      if (mainOverlay) mainOverlay.style.backgroundColor = "rgba(0,0,0,0.5)";
+      categoryModal.style.display = "none";
+      categoryModal.style.visibility = "hidden";
+      categoryModal.style.opacity = "0";
 
       // Reset form
-      const categoryForm = document.getElementById("createCategoryForm");
       if (categoryForm) categoryForm.reset();
 
+      // Reset any color inputs if they exist
       const colorInput = document.getElementById("newCategoryColor");
       if (colorInput) colorInput.value = "#3B82F6";
+
+      // Restore body scroll nếu cần
+      document.body.style.overflow = "";
+
+      console.log("✅ Category modal closed");
     };
+
+    // Thêm vào global namespace để có thể gọi từ anywhere
+    if (!window.closeCategoryModal) {
+      window.closeCategoryModal = closeModal;
+    }
 
     // Xử lý đóng bằng nút X
     const closeCategoryBtn = document.getElementById("closeCategoryModalBtn");
     const cancelCategoryBtn = document.getElementById("cancelCategoryBtn");
 
-    if (closeCategoryBtn)
-      closeCategoryBtn.addEventListener("click", closeModal);
-    if (cancelCategoryBtn)
-      cancelCategoryBtn.addEventListener("click", closeModal);
+    if (closeCategoryBtn) {
+      closeCategoryBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("🎯 Close category button clicked");
+        closeModal();
+      });
+    }
+
+    if (cancelCategoryBtn) {
+      cancelCategoryBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("🎯 Cancel category button clicked");
+        closeModal();
+      });
+    }
 
     // Xử lý đóng bằng click overlay
     if (categoryOverlay) {
-      categoryOverlay.addEventListener("click", closeModal);
+      categoryOverlay.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("🎯 Category overlay clicked");
+        closeModal();
+      });
     }
-    // Xử lý click ra ngoài
+
+    // Xử lý click ra ngoài modal
     categoryModal.addEventListener("click", function (e) {
-      if (e.target === this) closeModal();
+      // Chỉ đóng nếu click vào overlay (self)
+      if (e.target === this) {
+        console.log("🎯 Category modal backdrop clicked");
+        closeModal();
+      }
     });
 
     // Xử lý form category
@@ -838,10 +898,14 @@
           console.log("📥 Category create result:", result);
 
           if (result.success) {
+            console.log("✅ Category created successfully");
             showNotification("Tạo danh mục thành công!", "success");
+
+            // Đóng modal danh mục
             closeModal();
 
-            // Reload categories
+            // Reload categories vào form tạo công việc
+            console.log("🔄 Reloading categories...");
             setTimeout(() => {
               loadCategoriesForModal();
             }, 300);
@@ -1325,38 +1389,116 @@
   window.loadCategoriesForModal = loadCategoriesForModal;
   window.showNotification = showNotification;
 
+  // Debug function
+  window.debugCategories = async function () {
+    console.log("🔍 === DEBUG CATEGORIES ===");
+    const container = document.getElementById("category-container");
+    console.log("✓ Container exists:", !!container);
+
+    const token = localStorage.getItem("auth_token");
+    console.log("✓ Token exists:", !!token);
+
+    if (token) {
+      try {
+        const response = await fetch("/api/categories", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log("✓ Response status:", response.status);
+        const result = await response.json();
+        console.log("✓ API Result:", result);
+      } catch (err) {
+        console.error("❌ API Error:", err);
+      }
+    }
+    console.log("========================");
+  };
+
   console.log("✅ [CREATE-TASK-MODAL] Script loaded successfully");
 
   // Tự động khởi tạo nếu modal đã hiển thị
   document.addEventListener("DOMContentLoaded", function () {
     const modalContent = document.getElementById("createTaskModalContent");
     if (modalContent && modalContent.style.display !== "none") {
-      setTimeout(initCreateTaskModal, 100);
+      setTimeout(initCreateTaskModal, 200);
     }
   });
 
   // Lắng nghe sự kiện modal được mở
   document.addEventListener("modalOpened", function (e) {
     if (e.detail && e.detail.modalId === "createTaskModal") {
-      setTimeout(initCreateTaskModal, 50);
+      console.log("📢 Modal opened event - initializing with delay");
+      setTimeout(initCreateTaskModal, 100);
     }
   });
+
   // Khởi tạo modal khi DOM loaded
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
-      setTimeout(initCreateTaskModal, 100);
+      setTimeout(initCreateTaskModal, 200);
     });
   } else {
-    setTimeout(initCreateTaskModal, 100);
+    setTimeout(initCreateTaskModal, 200);
   }
 
-  // Lắng nghe event modal opened
+  // Lắng nghe event modal opened từ ModalManager
   document.addEventListener("modalShown", function (e) {
     if (e.detail && e.detail.modalId === "createTaskModal") {
       console.log("🎯 Modal shown event - initializing");
-      setTimeout(initCreateTaskModal, 50);
+      setTimeout(initCreateTaskModal, 100);
     }
   });
+
+  // ============================================
+  // GLOBAL CATEGORY MODAL FUNCTIONS
+  // ============================================
+
+  window.closeCategoryModal = function () {
+    console.log("🚪 Closing category modal...");
+    const modal = document.getElementById("createCategoryModal");
+    if (!modal) {
+      console.warn("⚠️ Category modal not found");
+      return;
+    }
+
+    // Đóng modal
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+    modal.style.visibility = "hidden";
+    modal.style.opacity = "0";
+
+    // Reset form
+    const form = document.getElementById("createCategoryForm");
+    if (form) form.reset();
+
+    // Restore body scroll
+    document.body.style.overflow = "";
+
+    console.log("✅ Category modal closed successfully");
+  };
+
+  window.openCategoryModal = function () {
+    console.log("📂 Opening category modal...");
+    const modal = document.getElementById("createCategoryModal");
+    if (!modal) {
+      console.error("❌ Category modal not found");
+      return;
+    }
+
+    // Mở modal
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
+
+    // Prevent body scroll
+    document.body.style.overflow = "hidden";
+
+    console.log("✅ Category modal opened successfully");
+  };
 
   // Expose globally
   window.loadCategoriesForModal = loadCategoriesForModal;
@@ -1365,27 +1507,121 @@
 
 <!-- THÊM CSS NẾU CẦN -->
 <style>
-  /* Modal Content */
-  .modal-content {
-    animation: modalSlideIn 0.3s ease-out;
+  /* ===== MODAL CONTAINER STYLES ===== */
+
+  /* Modal Content - Wrapper */
+  #createTaskModalContent {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 90%;
+    max-height: 90vh;
+    width: 100%;
+    margin: auto;
+    overflow-y: auto;
   }
 
-  @keyframes modalSlideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Modal Header */
+  #createTaskModalContent .sticky {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 24px !important;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
   }
 
-  /* Category Container */
+  #createTaskModalContent h2 {
+    color: white;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  #createTaskModalContent .fa-times {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 20px;
+    transition: all 0.2s ease;
+  }
+
+  #createTaskModalContent .fa-times:hover {
+    color: white;
+    transform: rotate(90deg);
+  }
+
+  /* Modal Body */
+  #createTaskModalContent .p-6 {
+    padding: 32px !important;
+  }
+
+  /* Form Groups */
+  #createTaskForm .space-y-6 > div {
+    margin-bottom: 24px;
+  }
+
+  #createTaskForm label {
+    display: block;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+  }
+
+  #createTaskForm input,
+  #createTaskForm textarea,
+  #createTaskForm select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background: white;
+  }
+
+  #createTaskForm input:focus,
+  #createTaskForm textarea:focus,
+  #createTaskForm select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    background: #f8fafc;
+  }
+
+  #createTaskForm textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /* Select Styling */
+  #createTaskForm select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 20px;
+    padding-right: 36px;
+    color: #1e293b;
+  }
+
+  /* Category Container - Enhanced */
   #category-container {
     min-height: 100px;
-    max-height: 300px;
+    max-height: 280px;
     overflow-y: auto;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    transition: all 0.3s ease;
+  }
+
+  #category-container:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
   }
 
   #category-container::-webkit-scrollbar {
@@ -1393,95 +1629,226 @@
   }
 
   #category-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
+    background: transparent;
   }
 
   #category-container::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 10px;
+    background: #cbd5e1;
+    border-radius: 3px;
   }
 
   #category-container::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: #94a3b8;
   }
 
-  /* Category Item Hover */
-  #category-container .hover\:bg-gray-50:hover {
-    background-color: #f9fafb;
-    transform: translateX(2px);
+  /* Category Items */
+  #category-container .flex {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
     transition: all 0.2s ease;
+    background: white;
   }
 
-  /* Category Modal */
-  #createCategoryModal {
-    display: none;
+  #category-container .flex:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  }
+
+  #category-container label {
+    cursor: pointer;
+    margin: 0;
+    font-weight: 500;
+    color: #334155;
+  }
+
+  #category-container input[type="radio"] {
+    cursor: pointer;
+    accent-color: #667eea;
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Create Category Button */
+  #createNewCategoryBtn {
+    color: #667eea;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  #createNewCategoryBtn:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    transform: translateY(-2px);
+  }
+
+  #createNewCategoryBtn i {
+    font-size: 10px;
+  }
+
+  /* Submit Button Area */
+  #createTaskForm .flex.justify-end {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid #e2e8f0;
+    display: flex !important;
+    gap: 12px;
+  }
+
+  #createTaskForm button[type="button"],
+  #createTaskForm button[type="submit"] {
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10050;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    gap: 8px;
+    min-width: 140px;
   }
 
-  #createCategoryModal:not(.hidden) {
-    display: flex !important;
+  #createTaskForm button[type="button"] {
+    background: #f1f5f9;
+    color: #475569;
+    border: 2px solid #e2e8f0;
   }
 
-  #createCategoryModal > div:not(.absolute) {
-    z-index: 10051;
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
+  #createTaskForm button[type="button"]:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
   }
 
-  #categoryModalOverlay {
-    z-index: 10050;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+  #createTaskForm button[type="submit"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  #createTaskForm button[type="submit"]:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  }
+
+  #createTaskForm button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Loading Spinner */
+  #createTaskForm .animate-spin {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Modal Slide Animation */
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-30px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   /* Fixed Time Fields */
   #fixedTimeFields {
     animation: slideDown 0.3s ease-out;
+    background: #f0f4ff;
+    padding: 16px;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
   }
 
   @keyframes slideDown {
     from {
       opacity: 0;
       max-height: 0;
+      transform: translateY(-10px);
     }
     to {
       opacity: 1;
       max-height: 500px;
+      transform: translateY(0);
     }
   }
 
-  /* Form Inputs */
-  input:focus,
-  select:focus,
-  textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  /* Error Message */
+  #createTaskForm .text-red-600 {
+    color: #dc2626;
+    font-size: 13px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
+  /* Success Overlay */
   #success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10100;
     backdrop-filter: blur(4px);
   }
 
   #success-overlay > div {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid #e2e8f0;
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: overlaySlideIn 0.3s ease-out;
+  }
+
+  @keyframes overlaySlideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   #success-overlay .fa-check {
+    font-size: 48px;
+    color: #10b981;
+    margin-bottom: 16px;
+    display: block;
     animation: checkmark 0.5s ease-in-out;
   }
 
@@ -1499,17 +1866,73 @@
     }
   }
 
-  /* Animation cho overlay */
-  #success-overlay {
-    animation: fadeIn 0.3s ease-out;
+  #success-overlay h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 16px 0;
   }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
+  #success-overlay p {
+    color: #64748b;
+    font-size: 14px;
+  }
+
+  /* Category Modal Loading */
+  #category-loading {
+    color: #94a3b8;
+    font-size: 14px;
+  }
+
+  #category-loading i {
+    color: #667eea;
+    font-size: 18px;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    #createTaskModalContent {
+      border-radius: 12px;
     }
-    to {
-      opacity: 1;
+
+    #createTaskModalContent .sticky {
+      padding: 16px !important;
+      border-radius: 12px 12px 0 0;
+    }
+
+    #createTaskForm .space-y-6 > div {
+      margin-bottom: 16px;
+    }
+
+    #createTaskForm .p-6 {
+      padding: 20px !important;
+    }
+
+    #createTaskForm .flex.justify-end {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #createTaskForm button {
+      width: 100%;
+      min-width: unset;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #createTaskModalContent {
+      max-width: 95vw;
+      margin: 10px;
+    }
+
+    #createTaskModalContent h2 {
+      font-size: 18px;
+    }
+
+    #createTaskForm input,
+    #createTaskForm textarea,
+    #createTaskForm select {
+      font-size: 16px; /* Fix mobile zoom */
     }
   }
 </style>

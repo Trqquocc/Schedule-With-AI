@@ -45,6 +45,9 @@
 
       console.log(`✅ Modal found, current classes: ${modal.className}`);
 
+      // 🔥 REMOVE hidden class first (CSS has display: none !important for .hidden)
+      modal.classList.remove("hidden");
+
       // 🔥 FORCE INLINE STYLES
       modal.style.display = "flex";
       modal.style.position = "fixed";

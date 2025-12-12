@@ -211,7 +211,14 @@
       if (userData) {
         try {
           const user = JSON.parse(userData);
-          updateUserInfo(user);
+          if (typeof updateUserInfo === "function") {
+            updateUserInfo(user);
+          } else if (
+            window.App &&
+            typeof window.App.updateUserInfo === "function"
+          ) {
+            window.App.updateUserInfo();
+          }
         } catch (e) {
           console.error("Lỗi parse user_data:", e);
         }

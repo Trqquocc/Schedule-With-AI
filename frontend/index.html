@@ -147,8 +147,7 @@
     <script src="assets/js/salaryManager.js"></script>
     <script src="assets/js/tabManager.js"></script>
     <script src="assets/js/profile.js"></script>
-    <script src="assets/js/create-task-modal.js"></script>
-    <script src="assets/js/settings-modal.js"></script>
+
     <div id="eventDetailModal" class="modal"></div>
     <div id="aiSuggestionModal" class="modal"></div>
     <div id="createCategoryModal" class="modal"></div>
@@ -226,14 +225,6 @@
           localStorage.clear();
           location.href = "/login.html";
         }
-      })();
-      (function () {
-        const script = document.createElement("script");
-        script.src = "/js/ai-modal-handler.js";
-        script.onload = function () {
-          console.log("✅ AI Modal Handler loaded");
-        };
-        document.head.appendChild(script);
       })();
     </script>
   </body>
