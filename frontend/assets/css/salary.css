@@ -1,0 +1,54 @@
+/* Styles for Salary & Statistics page */
+.salary-page .title {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: #1f2937;
+}
+.tabs { display:flex; gap:8px }
+.tab { padding:8px 14px; background:#f3f4f6; border-radius:6px; color:#374151; cursor:pointer }
+.tab.active { background:#2563eb; color:#fff }
+.grid { display: grid }
+.container { max-width:1200px; margin:0 auto }
+.card { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px }
+.card-sm { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:12px }
+.controls { display:flex; gap:8px; align-items:center }
+.controls input[type="date"] { padding:6px 8px; border:1px solid #d1d5db; border-radius:6px }
+.btn { padding:6px 12px; background:#2563eb; color:#fff; border-radius:6px; border:none; cursor:pointer }
+.total-box { background:#fff; border:1px solid #e5e7eb; padding:18px; border-radius:8px; text-align:right }
+.total-box .amount { font-size:1.5rem; font-weight:700 }
+.stats-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px }
+.stats-summary { padding:12px }
+.stat-number { font-size:1.6rem; font-weight:700; margin:8px 0 }
+.side-panel { position:sticky; top:20px }
+.side-tabs { display:flex; gap:6px }
+.side-tab { background:#f3f4f6; padding:6px 8px; border-radius:6px; cursor:pointer }
+.side-tab.active { background:#111827; color:#fff }
+.side-content { font-size:0.95rem }
+.side-title { font-weight:700; margin-bottom:6px }
+.side-stat { margin-top:6px }
+
+/* Table styles */
+table { width:100%; border-collapse:collapse }
+th, td { padding:12px 10px; border-bottom:1px solid #eef2f7 }
+thead th { background:#f9fafb; font-weight:600; color:#374151 }
+
+/* Make table boxed like mockup */
+.card table { border:1px solid #e5e7eb; border-radius:6px; overflow:hidden }
+.card table thead th, .card table tbody td { border-right:1px solid #eef2f7 }
+.card table thead th:last-child, .card table tbody td:last-child { border-right: none }
+.card table tbody tr:last-child td { border-bottom: none }
+
+/* Date line under title */
+.page-dates { color:#6b7280; font-size:0.95rem; margin-top:8px }
+
+/* Large total box matching mockup */
+.total-box { display:flex; align-items:center; justify-content:space-between; padding:22px 28px }
+.total-box .label { font-size:1.05rem; color:#111827; font-weight:600 }
+.total-box .amount { font-size:1.6rem; font-weight:800 }
+
+/* Responsive small tweaks */
+@media (max-width: 900px) {
+	.grid { grid-template-columns: 1fr }
+	.col-side { display:none }
+}
+
