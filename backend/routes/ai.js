@@ -22,7 +22,7 @@ try {
         temperature: 0.7,
         topP: 0.8,
         topK: 40,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
       },
     });
 
@@ -40,6 +40,162 @@ try {
 }
 
 // HELPER FUNCTIONS
+
+/**
+ * Phân tích additionalInstructions để trích xuất các yêu cầu lặp lại
+ * Ví dụ:
+ * - "công việc ABCD được làm vào 6h sáng hằng ngày trong tuần" → Mỗi ngày T2-CN lúc 6h
+ * - "tập gym 6h sáng mỗi ngày" → Mỗi ngày lúc 6h
+ * - "môn A 6h-9h tối từ T2 và T7 hàng tuần" → T2,T7 từ 18h-21h
+ */
+function analyzeRecurringPatterns(additionalInstructions) {
+  if (!additionalInstructions?.trim()) return [];
+
+  const patterns = [];
+  const text = additionalInstructions.toLowerCase().trim();
+
+  console.log(`🔍 Analyzing text: "${text}"`);
+
+  // Bước 1: Phát hiện tần suất
+  const isDailyPattern =
+    /mỗi ngày|hàng ngày|every day|daily|từ.*đến|t2.*cn|thứ 2.*chủ nhật|monday.*sunday|trong tuần|weekday/.test(
+      text
+    );
+  const isWeeklyPattern =
+    /hàng tuần|mỗi tuần|every week|weekly|từ.*t\d|được học/.test(text);
+  const hasSpecificDays =
+    /t\d|thứ \d|monday|tuesday|wednesday|thursday|friday|saturday|sunday|cn|chủ nhật/.test(
+      text
+    );
+
+  console.log(`  isDailyPattern: ${isDailyPattern}`);
+  console.log(`  isWeeklyPattern: ${isWeeklyPattern}`);
+  console.log(`  hasSpecificDays: ${hasSpecificDays}`);
+
+  // Bước 2: Trích xuất thời gian
+  // Regex chặt chẽ: chỉ tìm số kèm "h" hoặc "giờ" liền sau
+  const timeRegex =
+    /(\d{1,2})(?::(\d{2}))?\s*(?:h|giờ|am|pm)(?:\s*(?:sáng|chiều|tối|đêm))?\s*(?:(?:đến|-)\s*)?(\d{1,2})?(?::(\d{2}))?\s*(?:h|giờ|am|pm)?/gi;
+
+  const times = [];
+  let timeMatch;
+  const textLower = additionalInstructions.toLowerCase();
+  const seenTimes = new Set(); // Để tránh duplicate times
+
+  while ((timeMatch = timeRegex.exec(textLower)) !== null) {
+    let startHour = parseInt(timeMatch[1]);
+    const startMin = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    let endHour = timeMatch[3] ? parseInt(timeMatch[3]) : null;
+    const endMin = timeMatch[4] ? parseInt(timeMatch[4]) : 0;
+
+    // Kiểm tra "sáng" hay "tối" trước/sau thời gian
+    const beforeText = textLower.substring(
+      Math.max(0, timeMatch.index - 30),
+      timeMatch.index
+    );
+    const afterText = textLower.substring(
+      timeMatch.index,
+      Math.min(textLower.length, timeMatch.index + 50)
+    );
+    const context = beforeText + afterText;
+
+    // Điều chỉnh giờ nếu là tối (18h+)
+    if (
+      (context.includes("tối") ||
+        context.includes("chiều") ||
+        context.includes("đêm")) &&
+      startHour < 12
+    ) {
+      startHour += 12;
+      if (endHour && endHour < 12) endHour += 12;
+    }
+
+    // Kiểm tra duplicates
+    const timeKey = `${startHour}:${startMin}-${endHour || "end"}:${endMin}`;
+    if (seenTimes.has(timeKey)) {
+      console.log(`  ⏭️ Skipping duplicate time: ${timeKey}`);
+      continue;
+    }
+    seenTimes.add(timeKey);
+
+    times.push({
+      startHour,
+      startMin,
+      endHour,
+      endMin,
+    });
+
+    console.log(
+      `  ✅ Found time: ${startHour.toString().padStart(2, "0")}:${startMin
+        .toString()
+        .padStart(2, "0")}${
+        endHour ? ` - ${endHour.toString().padStart(2, "0")}:${endMin}` : ""
+      }`
+    );
+  }
+
+  // Bước 3: Trích xuất ngày trong tuần
+  const dayMap = {
+    "\\bt2\\b|thứ\\s*2|thứ\\s*hai|monday": 2,
+    "\\bt3\\b|thứ\\s*3|thứ\\s*ba|tuesday": 3,
+    "\\bt4\\b|thứ\\s*4|thứ\\s*tư|wednesday": 4,
+    "\\bt5\\b|thứ\\s*5|thứ\\s*năm|thursday": 5,
+    "\\bt6\\b|thứ\\s*6|thứ\\s*sáu|friday": 6,
+    "\\bt7\\b|thứ\\s*7|thứ\\s*bảy|saturday": 7,
+    "\\bcn\\b|chủ\\s*nhật|sunday": 1,
+  };
+
+  const days = [];
+
+  if (isDailyPattern && !hasSpecificDays) {
+    // "mỗi ngày trong tuần" = T2-CN (theo quy tắc làm việc)
+    days.push(1, 2, 3, 4, 5, 6, 7);
+    console.log(`  Daily pattern detected: all days (1-7)`);
+  } else if (isDailyPattern && hasSpecificDays) {
+    // Nếu nói "mỗi ngày" mà vẫn chỉ ngày cụ thể
+    Object.entries(dayMap).forEach(([pattern, dayNum]) => {
+      if (new RegExp(pattern, "i").test(text)) {
+        if (!days.includes(dayNum)) days.push(dayNum);
+      }
+    });
+    if (days.length === 0) days.push(1, 2, 3, 4, 5, 6, 7);
+    console.log(`  Daily + specific days: ${days}`);
+  } else {
+    // Tìm các ngày được chỉ định
+    Object.entries(dayMap).forEach(([pattern, dayNum]) => {
+      if (new RegExp(pattern, "i").test(text)) {
+        if (!days.includes(dayNum)) days.push(dayNum);
+      }
+    });
+
+    // Nếu là "hàng tuần" nhưng không có ngày cụ thể, mặc định T2-CN
+    if (isWeeklyPattern && days.length === 0) {
+      days.push(1, 2, 3, 4, 5, 6, 7);
+      console.log(`  Weekly pattern, no specific days: defaulting to all days`);
+    }
+
+    console.log(`  Extracted days: ${days}`);
+  }
+
+  // Bước 4: Tạo pattern nếu có thời gian
+  if (times.length > 0 && days.length > 0) {
+    const pattern = {
+      frequency: isDailyPattern ? "daily" : "weekly",
+      times: times,
+      days: days.sort((a, b) => a - b),
+      rawText: additionalInstructions,
+    };
+    patterns.push(pattern);
+    console.log(`✅ Pattern created:`, pattern);
+  } else {
+    console.log(
+      `⚠️ Not enough data for pattern - times: ${times.length}, days: ${days.length}`
+    );
+  }
+
+  console.log(`📋 Total patterns found: ${patterns.length}`);
+  return patterns;
+}
 
 async function getTaskDetailsFromDatabase(taskIds, userId) {
   try {
@@ -186,53 +342,184 @@ function buildGeminiPrompt(
     )
     .join("\n");
 
+  // Phân tích recurring patterns từ additionalInstructions
+  const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
+
+  const recurringPatternsText =
+    recurringPatterns.length > 0
+      ? `\n📅 CÁC YÊU CẦU LẶP LẠI ĐÃ PHÁT HIỆN:
+${recurringPatterns
+  .map(
+    (p, idx) => `
+  ${idx + 1}. Tần suất: ${p.frequency === "daily" ? "Hàng ngày" : "Hàng tuần"}
+     Ngày: ${p.days
+       .map((d) => ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][d])
+       .join(", ")}
+     Thời gian: ${p.times
+       .map(
+         (t) =>
+           `${t.startHour.toString().padStart(2, "0")}:${t.startMin
+             .toString()
+             .padStart(2, "0")}${
+             t.endHour
+               ? ` - ${t.endHour.toString().padStart(2, "0")}:${t.endMin
+                   .toString()
+                   .padStart(2, "0")}`
+               : ""
+           }`
+       )
+       .join(", ")}
+`
+  )
+  .join("\n")}
+`
+      : "";
+
+  const dayNames = {
+    1: "Chủ nhật",
+    2: "Thứ hai",
+    3: "Thứ ba",
+    4: "Thứ tư",
+    5: "Thứ năm",
+    6: "Thứ sáu",
+    7: "Thứ bảy",
+  };
+
   const additionalInstructionsText = additionalInstructions.trim()
-    ? `\nHƯỚNG DẪN THÊM CỦA NGƯỜI DÙNG: ${additionalInstructions}\n`
+    ? `\n📝 HƯỚNG DẪN THÊM CỦA NGƯỜI DÙNG:\n${additionalInstructions}\n`
     : "";
 
-  return `Bạn là trợ lý lập lịch thông minh. Hãy sắp xếp các công việc sau vào lịch:
+  return `Bạn là trợ lý lập lịch thông minh chuyên biệt. NHIỆM VỤ: Sắp xếp TẤT CẢ ${
+    taskDetails.length
+  } công việc dưới đây vào lịch.
 
-CÁC CÔNG VIỆC CẦN SẮP XẾP:
+⚠️ QUAN TRỌNG: BẠN PHẢI TẠO SUGGESTIONS CHO TẤT CẢ CÁC CÔNG VIỆC SAU, KHÔNG ĐƯỢC BỎ SÓT CÔNG VIỆC NÀO:
+
+═══════════════════════════════════════════════════════════════
+CÁC CÔNG VIỆC BẮT BUỘC PHẢI SẮP XẾP (${taskDetails.length} cái):
+═══════════════════════════════════════════════════════════════
 ${taskList}
 
-KHOẢNG THỜI GIAN: Từ ${startDate} đến ${endDate}
+═══════════════════════════════════════════════════════════════
+KHOẢNG THỜI GIAN:
+═══════════════════════════════════════════════════════════════
+Từ ${startDate} đến ${endDate}
 
-LỊCH HIỆN CÓ (tránh trùng):
-${existingEvents.length > 0 ? existingSchedule : "Không có lịch"}
+═══════════════════════════════════════════════════════════════
+LỊCH HIỆN CÓ (TRÁNH TRÙNG):
+═══════════════════════════════════════════════════════════════
+${existingEvents.length > 0 ? existingSchedule : "Không có lịch hiện tại"}
 
-YÊU CẦU:
-1. ${options.considerPriority ? "Ưu tiên việc quan trọng trước" : "Bình thường"}
-2. ${options.avoidConflict ? "Tránh trùng lịch có sẵn" : "Không cần tránh"}
+═══════════════════════════════════════════════════════════════
+YÊU CẦU CẤU HÌNH CHUNG:
+═══════════════════════════════════════════════════════════════
+1. ${
+    options.considerPriority
+      ? "✓ Ưu tiên việc quan trọng (priority cao) trước"
+      : "○ Không cần ưu tiên"
+  }
+2. ${
+    options.avoidConflict
+      ? "✓ Tránh trùng với lịch hiện tại"
+      : "○ Không cần tránh trùng"
+  }
 3. ${
     options.balanceWorkload
-      ? "Cân bằng công việc các ngày"
-      : "Không cần cân bằng"
+      ? "✓ Cân bằng công việc giữa các ngày"
+      : "○ Không cần cân bằng"
   }
-4. Xếp việc vào thời điểm thích hợp của nó (morning/noon/afternoon/evening)
-5. Mỗi ngày không quá 8 tiếng làm việc
-6. Làm việc từ 8:00 đến 22:00${additionalInstructionsText}
+4. Mỗi ngày không quá 8 tiếng làm việc
+5. Làm việc trong khung giờ 08:00 đến 22:00
 
-Hãy trả về KẾT QUẢ dưới dạng JSON (CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH):
+═══════════════════════════════════════════════════════════════
+YÊU CẦU TỪ NGƯỜI DÙNG:
+═══════════════════════════════════════════════════════════════
+${
+  additionalInstructions.trim()
+    ? additionalInstructions
+    : "(Không có yêu cầu đặc biệt)"
+}
+
+═══════════════════════════════════════════════════════════════
+HƯỚNG DẪN XỬ LÝ CHI TIẾT:
+═══════════════════════════════════════════════════════════════
+
+🔴 QUAN TRỌNG: NẾU YÊU CẦU CÓ "LẶP LẠI", "HÀNG NGÀY", "HÀNG TUẦN", v.v:
+   → TẠO NHIỀU ENTRIES (một cho mỗi ngày/lần lặp)
+   
+   Ví dụ yêu cầu: "công việc ABCD được làm vào 6h sáng hằng ngày trong tuần"
+   → Phải tạo 7 events (một T2, T3, T4, T5, T6, T7, CN) tất cả lúc 06:00
+   
+   Ví dụ yêu cầu: "lịch dạy môn A từ 6h-9h tối T2 và T7 hàng tuần"
+   → Phải tạo 2 events mỗi tuần (T2 18:00-21:00 và T7 18:00-21:00) cho mỗi tuần
+   
+   Ví dụ yêu cầu: "tập gym 6h sáng mỗi ngày (từ T2-CN)"
+   → Phải tạo 6 events lúc 06:00 cho mỗi ngày làm việc
+
+👉 PHÂN TÍCH THỜI GIAN TRONG YÊU CẦU:
+   - "6h sáng" → 06:00
+   - "6h tối" / "6h chiều muộn" / "18h" → 18:00
+   - "6h-9h" → từ 06:00 đến 09:00 (duration = 180 phút)
+   - "10h30" / "10:30" → 10:30
+
+👉 PHÂN TÍCH NGÀY TRONG YÊU CẦU (đây là điều QUAN TRỌNG):
+   - "T2" = Thứ 2 (${dayNames[2]})
+   - "T3" = Thứ 3 (${dayNames[3]})
+   - "T4" = Thứ 4 (${dayNames[4]})
+   - "T5" = Thứ 5 (${dayNames[5]})
+   - "T6" = Thứ 6 (${dayNames[6]})
+   - "T7" = Thứ 7 (${dayNames[7]})
+   - "CN" = Chủ nhật (${dayNames[1]})
+   - "hằng ngày" / "mỗi ngày" / "trong tuần" = T2-CN (7 ngày)
+   - "hàng tuần" = lặp lại hàng tuần theo ngày chỉ định
+   - "từ T2 đến T6" = T2, T3, T4, T5, T6 (5 ngày)
+   - "T2 và T7" / "T2,T7" = chỉ T2 và T7
+
+👉 THỰC HIỆN LẶP LẠI TRONG KHOẢNG NGÀY:
+   - Khoảng ngày: ${startDate} đến ${endDate}
+   - Nếu yêu cầu "hàng ngày", tạo 1 event cho mỗi ngày trong khoảng
+   - Nếu yêu cầu "hàng tuần", tạo 1 event cho mỗi lần ngày đó xuất hiện trong khoảng
+   - KHÔNG chỉ tạo 1 event duy nhất!
+
+═══════════════════════════════════════════════════════════════
+ĐỊNH DẠNG RESPONSE (CHỈ TRẢ VỀ JSON HỢPLỆ, KHÔNG GIẢI THÍCH):
+═══════════════════════════════════════════════════════════════
 
 {
   "suggestions": [
     {
-      "taskId": [số],
-      "scheduledTime": "YYYY-MM-DDTHH:mm:ss",
-      "durationMinutes": [số],
-      "reason": "lý do bằng tiếng Việt"
+      "taskId": 3013,
+      "scheduledTime": "2025-12-15T06:00:00",
+      "durationMinutes": 60,
+      "reason": "Công việc ABCD 6h sáng T2",
+      "isRecurring": true
+    },
+    {
+      "taskId": 3013,
+      "scheduledTime": "2025-12-16T06:00:00",
+      "durationMinutes": 60,
+      "reason": "Công việc ABCD 6h sáng T3",
+      "isRecurring": true
     }
   ],
-  "summary": "tóm tắt bằng tiếng Việt",
+  "summary": "Đã tạo 7 events lặp lại mỗi ngày cho công việc ABCD lúc 06:00 từ T2-CN",
   "statistics": {
-    "totalTasks": [số],
-    "totalHours": [số],
-    "daysUsed": [số]
+    "totalTasks": 1,
+    "totalHours": 7,
+    "daysUsed": 7,
+    "recurringEvents": 7
   }
 }
 
-Ví dụ scheduledTime: "2025-12-04T09:00:00"
-Thời gian phải nằm trong khoảng từ ${startDate} đến ${endDate}.`;
+═══════════════════════════════════════════════════════════════
+LUẬT BẮT BUỘC:
+═══════════════════════════════════════════════════════════════
+1. LUÔN trả JSON hợp lệ, không kèm giải thích
+2. scheduledTime PHẢI nằm trong khoảng: ${startDate} - ${endDate}
+3. Nếu là lặp lại, PHẢI có nhiều entries (đừng chỉ 1)
+4. Mỗi entry = 1 event cụ thể tại 1 ngày/giờ
+5. "reason" bằng Tiếng Việt, giải thích tại sao chọn thời gian này
+6. Nếu không hiểu yêu cầu, dùng "suitableTime" từ danh sách công việc`;
 }
 
 async function callGeminiAI(prompt) {
@@ -243,40 +530,78 @@ async function callGeminiAI(prompt) {
       throw new Error("Gemini AI is not available");
     }
 
-    const maxRetries = 2;
+    const maxRetries = 3;
     let lastError = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Attempt ${attempt}/${maxRetries}`);
 
+        // Exponential backoff: 2s, 4s, 8s
+        if (attempt > 1) {
+          const delayMs = Math.pow(2, attempt) * 1000;
+          console.log(`⏳ Waiting ${delayMs}ms before retry...`);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+
         const result = await geminiModel.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 
         console.log("Gemini AI response received");
+        console.log(`Response length: ${text.length} chars`);
+        console.log(`First 200 chars: ${text.substring(0, 200)}`);
+        console.log(`Gemini response: ${text.substring(0, 300)}`);
 
-        const jsonMatch = text.match(/{[\s\S]*}/);
+        // Cách 1: Tìm JSON trong response (greedy)
+        let jsonMatch = text.match(/{[\s\S]*}/);
+
+        // Cách 2: Nếu không tìm thấy, thử tìm trong backticks
         if (!jsonMatch) {
+          const backtickMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          if (backtickMatch) {
+            const cleaned = backtickMatch[1].trim();
+            jsonMatch = cleaned.match(/{[\s\S]*}/);
+          }
+        }
+
+        // Cách 3: Thử parse toàn bộ text nếu nó là JSON
+        if (!jsonMatch && text.trim().startsWith("{")) {
+          jsonMatch = [text.trim()];
+        }
+
+        if (!jsonMatch) {
+          console.error("❌ Gemini response:", text.substring(0, 500));
           throw new Error("No JSON found in response");
         }
 
         const jsonStr = jsonMatch[0];
-        const parsed = JSON.parse(jsonStr);
+        console.log(`✅ Extracted JSON (${jsonStr.length} chars)`);
+
+        let parsed;
+        try {
+          parsed = JSON.parse(jsonStr);
+        } catch (parseError) {
+          console.error("❌ JSON parse error:", parseError.message);
+          console.error("Attempted JSON:", jsonStr.substring(0, 300));
+          throw new Error(`Invalid JSON: ${parseError.message}`);
+        }
 
         if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
           throw new Error("Invalid response format: missing suggestions array");
         }
 
-        console.log(`Parsed ${parsed.suggestions.length} suggestions`);
+        if (parsed.suggestions.length === 0) {
+          throw new Error("AI returned empty suggestions array");
+        }
+
+        console.log(
+          `✅ Parsed ${parsed.suggestions.length} suggestions successfully`
+        );
         return parsed;
       } catch (attemptError) {
         lastError = attemptError;
-        console.log(`Attempt ${attempt} failed:`, attemptError.message);
-
-        if (attempt < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
+        console.log(`❌ Attempt ${attempt} failed:`, attemptError.message);
       }
     }
 
@@ -469,27 +794,37 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
         );
 
         console.log(
-          "Prompt with additional instructions:",
-          prompt.substring(0, 500) + "..."
+          "📋 Prompt length:",
+          prompt.length,
+          "chars | First 300 chars:"
         );
+        console.log(prompt.substring(0, 300) + "...\n");
 
         aiResult = await callGeminiAI(prompt);
         mode = "gemini";
         console.log(
-          "Gemini AI processed successfully with additional instructions"
+          "✅ Gemini AI processed successfully with",
+          aiResult.suggestions?.length || 0,
+          "suggestions"
         );
       } catch (aiError) {
-        console.error("Gemini AI failed:", aiError.message);
-        aiResult = await generateSimulatedSchedule(
+        console.error(
+          "❌ Gemini AI failed:",
+          aiError.message,
+          "| Falling back to simulation..."
+        );
+        aiResult = await generateSimulatedScheduleWithInstructions(
           taskDetails,
           startDate,
           endDate,
           options,
-          existingEvents
+          existingEvents,
+          additionalInstructions
         );
         mode = "simulation_fallback";
       }
     } else {
+      console.log("⚠️ Gemini not available, using simulation mode...");
       aiResult = await generateSimulatedScheduleWithInstructions(
         taskDetails,
         startDate,
@@ -569,33 +904,160 @@ async function generateSimulatedScheduleWithInstructions(
   existingEvents,
   additionalInstructions = ""
 ) {
-  console.log("Generating simulated schedule with instructions...");
+  console.log("🎯 Generating simulated schedule WITH instruction analysis...");
   console.log("Additional instructions:", additionalInstructions);
 
-  // Sử dụng hàm cũ và thêm xử lý cho instructions nếu cần
-  const baseSchedule = await generateSimulatedSchedule(
-    taskDetails,
-    startDate,
-    endDate,
-    options,
-    existingEvents
-  );
+  // Phân tích recurring patterns
+  const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
+  console.log(`📋 Found ${recurringPatterns.length} recurring pattern(s)`);
 
-  // Nếu có additionalInstructions, có thể điều chỉnh schedule ở đây
-  if (additionalInstructions.trim()) {
-    console.log("Applying additional instructions to simulated schedule...");
+  const suggestions = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
-    // Có thể thêm logic xử lý instructions đơn giản ở đây
-    // Ví dụ: thêm note về instructions vào reason
-    baseSchedule.suggestions = baseSchedule.suggestions.map((suggestion) => ({
-      ...suggestion,
-      reason: suggestion.reason + " (Có hướng dẫn bổ sung từ người dùng)",
-    }));
+  // Nếu có recurring patterns, xử lý cho từng pattern
+  if (recurringPatterns.length > 0) {
+    console.log(
+      `\n🔄 Processing ${recurringPatterns.length} recurring pattern(s)...`
+    );
 
-    baseSchedule.summary = `Đã tạo ${baseSchedule.suggestions.length} khung giờ với hướng dẫn bổ sung`;
+    for (const pattern of recurringPatterns) {
+      console.log(
+        `\n  Pattern: ${pattern.frequency} on days [${pattern.days.join(
+          ", "
+        )}] at times:`,
+        pattern.times.map(
+          (t) =>
+            `${t.startHour.toString().padStart(2, "0")}:${t.startMin
+              .toString()
+              .padStart(2, "0")}`
+        )
+      );
+
+      // Tìm task phù hợp - ưu tiên task được nhắc trong instructions
+      let selectedTask = null;
+      const instructionLower = additionalInstructions.toLowerCase();
+
+      for (const task of taskDetails) {
+        const taskTitle = task.title.toLowerCase();
+        // Kiểm tra xem task có được nhắc đến trong instructions không
+        if (instructionLower.includes(taskTitle)) {
+          selectedTask = task;
+          console.log(`    ✓ Found task in instructions: "${task.title}"`);
+          break;
+        }
+      }
+
+      // Nếu không tìm thấy task cụ thể, dùng task đầu tiên
+      if (!selectedTask) {
+        selectedTask = taskDetails[0];
+        console.log(
+          `    ⚠️ No specific task found, using first task: "${selectedTask.title}"`
+        );
+      }
+
+      // Tạo events cho TẤT CẢ ngày khớp trong khoảng ngày
+      for (let i = 0; i <= daysDiff; i++) {
+        const currentDate = new Date(start);
+        currentDate.setDate(currentDate.getDate() + i);
+        const dayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay(); // Sunday=7, Monday=1
+
+        // Kiểm tra xem ngày này có trong danh sách không
+        if (pattern.days.includes(dayOfWeek)) {
+          for (const time of pattern.times) {
+            const eventDate = new Date(currentDate);
+            eventDate.setHours(time.startHour, time.startMin, 0, 0);
+
+            // Tính thời lượng
+            let durationMinutes = selectedTask.estimatedMinutes || 60;
+            if (time.endHour !== null) {
+              const startTotalMin = time.startHour * 60 + time.startMin;
+              const endTotalMin = time.endHour * 60 + time.endMin;
+              durationMinutes = endTotalMin - startTotalMin;
+            }
+
+            suggestions.push({
+              taskId: selectedTask.id,
+              scheduledTime: eventDate.toISOString(),
+              durationMinutes: Math.max(durationMinutes, 30), // Tối thiểu 30 phút
+              reason: `${selectedTask.title} - Lúc ${time.startHour
+                .toString()
+                .padStart(2, "0")}:${time.startMin
+                .toString()
+                .padStart(2, "0")}${
+                time.endHour
+                  ? ` - ${time.endHour
+                      .toString()
+                      .padStart(2, "0")}:${time.endMin
+                      .toString()
+                      .padStart(2, "0")}`
+                  : ""
+              }`,
+              color: selectedTask.color,
+              isRecurring: true,
+            });
+
+            const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+            console.log(
+              `    ✅ ${dayNames[dayOfWeek]} ${eventDate.toLocaleDateString(
+                "vi-VN"
+              )} ${time.startHour.toString().padStart(2, "0")}:${time.startMin
+                .toString()
+                .padStart(2, "0")} → "${selectedTask.title}"`
+            );
+          }
+        }
+      }
+    }
+
+    console.log(`\n📊 Total recurring events created: ${suggestions.length}`);
   }
 
-  return baseSchedule;
+  // Nếu vẫn chưa có suggestions (không có pattern), dùng cách cũ
+  if (suggestions.length === 0) {
+    console.log("⚠️ No recurring patterns found, using default scheduling...");
+    const baseSchedule = await generateSimulatedSchedule(
+      taskDetails,
+      startDate,
+      endDate,
+      options,
+      existingEvents
+    );
+    return {
+      ...baseSchedule,
+      summary:
+        baseSchedule.summary + " (Chế độ mặc định, không có yêu cầu cụ thể)",
+    };
+  }
+
+  const uniqueDays = new Set(
+    suggestions.map((s) => new Date(s.scheduledTime).toDateString())
+  ).size;
+
+  const totalMinutes = suggestions.reduce(
+    (sum, s) => sum + s.durationMinutes,
+    0
+  );
+
+  const recurringCount = suggestions.filter((s) => s.isRecurring).length;
+
+  return {
+    suggestions: suggestions.map(({ isRecurring, recurringDay, ...rest }) => ({
+      ...rest,
+    })),
+    summary: `Đã tạo ${
+      suggestions.length
+    } khung giờ (bao gồm ${recurringCount} events lặp lại) từ các yêu cầu cụ thể trong ${uniqueDays} ngày. Tổng thời lượng: ${Math.round(
+      totalMinutes / 60
+    )} giờ.`,
+    statistics: {
+      totalTasks: suggestions.length,
+      totalHours: Math.round(totalMinutes / 60),
+      daysUsed: uniqueDays,
+      recurringEvents: recurringCount,
+    },
+  };
 }
 
 router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
@@ -605,42 +1067,93 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
   console.log(`\n📝 SAVE AI SUGGESTIONS REQUEST`);
   console.log(`   User: ${userId}`);
   console.log(`   Suggestions: ${suggestions?.length || 0}`);
-  console.log(`   Data:`, JSON.stringify(suggestions?.[0], null, 2));
+  if (suggestions?.length > 0) {
+    console.log(
+      `   First suggestion:`,
+      JSON.stringify(suggestions[0], null, 2)
+    );
+  }
 
   if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) {
     return res.status(400).json({ success: false, message: "Danh sách rỗng" });
   }
 
+  // ❌ PREVENT DUPLICATE SAVES - Check if suggestions already exist
+  const uniqueKey = `${userId}_${suggestions
+    .map((s) => s.taskId)
+    .sort()
+    .join("_")}`;
+  if (
+    global.lastAISaveKey === uniqueKey &&
+    Date.now() - global.lastAISaveTime < 5000
+  ) {
+    console.log("⚠️ Duplicate save attempt detected - skipping");
+    return res.json({
+      success: true,
+      saved: 0,
+      message: "Đã lưu rồi, không lưu lại",
+    });
+  }
+  global.lastAISaveKey = uniqueKey;
+  global.lastAISaveTime = Date.now();
+
   try {
     const pool = await dbPoolPromise;
 
-    // ✅ 1. XÓA TẤT CẢ AI SUGGESTIONS CŨ
-    const deleteResult = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(`DELETE FROM LichTrinh WHERE UserID = @userId AND AI_DeXuat = 1`);
+    // ✅ 1. XÓA TẤT CẢ AI SUGGESTIONS CŨ (chỉ AI events, không xoá normal tasks)
+    const deleteResult = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+        DELETE FROM LichTrinh 
+        WHERE UserID = @userId AND AI_DeXuat = 1
+      `);
 
-    console.log(
-      `🗑️ Deleted ${deleteResult.rowsAffected?.[0] || 0} old AI events`
-    );
+    const deletedCount = deleteResult.rowsAffected?.[0] || 0;
+    console.log(`🗑️ Deleted ${deletedCount} old AI events (kept normal tasks)`);
 
-    // ✅ 2. LƯU AI SUGGESTIONS MỚI
+    // ✅ 2. LƯU AI SUGGESTIONS MỚI (với dedupication logic)
     const savedIds = [];
+    const saveStartTime = Date.now();
+
     for (const s of suggestions) {
       const start = new Date(s.scheduledTime);
       const end = new Date(start.getTime() + s.durationMinutes * 60000);
 
-      console.log(`\n   Saving: "${s.title}" (Task ${s.taskId})`);
-      console.log(`   Start: ${start.toISOString()}`);
-      console.log(`   End: ${end.toISOString()}`);
+      console.log(
+        `\n   Saving: "${s.title || "AI Schedule"}" (Task ${s.taskId})`
+      );
+      console.log(
+        `   Time: ${start.toLocaleString("vi-VN")} → ${end.toLocaleString(
+          "vi-VN"
+        )}`
+      );
       console.log(`   Duration: ${s.durationMinutes} min`);
+
+      // ✅ Check if this exact event already exists (prevent duplicates)
+      const checkDuplicate = await pool
+        .request()
+        .input("taskId", sql.Int, s.taskId)
+        .input("startTime", sql.DateTime, start)
+        .input("userId", sql.Int, userId).query(`
+          SELECT TOP 1 MaLichTrinh 
+          FROM LichTrinh 
+          WHERE MaCongViec = @taskId 
+            AND GioBatDau = @startTime 
+            AND UserID = @userId
+            AND AI_DeXuat = 1
+        `);
+
+      if (checkDuplicate.recordset.length > 0) {
+        console.log(`   ⚠️ Event already exists - skipping`);
+        savedIds.push(checkDuplicate.recordset[0].MaLichTrinh);
+        continue;
+      }
 
       const result = await pool
         .request()
         .input("taskId", sql.Int, s.taskId)
         .input("startTime", sql.DateTime, start)
         .input("endTime", sql.DateTime, end)
-        .input("note", sql.NVarChar, s.reason || "AI đề xuất")
+        .input("note", sql.NVarChar, s.reason || "Được đề xuất bởi AI")
         .input("color", sql.NVarChar, s.color || "#8B5CF6")
         .input("userId", sql.Int, userId).query(`
           INSERT INTO LichTrinh 
@@ -657,39 +1170,46 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
       }
     }
 
+    const saveTime = Date.now() - saveStartTime;
     console.log(
-      `\n✅ Đã lưu ${savedIds.length}/${suggestions.length} lịch AI mới`
+      `\n✅ Đã lưu ${savedIds.length}/${suggestions.length} lịch AI mới (${saveTime}ms)`
     );
     console.log(`   IDs: ${savedIds.join(", ")}`);
 
     // ✅ 3. TRACK AI PROPOSAL VÀO PhienAIDeXuat TABLE (NẾU TỒN TẠI)
     try {
       const summaryContent = suggestions
-        .map((s) => `- ${s.title} (${s.durationMinutes} phút)`)
+        .map(
+          (s, i) =>
+            `${i + 1}. ${s.title || "Công việc"} - ${
+              s.durationMinutes || 60
+            } phút`
+        )
         .join("\n");
 
-      const trackResult = await pool
+      await pool
         .request()
         .input("userId", sql.Int, userId)
-        .input("content", sql.NVarChar, summaryContent)
+        .input("content", sql.NVarChar, `AI Proposal:\n${summaryContent}`)
         .input("applyTime", sql.DateTime, new Date()).query(`
-          IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='PhienAIDeXuat')
+          IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
+                     WHERE TABLE_NAME='PhienAIDeXuat')
           BEGIN
             INSERT INTO PhienAIDeXuat (UserID, NgayDeXuat, NoiDungYeuCau, DaApDung, ThoiGianApDung)
             VALUES (@userId, GETDATE(), @content, 1, @applyTime)
           END
         `);
 
-      console.log("✅ Tracked AI proposal to PhienAIDeXuat");
+      console.log("✅ Tracked AI proposal");
     } catch (trackError) {
-      console.warn("⚠️ Could not track to PhienAIDeXuat:", trackError.message);
-      // Không fail request, vì table có thể chưa tồn tại
+      console.warn("⚠️ Could not track:", trackError.message);
     }
 
     res.json({
       success: true,
       saved: savedIds.length,
       savedIds: savedIds,
+      deletedOld: deletedCount,
     });
   } catch (err) {
     console.error("❌ Lỗi lưu AI suggestions:", err);
@@ -729,36 +1249,47 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
       ORDER BY lt.GioBatDau DESC
     `);
 
-    console.log(`   📦 Raw DB records: ${result.recordset.length}`);
-    result.recordset.forEach((r, i) => {
-      console.log(
-        `      [${i}] ${r.TieuDe} | ${r.GioBatDau} -> ${r.GioKetThuc} | AI_DeXuat=${r.AI_DeXuat}`
-      );
+    const totalRecords = result.recordset.length;
+    console.log(`   📦 Total: ${totalRecords}`);
+
+    const eventMap = new Map();
+    result.recordset.forEach((r) => {
+      const key = `${r.MaCongViec}_${r.GioBatDau.getTime()}`;
+      if (!eventMap.has(key)) {
+        eventMap.set(key, r);
+      }
     });
 
-    const events = result.recordset.map((ev) => ({
+    const uniqueRecords = Array.from(eventMap.values());
+    console.log(
+      `   ✅ Unique: ${uniqueRecords.length} (removed ${
+        totalRecords - uniqueRecords.length
+      })`
+    );
+
+    const events = uniqueRecords.map((ev) => ({
       MaLichTrinh: ev.MaLichTrinh,
       MaCongViec: ev.MaCongViec,
-      TieuDe: ev.TieuDe || "AI Đề xuất",
+      TieuDe: ev.TieuDe || "Lịch trình AI",
       GioBatDau: ev.GioBatDau,
       GioKetThuc: ev.GioKetThuc,
-      GhiChu: ev.GhiChu || "Được đề xuất bởi AI",
-      Color: ev.Color, // SỬA: Lấy trực tiếp từ query
+      GhiChu: ev.GhiChu || "✨ Được AI tối ưu",
+      Color: ev.Color,
       priority: ev.MucDoUuTien,
       AI_DeXuat: ev.AI_DeXuat,
     }));
 
-    console.log(`✅ Trả về ${events.length} AI events với màu sắc`);
+    console.log(`✅ Returned ${events.length} unique AI events`);
 
     res.json({
       success: true,
       data: events,
     });
   } catch (error) {
-    console.error("❌ Lỗi lấy AI events:", error);
+    console.error("❌ Error fetching AI events:", error);
     res.status(500).json({
       success: false,
-      message: "Lỗi server khi lấy AI events",
+      message: "Server error",
       error: error.message,
     });
   }

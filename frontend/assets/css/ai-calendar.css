@@ -18,6 +18,7 @@
 /* AI Calendar Container */
 #ai-calendar {
   width: 100% !important;
+  max-width: none !important;
   height: 100% !important;
   min-height: 600px !important;
   background: white !important;
@@ -28,11 +29,24 @@
 /* FullCalendar inside AI section */
 #ai-calendar .fc {
   height: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
   font-size: 14px !important;
 }
 
 #ai-calendar .fc-view-harness {
   height: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#ai-calendar .fc-col-time-frame {
+  width: 100% !important;
+}
+
+#ai-calendar .fc-scroller {
+  overflow-x: auto !important;
+  max-width: 100% !important;
 }
 
 /* AI Suggested Events - Special Styling */
@@ -165,6 +179,7 @@
 @media (max-width: 768px) {
   #ai-calendar {
     min-height: 500px !important;
+    max-width: 100% !important;
     border-radius: 8px;
   }
 

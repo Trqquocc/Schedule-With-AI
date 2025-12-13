@@ -279,16 +279,21 @@
 
         console.log(`📊 Received ${res.data.length} total events from server`);
 
-        // Log AI events để debug
+        // ============================================================
+        // 🔴 FILTER LOẠI BỎ AI EVENTS - ENHANCED VERSION
+        // ============================================================
         const aiEvents = res.data.filter(
-          (ev) => ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1"
+          (ev) =>
+            ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1" || ev.AI_DeXuat === true
         );
         if (aiEvents.length > 0) {
-          console.log(
-            `🤖 Found ${aiEvents.length} AI events that will be FILTERED OUT:`,
+          console.warn(
+            `🤖 FOUND ${aiEvents.length} AI EVENTS - WILL BE FILTERED OUT:`,
             aiEvents.map((e) => ({
+              id: e.MaLichTrinh,
               title: e.TieuDe || e.title,
               AI_DeXuat: e.AI_DeXuat,
+              start: e.GioBatDau,
             }))
           );
         }
@@ -296,16 +301,20 @@
         // ✅ FILTER LOẠI BỎ AI EVENTS VÀ ĐẢM BẢO MÀU SẮC
         const normalEvents = res.data
           .filter((ev) => {
-            // Loại bỏ nếu AI_DeXuat = 1
-            const isAI = ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1";
+            // ⚠️ LOẠI BỎ NẾU AI_DeXuat = 1 (tất cả variation)
+            const isAI =
+              ev.AI_DeXuat === 1 ||
+              ev.AI_DeXuat === "1" ||
+              ev.AI_DeXuat === true;
+
             if (isAI) {
               console.log(
-                `⏭️ Skipping AI event: ${ev.TieuDe || ev.title} (AI_DeXuat=${
-                  ev.AI_DeXuat
-                })`
+                `⏭️ ❌ SKIPPING AI EVENT: ${
+                  ev.TieuDe || ev.title
+                } | AI_DeXuat=${ev.AI_DeXuat} (type: ${typeof ev.AI_DeXuat})`
               );
             }
-            return !isAI;
+            return !isAI; // ✅ Chỉ trả về events KHÔNG phải AI
           })
           .map((ev) => {
             // ĐẢM BẢO LUÔN CÓ MÀU SẮC
@@ -326,7 +335,7 @@
                   ev.DaHoanThanh === 1 || ev.extendedProps?.completed || false,
                 taskId: ev.MaCongViec || ev.extendedProps?.taskId || null,
                 isFromDrag: ev.isFromDrag || false,
-                isAIEvent: ev.AI_DeXuat === 1,
+                isAIEvent: false, // ✅ Set = false vì đã filter AI events
                 priority: ev.MucDoUuTien || 2,
                 originalColor: color, // Lưu màu gốc
               },
@@ -334,8 +343,9 @@
           });
 
         console.log(
-          `📊 Loaded ${normalEvents.length} normal events with colors`
+          `✅ FINAL: ${res.data.length} total → ${aiEvents.length} AI filtered → ${normalEvents.length} normal events shown`
         );
+
         return normalEvents;
       } catch (err) {
         console.error("Load events error:", err);

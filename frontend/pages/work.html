@@ -75,12 +75,47 @@
       <!-- Main Table Container -->
       <div id="work-items-container" class="min-w-full">
         <!-- Loading state -->
-        <div class="text-center py-12" id="loading-indicator">
+        <div class="text-center py-12 hidden" id="loading-indicator">
           <div
             class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"
           ></div>
           <p class="text-gray-600 font-medium">Đang tải công việc...</p>
         </div>
+
+        <!-- Empty state -->
+        <div class="empty-state hidden" id="empty-state-indicator">
+          <div class="empty-state-icon">
+            <i class="fas fa-inbox"></i>
+          </div>
+          <h2 class="empty-state-title">Bắt đầu quản lý công việc của bạn</h2>
+          <p class="empty-state-description">
+            Chào mừng! Hãy tạo công việc đầu tiên để bắt đầu hành trình quản lý
+            hiệu quả. Với tính năng AI thông minh, chúng tôi sẽ giúp bạn lên
+            lịch trình làm việc tối ưu.
+          </p>
+          <div class="empty-state-features">
+            <div class="feature-item">
+              <i class="fas fa-brain"></i>
+              <span>AI thông minh lên lịch</span>
+            </div>
+            <div class="feature-item">
+              <i class="fas fa-chart-line"></i>
+              <span>Theo dõi tiến độ</span>
+            </div>
+            <div class="feature-item">
+              <i class="fas fa-clock"></i>
+              <span>Quản lý thời gian</span>
+            </div>
+          </div>
+          <button
+            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium shadow-md transition-all hover:shadow-lg active:scale-95"
+            onclick="if(window.ModalManager) window.ModalManager.showCreateTaskModal();"
+          >
+            <i class="fas fa-plus"></i>
+            Tạo công việc đầu tiên
+          </button>
+        </div>
+
         <!-- Table sẽ được render bởi JavaScript -->
       </div>
     </div>
@@ -95,7 +130,7 @@
         if (createBtn) {
           createBtn.addEventListener("click", function () {
             if (window.ModalManager) {
-              window.ModalManager.showModalById("createTaskModal");
+              window.ModalManager.showCreateTaskModal();
             }
           });
         }

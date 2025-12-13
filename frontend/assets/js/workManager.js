@@ -200,10 +200,33 @@
         return;
       }
 
-      // Xóa loading indicator
+      // Ẩn loading indicator
       const loadingIndicator = document.getElementById("loading-indicator");
       if (loadingIndicator) {
-        loadingIndicator.remove();
+        loadingIndicator.classList.add("hidden");
+      }
+
+      // Ẩn empty state nếu có
+      const emptyState = document.getElementById("empty-state-indicator");
+
+      if (tasks.length === 0) {
+        // Hiển thị empty state
+        if (emptyState) {
+          emptyState.classList.remove("hidden");
+        }
+
+        // Xóa bảng nếu có
+        const table = container.querySelector(".work-table-container");
+        if (table) {
+          table.remove();
+        }
+
+        return;
+      }
+
+      // Ẩn empty state vì có công việc
+      if (emptyState) {
+        emptyState.classList.add("hidden");
       }
 
       // Phân loại công việc
@@ -211,37 +234,6 @@
       const completedTasks = tasks.filter(
         (task) => task.TrangThaiThucHien === 2
       );
-
-      if (tasks.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">
-              <i class="fas fa-tasks text-4xl text-gray-300"></i>
-            </div>
-            <h3 class="empty-state-title mt-4 text-xl font-semibold text-gray-700">Không có công việc nào</h3>
-            <p class="empty-state-description mt-2 text-gray-500">
-              Bạn chưa có công việc nào được tạo. Hãy bắt đầu bằng cách tạo công việc mới!
-            </p>
-            <button id="create-empty-task-btn" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors">
-              <i class="fas fa-plus mr-2"></i>Tạo công việc đầu tiên
-            </button>
-          </div>
-        `;
-
-        // Bind sự kiện cho nút tạo công việc
-        setTimeout(() => {
-          const createBtn = document.getElementById("create-empty-task-btn");
-          if (createBtn) {
-            createBtn.addEventListener("click", () => {
-              if (window.ModalManager) {
-                window.ModalManager.showModalById("createTaskModal");
-              }
-            });
-          }
-        }, 100);
-
-        return;
-      }
 
       let html = `
         <!-- Công việc đang chờ -->
@@ -872,9 +864,18 @@
             title: "Đã xóa!",
             text: result.message || "Công việc đã được xóa thành công.",
             icon: "success",
-            timer: 2000,
+            timer: 1500,
             showConfirmButton: false,
           });
+
+          // Xoá task row từ DOM ngay lập tức
+          const taskRow = document.getElementById(`task-${taskId}`);
+          if (taskRow) {
+            taskRow.style.animation = "fadeOut 0.3s ease-out forwards";
+            setTimeout(() => {
+              taskRow.remove();
+            }, 300);
+          }
 
           await this.loadTasks();
           document.dispatchEvent(

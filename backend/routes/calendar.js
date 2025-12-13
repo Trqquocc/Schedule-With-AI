@@ -38,7 +38,7 @@ router.get("/events", authenticateToken, async (req, res) => {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
-    // SỬA QUERY NÀY - THÊM VIỆC LẤY MÀU SẮC
+    // ✅ LẤY CẢ NORMAL EVENTS VÀ AI EVENTS (Frontend sẽ filter)
     const result = await pool.request().input("userId", sql.Int, userId).query(`
       SELECT 
         lt.MaLichTrinh,
@@ -60,7 +60,7 @@ router.get("/events", authenticateToken, async (req, res) => {
           END) AS MauSac
       FROM LichTrinh lt
       LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-      WHERE cv.UserID = @userId
+      WHERE (cv.UserID = @userId OR lt.UserID = @userId)
         AND lt.GioBatDau >= DATEADD(day, -30, GETDATE())
       ORDER BY lt.GioBatDau DESC
     `);
@@ -75,7 +75,7 @@ router.get("/events", authenticateToken, async (req, res) => {
       MauSac: ev.MauSac || "#3788d8", // ĐẢM BẢO LUÔN CÓ MÀU
       DaHoanThanh: ev.DaHoanThanh,
       MucDoUuTien: ev.MucDoUuTien,
-      AI_DeXuat: ev.AI_DeXuat || 0,
+      AI_DeXuat: ev.AI_DeXuat || 0, // ✅ LUÔN CÓ FIELD NÀY
     }));
 
     console.log(`✅ Trả về ${events.length} events với màu sắc`);
