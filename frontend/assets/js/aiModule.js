@@ -366,41 +366,19 @@
       console.log("🤖 Opening AI suggestion modal...");
 
       try {
-        const modal = document.getElementById("aiSuggestionModal");
-
-        if (!modal) {
-          console.error("❌ AI modal element not found");
-          alert("Không tìm thấy modal AI. Vui lòng tải lại trang.");
-          return;
-        }
-
-        // Hiển thị modal
-        modal.classList.add("active", "show");
-        modal.style.display = "flex";
-        document.body.classList.add("modal-open");
-
-        console.log("✅ Modal displayed");
-
-        // Wait 500ms rồi init AIHandler
-        setTimeout(() => {
-          console.log("🔄 Initializing AIHandler...");
-
-          if (window.AIHandler && window.AIHandler.initAIModal) {
-            AIHandler.initAIModal()
-              .then(() => {
-                console.log("✅ AIHandler initialized successfully");
-              })
-              .catch((error) => {
-                console.error("❌ AIHandler init failed:", error);
-                this.showModalError(error.message);
-              });
-          } else {
-            console.error("❌ AIHandler not available");
-            this.showModalError(
-              "AIHandler không khả dụng. Vui lòng tải lại trang."
-            );
+        // Check if ModalManager is available
+        if (window.ModalManager && window.ModalManager.showModalById) {
+          console.log("✅ Using ModalManager to show modal");
+          window.ModalManager.showModalById("aiSuggestionModal");
+        } else {
+          console.warn("⚠️ ModalManager not available, showing fallback");
+          const modal = document.getElementById("aiSuggestionModal");
+          if (modal) {
+            modal.classList.remove("hidden");
+            modal.classList.add("active", "show");
+            document.body.style.overflow = "hidden";
           }
-        }, 500);
+        }
       } catch (error) {
         console.error("❌ Error opening modal:", error);
         alert("Lỗi mở modal: " + error.message);
@@ -462,12 +440,25 @@
      * Helper để đóng modal
      */
     closeModal() {
-      const modal = document.getElementById("aiSuggestionModal");
-      if (modal) {
-        modal.classList.remove("active", "show");
-        modal.style.display = "none";
-        document.body.classList.remove("modal-open");
-        console.log("✅ Modal closed");
+      console.log("🤖 AIModule.closeModal() called");
+
+      // ✅ Use ModalManager to close modal consistently
+      if (window.ModalManager && ModalManager.close) {
+        ModalManager.close("aiSuggestionModal");
+        console.log("✅ Modal closed via ModalManager");
+      } else {
+        console.warn("⚠️ ModalManager not available, using fallback");
+        const modal = document.getElementById("aiSuggestionModal");
+        if (modal) {
+          modal.classList.remove("active", "show");
+          modal.classList.add("hidden");
+          // Remove inline styles
+          modal.style.display = "";
+          modal.style.opacity = "";
+          modal.style.visibility = "";
+          document.body.classList.remove("modal-open");
+          console.log("✅ Modal closed (fallback)");
+        }
       }
     },
 
@@ -793,14 +784,40 @@
     // AI BUTTON SETUP
     // ==========================================================
     setupAIButton() {
-      const btn = document.getElementById("ai-suggest-btn");
-      if (btn) {
+      console.log("🎯 Setting up AI button...");
+
+      const trySetup = (attempt = 1) => {
+        const btn = document.getElementById("ai-suggest-btn");
+
+        if (!btn) {
+          if (attempt < 5) {
+            console.warn(
+              `⏳ AI button not found yet (attempt ${attempt}/5), retrying in 200ms...`
+            );
+            setTimeout(() => trySetup(attempt + 1), 200);
+          } else {
+            console.error("❌ AI button not found after 5 attempts");
+          }
+          return;
+        }
+
+        console.log("✅ AI button found, setting up listener...");
+
         // Remove old listeners
         const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
+        btn.parentNode?.replaceChild(newBtn, btn);
 
-        newBtn.addEventListener("click", () => this.openAiSuggestionModal());
-      }
+        newBtn.addEventListener("click", (e) => {
+          console.log("🖱️ AI button clicked!");
+          e.preventDefault();
+          e.stopPropagation();
+          this.openAiSuggestionModal();
+        });
+
+        console.log("✅ AI button listener setup complete");
+      };
+
+      trySetup();
     },
 
     // ==========================================================

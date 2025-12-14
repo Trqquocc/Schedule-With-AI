@@ -1,56 +1,37 @@
-// salaryManager.js
+// frontend/assets/js/salaryManager.js
 // Quản lý hiển thị trang Tính lương và Thống kê
+
 (function () {
-  const api = {
-  salary: "/api/salary",
+  "use strict";
+
+  // API endpoints
+  const API = {
+    salary: "/api/salary",
     stats: "/api/statistics",
   };
 
-  function formatCurrency(v) {
-    return new Intl.NumberFormat("vi-VN").format(v) + " VND";
+  // Chart instances
+  let barChart = null;
+  let donutChart = null;
+
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
   }
 
-  function buildSalaryTable(entries) {
-    if (!entries || entries.length === 0) {
-      return `<div class="p-6">Không có dữ liệu</div>`;
-    }
-
-    let rows = entries
-      .map((e) => {
-        const date = e.date ? new Date(e.date).toLocaleDateString() : "";
-        return `
-        <tr class="border-t">
-          <td class="px-4 py-3">${escapeHtml(e.title)}</td>
-          <td class="px-4 py-3">${date}</td>
-          <td class="px-4 py-3">${formatCurrency(e.rate)}</td>
-          <td class="px-4 py-3">${e.hours} giờ</td>
-          <td class="px-4 py-3">${escapeHtml(e.note)}</td>
-        </tr>`;
-      })
-      .join("");
-
-    return `
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <table class="w-full text-left table-auto">
-          <thead>
-            <tr class="bg-gray-50">
-              <th class="px-4 py-3">Tên công việc</th>
-              <th class="px-4 py-3">Ngày hoàn thành</th>
-              <th class="px-4 py-3">Mức lương (VND)</th>
-              <th class="px-4 py-3">Số giờ làm</th>
-              <th class="px-4 py-3">Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-      </div>`;
+  function formatDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    return date.toLocaleDateString("vi-VN");
   }
 
-  function escapeHtml(s) {
-    if (!s) return "";
-    return String(s)
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -58,462 +39,444 @@
       .replace(/'/g, "&#039;");
   }
 
-  async function loadSalary(from, to) {
-    const token = localStorage.getItem("auth_token");
-    const q = [];
-    if (from) q.push(`from=${encodeURIComponent(from)}`);
-    if (to) q.push(`to=${encodeURIComponent(to)}`);
-    const url = api.salary + (q.length ? "?" + q.join("&") : "");
-
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) throw new Error("Không thể tải dữ liệu lương");
-    return res.json();
+  function getAuthToken() {
+    return localStorage.getItem("auth_token");
   }
 
-  async function loadStats(from, to) {
-    const token = localStorage.getItem("auth_token");
-    const q = [];
-    if (from) q.push(`from=${encodeURIComponent(from)}`);
-    if (to) q.push(`to=${encodeURIComponent(to)}`);
-    const url = api.stats + (q.length ? "?" + q.join("&") : "");
+  // ============================================================================
+  // API CALLS
+  // ============================================================================
 
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) throw new Error("Không thể tải dữ liệu thống kê");
-    return res.json();
+  async function loadSalaryData(from, to) {
+    try {
+      const token = getAuthToken();
+      const params = new URLSearchParams();
+      if (from) params.append("from", from);
+      if (to) params.append("to", to);
+
+      const url = `${API.salary}?${params.toString()}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Không thể tải dữ liệu lương");
+      return await response.json();
+    } catch (error) {
+      console.error("Error loading salary:", error);
+      throw error;
+    }
   }
 
-  function renderSalary(container, data) {
-    const entries = data.entries || [];
-    // Only keep entries that are marked completed. If the entry includes a
-    // completion flag (`completed` or `DaHoanThanh`) we respect it. If no
-    // completion flag exists, assume the backend already filtered and keep it.
-    const filtered = entries.filter((e) => {
-      if (typeof e.completed !== "undefined") return !!e.completed;
-      if (typeof e.DaHoanThanh !== "undefined") return Number(e.DaHoanThanh) === 1;
-      return true;
-    });
+  async function loadStatsData(from, to) {
+    try {
+      const token = getAuthToken();
+      const params = new URLSearchParams();
+      if (from) params.append("from", from);
+      if (to) params.append("to", to);
 
-    // Recompute total on the client from filtered entries so UI always matches
-    // what is displayed (don't rely solely on data.totalAmount coming from API).
-    const totalAmount = filtered.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+      const url = `${API.stats}?${params.toString()}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    // If page provides dedicated areas, render into them; otherwise replace container
-    const tableArea = document.getElementById("salary-table-area");
-    const totalBox = document.getElementById("salary-total");
+      if (!response.ok) throw new Error("Không thể tải dữ liệu thống kê");
+      return await response.json();
+    } catch (error) {
+      console.error("Error loading stats:", error);
+      throw error;
+    }
+  }
 
-    // build date range display from inputs (or show empty)
-    const fromInput = document.getElementById("salary-from");
-    const toInput = document.getElementById("salary-to");
-    const formatDate = (s) => {
-      if (!s) return "";
-      const d = new Date(s);
-      if (isNaN(d)) return s;
-      return d.toLocaleDateString();
-    };
-    const fromLabel = fromInput ? formatDate(fromInput.value) : "";
-    const toLabel = toInput ? formatDate(toInput.value) : "";
+  // ============================================================================
+  // RENDER FUNCTIONS
+  // ============================================================================
 
-    const tableHtml = `
-      <div class="mb-2">
-        <div>
-          <h2 class="text-xl font-semibold">Tính lương</h2>
-          <div class="page-dates">Chọn mốc thời gian: Từ ngày ${fromLabel || "..."} &nbsp; Đến ngày ${toLabel || "..."}</div>
+  function renderSalaryTable(entries) {
+    if (!entries || entries.length === 0) {
+      return `
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div>Không có dữ liệu công việc đã hoàn thành</div>
         </div>
-      </div>
-      <div class="mt-3">${buildSalaryTable(filtered)}</div>
-    `;
-
-    const totalHtml = `
-      <div class="label">Tổng lương:</div>
-      <div class="amount">${formatCurrency(totalAmount)}</div>
-    `;
-
-    if (tableArea) tableArea.innerHTML = tableHtml;
-    if (totalBox) totalBox.innerHTML = totalHtml;
-
-    if (!tableArea && !totalBox) {
-      container.innerHTML = tableHtml + `<div class="mt-6">${totalHtml}</div>`;
+      `;
     }
-  }
 
-  function renderStats(container, stats) {
-    const { total, completed, pending, percent, daily } = stats;
-
-    // Chart.js dynamic load
-    if (!window.Chart) {
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js";
-      script.onload = () => draw(stats, container);
-      document.head.appendChild(script);
-    } else {
-      draw(stats, container);
-    }
-  }
-
-  function draw(stats, container) {
-    const { total, completed, pending, percent, daily } = stats;
-    const labels = daily.map((d) => new Date(d.date).toLocaleDateString());
-    const totals = daily.map((d) => d.total);
-    const completedArr = daily.map((d) => d.completed);
-
-    container.innerHTML = `
-      <div class="mb-6">
-        <h2 class="text-xl font-semibold">Thống kê công việc</h2>
-      </div>
-      <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="bg-white p-4 rounded border">Tổng số công việc: <strong>${total}</strong></div>
-        <div class="bg-white p-4 rounded border">Đã hoàn thành: <strong>${completed}</strong></div>
-        <div class="bg-white p-4 rounded border">Phần trăm hoàn thành: <strong>${percent}%</strong></div>
-      </div>
-      <div class="bg-white p-4 rounded border">
-        <canvas id="stats-bar" height="120"></canvas>
-      </div>
-      <div class="mt-4 bg-white p-4 rounded border">
-        <canvas id="stats-donut" height="120"></canvas>
-      </div>
+    let tableHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Công việc</th>
+            <th>Ngày hoàn thành</th>
+            <th>Đơn giá</th>
+            <th>Số giờ</th>
+            <th>Ghi chú</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
     `;
 
-    // Bar chart
-    const ctx = document.getElementById("stats-bar").getContext("2d");
-    new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          { label: "Tổng", data: totals, backgroundColor: "#60A5FA" },
-          { label: "Hoàn thành", data: completedArr, backgroundColor: "#34D399" },
-        ],
-      },
-      options: { responsive: true, plugins: { legend: { position: 'top' } } },
+    entries.forEach((entry) => {
+      tableHTML += `
+        <tr>
+          <td>${escapeHtml(entry.title)}</td>
+          <td>${formatDate(entry.date)}</td>
+          <td>${formatCurrency(entry.rate)}</td>
+          <td>${entry.hours} giờ</td>
+          <td>${escapeHtml(entry.note) || "-"}</td>
+          <td><strong>${formatCurrency(entry.amount)}</strong></td>
+        </tr>
+      `;
     });
 
-    // Donut
-    const ctx2 = document.getElementById("stats-donut").getContext("2d");
-    new Chart(ctx2, {
-      type: "doughnut",
-      data: {
-        labels: ["Hoàn thành", "Chưa hoàn thành"],
-        datasets: [{ data: [completed, total - completed], backgroundColor: ["#60A5FA", "#C7D2FE"] }],
-      },
-      options: { responsive: true },
+    tableHTML += `</tbody></table>`;
+    return tableHTML;
+  }
+
+  function renderSalaryView(data) {
+    const entries = data.entries || [];
+
+    // Lọc ra các công việc đã được đánh dấu hoàn thành
+    const completedEntries = entries.filter((e) => {
+      // Kiểm tra các trường có thể có để xác định trạng thái hoàn thành
+      if (typeof e.completed !== "undefined") {
+        return e.completed === true || e.completed === 1;
+      }
+      if (typeof e.DaHoanThanh !== "undefined") {
+        return Number(e.DaHoanThanh) === 1;
+      }
+      // Mặc định không tính nếu không có trường trạng thái rõ ràng
+      return false;
     });
 
-    // Update side panel if present
+    // Calculate total amount
+    const totalAmount = completedEntries.reduce((sum, entry) => {
+      return sum + (Number(entry.amount) || 0);
+    }, 0);
+
+    // Render table
+    const tableContainer = document.getElementById("salary-table");
+    if (tableContainer) {
+      tableContainer.innerHTML = renderSalaryTable(completedEntries);
+    }
+
+    // Render total amount
+    const totalAmountEl = document.getElementById("total-amount");
+    if (totalAmountEl) {
+      totalAmountEl.textContent = formatCurrency(totalAmount);
+    }
+
+    // Update quick stats
+    updateQuickStats({
+      total: completedEntries.length,
+      completed: completedEntries.length,
+      percent: 100,
+    });
+  }
+
+  function renderStatsView(data) {
+    // Lọc các công việc đã hoàn thành từ dữ liệu gốc
+    const allEntries = data.allEntries || [];
+    const completedEntries = allEntries.filter(
+      (e) => Number(e.DaHoanThanh) === 1 || e.completed === true
+    );
+
+    const total = completedEntries.length;
+    const completed = completedEntries.length;
+    const pending = 0; // Vì chúng ta chỉ hiển thị công việc đã hoàn thành
+    const percent = total > 0 ? 100 : 0;
+
+    // Update summary stats
+    const statsTotal = document.getElementById("stats-total");
+    const statsCompleted = document.getElementById("stats-completed");
+    const statsPending = document.getElementById("stats-pending");
+
+    if (statsTotal) statsTotal.textContent = total; // Tổng số công việc hoàn thành
+    if (statsCompleted) statsCompleted.textContent = completed; // Số công việc hoàn thành
+    if (statsPending) statsPending.textContent = pending; // Số công việc chưa hoàn thành sẽ là 0
+
+    // Update sidebar stats
+    updateSidebarStats({ total, completed, pending, percent });
+
+    // Render charts
+    renderCharts(data);
+  }
+
+  function updateQuickStats(stats) {
+    const quickTotal = document.getElementById("quick-total");
+    const quickCompleted = document.getElementById("quick-completed");
+    const quickPercent = document.getElementById("quick-percent");
+
+    if (quickTotal) quickTotal.textContent = stats.total || 0;
+    if (quickCompleted) quickCompleted.textContent = stats.completed || 0;
+    if (quickPercent) quickPercent.textContent = (stats.percent || 0) + "%";
+  }
+
+  function updateSidebarStats(stats) {
     const sideTotal = document.getElementById("side-total");
     const sideCompleted = document.getElementById("side-completed");
-    const sidePending = document.getElementById("side-pending");
     const sidePercent = document.getElementById("side-percent");
-    if (sideTotal) sideTotal.textContent = total;
-    if (sideCompleted) sideCompleted.textContent = completed;
-    if (sidePending) sidePending.textContent = total - completed;
-    if (sidePercent) sidePercent.textContent = percent + "%";
+
+    if (sideTotal) sideTotal.textContent = stats.total || 0;
+    if (sideCompleted) sideCompleted.textContent = stats.completed || 0;
+    if (sidePercent) sidePercent.textContent = (stats.percent || 0) + "%";
   }
 
-  // Khởi tạo khi trang sẵn sàng
-  function init() {
-    // Tìm container của trang salary (được tải qua component loader)
-    const salaryContainer = document.getElementById("salary-container");
-    const salaryContent = document.getElementById("salary-content");
-    const salaryStatsContent = document.getElementById("salary-stats-content");
+  function renderCharts(data) {
+    // Lọc các công việc đã hoàn thành từ dữ liệu gốc
+    const allEntries = data.allEntries || [];
+    const completedEntries = allEntries.filter(
+      (e) => Number(e.DaHoanThanh) === 1 || e.completed === true
+    );
 
-    // Default: load last 30 days
-    const to = new Date();
-    const from = new Date(to.getTime() - 30 * 24 * 3600 * 1000);
-    const fromStr = from.toISOString().slice(0, 10);
-    const toStr = to.toISOString().slice(0, 10);
+    const completed = completedEntries.length;
+    const pending = 0; // Chỉ tính công việc hoàn thành
 
-    // Load salary
-    loadSalary(fromStr, toStr)
-      .then((r) => {
-        if (r.success) renderSalary(salaryContainer, r.data);
-        else if (salaryContainer) salaryContainer.innerHTML = `<div class=\"p-6\">Không có dữ liệu</div>`;
-        else console.warn("salaryContainer not found to render no-data message");
+    // Prepare data for charts
+    const dailyCompleted = groupCompletedByDate(completedEntries);
+    const labels = Object.keys(dailyCompleted).map((date) =>
+      new Date(date).toLocaleDateString("vi-VN", {
+        month: "short",
+        day: "numeric",
       })
-      .catch((err) => {
-        if (salaryContainer) salaryContainer.innerHTML = `<div class=\"p-6 text-red-600\">${escapeHtml(err.message)}</div>`;
-        else console.error("salaryContainer missing and can't display error:", err);
-      });
+    );
+    const completedArr = Object.values(dailyCompleted);
 
-    // Load stats
-    loadStats(fromStr, toStr)
-      .then((r) => {
-        if (r.success) renderStats(salaryStatsContent, r.data);
-        else if (salaryStatsContent) salaryStatsContent.innerHTML = `<div class=\"p-6\">Không có dữ liệu</div>`;
-        else console.warn("salaryStatsContent not found to render no-data message");
-      })
-      .catch((err) => {
-        if (salaryStatsContent) salaryStatsContent.innerHTML = `<div class=\"p-6 text-red-600\">${escapeHtml(err.message)}</div>`;
-        else console.error("salaryStatsContent missing and can't display error:", err);
-      });
+    // Bar Chart
+    const barCtx = document.getElementById("bar-chart");
+    if (barCtx) {
+      if (barChart) barChart.destroy();
+      const uncompletedArr = labels.map(() => 0); // Mảng công việc chưa hoàn thành (luôn là 0)
 
-    // Fill date inputs if present and wire apply buttons
-    const salaryFromInput = document.getElementById("salary-from");
-    const salaryToInput = document.getElementById("salary-to");
-    const statsFromInput = document.getElementById("stats-from");
-    const statsToInput = document.getElementById("stats-to");
-    if (salaryFromInput) salaryFromInput.value = fromStr;
-    if (salaryToInput) salaryToInput.value = toStr;
-    if (statsFromInput) statsFromInput.value = fromStr;
-    if (statsToInput) statsToInput.value = toStr;
-
-    const applySalaryBtn = document.getElementById("calculate-salary-btn");
-    if (applySalaryBtn) {
-      applySalaryBtn.addEventListener("click", async () => {
-        const f = salaryFromInput ? salaryFromInput.value : fromStr;
-        const t = salaryToInput ? salaryToInput.value : toStr;
-        try {
-          const r = await loadSalary(f, t);
-          if (r.success) renderSalary(salaryContainer, r.data);
-        } catch (e) {
-          console.error(e);
-        }
+      barChart = new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Hoàn thành",
+              data: completedArr,
+              backgroundColor: "#1971c2",
+              borderRadius: 6,
+            },
+            {
+              label: "Chưa hoàn thành",
+              data: uncompletedArr,
+              backgroundColor: "#e9ecef", // Màu xám nhạt
+              borderRadius: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { position: "bottom" },
+          },
+          scales: {
+            y: { beginAtZero: true },
+          },
+        },
       });
     }
 
-    const applyStatsBtn = document.getElementById("apply-stats-btn");
-    if (applyStatsBtn) {
-      applyStatsBtn.addEventListener("click", async () => {
-        const f = statsFromInput ? statsFromInput.value : fromStr;
-        const t = statsToInput ? statsToInput.value : toStr;
-        try {
-          const r = await loadStats(f, t);
-          if (r.success) renderStats(salaryStatsContent, r.data);
-        } catch (e) {
-          console.error(e);
-        }
+    // Donut Chart
+    const donutCtx = document.getElementById("donut-chart");
+    if (donutCtx) {
+      if (donutChart) donutChart.destroy();
+
+      donutChart = new Chart(donutCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Hoàn thành", "Chưa hoàn thành"],
+          datasets: [
+            {
+              data: [completed, pending],
+              backgroundColor: ["#1971c2", "#e7f5ff"],
+              borderWidth: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { position: "bottom" },
+          },
+        },
       });
     }
+  }
 
-    // Tab switching (nếu có)
-    const salaryTab = document.getElementById("salary-tab");
-    const statsTab = document.getElementById("salary-stats-tab");
-    if (salaryTab && statsTab) {
-      const setActive = (activeBtn, inactiveBtn) => {
-        if (activeBtn) activeBtn.classList.add("active");
-        if (inactiveBtn) inactiveBtn.classList.remove("active");
-      };
+  // Hàm helper mới để nhóm các công việc đã hoàn thành theo ngày
+  function groupCompletedByDate(completedEntries) {
+    const dailyData = {};
+    completedEntries.forEach((entry) => {
+      const date = new Date(entry.date).toISOString().split("T")[0];
+      if (dailyData[date]) {
+        dailyData[date]++;
+      } else {
+        dailyData[date] = 1;
+      }
+    });
+    // Sắp xếp theo ngày
+    return Object.fromEntries(
+      Object.entries(dailyData).sort(([a], [b]) => new Date(a) - new Date(b))
+    );
+  }
 
-      const show = (which) => {
-        const pageTitle = document.querySelector('.title');
-        const sideCol = document.querySelector('.col-side');
-        if (which === "salary") {
-          if (salaryContainer) salaryContainer.classList.remove("hidden");
-          if (salaryStatsContent) salaryStatsContent.classList.add("hidden");
-          setActive(salaryTab, statsTab);
-          if (pageTitle) pageTitle.textContent = "Tính lương";
-          // hide right side panel in salary view
-          if (sideCol) {
-            sideCol.classList.add('hidden');
-            sideCol.style.display = 'none';
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
+
+  function setupTabSwitching() {
+    const tabs = document.querySelectorAll(".salary-page .tab");
+    const salaryView = document.getElementById("salary-view");
+    const statsView = document.getElementById("stats-view");
+    const pageTitle = document.querySelector(".salary-page .header h1");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", function () {
+        // Remove active class from all tabs
+        tabs.forEach((t) => t.classList.remove("active"));
+        
+        // Add active class to clicked tab
+        this.classList.add("active");
+
+        // Switch views
+        const tabType = this.getAttribute("data-tab");
+        if (tabType === "salary") {
+          salaryView.classList.remove("hidden");
+          statsView.classList.add("hidden");
+          if (pageTitle) {
+            pageTitle.textContent = "Bảng tính lương";
           }
         } else {
-          if (salaryContainer) salaryContainer.classList.add("hidden");
-          if (salaryStatsContent) salaryStatsContent.classList.remove("hidden");
-          setActive(statsTab, salaryTab);
-          if (pageTitle) pageTitle.textContent = "Thống kê";
-          // show right side panel in stats view
-          if (sideCol) {
-            sideCol.classList.remove('hidden');
-            sideCol.style.display = '';
+          salaryView.classList.add("hidden");
+          statsView.classList.remove("hidden");
+          if (pageTitle) {
+            pageTitle.textContent = "Bảng thống kê";
           }
+          // Reload stats when switching to stats view
+          handleLoadStats();
         }
-      };
+      });
+    });
+  }
 
-      // Initialize visuals according to default
-      show("salary");
-      salaryTab.addEventListener("click", () => show("salary"));
-      statsTab.addEventListener("click", () => show("stats"));
+  function setupDateFilters() {
+    // Salary filter
+    const applySalaryBtn = document.getElementById("apply-salary-btn");
+    if (applySalaryBtn) {
+      applySalaryBtn.addEventListener("click", handleLoadSalary);
+    }
+
+    // Stats filter
+    const applyStatsBtn = document.getElementById("apply-stats-btn");
+    if (applyStatsBtn) {
+      applyStatsBtn.addEventListener("click", handleLoadStats);
     }
   }
 
-  // Expose init to global App if needed
-  window.SalaryManager = { init };
+  async function handleLoadSalary() {
+    const fromInput = document.getElementById("salary-from");
+    const toInput = document.getElementById("salary-to");
 
-  // Auto init with App lifecycle: try to init after DOM ready
-  if (document.readyState !== "loading") init();
-  else document.addEventListener("DOMContentLoaded", init);
-})();
-/**
- * Salary Manager - Manages salary calculations and work shifts
- * WRAPPED VERSION: Prevents duplicate initialization
- */
+    const from = fromInput ? fromInput.value : "";
+    const to = toInput ? toInput.value : "";
 
-(function () {
-  "use strict";
-
-  if (window.SalaryManager) {
-    console.log("⏭️ SalaryManager already loaded");
-    return;
+    try {
+      const result = await loadSalaryData(from, to);
+      if (result.success) {
+        renderSalaryView(result.data);
+      }
+    } catch (error) {
+      console.error("Error loading salary:", error);
+      const tableContainer = document.getElementById("salary-table");
+      if (tableContainer) {
+        tableContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div>Lỗi: ${escapeHtml(error.message)}</div>
+          </div>
+        `;
+      }
+    }
   }
 
-  window.SalaryManager = {
-    initialized: false,
-    eventListeners: [],
+  async function handleLoadStats() {
+    const fromInput = document.getElementById("stats-from");
+    const toInput = document.getElementById("stats-to");
 
-    async init() {
-      if (this.initialized) {
-        console.log("ℹ️ SalaryManager already initialized");
-        return;
-      }
+    const from = fromInput ? fromInput.value : "";
+    const to = toInput ? toInput.value : "";
 
-      console.log("🚀 Initializing SalaryManager...");
-      this.initialized = true;
-
-      await this.loadSalaryData();
-      this.bindEvents();
-
-      console.log("✅ SalaryManager initialized successfully");
-    },
-
-    async loadSalaryData() {
-      try {
-        if (typeof Utils === "undefined") {
-          console.warn("⚠️ Utils not available, using mock data");
-          this.loadMockData();
-          return;
-        }
-
-        const result = await Utils.makeRequest("/api/salary/data", "GET");
-
-        if (!result.success) {
-          throw new Error("Không tải được dữ liệu lương");
-        }
-
-        const data = result.data;
-
-        // Cập nhật tên user
-        const userNameElement = document.querySelector("[data-user-name]");
-        if (userNameElement) {
-          userNameElement.textContent = data.userInfo?.hoten || "Người dùng";
-        }
-
-        // Cập nhật lương giờ
-        const luongGioEl = document.querySelector("#luong-gio");
-        if (luongGioEl) {
-          luongGioEl.textContent =
-            new Intl.NumberFormat("vi-VN").format(data.luongTheoGio) + " đ/giờ";
-        }
-
-        // Load ca làm việc
-        await this.loadWorkShifts();
-
-        console.log("✅ Salary data loaded successfully");
-      } catch (err) {
-        console.error("❌ Error loading salary data:", err);
-        if (typeof Utils !== "undefined" && Utils.showToast) {
-          Utils.showToast("Lỗi tải lương: " + err.message, "error");
-        }
-        this.loadMockData();
-      }
-    },
-
-    loadMockData() {
-      // Load dữ liệu mẫu khi không có API
-      const luongGioEl = document.querySelector("#luong-gio");
-      if (luongGioEl) {
-        luongGioEl.textContent = "29,000 đ/giờ";
-      }
-      this.loadWorkShifts();
-    },
-
-    async loadWorkShifts() {
-      // Dữ liệu mẫu ca làm việc
-      const sampleShifts = [
-        {
-          date: "26/05/2025",
-          start: "08:00",
-          end: "20:00",
-          hours: "11 giờ",
-          wage: "319,000",
-          note: "Ca làm thêm",
-        },
-        {
-          date: "25/05/2025",
-          start: "08:00",
-          end: "17:00",
-          hours: "8 giờ",
-          wage: "232,000",
-          note: "Ca hành chính",
-        },
-      ];
-
-      const container = document.getElementById("work-shifts-container");
-      if (!container) {
-        console.warn("⚠️ Work shifts container not found");
-        return;
-      }
-
-      container.innerHTML = sampleShifts
-        .map(
-          (shift) => `
-        <div class="grid grid-cols-[100px_100px_100px_120px_120px_1fr_100px] gap-4 text-xs py-2 border-b hover:bg-gray-50">
-          <div class="text-center">${shift.date}</div>
-          <div class="text-center">${shift.start}</div>
-          <div class="text-center">${shift.end}</div>
-          <div class="text-center">${shift.hours}</div>
-          <div class="text-center font-medium">${shift.wage}</div>
-          <div class="text-center text-gray-600">${shift.note}</div>
-          <div class="text-center">
-            <button onclick="SalaryManager.deleteShift('${shift.date}')" 
-                    class="text-red-600 hover:text-red-800 text-xs">
-              Xóa
-            </button>
-          </div>
-        </div>
-      `
-        )
-        .join("");
-
-      console.log("✅ Work shifts rendered");
-    },
-
-    deleteShift(date) {
-      if (confirm(`Bạn có chắc muốn xóa ca làm ngày ${date}?`)) {
-        if (typeof Utils !== "undefined" && Utils.showToast) {
-          Utils.showToast("Đã xóa ca làm việc", "success");
-        }
-        this.loadWorkShifts();
-      }
-    },
-
-    bindEvents() {
-      // Có thể thêm event cho các button tính lương tự động
-      const calculateButton = document.getElementById("calculate-salary-btn");
-      if (calculateButton) {
-        const handler = () => this.calculateTotalSalary();
-        calculateButton.addEventListener("click", handler);
-        this.eventListeners.push({
-          element: calculateButton,
-          event: "click",
-          handler,
+    try {
+      const result = await loadStatsData(from, to);
+      if (result.success) {
+        // Truyền toàn bộ dữ liệu (bao gồm cả công việc chưa hoàn thành) để hàm render tự lọc
+        renderStatsView({
+          allEntries: result.data.entries || [],
+          ...result.data,
         });
       }
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    }
+  }
 
-      console.log("✅ SalaryManager events bound");
-    },
+  // ============================================================================
+  // INITIALIZATION
+  // ============================================================================
 
-    calculateTotalSalary() {
-      // Logic tính tổng lương
-      if (typeof Utils !== "undefined" && Utils.showToast) {
-        Utils.showToast("Tính năng đang được phát triển", "info");
-      }
-    },
+  function initializeDateInputs() {
+    const today = new Date();
+    const lastMonth = new Date(today.getTime() - 30 * 24 * 3600 * 1000);
+    const formatDate = (d) => d.toISOString().split("T")[0];
 
-    cleanup() {
-      console.log("🧹 Cleaning up SalaryManager...");
+    const salaryFrom = document.getElementById("salary-from");
+    const salaryTo = document.getElementById("salary-to");
+    const statsFrom = document.getElementById("stats-from");
+    const statsTo = document.getElementById("stats-to");
 
-      this.eventListeners.forEach(({ element, event, handler }) => {
-        if (element && element.removeEventListener) {
-          element.removeEventListener(event, handler);
-        }
-      });
+    if (salaryFrom) salaryFrom.value = formatDate(lastMonth);
+    if (salaryTo) salaryTo.value = formatDate(today);
+    if (statsFrom) statsFrom.value = formatDate(lastMonth);
+    if (statsTo) statsTo.value = formatDate(today);
+  }
 
-      this.eventListeners = [];
-      this.initialized = false;
+  async function init() {
+    console.log("🚀 Initializing SalaryManager...");
 
-      console.log("✅ SalaryManager cleaned up");
-    },
+    // Initialize date inputs
+    initializeDateInputs();
+
+    // Setup event handlers
+    setupTabSwitching();
+    setupDateFilters();
+
+    // Load initial data
+    await handleLoadSalary();
+
+    console.log("✅ SalaryManager initialized successfully");
+  }
+
+  // ============================================================================
+  // EXPOSE TO GLOBAL
+  // ============================================================================
+
+  window.SalaryManager = {
+    init,
+    loadSalaryData,
+    loadStatsData,
+    renderSalaryView,
+    renderStatsView,
   };
 
-  console.log("✅ SalaryManager loaded");
+  // Auto-initialize when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();

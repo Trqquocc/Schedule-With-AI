@@ -1,0 +1,207 @@
+<!-- components/modals/profile-modal.html -->
+<div id="profileModal" class="modal hidden">
+  <div
+    class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8 transform transition-all"
+  >
+    <!-- Header -->
+    <div
+      class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white"
+        >
+          <i class="fas fa-user-edit"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold text-gray-800">Cập Nhật Hồ Sơ</h3>
+          <p class="text-xs text-gray-500">
+            Cập nhật thông tin cá nhân của bạn
+          </p>
+        </div>
+      </div>
+      <button
+        id="closeProfileModal"
+        class="text-gray-500 hover:text-gray-700 text-2xl transition-colors"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-8 max-h-[calc(100vh-300px)] overflow-y-auto">
+      <form id="profileForm" class="space-y-6">
+        <!-- Avatar Section -->
+        <div
+          class="flex flex-col items-center gap-4 pb-6 border-b border-gray-200"
+        >
+          <div class="relative">
+            <div
+              class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg"
+              id="profileAvatar"
+            >
+              ?
+            </div>
+            <label
+              for="avatarInput"
+              class="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-2 cursor-pointer transition-colors shadow-md"
+            >
+              <i class="fas fa-camera text-sm"></i>
+            </label>
+            <input
+              type="file"
+              id="avatarInput"
+              accept="image/*"
+              class="hidden"
+            />
+          </div>
+          <p class="text-sm text-gray-500">Nhấp để thay đổi ảnh đại diện</p>
+        </div>
+
+        <!-- Form Fields - 2 Columns -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Họ Tên -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-user text-indigo-500 mr-2"></i>Họ Tên
+            </label>
+            <input
+              type="text"
+              id="fullName"
+              name="hoten"
+              placeholder="Nhập họ tên đầy đủ"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              required
+            />
+          </div>
+
+          <!-- Tên Đăng Nhập -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-at text-indigo-500 mr-2"></i>Tên Đăng Nhập
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Tên đăng nhập"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              readonly
+            />
+            <p class="text-xs text-gray-400 mt-1">
+              Không thể thay đổi tên đăng nhập
+            </p>
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-envelope text-indigo-500 mr-2"></i>Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="email@example.com"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+              required
+            />
+          </div>
+
+          <!-- Số Điện Thoại -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-phone text-indigo-500 mr-2"></i>Số Điện Thoại
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              placeholder="+84 (0) 123 456 789"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            />
+          </div>
+
+          <!-- Ngày Sinh -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-birthday-cake text-indigo-500 mr-2"></i>Ngày Sinh
+            </label>
+            <input
+              type="date"
+              id="birthDate"
+              name="ngaysinh"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            />
+          </div>
+
+          <!-- Giới Tính -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-venus-mars text-indigo-500 mr-2"></i>Giới Tính
+            </label>
+            <select
+              id="gender"
+              name="gioitinh"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+            >
+              <option value="">-- Chọn giới tính --</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Bio / Description -->
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-align-left text-indigo-500 mr-2"></i>Tiểu Sử
+          </label>
+          <textarea
+            id="bio"
+            name="bio"
+            placeholder="Viết một số thông tin về bạn..."
+            rows="4"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
+          ></textarea>
+        </div>
+
+        <!-- Status Message -->
+        <div
+          id="profileStatusMessage"
+          class="hidden p-4 rounded-lg text-sm"
+        ></div>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+      <button
+        type="button"
+        id="cancelProfileBtn"
+        class="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+      >
+        <i class="fas fa-times mr-2"></i>Hủy
+      </button>
+      <button
+        type="button"
+        id="saveProfileBtn"
+        class="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-medium hover:from-indigo-600 hover:to-blue-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+      >
+        <i class="fas fa-save"></i>Lưu Thay Đổi
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Profile Modal - Z-Index Layer 3 (above settings modal) */
+  #profileModal {
+    z-index: 10100 !important;
+  }
+
+  #profileModal .modal-content {
+    max-height: 90vh !important;
+  }
+</style>

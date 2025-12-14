@@ -15,6 +15,7 @@ const aiRoutes = require("./routes/ai");
 const categoriesRoutes = require("./routes/categories");
 const salaryRoutes = require("./routes/salary");
 const statisticsRoutes = require("./routes/statistics");
+const usersRoutes = require("./routes/users");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,29 +61,12 @@ app.use("/api/ai", authenticateToken, aiRoutes);
 app.use("/api/categories", authenticateToken, categoriesRoutes);
 app.use("/api/salary", authenticateToken, salaryRoutes);
 app.use("/api/statistics", authenticateToken, statisticsRoutes);
+app.use("/api/users", authenticateToken, usersRoutes);
 
 // API cũ vẫn dùng (nếu có)
 app.get("/api/work/tasks", authenticateToken, (req, res) =>
   tasksRoutes(req, res)
 );
-app.put("/api/users/profile", authenticateToken, async (req, res) => {
-  try {
-    const pool = await dbPoolPromise;
-    const { hoten, SoDienThoai, DiaChi } = req.body;
-    await pool
-      .request()
-      .input("userId", req.user.id) // từ JWT
-      .input("hoten", hoten || "")
-      .input("soDienThoai", SoDienThoai || "")
-      .input("diaChi", DiaChi || "")
-      .query(
-        `UPDATE Users SET HoTen = @hoten, SoDienThoai = @soDienThoai, DiaChi = @diaChi WHERE UserID = @userId`
-      );
-    res.json({ success: true, message: "Cập nhật thành công" });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Lỗi server" });
-  }
-});
 
 // ===========================
 // HTML ROUTES (SPA)

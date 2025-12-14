@@ -1,5 +1,33 @@
 <!DOCTYPE html>
 <html lang="vi">
+  <style>
+    /* Ensure border-box sizing for accurate dimensions */
+    #sidebar-container,
+    #sidebar-container * {
+      box-sizing: border-box !important;
+    }
+
+    #sidebar-container {
+      position: fixed !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 256px !important;
+      height: 100vh !important;
+      overflow: hidden !important;
+      z-index: 999 !important;
+    }
+
+    #sidebar-container aside {
+      position: relative !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: 0 !important;
+      margin-left: 0 !important;
+      box-sizing: border-box !important;
+      width: 256px !important;
+      height: 100vh !important;
+    }
+  </style>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -26,7 +54,9 @@
     <link rel="stylesheet" href="assets/css/calendar.css" />
     <link rel="stylesheet" href="assets/css/ai-calendar.css" />
     <link rel="stylesheet" href="assets/css/work.css" />
+    <link rel="stylesheet" href="assets/css/ai-modal-fix.css" />
     <link rel="stylesheet" href="assets/css/login.css" />
+    <link rel="stylesheet" href="assets/css/salary.css" />
 
     <style>
       /* ✅ Clean, modern styling */
@@ -104,6 +134,36 @@
     </style>
   </head>
   <body>
+    <!-- ✅ CRITICAL: Force sidebar visible at page start -->
+    <script>
+      (function forceSidebarEarly() {
+        // Create observer before sidebar is even loaded
+        const style = document.createElement("style");
+        style.innerHTML = `
+          #sidebar-container {
+            display: block !important;
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 256px !important;
+            min-width: 256px !important;
+            height: 100vh !important;
+            z-index: 999 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+          }
+          #sidebar-container.hidden,
+          #sidebar-container.hidden * {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+          }
+        `;
+        document.head.appendChild(style);
+        console.log("✅ Sidebar force styles injected at page start");
+      })();
+    </script>
+
     <div id="auth-loading">
       <div class="text-center">
         <div class="loading-spinner mx-auto"></div>
@@ -111,23 +171,25 @@
       </div>
     </div>
 
-    <div id="main-app">
-      <div class="flex min-h-screen">
-        <div id="sidebar-container"></div>
-        <div class="flex-1 flex flex-col">
-          <div class="flex-1 overflow-auto">
-            <main id="schedule-section" class="section active"></main>
-            <main id="work-section" class="section"></main>
-            <main id="ai-section" class="section"></main>
-            <main id="salary-section" class="section"></main>
-            <main id="profile-section" class="section"></main>
-          </div>
+    <div id="main-app" class="flex min-h-screen">
+      <!-- Thêm class flex min-h-screen vào đây -->
+      <div id="sidebar-container"></div>
+      <!-- Sidebar fixed left:0 -->
+
+      <div class="flex-1 flex flex-col" style="margin-left: 256px">
+        <!-- Content chính chiếm phần còn lại - shift right by sidebar width -->
+        <div class="flex-1 overflow-auto">
+          <main id="schedule-section" class="section active"></main>
+          <main id="work-section" class="section"></main>
+          <main id="ai-section" class="section"></main>
+          <main id="salary-section" class="section"></main>
+          <main id="profile-section" class="section"></main>
         </div>
       </div>
     </div>
 
-    <div id="createTaskModal" class="modal"></div>
-    <div id="settingsModal" class="modal"></div>
+    <div id="createTaskModal" class="modal hidden"></div>
+    <div id="settingsModal" class="modal hidden"></div>
 
     <!-- 1. utils.js - Phải load ĐẦU TIÊN vì mọi thứ dùng nó -->
     <script src="assets/js/utils.js"></script>
@@ -149,13 +211,81 @@
     <script src="assets/js/tabManager.js"></script>
     <script src="assets/js/profile.js"></script>
 
-    <div id="eventDetailModal" class="modal"></div>
-    <div id="aiSuggestionModal" class="modal"></div>
-    <div id="createCategoryModal" class="modal"></div>
+    <div id="eventDetailModal" class="modal hidden"></div>
+    <div id="aiSuggestionModal" class="modal hidden"></div>
+    <div id="createCategoryModal" class="modal hidden"></div>
+    <div id="profileModal" class="modal hidden"></div>
+    <div id="notificationModal" class="modal hidden"></div>
+
+    <!-- ✅ NEW: Profile & Notification Managers -->
+    <script src="assets/js/profileManager.js"></script>
+    <script src="assets/js/notificationManager.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- 4. app.js - Phải load CUỐI CÙNG vì nó khởi động toàn bộ app -->
     <script src="assets/js/app.js"></script>
+
+    <!-- ✅ AI Modal Test Helper (Development/Testing) -->
+    <script src="assets/js/ai-modal-test-helper.js"></script>
+
+    <!-- ✅ AI Modal CSS Verification (Development/Testing) -->
+    <script src="assets/js/ai-modal-css-verify.js"></script>
+
+    <!-- ✅ AI Modal Quick Test (Development/Testing) -->
+    <script src="assets/js/ai-modal-quick-test.js"></script>
+
+    <script src="assets/js/modal-force-display.js"></script>
+
+    <script src="assets/js/modal-content-loader.js"></script>
+
+    <script src="assets/js/modal-absolute-fix.js"></script>
+
+    <!-- ✅ DEBUG SIDEBAR LOADING -->
+    <script>
+      window.debugSidebar = function () {
+        const container = document.getElementById("sidebar-container");
+        console.log("=== SIDEBAR DEBUG ===");
+        console.log("Container exists:", !!container);
+        console.log("Container HTML length:", container?.innerHTML.length);
+        console.log("Container children count:", container?.children.length);
+        console.log(
+          "Container innerHTML preview:",
+          container?.innerHTML.substring(0, 150)
+        );
+        const aside = container?.querySelector("aside");
+        console.log("Aside element:", !!aside);
+        if (aside) {
+          const styles = window.getComputedStyle(aside);
+          console.log("Aside computed display:", styles.display);
+          console.log("Aside computed visibility:", styles.visibility);
+          console.log("Aside computed opacity:", styles.opacity);
+          console.log(
+            "Aside nav children:",
+            aside.querySelectorAll("nav button").length
+          );
+        }
+      };
+
+      // Run automatically after page loads
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          console.log("\n=== AUTO DEBUG AFTER LOAD ===");
+          window.debugSidebar();
+          // Also check computed styles of #sidebar-container itself
+          const container = document.getElementById("sidebar-container");
+          const containerStyles = window.getComputedStyle(container);
+          console.log("\n=== CONTAINER COMPUTED STYLES ===");
+          console.log("Container display:", containerStyles.display);
+          console.log("Container position:", containerStyles.position);
+          console.log("Container left:", containerStyles.left);
+          console.log("Container width:", containerStyles.width);
+          console.log("Container z-index:", containerStyles.zIndex);
+          console.log("Container visibility:", containerStyles.visibility);
+          console.log("Container opacity:", containerStyles.opacity);
+          console.log("Container background:", containerStyles.background);
+        }, 2000);
+      });
+    </script>
 
     <script>
       // ✅ Auth check and Font Awesome wait

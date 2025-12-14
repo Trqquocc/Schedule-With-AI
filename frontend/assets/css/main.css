@@ -11,7 +11,71 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
-  overflow-x: hidden;
+  overflow-x: visible;
+}
+
+/* ===================================
+   SIDEBAR CSS MANAGED IN sidebar.html
+   - DO NOT MODIFY LAYOUT CSS HERE
+   =================================== */
+.nav-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+/* Active nav button with better styling */
+.nav-btn.bg-gray-200 {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+  border-left: 4px solid #3b82f6 !important;
+  padding-left: calc(1rem - 4px) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.nav-btn.bg-gray-200 i {
+  color: #3b82f6;
+  transition: all 0.3s ease;
+}
+
+/* Hover effects for nav buttons */
+.nav-btn:hover:not(.bg-gray-200) {
+  background-color: #f9fafb !important;
+  transform: translateX(2px);
+}
+
+/* User info section enhancement */
+#sidebar-container aside .border-t {
+  background: linear-gradient(to bottom, transparent, rgba(248, 250, 252, 0.5));
+  padding-top: 1rem;
+}
+
+/* Avatar styling */
+.avatar-letter {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Settings and logout button styling */
+#settingsBtn,
+[data-logout] {
+  transition: all 0.2s ease;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+
+#settingsBtn:hover,
+[data-logout]:hover {
+  transform: translateX(2px);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+[data-logout]:hover {
+  color: #dc2626 !important;
 }
 
 /* ===================================
@@ -103,30 +167,27 @@ body {
   backdrop-filter: blur(2px);
 }
 
+/* Khi modal có class hidden - LUÔN ẩn */
+.modal.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Khi modal hiển thị */
 .modal.active,
-.modal.show {
+.modal.show,
+.modal:not(.hidden) {
   display: flex !important;
   opacity: 1 !important;
   visibility: visible !important;
+  pointer-events: auto !important;
 }
 
-/* Specific modal styling */
-#createTaskModal,
-#createTaskModal.modal {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  display: none !important;
-  align-items: center !important;
-  justify-content: center !important;
+/* Specific modal styling - inherits from .modal base rules */
+#createTaskModal {
   z-index: 9999 !important;
-}
-
-#createTaskModal.hidden {
-  display: none !important;
 }
 
 #createTaskModal.active,
@@ -166,15 +227,21 @@ body {
 
 /* Modal content - QUAN TRỌNG: phải là direct child */
 .modal > .modal-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-shrink: 0 !important;
+  flex: 0 1 auto !important;
   position: relative;
   z-index: 10001;
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  width: 90% !important;
+  max-width: 800px !important;
+  min-width: 400px !important;
+  min-height: 300px !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
   animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -183,13 +250,42 @@ body {
   z-index: 10001 !important;
 }
 
+/* Khi modal có hidden class - luôn ẩn */
+#aiSuggestionModal.hidden {
+  display: none;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Khi modal không có hidden class - hiển thị */
+#aiSuggestionModal:not(.hidden) {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 #aiSuggestionModal.active {
   display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 #aiSuggestionModal .modal-content {
-  max-width: 700px;
-  padding: 30px;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-shrink: 0 !important;
+  width: 90% !important;
+  max-width: 800px !important;
+  min-width: 600px !important;
+  min-height: 400px !important;
+  max-height: 90vh !important;
+  background: white !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
 }
 
 /* Animation */
@@ -207,7 +303,7 @@ body {
 /* Ngăn body scroll khi modal mở */
 body.modal-open {
   overflow: hidden !important;
-  position: fixed;
+  /* position: fixed; */ /* GÂY LỖI LAYOUT */
   width: 100%;
   height: 100%;
 }
@@ -216,9 +312,9 @@ body.modal-open {
    FIX NESTED MODAL ISSUE
    =================================== */
 /* Nếu có modal trong modal, ẩn modal cha khi mở modal con */
-.modal.active .modal {
+/* .modal.active .modal {
   display: none !important;
-}
+} */
 
 /* Khi mở modal con, ẩn modal cha */
 .modal-child-active .modal-parent {
@@ -279,25 +375,31 @@ body.modal-open {
   border: none;
   font-size: 14px;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  background: transparent;
 }
 
 .modal .btn-primary {
-  background: #3b82f6;
-  color: white;
+  background: #3b82f6 !important;
+  color: white !important;
 }
 
 .modal .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: #2563eb !important;
   transform: translateY(-1px);
 }
 
 .modal .btn-secondary {
-  background: #6b7280;
-  color: white;
+  background: #6b7280 !important;
+  color: white !important;
 }
 
 .modal .btn-secondary:hover:not(:disabled) {
-  background: #4b5563;
+  background: #4b5563 !important;
 }
 
 .modal .btn-close {
@@ -320,6 +422,14 @@ body.modal-open {
 
 .modal .btn-close:hover {
   background: #e5e7eb;
+}
+
+/* Ensure all buttons in modals display properly */
+.modal button {
+  display: inline-flex !important;
+  width: auto !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* ===================================
@@ -569,9 +679,17 @@ body.fa-loaded span[class*="fa-"] {
 
 /* AI Modal Specific */
 .ai-modal .modal-content {
-  max-width: 800px;
-  width: 95%;
-  max-height: 85vh;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  width: 95% !important;
+  max-width: 800px !important;
+  min-width: 600px !important;
+  min-height: 400px !important;
+  max-height: 90vh !important;
+  background: white !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
 }
 
 .ai-modal-content {
@@ -1753,6 +1871,136 @@ body.fa-loaded span[class*="fa-"] {
 
 .task-item.task-removing {
   animation: taskSlideOut 0.3s ease-in forwards;
+}
+
+/* ===================================
+   PROFILE MODAL STYLING
+   =================================== */
+
+/* Profile Modal - uses .modal class */
+#profileModal {
+  z-index: 10040 !important;
+}
+
+/* Modal content animation */
+.modal .modal-content {
+  animation: modalSlideIn 0.3s ease-out forwards;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal.hidden .modal-content {
+  animation: none;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+#profileModal input,
+#profileModal select,
+#profileModal textarea {
+  transition: all 0.2s ease;
+}
+
+#profileModal input:focus,
+#profileModal select:focus,
+#profileModal textarea:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #6366f1 !important;
+}
+
+#profileModal .form-group {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+#profileModal .form-group:nth-child(1) {
+  animation-delay: 0.05s;
+}
+#profileModal .form-group:nth-child(2) {
+  animation-delay: 0.1s;
+}
+#profileModal .form-group:nth-child(3) {
+  animation-delay: 0.15s;
+}
+#profileModal .form-group:nth-child(4) {
+  animation-delay: 0.2s;
+}
+#profileModal .form-group:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Avatar upload button */
+#profileModal .relative label {
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#profileModal .relative label:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ===================================
+   MODAL ANIMATIONS
+   =================================== */
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Notification Modal - uses .modal class */
+#notificationModal {
+  z-index: 10041 !important;
+}
+
+#notificationModal input,
+#notificationModal select {
+  transition: all 0.2s ease;
+}
+
+#notificationModal input:focus,
+#notificationModal select:focus {
+  box-shadow: 0 0 0 3px rgba(34, 197, 214, 0.1);
+  border-color: #06b6d4 !important;
+}
+
+/* Settings Modal - uses .modal class */
+#settingsModal {
+  z-index: 10042 !important;
+}
+
+#settingsModal .modal-content {
+  animation: modalSlideIn 0.3s ease-out forwards;
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 384px;
+  max-width: calc(100% - 32px);
 }
 
 /* Task category colors */

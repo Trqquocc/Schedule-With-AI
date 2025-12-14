@@ -109,8 +109,11 @@
 
       const taskId = element.dataset.taskId;
       const title = element.dataset.taskTitle || element.textContent.trim();
-      const color = element.dataset.taskColor || "#3B82F6";
+      const priority = parseInt(element.dataset.taskPriority) || 2; // Default to priority 2
       const description = element.dataset.taskDescription || "";
+
+      // Get color based on PRIORITY, not stored color
+      const color = this.getPriorityColor(priority);
 
       if (!taskId) {
         console.warn("⚠️ Task element missing taskId");
@@ -124,9 +127,10 @@
             eventData: {
               id: `drag-${taskId}`,
               title: title,
-              color: color,
+              // IMPORTANT: Don't set color here, let eventDidMount apply CSS classes based on priority
               extendedProps: {
                 taskId: taskId,
+                priority: priority,
                 description: description,
                 isFromDrag: true,
               },
@@ -134,7 +138,9 @@
           });
 
           element.setAttribute("data-draggable-init", "true");
-          console.log(`✅ Made draggable: ${title} (ID: ${taskId})`);
+          console.log(
+            `✅ Made draggable: ${title} (ID: ${taskId}, Priority: ${priority})`
+          );
         } else {
           // Fallback: HTML5 drag/drop nếu FullCalendar.Draggable không available
           this.bindHTML5DragEvents(element);
@@ -437,9 +443,27 @@
           const el = info.el;
           el.style.cursor = "pointer";
 
+          // Apply priority class based on priority level
+          // Priority 1 = Low (Green), 2 = Medium (Blue), 3 = High (Yellow), 4 = Very High (Red)
+          const priority = info.event.extendedProps.priority || 2;
+          if (priority === 1) {
+            el.classList.add("event-priority-low");
+          } else if (priority === 3) {
+            el.classList.add("event-priority-medium");
+          } else if (priority === 4) {
+            el.classList.add("event-priority-high");
+          }
+          // Priority 2 is default (Blue) - no class needed
+
+          // Apply AI suggested styling if applicable
+          if (info.event.extendedProps.aiSuggested) {
+            el.classList.add("event-ai-suggested");
+          }
+
           if (info.event.extendedProps.completed) {
             el.classList.add("event-completed");
-            el.style.opacity = "0.7";
+            el.style.opacity = "0.6";
+            el.style.textDecoration = "line-through";
           }
 
           const start =
@@ -1309,6 +1333,25 @@
       document.getElementById("saveEventStatus").onclick = () =>
         this._updateEventStatus(event);
 
+      // Real-time checkbox completion - AUTO SAVE when clicked
+      const completionCheckbox = document.getElementById(
+        "eventCompletedCheckbox"
+      );
+      completionCheckbox.addEventListener("change", async () => {
+        // Auto-save immediately without waiting for button click
+        this._updateEventStatus(event);
+      });
+
+      // Allow Ctrl+S to save quickly
+      const handleSaveShortcut = (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+          e.preventDefault();
+          document.getElementById("saveEventStatus").click();
+          document.removeEventListener("keydown", handleSaveShortcut);
+        }
+      };
+      document.addEventListener("keydown", handleSaveShortcut);
+
       // Xử lý xóa với xác nhận kép
       const deleteBtn = document.getElementById("showDeleteConfirmBtn");
       const deleteConfirmation = document.getElementById("deleteConfirmation");
@@ -1463,13 +1506,41 @@
       }
     },
     // ==========================================================
-    // UPDATE EVENT STATUS - SIMPLIFIED
+    // UPDATE EVENT STATUS - REAL-TIME WITH IMMEDIATE FEEDBACK
     // ==========================================================
     async _updateEventStatus(event) {
       try {
-        const completed = document.getElementById(
-          "eventCompletedCheckbox"
-        ).checked;
+        const checkbox = document.getElementById("eventCompletedCheckbox");
+        const completed = checkbox.checked;
+
+        // Store original state for rollback
+        const wasCompleted = event.extendedProps.completed;
+
+        // Immediate visual feedback - update checkbox state visually
+        const saveBtn = document.getElementById("saveEventStatus");
+        const originalBtnText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
+
+        // Apply visual changes immediately to event element
+        const eventEls = document.querySelectorAll(
+          `[data-event-id="${
+            event.id
+          }"], .fc-event[title*="${event.title.substring(0, 20)}"]`
+        );
+
+        eventEls.forEach((el) => {
+          if (completed) {
+            el.classList.add("event-completed", "completing");
+            el.style.textDecoration = "line-through";
+            el.style.opacity = "0.6";
+          } else {
+            el.classList.remove("event-completed", "completing");
+            el.style.textDecoration = "none";
+            el.style.opacity = "1";
+          }
+        });
 
         // ⚠️ FIX: Sử dụng field names đúng
         const updateData = {
@@ -1483,42 +1554,78 @@
         );
 
         if (res.success) {
+          // Update event state
           event.setExtendedProp("completed", completed);
 
-          // Update visual
-          const eventEls = document.querySelectorAll(
-            `[data-event-id="${event.id}"]`
+          // Update modal status text
+          const statusEl = document.querySelector(
+            '[class*="text-green-600"], [class*="text-orange-600"]'
           );
-          eventEls.forEach((el) => {
+          if (statusEl) {
             if (completed) {
+              statusEl.className =
+                "text-green-600 font-semibold flex items-center gap-2";
+              statusEl.innerHTML =
+                '<i class="fas fa-check-circle"></i> Đã hoàn thành';
+            } else {
+              statusEl.className =
+                "text-orange-600 font-semibold flex items-center gap-2";
+              statusEl.innerHTML =
+                '<i class="fas fa-clock"></i> Chưa hoàn thành';
+            }
+          }
+
+          // Show success toast
+          Utils.showToast?.(
+            completed
+              ? "✅ Đã hoàn thành công việc!"
+              : "↩️ Bỏ đánh dấu hoàn thành",
+            "success"
+          );
+
+          // Restore button
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalBtnText;
+
+          // Chỉ cập nhật visual, không xóa event khỏi lịch
+          // Event sẽ vẫn hiển thị nhưng mờ đi với gạch ngang
+          setTimeout(() => {
+            document.getElementById("eventDetailModal")?.remove();
+          }, 600);
+        } else {
+          // Rollback visual changes on error
+          eventEls.forEach((el) => {
+            if (wasCompleted) {
               el.classList.add("event-completed");
-              el.style.opacity = "0.7";
+              el.style.textDecoration = "line-through";
+              el.style.opacity = "0.6";
             } else {
               el.classList.remove("event-completed");
+              el.style.textDecoration = "none";
               el.style.opacity = "1";
             }
           });
 
-          Utils.showToast?.(
-            completed ? "Đã hoàn thành công việc!" : "Bỏ đánh dấu hoàn thành",
-            "success"
-          );
-          document.getElementById("eventDetailModal").remove();
+          // Restore button
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalBtnText;
+          checkbox.checked = wasCompleted;
 
-          // Nếu công việc đã hoàn thành và có taskId, xóa khỏi lịch sau 1s
-          if (completed && event.extendedProps.taskId) {
-            setTimeout(() => {
-              event.remove();
-              Utils.showToast?.(
-                "Đã xóa công việc đã hoàn thành khỏi lịch",
-                "info"
-              );
-            }, 1000);
-          }
+          throw new Error(res.message || "Cập nhật trạng thái thất bại");
         }
       } catch (err) {
         console.error("Cập nhật trạng thái lỗi:", err);
-        Utils.showToast?.("Lỗi cập nhật trạng thái", "error");
+        Utils.showToast?.(
+          "❌ " + (err.message || "Lỗi cập nhật trạng thái"),
+          "error"
+        );
+
+        // Restore button
+        const saveBtn = document.getElementById("saveEventStatus");
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Lưu thay đổi';
+        }
       }
     },
 

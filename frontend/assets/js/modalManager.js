@@ -26,9 +26,47 @@
       }
 
       console.log("🎯 ModalManager initialization started");
+      this.fixNestedModals();
       this.setupGlobalEventListeners();
       this.initialized = true;
       console.log("✅ ModalManager initialized successfully");
+    },
+
+    /**
+     * 🔧 FIX NESTED MODALS - Remove duplicate modals with same ID
+     */
+    fixNestedModals() {
+      // Check for duplicate aiSuggestionModal
+      const allModals = document.querySelectorAll("#aiSuggestionModal");
+      if (allModals.length > 1) {
+        console.log(
+          `⚠️ Phát hiện ${allModals.length} modals với ID aiSuggestionModal (nested)`
+        );
+
+        const modalsArray = Array.from(allModals);
+
+        // Tìm modal cha (có class active show) và modal con (có class hidden)
+        const parentModal = modalsArray.find(
+          (m) => m.classList.contains("active") && m.classList.contains("show")
+        );
+        const childModal = modalsArray.find((m) =>
+          m.classList.contains("hidden")
+        );
+
+        if (parentModal && childModal && parentModal !== childModal) {
+          console.log("🔧 Đang fix nested modal structure...");
+
+          // Di chuyển tất cả children từ modal con sang modal cha
+          while (childModal.firstChild) {
+            parentModal.appendChild(childModal.firstChild);
+          }
+
+          // Xóa modal con (duplicate)
+          childModal.remove();
+
+          console.log("✅ Đã xoá modal duplicate!");
+        }
+      }
     },
 
     /**
@@ -45,25 +83,8 @@
 
       console.log(`✅ Modal found, current classes: ${modal.className}`);
 
-      // 🔥 REMOVE hidden class first (CSS has display: none !important for .hidden)
+      // 🔥 Let CSS handle the display. Only manage classes.
       modal.classList.remove("hidden");
-
-      // 🔥 FORCE INLINE STYLES
-      modal.style.display = "flex";
-      modal.style.position = "fixed";
-      modal.style.top = "0";
-      modal.style.left = "0";
-      modal.style.width = "100%";
-      modal.style.height = "100%";
-      modal.style.zIndex = "9999";
-      modal.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-      modal.style.alignItems = "center";
-      modal.style.justifyContent = "center";
-      modal.style.opacity = "1";
-      modal.style.visibility = "visible";
-      modal.style.overflow = "auto"; // ← CRITICAL
-
-      // Add classes
       modal.classList.add("active", "show");
 
       // Prevent body scroll
@@ -72,9 +93,21 @@
       this.activeModal = modalId;
 
       console.log(`🎯 Modal ${modalId} updated classes: ${modal.className}`);
-      console.log(`   - Display: ${modal.style.display}`);
-      console.log(`   - Opacity: ${modal.style.opacity}`);
-      console.log(`   - Visibility: ${modal.style.visibility}`);
+
+      // Dispatch a standardized event for other modules to listen to
+      window.dispatchEvent(
+        new CustomEvent("modalShown", {
+          detail: { modalId },
+        })
+      );
+
+      // Get computed styles for logging after a tick to allow for re-render
+      setTimeout(() => {
+        const computed = window.getComputedStyle(modal);
+        console.log(`   - Computed Display: ${computed.display}`);
+        console.log(`   - Computed Opacity: ${computed.opacity}`);
+        console.log(`   - Computed Visibility: ${computed.visibility}`);
+      }, 0);
 
       // ✅ FIX: Use window.dispatchEvent, NOT this.dispatchEvent
       window.dispatchEvent(
@@ -151,9 +184,13 @@
       // Remove classes
       modal.classList.remove("active", "show");
 
-      // Reset styles
-      modal.style.display = "none";
-      modal.style.opacity = "0";
+      // Add hidden class to ensure it's hidden by CSS
+      modal.classList.add("hidden");
+
+      // Reset inline styles that might have been added
+      modal.style.display = "";
+      modal.style.opacity = "";
+      modal.style.visibility = "";
 
       // Restore body scroll
       document.body.style.overflow = "";

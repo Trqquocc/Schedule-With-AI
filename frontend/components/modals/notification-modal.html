@@ -1,0 +1,275 @@
+<!-- components/modals/notification-modal.html -->
+<div id="notificationModal" class="modal hidden">
+  <div
+    class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8 transform transition-all"
+  >
+    <!-- Header -->
+    <div
+      class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-teal-50"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-lg bg-cyan-500 flex items-center justify-center text-white"
+        >
+          <i class="fas fa-bell"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold text-gray-800">Thông Báo</h3>
+          <p class="text-xs text-gray-500">
+            Kết nối với Telegram để nhận thông báo
+          </p>
+        </div>
+      </div>
+      <button
+        id="closeNotificationModal"
+        class="text-gray-500 hover:text-gray-700 text-2xl transition-colors"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="p-8 max-h-[calc(100vh-300px)] overflow-y-auto">
+      <!-- Status Card -->
+      <div
+        class="mb-8 p-6 rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-semibold text-gray-800">
+            Trạng Thái Kết Nối
+          </h4>
+          <div
+            id="connectionStatus"
+            class="flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-700 font-medium text-sm"
+          >
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span>Chưa kết nối</span>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600">
+          Để nhận thông báo công việc và lịch trình, bạn cần kết nối với
+          Telegram bot.
+        </p>
+      </div>
+
+      <!-- Connection Section -->
+      <div class="mb-8 pb-8 border-b border-gray-200">
+        <h5
+          class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"
+        >
+          <i class="fas fa-link text-cyan-500"></i>
+          Kết Nối Telegram
+        </h5>
+
+        <div class="space-y-4">
+          <!-- Step 1 -->
+          <div
+            class="flex gap-4 p-4 rounded-lg bg-cyan-50 border border-cyan-200"
+          >
+            <div class="flex-shrink-0">
+              <div
+                class="flex items-center justify-center h-8 w-8 rounded-full bg-cyan-500 text-white font-semibold"
+              >
+                1
+              </div>
+            </div>
+            <div class="flex-1">
+              <h6 class="font-semibold text-gray-800">Tìm Bot Telegram</h6>
+              <p class="text-sm text-gray-600 mt-1">
+                Tìm kiếm và nhập bot:
+                <code class="bg-gray-200 px-2 py-1 rounded"
+                  >@ScheduleWithAI_Bot</code
+                >
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div
+            class="flex gap-4 p-4 rounded-lg bg-cyan-50 border border-cyan-200"
+          >
+            <div class="flex-shrink-0">
+              <div
+                class="flex items-center justify-center h-8 w-8 rounded-full bg-cyan-500 text-white font-semibold"
+              >
+                2
+              </div>
+            </div>
+            <div class="flex-1">
+              <h6 class="font-semibold text-gray-800">Nhận Mã Xác Thực</h6>
+              <p class="text-sm text-gray-600 mt-1">
+                Gửi lệnh /start và copy mã xác thực (token) mà bot gửi cho bạn
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div
+            class="flex gap-4 p-4 rounded-lg bg-cyan-50 border border-cyan-200"
+          >
+            <div class="flex-shrink-0">
+              <div
+                class="flex items-center justify-center h-8 w-8 rounded-full bg-cyan-500 text-white font-semibold"
+              >
+                3
+              </div>
+            </div>
+            <div class="flex-1">
+              <h6 class="font-semibold text-gray-800">Dán Mã Token</h6>
+              <p class="text-sm text-gray-600 mt-1">
+                Dán mã token bên dưới để hoàn tất kết nối
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Token Input Form -->
+      <form id="notificationForm" class="space-y-6">
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-key text-cyan-500 mr-2"></i>Mã Token Telegram
+          </label>
+          <input
+            type="text"
+            id="telegramToken"
+            name="telegramToken"
+            placeholder="Dán mã token từ bot Telegram ở đây"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition font-mono text-sm"
+          />
+          <p class="text-xs text-gray-500 mt-2">
+            Mã token sẽ được mã hóa và lưu trữ an toàn
+          </p>
+        </div>
+
+        <!-- Status Message -->
+        <div
+          id="notificationStatusMessage"
+          class="hidden p-4 rounded-lg text-sm"
+        ></div>
+      </form>
+
+      <!-- Notification Settings -->
+      <div class="mt-8 pt-8 border-t border-gray-200">
+        <h5
+          class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"
+        >
+          <i class="fas fa-sliders-h text-cyan-500"></i>
+          Cài Đặt Thông Báo
+        </h5>
+
+        <div class="space-y-4">
+          <!-- Enable Notifications -->
+          <div
+            class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition"
+          >
+            <div class="flex items-center gap-3">
+              <i class="fas fa-bell text-cyan-500 text-lg"></i>
+              <div>
+                <p class="font-medium text-gray-800">Thông báo công việc</p>
+                <p class="text-sm text-gray-500">
+                  Nhận thông báo khi công việc sắp đến hạn
+                </p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="taskNotifications"
+                name="taskNotifications"
+                class="sr-only peer"
+                checked
+              />
+              <div
+                class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"
+              ></div>
+            </label>
+          </div>
+
+          <!-- Event Reminders -->
+          <div
+            class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition"
+          >
+            <div class="flex items-center gap-3">
+              <i class="fas fa-calendar-check text-cyan-500 text-lg"></i>
+              <div>
+                <p class="font-medium text-gray-800">Nhắc nhở sự kiện</p>
+                <p class="text-sm text-gray-500">
+                  Nhận nhắc nhở trước khi sự kiện bắt đầu
+                </p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="eventReminders"
+                name="eventReminders"
+                class="sr-only peer"
+                checked
+              />
+              <div
+                class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"
+              ></div>
+            </label>
+          </div>
+
+          <!-- AI Suggestions -->
+          <div
+            class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition"
+          >
+            <div class="flex items-center gap-3">
+              <i class="fas fa-lightbulb text-cyan-500 text-lg"></i>
+              <div>
+                <p class="font-medium text-gray-800">Gợi ý từ AI</p>
+                <p class="text-sm text-gray-500">
+                  Nhận gợi ý về lịch trình từ AI
+                </p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="aiSuggestions"
+                name="aiSuggestions"
+                class="sr-only peer"
+                checked
+              />
+              <div
+                class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-cyan-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"
+              ></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+      <button
+        type="button"
+        id="cancelNotificationBtn"
+        class="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+      >
+        <i class="fas fa-times mr-2"></i>Hủy
+      </button>
+      <button
+        type="button"
+        id="connectTelegramBtn"
+        class="px-6 py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 text-white font-medium hover:from-cyan-600 hover:to-teal-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+      >
+        <i class="fas fa-plug"></i>Kết Nối Ngay
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Notification Modal - Z-Index Layer 3 (above settings modal) */
+  #notificationModal {
+    z-index: 10100 !important;
+  }
+
+  #notificationModal .modal-content {
+    max-height: 90vh !important;
+  }
+</style>
