@@ -55,13 +55,11 @@
      * ✅ BIND EVENTS
      */
     bindEvents() {
-      // Open modal from settings button OR openProfileBtn
+      // Open modal from openProfileBtn
       document.addEventListener("click", (e) => {
-        if (
-          e.target.closest("#settingsBtn") ||
-          e.target.closest("#openProfileBtn")
-        ) {
+        if (e.target.closest("#openProfileBtn")) {
           e.preventDefault();
+          e.stopPropagation();
           this.openProfileModal();
         }
       });
@@ -69,22 +67,36 @@
       // Close buttons
       const closeBtn = document.getElementById("closeProfileModal");
       const cancelBtn = document.getElementById("cancelProfileBtn");
-      if (closeBtn) closeBtn.addEventListener("click", () => this.closeModal());
-      if (cancelBtn)
-        cancelBtn.addEventListener("click", () => this.closeModal());
+      if (closeBtn) {
+        closeBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.closeModal();
+        });
+      }
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.closeModal();
+        });
+      }
 
       // Close on backdrop click
       const modal = document.getElementById("profileModal");
       if (modal) {
         modal.addEventListener("click", (e) => {
-          if (e.target === modal) this.closeModal();
+          if (e.target === modal) {
+            this.closeModal();
+          }
         });
       }
 
       // Save button
       const saveBtn = document.getElementById("saveProfileBtn");
       if (saveBtn) {
-        saveBtn.addEventListener("click", () => this.saveProfile());
+        saveBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.saveProfile();
+        });
       }
 
       // Avatar upload
@@ -123,11 +135,18 @@
       // Fill form with current user data
       this.fillFormWithUserData();
 
-      // Show modal by removing hidden class
-      modal.classList.remove("hidden");
+      // Show modal using ModalManager if available
+      if (window.ModalManager && window.ModalManager.showModalById) {
+        window.ModalManager.showModalById("profileModal");
+      } else {
+        // Fallback: Show modal by removing hidden class
+        modal.classList.remove("hidden");
+        modal.classList.add("active", "show");
+        document.body.style.overflow = "hidden";
+      }
 
-      // Prevent body scroll
-      document.body.style.overflow = "hidden";
+      console.log("✅ Profile modal opened");
+    },
 
       console.log("✅ Profile modal opened");
     },
@@ -138,19 +157,27 @@
     fillFormWithUserData() {
       if (!this.currentUser) return;
 
-      // Populate form fields
-      const fields = {
-        fullName: this.currentUser.hoten || "",
+      // Populate form fields - map by name attribute, not by id
+      const form = document.getElementById("profileForm");
+      if (!form) {
+        console.error("❌ Profile form not found");
+        return;
+      }
+
+      // Map form field names to user data properties
+      const fieldMap = {
+        hoten: this.currentUser.hoten || "",
         username: this.currentUser.username || "",
         email: this.currentUser.email || "",
         phone: this.currentUser.phone || "",
-        birthDate: this.currentUser.ngaysinh || "",
-        gender: this.currentUser.gioitinh || "",
+        ngaysinh: this.currentUser.ngaysinh || "",
+        gioitinh: this.currentUser.gioitinh || "",
         bio: this.currentUser.bio || "",
       };
 
-      Object.entries(fields).forEach(([id, value]) => {
-        const element = document.getElementById(id);
+      // Fill form fields by name attribute
+      Object.entries(fieldMap).forEach(([fieldName, value]) => {
+        const element = form.elements[fieldName];
         if (element) {
           element.value = value;
         }
@@ -226,28 +253,45 @@
         return;
       }
 
-      // Collect form data
+      // Collect form data by name attribute
       const formData = new FormData(form);
       const updatedUser = {
         ...this.currentUser,
-        hoten: formData.get("hoten"),
+        hoten: formData.get("hoten") || "",
         username: this.currentUser.username, // Cannot change username
-        email: formData.get("email"),
-        phone: formData.get("phone"),
-        ngaysinh: formData.get("ngaysinh"),
-        gioitinh: formData.get("gioitinh"),
-        bio: formData.get("bio"),
+        email: formData.get("email") || "",
+        phone: formData.get("phone") || "",
+        ngaysinh: formData.get("ngaysinh") || "",
+        gioitinh: formData.get("gioitinh") || "",
+        bio: formData.get("bio") || "",
       };
+
+      console.log("📦 Updated user data:", updatedUser);
 
       // Show loading state
       const saveBtn = document.getElementById("saveProfileBtn");
+      if (!saveBtn) {
+        console.error("❌ Save button not found");
+        return;
+      }
+
       const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
-      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Đang lưu...';
+      saveBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
 
       try {
-        // Send to server
-        const response = await fetch("/api/users/update-profile", {
+        // Get user ID from localStorage
+        const userId = this.currentUser.id || this.currentUser._id;
+        if (!userId) {
+          throw new Error("Không tìm thấy ID người dùng");
+        }
+
+        // Send to server - use correct endpoint
+        const endpoint = `/api/users/${userId}`;
+        console.log(`📤 Sending PUT request to: ${endpoint}`);
+
+        const response = await fetch(endpoint, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -256,26 +300,29 @@
           body: JSON.stringify(updatedUser),
         });
 
+        const responseData = await response.json();
+
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Cập nhật thất bại");
+          throw new Error(responseData.message || "Cập nhật thất bại");
         }
 
-        const result = await response.json();
-
-        // Update localStorage
-        localStorage.setItem("user_data", JSON.stringify(updatedUser));
-        this.currentUser = updatedUser;
+        // Update localStorage with new data
+        const updatedUserData = responseData.data || updatedUser;
+        localStorage.setItem("user_data", JSON.stringify(updatedUserData));
+        this.currentUser = updatedUserData;
 
         // Update UI
         if (window.updateSidebarUser) {
-          window.updateSidebarUser(updatedUser);
+          window.updateSidebarUser(updatedUserData);
         }
         if (window.App && window.App.updateUserInfo) {
           window.App.updateUserInfo();
         }
 
-        this.showStatus("✅ Thông tin được cập nhật thành công!", "success");
+        this.showStatus(
+          "✅ Thông tin cá nhân được cập nhật thành công!",
+          "success"
+        );
 
         // Close modal after 1.5s
         setTimeout(() => {
@@ -302,9 +349,17 @@
       const modal = document.getElementById("profileModal");
       if (!modal) return;
 
-      // Hide modal by adding hidden class
-      modal.classList.add("hidden");
+      // Hide modal using ModalManager if available
+      if (window.ModalManager && window.ModalManager.close) {
+        window.ModalManager.close("profileModal");
+      } else {
+        // Fallback: Hide modal by adding hidden class
+        modal.classList.add("hidden");
+        modal.classList.remove("active", "show");
+      }
+
       document.body.style.overflow = "";
+      console.log("✅ Profile modal closed");
     },
 
     /**

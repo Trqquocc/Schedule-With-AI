@@ -234,6 +234,346 @@
     right: 0 !important;
     top: 0 !important;
   }
+
+  /* ===================================
+     SETTINGS MODAL - ENHANCED STYLING
+     =================================== */
+
+  /* ===================================
+   SETTINGS MODAL - LAYER 2 (10000)
+   =================================== */
+
+  #settingsModal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 10000 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(8px) !important;
+    padding: 16px !important;
+    animation: fadeIn 0.2s ease-out !important;
+  }
+
+  #settingsModal.hidden {
+    display: none !important;
+  }
+
+  /* Modal Content Container */
+  #settingsModal .modal-content {
+    background: white !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    max-width: 440px !important;
+    width: 100% !important;
+    max-height: 90vh !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Scrollbar Styling */
+  #settingsModal .modal-content::-webkit-scrollbar {
+    width: 8px !important;
+  }
+
+  #settingsModal .modal-content::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  #settingsModal .modal-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1 !important;
+    border-radius: 4px !important;
+  }
+
+  #settingsModal .modal-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8 !important;
+  }
+
+  /* Modal Header */
+  #settingsModal .modal-content > div:first-child {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    color: white !important;
+    padding: 28px 24px !important;
+    border-bottom: none !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    position: relative !important;
+  }
+
+  #settingsModal .modal-content > div:first-child::after {
+    content: "" !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6) !important;
+  }
+
+  #settingsModal .modal-content h3 {
+    color: white !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    letter-spacing: -0.5px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  #settingsModal .modal-content h3::before {
+    content: "⚙️" !important;
+    font-size: 28px !important;
+  }
+
+  /* Close Button */
+  #settingsModal #closeSettingsModal {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    padding: 0 !important;
+    font-size: 20px !important;
+  }
+
+  #settingsModal #closeSettingsModal:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: rotate(90deg) scale(1.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* Modal Body */
+  #settingsModal .modal-content > div:nth-child(2) {
+    padding: 24px !important;
+    overflow-y: auto !important;
+    max-height: calc(90vh - 120px) !important;
+  }
+
+  /* User Info Card */
+  #settingsModal .flex.items-center {
+    padding: 20px !important;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%) !important;
+    border-radius: 16px !important;
+    border: 2px solid #c7d2fe !important;
+    gap: 16px !important;
+    margin-bottom: 24px !important;
+    transition: all 0.3s ease !important;
+  }
+
+  #settingsModal .flex.items-center:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15) !important;
+  }
+
+  #settingsModal .settings-avatar-letter {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 24px !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4) !important;
+    border: 3px solid white !important;
+  }
+
+  #settingsModal .settings-user-name {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    margin-bottom: 4px !important;
+  }
+
+  #settingsModal .settings-user-email {
+    font-size: 13px !important;
+    color: #64748b !important;
+  }
+
+  /* Settings Menu Section */
+  #settingsModal .space-y-2 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding-bottom: 20px !important;
+    border-bottom: 2px solid #f1f5f9 !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* Settings Menu Buttons */
+  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) {
+    padding: 16px 20px !important;
+    border-radius: 14px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 2px solid transparent !important;
+    cursor: pointer !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    color: #334155 !important;
+    background: #f8fafc !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn):hover {
+    background: white !important;
+    border-color: #e0e7ff !important;
+    transform: translateX(6px) !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1) !important;
+  }
+
+  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) i {
+    transition: transform 0.3s ease !important;
+  }
+
+  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn):hover i {
+    transform: scale(1.2) !important;
+  }
+
+  /* Specific Button Colors */
+  #settingsModal #openProfileBtn {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  }
+
+  #settingsModal #openProfileBtn:hover {
+    border-color: #3b82f6 !important;
+    color: #1e40af !important;
+  }
+
+  #settingsModal #openNotificationBtn {
+    background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%) !important;
+  }
+
+  #settingsModal #openNotificationBtn:hover {
+    border-color: #06b6d4 !important;
+    color: #0e7490 !important;
+  }
+
+  #settingsModal button[class*="palette"] {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
+  }
+
+  #settingsModal button[class*="palette"]:hover {
+    border-color: #a855f7 !important;
+    color: #7e22ce !important;
+  }
+
+  #settingsModal button[class*="globe"] {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+  }
+
+  #settingsModal button[class*="globe"]:hover {
+    border-color: #f59e0b !important;
+    color: #b45309 !important;
+  }
+
+  /* Logout Button */
+  #settingsModal #modalLogoutBtn {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+    border: 2px solid #fecaca !important;
+    padding: 16px 20px !important;
+    border-radius: 14px !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    color: #dc2626 !important;
+    margin-top: 8px !important;
+  }
+
+  #settingsModal #modalLogoutBtn:hover {
+    background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%) !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  #settingsModal #modalLogoutBtn i {
+    transition: transform 0.3s ease !important;
+  }
+
+  #settingsModal #modalLogoutBtn:hover i {
+    transform: translateX(-4px) !important;
+  }
+
+  /* Footer Version Info */
+  #settingsModal .text-center.text-xs {
+    padding-top: 20px !important;
+    border-top: 2px solid #f1f5f9 !important;
+    color: #94a3b8 !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(40px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Responsive Design */
+  @media (max-width: 480px) {
+    #settingsModal .modal-content {
+      max-width: 100% !important;
+      width: calc(100% - 32px) !important;
+      max-height: 95vh !important;
+      border-radius: 16px !important;
+    }
+
+    #settingsModal .modal-content > div:first-child {
+      padding: 20px 16px !important;
+    }
+
+    #settingsModal .modal-content h3 {
+      font-size: 20px !important;
+    }
+
+    #settingsModal .modal-content > div:nth-child(2) {
+      padding: 16px !important;
+    }
+
+    #settingsModal .settings-avatar-letter {
+      width: 48px !important;
+      height: 48px !important;
+      font-size: 20px !important;
+    }
+
+    #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) {
+      padding: 14px 16px !important;
+      font-size: 14px !important;
+    }
+  }
 </style>
 
 <aside
@@ -329,73 +669,97 @@
 
     <div class="p-6 space-y-6">
       <!-- User Info -->
-      <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
+      <div
+        class="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100"
+      >
         <div
-          class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg"
+          class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md"
         >
           <span class="settings-avatar-letter">?</span>
         </div>
         <div>
-          <p class="font-medium text-gray-900 settings-user-name">Người dùng</p>
-          <p class="text-sm text-gray-500 settings-user-email">
+          <p class="font-semibold text-gray-900 settings-user-name">
+            Người dùng
+          </p>
+          <p class="text-xs text-gray-600 settings-user-email">
             email@example.com
           </p>
         </div>
       </div>
 
       <!-- Settings List -->
-      <div class="space-y-2">
+      <div class="space-y-2 border-b border-gray-200 pb-4">
         <button
           id="openProfileBtn"
-          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+          class="w-full text-left p-4 rounded-lg hover:bg-blue-50 transition-all flex items-center justify-between text-gray-700 hover:text-blue-600 group"
         >
           <div class="flex items-center gap-3">
-            <i class="fas fa-user-edit text-gray-500"></i>
-            <span>Cập nhật hồ sơ</span>
+            <i
+              class="fas fa-user-edit text-blue-500 group-hover:scale-110 transition-transform"
+            ></i>
+            <span class="font-medium">Cập nhật hồ sơ</span>
           </div>
-          <i class="fas fa-chevron-right text-gray-400"></i>
+          <i
+            class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500 transition-colors"
+          ></i>
         </button>
         <button
           id="openNotificationBtn"
-          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+          class="w-full text-left p-4 rounded-lg hover:bg-cyan-50 transition-all flex items-center justify-between text-gray-700 hover:text-cyan-600 group"
         >
           <div class="flex items-center gap-3">
-            <i class="fas fa-bell text-gray-500"></i>
-            <span>Thông báo</span>
+            <i
+              class="fas fa-bell text-cyan-500 group-hover:scale-110 transition-transform"
+            ></i>
+            <span class="font-medium">Thông báo</span>
           </div>
-          <i class="fas fa-chevron-right text-gray-400"></i>
+          <i
+            class="fas fa-chevron-right text-gray-400 group-hover:text-cyan-500 transition-colors"
+          ></i>
         </button>
         <button
-          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+          class="w-full text-left p-4 rounded-lg hover:bg-purple-50 transition-all flex items-center justify-between text-gray-700 hover:text-purple-600 group"
         >
           <div class="flex items-center gap-3">
-            <i class="fas fa-palette text-gray-500"></i>
-            <span>Giao diện</span>
+            <i
+              class="fas fa-palette text-purple-500 group-hover:scale-110 transition-transform"
+            ></i>
+            <span class="font-medium">Giao diện</span>
           </div>
-          <i class="fas fa-chevron-right text-gray-400"></i>
+          <i
+            class="fas fa-chevron-right text-gray-400 group-hover:text-purple-500 transition-colors"
+          ></i>
         </button>
         <button
-          class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
+          class="w-full text-left p-4 rounded-lg hover:bg-amber-50 transition-all flex items-center justify-between text-gray-700 hover:text-amber-600 group"
         >
           <div class="flex items-center gap-3">
-            <i class="fas fa-globe text-gray-500"></i>
-            <span>Ngôn ngữ</span>
+            <i
+              class="fas fa-globe text-amber-500 group-hover:scale-110 transition-transform"
+            ></i>
+            <span class="font-medium">Ngôn ngữ</span>
           </div>
           <span class="text-sm text-gray-500">Tiếng Việt</span>
         </button>
       </div>
 
-      <div class="border-t border-gray-200 pt-4">
+      <div class="pt-2">
         <button
           id="modalLogoutBtn"
-          class="w-full text-left p-4 rounded-lg hover:bg-red-50 transition flex items-center gap-3 text-red-600 font-medium"
+          class="w-full text-left p-4 rounded-lg hover:bg-red-50 transition-all flex items-center gap-3 text-red-600 font-medium hover:text-red-700 group"
         >
-          <i class="fas fa-sign-out-alt"></i>
+          <i
+            class="fas fa-sign-out-alt group-hover:scale-110 transition-transform"
+          ></i>
           <span>Đăng xuất</span>
         </button>
       </div>
 
-      <div class="text-center text-xs text-gray-500 pt-4">Phiên bản 1.0.0</div>
+      <div
+        class="text-center text-xs text-gray-400 pt-2 border-t border-gray-200"
+      >
+        <span>Schedule With AI v1.0.0</span>
+      </div>
     </div>
   </div>
 </div>

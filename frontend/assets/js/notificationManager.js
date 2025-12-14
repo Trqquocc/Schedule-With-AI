@@ -63,6 +63,7 @@
       document.addEventListener("click", (e) => {
         if (e.target.closest("#openNotificationBtn")) {
           e.preventDefault();
+          e.stopPropagation();
           this.openNotificationModal();
         }
       });
@@ -70,22 +71,36 @@
       // Close buttons
       const closeBtn = document.getElementById("closeNotificationModal");
       const cancelBtn = document.getElementById("cancelNotificationBtn");
-      if (closeBtn) closeBtn.addEventListener("click", () => this.closeModal());
-      if (cancelBtn)
-        cancelBtn.addEventListener("click", () => this.closeModal());
+      if (closeBtn) {
+        closeBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.closeModal();
+        });
+      }
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.closeModal();
+        });
+      }
 
       // Close on backdrop click
       const modal = document.getElementById("notificationModal");
       if (modal) {
         modal.addEventListener("click", (e) => {
-          if (e.target === modal) this.closeModal();
+          if (e.target === modal) {
+            this.closeModal();
+          }
         });
       }
 
       // Connect button
       const connectBtn = document.getElementById("connectTelegramBtn");
       if (connectBtn) {
-        connectBtn.addEventListener("click", () => this.connectTelegram());
+        connectBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.connectTelegram();
+        });
       }
 
       // Close on ESC key
@@ -116,11 +131,15 @@
       // Load saved settings
       this.loadNotificationSettings();
 
-      // Show modal by removing hidden class
-      modal.classList.remove("hidden");
-
-      // Prevent body scroll
-      document.body.style.overflow = "hidden";
+      // Show modal using ModalManager if available
+      if (window.ModalManager && window.ModalManager.showModalById) {
+        window.ModalManager.showModalById("notificationModal");
+      } else {
+        // Fallback: Show modal by removing hidden class
+        modal.classList.remove("hidden");
+        modal.classList.add("active", "show");
+        document.body.style.overflow = "hidden";
+      }
 
       console.log("✅ Notification modal opened");
     },
@@ -335,9 +354,17 @@
       const modal = document.getElementById("notificationModal");
       if (!modal) return;
 
-      // Hide modal by adding hidden class
-      modal.classList.add("hidden");
+      // Hide modal using ModalManager if available
+      if (window.ModalManager && window.ModalManager.close) {
+        window.ModalManager.close("notificationModal");
+      } else {
+        // Fallback: Hide modal by adding hidden class
+        modal.classList.add("hidden");
+        modal.classList.remove("active", "show");
+      }
+
       document.body.style.overflow = "";
+      console.log("✅ Notification modal closed");
     },
 
     /**

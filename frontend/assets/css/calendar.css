@@ -54,48 +54,100 @@
   letter-spacing: 0.5px;
 }
 
-/* ✅ Event Styles - Modern design */
+/* ✅ Event Styles - Modern design with enhanced visual hierarchy */
 .fc-event {
   border: none !important;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 7px 11px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: 3px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-bottom: 2px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid;
+  position: relative;
+  overflow: hidden;
+  color: white !important;
+}
+
+.fc-event::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  pointer-events: none;
+  border-radius: 6px;
+}
+
+.fc-event::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at top left,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+  border-radius: 6px;
 }
 
 .fc-event:hover {
-  opacity: 0.9;
+  opacity: 0.98;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18), 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.fc-event:active {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .fc-event-title {
-  font-weight: 500;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  z-index: 2;
+  position: relative;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: white !important;
 }
 
 .fc-event-time {
   font-size: 11px;
   opacity: 0.95;
-  font-weight: 600;
+  font-weight: 700;
+  z-index: 2;
+  position: relative;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
-/* ✅ Time Grid Events - Better spacing */
+/* ✅ Time Grid Events - Better spacing with enhanced styling */
 .fc-timegrid-event {
-  border-left: 3px solid !important;
-  border-radius: 4px;
-  padding: 4px 6px;
+  border-left: 5px solid !important;
+  border-radius: 6px;
+  padding: 5px 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
 }
 
 .fc-timegrid-event .fc-event-time {
   font-weight: 700;
   margin-bottom: 2px;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 10px;
+  letter-spacing: 0.3px;
 }
 
 .fc-timegrid-event .fc-event-title {
@@ -104,28 +156,31 @@
 
 /* ✅ Drag & Drop States - Clear visual feedback */
 .fc-event-dragging {
-  opacity: 0.6 !important;
+  opacity: 0.7 !important;
   cursor: move !important;
   z-index: 999;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25), 0 6px 14px rgba(0, 0, 0, 0.15) !important;
+  transform: scale(1.05) !important;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.2));
 }
 
 .fc-event-resizing {
-  opacity: 0.7;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  opacity: 0.8;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  cursor: col-resize !important;
 }
 
 /* ✅ External Draggable Items - Better feedback */
 [draggable="true"] {
   cursor: move;
   user-select: none;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 [draggable="true"]:hover {
-  opacity: 0.85;
-  transform: translateX(3px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: 0.9;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 [draggable="true"]:active {
@@ -140,6 +195,13 @@
   opacity: 0.4 !important;
   border: 2px dashed #3b82f6;
   border-radius: 4px;
+}
+
+/* ✅ Drop Zone Styling */
+.drop-zone-active {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  border: 2px dashed #3b82f6 !important;
+  box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.15);
 }
 
 /* ✅ Day Grid - Better cell height and spacing */
@@ -239,21 +301,64 @@
   font-size: 20px;
 }
 
-/* ✅ Event Completed State - Clear visual */
+/* ✅ Event Completed State - Clear visual with strikethrough */
 .fc-event.event-completed {
-  opacity: 0.5;
-  text-decoration: line-through;
+  opacity: 0.6 !important;
   background: repeating-linear-gradient(
     45deg,
     transparent,
     transparent 10px,
-    rgba(255, 255, 255, 0.1) 10px,
-    rgba(255, 255, 255, 0.1) 20px
-  );
+    rgba(255, 255, 255, 0.15) 10px,
+    rgba(255, 255, 255, 0.15) 20px
+  ) !important;
+  filter: grayscale(50%) !important;
+  border-left-color: rgba(100, 116, 139, 0.5) !important;
+}
+
+.fc-event.event-completed .fc-event-title {
+  color: rgba(0, 0, 0, 0.5) !important;
+  text-decoration: line-through !important;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(0, 0, 0, 0.4);
+}
+
+.fc-event.event-completed .fc-event-time {
+  opacity: 0.6;
+  color: rgba(0, 0, 0, 0.5) !important;
 }
 
 .fc-event.event-completed:hover {
-  opacity: 0.7;
+  opacity: 0.75 !important;
+  transform: translateY(-1px) scale(1.005);
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.2) 10px,
+    rgba(255, 255, 255, 0.2) 20px
+  ) !important;
+}
+
+/* Animation for completion */
+@keyframes completeEvent {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: grayscale(0%);
+  }
+  50% {
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+    filter: grayscale(50%);
+  }
+}
+
+.fc-event.completing {
+  animation: completeEvent 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ✅ Selection Highlight */
@@ -307,24 +412,84 @@
 .fc-scroller::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
+/* ✅ Custom Event Priority Colors - Brighter with subtle gradients */
 
-/* ✅ Custom Event Priority Colors */
-.fc-event.event-priority-high {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-  border-color: #dc2626 !important;
+/* Priority 2 - Trung bình: Xanh dương (DEFAULT) */
+.fc-event {
+  background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
+  border-left-color: #3b82f6 !important;
   color: white !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25),
+    0 2px 6px rgba(37, 99, 235, 0.15) !important;
 }
 
-.fc-event.event-priority-medium {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-  border-color: #d97706 !important;
-  color: white !important;
+.fc-event:hover {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%) !important;
+  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.35),
+    0 6px 14px rgba(37, 99, 235, 0.25) !important;
 }
 
+/* Priority 1 - Thấp: Xanh lá */
 .fc-event.event-priority-low {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  border-color: #059669 !important;
+  background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%) !important;
+  border-left-color: #10b981 !important;
+  color: #065f46 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25),
+    0 2px 6px rgba(5, 150, 105, 0.15) !important;
+}
+
+.fc-event.event-priority-low:hover {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35),
+    0 6px 14px rgba(5, 150, 105, 0.25) !important;
+  color: #065f46 !important;
+}
+
+/* Priority 3 - Cao: Vàng */
+.fc-event.event-priority-medium {
+  background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%) !important;
+  border-left-color: #f59e0b !important;
+  color: #78350f !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25),
+    0 2px 6px rgba(217, 119, 6, 0.15) !important;
+}
+
+.fc-event.event-priority-medium:hover {
+  background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%) !important;
+  box-shadow: 0 12px 28px rgba(245, 158, 11, 0.35),
+    0 6px 14px rgba(217, 119, 6, 0.25) !important;
+  color: #78350f !important;
+}
+
+/* Priority 4 - Rất cao: Đỏ */
+.fc-event.event-priority-high {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
+  border-left-color: #dc2626 !important;
   color: white !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25),
+    0 2px 6px rgba(220, 38, 38, 0.15) !important;
+}
+
+.fc-event.event-priority-high:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #f87171 100%) !important;
+  box-shadow: 0 12px 28px rgba(239, 68, 68, 0.35),
+    0 6px 14px rgba(220, 38, 38, 0.25) !important;
+}
+
+/* AI Suggested Events - Purple/Violet */
+.event-ai-suggested {
+  background: linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%) !important;
+  border-left-color: #a855f7 !important;
+  color: #5b21b6 !important;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25),
+    0 2px 6px rgba(139, 92, 246, 0.15) !important;
+}
+
+.event-ai-suggested:hover {
+  background: linear-gradient(135deg, #edd5fe 0%, #d8b4fe 100%) !important;
+  box-shadow: 0 12px 28px rgba(168, 85, 247, 0.35),
+    0 6px 14px rgba(139, 92, 246, 0.25) !important;
+  color: #5b21b6 !important;
 }
 
 /* ✅ Empty State Styling */
@@ -491,20 +656,6 @@
   z-index: 1000;
 }
 
-/* AI Suggested Events */
-.event-ai-suggested {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
-  border-color: #7c3aed !important;
-  color: white !important;
-  border-left: 4px solid #a78bfa !important;
-}
-
-.event-ai-suggested:hover {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-}
-
 /* AI Button Animation */
 #ai-suggest-btn {
   transition: all 0.3s ease;
@@ -555,14 +706,7 @@
 }
 
 /* Style cho các event trong calendar */
-.fc-event {
-  transition: all 0.3s ease;
-}
-
-.fc-event:hover {
-  transform: scale(1.02);
-  z-index: 1000;
-}
+/* Already styled above with priorities */
 
 /* Style cho task đang được kéo */
 .dragging-task {
@@ -674,4 +818,144 @@
 
 #eventDetailModal .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+/* ✅ Event Completion Modal Enhancements */
+#eventDetailModal {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Enhanced checkbox styling for completion */
+#eventCompletedCheckbox {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#eventCompletedCheckbox:checked {
+  animation: checkPulse 0.4s ease;
+}
+
+@keyframes checkPulse {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Save button glow effect */
+#saveEventStatus {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#saveEventStatus.ring-2 {
+  animation: buttonGlow 0.5s ease-out;
+}
+
+@keyframes buttonGlow {
+  0% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 0px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Completed event visual feedback in modal */
+.event-completed-indicator {
+  animation: slideInCheckmark 0.5s ease;
+}
+
+@keyframes slideInCheckmark {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Task completed strikethrough animation */
+.task-title-completed {
+  animation: strikethroughAnimation 0.6s ease;
+}
+
+@keyframes strikethroughAnimation {
+  0% {
+    text-decoration: none;
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+}
+
+/* Event hover with completion state */
+.fc-event.event-completed {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.fc-event.event-completed:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Smooth removal animation */
+.fc-event.removing {
+  animation: shrinkAndFade 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes shrinkAndFade {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    max-height: 200px;
+  }
+  60% {
+    opacity: 0.5;
+    transform: scale(0.9) translateY(-5px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) translateY(-20px);
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Status update toast animation */
+@keyframes toastSlide {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-notification {
+  animation: toastSlide 0.3s ease-out;
 }
