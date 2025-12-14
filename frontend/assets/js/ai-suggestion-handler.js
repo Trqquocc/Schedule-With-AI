@@ -25,25 +25,42 @@
      */
 
     async initAIModal() {
-      // Nếu đã init rồi, chỉ populate lại tasks (không cần init lại tất cả)
+      // If already initialized, just reload tasks
       if (this._isModalInitialized) {
-        console.log("✅ Modal đã được init trước đó, chỉ reload tasks...");
-        await this.populateAIModal();
+        console.log("✅ Modal already initialized, reloading tasks only...");
+        try {
+          await this.populateAIModal();
+        } catch (error) {
+          console.error("❌ Error reloading tasks:", error);
+          this.showErrorInModal(error.message);
+        }
         return;
       }
-      try {
-        console.log("🚀 Initializing AI modal...");
 
+      try {
+        console.log("🚀 Initializing AI modal for the first time...");
+
+        // Wait for modal to be in DOM and visible
         await this.waitForModalReady();
+        console.log("✅ Modal ready in DOM");
+
+        // Load and populate tasks
         await this.populateAIModal();
+        console.log("✅ Tasks populated");
+
+        // Setup event listeners
         this.setupAllEventListeners();
+        console.log("✅ Event listeners setup");
+
+        // Set default dates
         this.setDefaultDates();
+        console.log("✅ Dates set");
 
         console.log("✅ AI modal initialized successfully");
         this._isModalInitialized = true;
       } catch (error) {
         console.error("❌ Error initializing AI modal:", error);
-        this.showErrorInModal(error.message);
+        this.showErrorInModal(error.message || "Không thể khởi tạo modal");
       }
     },
 
@@ -1746,30 +1763,36 @@
     },
 
     closeModal() {
-      const modal = document.getElementById("aiSuggestionModal");
-      if (modal) {
-        // ✅ RESET FORM TRƯỚC KHI ĐÓNG
-        this.resetModalForm();
+      console.log("🤖 AIHandler.closeModal() called");
 
-        modal.classList.remove("active", "show");
-        modal.style.display = "none";
-        document.body.classList.remove("modal-open");
-        console.log("✅ Modal closed and form reset");
+      // ✅ RESET FORM TRƯỚC KHI ĐÓNG
+      this.resetModalForm();
 
-        // Show footer again (if hidden)
-        const modalFooter = document.querySelector(
-          "#aiSuggestionModal .ai-modal-footer"
-        );
-        if (modalFooter) {
-          modalFooter.style.display = "flex";
+      // Show footer again (if hidden)
+      const modalFooter = document.querySelector(
+        "#aiSuggestionModal .ai-modal-footer"
+      );
+      if (modalFooter) {
+        modalFooter.style.display = "flex";
+      }
+
+      // ✅ Use ModalManager to close modal consistently
+      if (window.ModalManager && ModalManager.close) {
+        ModalManager.close("aiSuggestionModal");
+        console.log("✅ Modal closed via ModalManager");
+      } else {
+        console.warn("⚠️ ModalManager not available, using fallback");
+        const modal = document.getElementById("aiSuggestionModal");
+        if (modal) {
+          modal.classList.remove("active", "show");
+          modal.classList.add("hidden");
+          // Remove inline styles
+          modal.style.display = "";
+          modal.style.opacity = "";
+          modal.style.visibility = "";
+          document.body.classList.remove("modal-open");
+          console.log("✅ Modal closed (fallback)");
         }
-
-        // Dispatch modal closed event
-        window.dispatchEvent(
-          new CustomEvent("modalClosed", {
-            detail: { modalId: "aiSuggestionModal" },
-          })
-        );
       }
     },
 
@@ -1979,7 +2002,7 @@
   console.log("AIHandler v9.3 đã sẵn sàng và được gắn vào window!");
 
   // Auto-initialize when modal is shown
-  document.addEventListener("modal-shown", (e) => {
+  document.addEventListener("modalShown", (e) => {
     if (e.detail && e.detail.modalId === "aiSuggestionModal") {
       console.log("🎯 AI Modal shown, initializing...");
       setTimeout(() => {

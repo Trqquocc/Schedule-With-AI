@@ -31,8 +31,25 @@
 
       // 3. Load all components
       console.log("📦 Loading components...");
-      await ComponentLoader.init();
-      console.log("✅ Components loaded");
+      try {
+        await ComponentLoader.init();
+        console.log("✅ Components loaded successfully");
+
+        // Verify sidebar loaded
+        const sidebarContainer = document.getElementById("sidebar-container");
+        if (sidebarContainer && sidebarContainer.children.length > 0) {
+          console.log(
+            "✅ Sidebar verified in DOM:",
+            sidebarContainer.children.length,
+            "children"
+          );
+        } else {
+          console.warn("⚠️ Sidebar loaded but may be empty");
+        }
+      } catch (err) {
+        console.error("❌ Component loading failed:", err);
+        throw err;
+      }
 
       // 4. Update user info
       console.log("👤 Updating user info...");

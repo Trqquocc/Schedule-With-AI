@@ -1,4 +1,241 @@
 <!-- components/sidebar.html -->
+<style>
+  /* ✅ CRITICAL: Scope sidebar styles to SIDEBAR ONLY - do NOT affect modals/buttons globally */
+  #sidebar-container * {
+    box-sizing: border-box !important;
+  }
+
+  #sidebar-container aside {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    background: white !important;
+    width: 256px !important;
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    min-width: 256px !important;
+    max-width: 256px !important;
+    border-right: 1px solid #e5e7eb !important;
+    padding: 16px 12px !important;
+    user-select: none !important;
+    min-height: 100vh !important;
+    max-height: 100vh !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  #sidebar-container nav {
+    display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  #sidebar-container .space-y-1 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  #sidebar-container .space-y-2 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  #sidebar-container button {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    width: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  #sidebar-container .bg-gray-200 {
+    background: #e5e7eb !important;
+  }
+
+  #sidebar-container .bg-blue-500 {
+    background: #3b82f6 !important;
+  }
+
+  #sidebar-container .text-white {
+    color: white !important;
+  }
+
+  #sidebar-container .font-bold {
+    font-weight: bold !important;
+  }
+
+  #sidebar-container .rounded-full {
+    border-radius: 50% !important;
+  }
+
+  #sidebar-container .border-t {
+    border-top: 1px solid #e5e7eb !important;
+  }
+
+  #sidebar-container .pt-4 {
+    padding-top: 16px !important;
+  }
+
+  #sidebar-container .mt-4 {
+    margin-top: 16px !important;
+  }
+
+  #sidebar-container .px-4 {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  #sidebar-container .gap-3 {
+    gap: 12px !important;
+  }
+
+  #sidebar-container .items-center {
+    align-items: center !important;
+  }
+
+  #sidebar-container .flex {
+    display: flex !important;
+  }
+
+  #sidebar-container .flex-1 {
+    flex: 1 !important;
+  }
+
+  #sidebar-container .min-w-0 {
+    min-width: 0 !important;
+  }
+
+  #sidebar-container .truncate {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  #sidebar-container .text-sm {
+    font-size: 14px !important;
+  }
+
+  #sidebar-container .text-xs {
+    font-size: 12px !important;
+  }
+
+  #sidebar-container .font-semibold {
+    font-weight: 600 !important;
+  }
+
+  #sidebar-container .text-gray-900 {
+    color: #111827 !important;
+  }
+
+  #sidebar-container .text-gray-500 {
+    color: #6b7280 !important;
+  }
+
+  #sidebar-container .text-gray-600 {
+    color: #4b5563 !important;
+  }
+
+  #sidebar-container .text-gray-700 {
+    color: #374151 !important;
+  }
+
+  #sidebar-container .hover\:bg-gray-100:hover {
+    background: #f3f4f6 !important;
+  }
+
+  #sidebar-container .hover\:text-gray-700:hover {
+    color: #374151 !important;
+  }
+
+  #sidebar-container .hover\:text-red-600:hover {
+    color: #dc2626 !important;
+  }
+
+  #sidebar-container .hover\:bg-gray-50:hover {
+    background: #f9fafb !important;
+  }
+
+  #sidebar-container .rounded-lg {
+    border-radius: 8px !important;
+  }
+
+  #sidebar-container .rounded-xl {
+    border-radius: 12px !important;
+  }
+
+  /* All divs inside aside must be visible */
+  #sidebar-container aside > div {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    overflow: visible !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  #sidebar-container aside > div:first-child {
+    flex: 1 !important;
+  }
+
+  #sidebar-container aside > div:last-child {
+    flex: 0 0 auto !important;
+  }
+
+  /* ===================================
+     SIDEBAR LAYOUT - FIXED POSITIONING
+     =================================== */
+
+  /* Root container - flex layout */
+  #main-app {
+    display: flex !important;
+    position: relative !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+  }
+
+  /* Sidebar fixed container - overlay on left */
+  #sidebar-container {
+    display: block !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 256px !important;
+    height: 100vh !important;
+    z-index: 999 !important;
+    background: white !important;
+    border-right: 1px solid #e5e7eb !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow: hidden !important;
+  }
+
+  /* Sidebar's aside element - positioned inside container */
+  #sidebar-container aside {
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+  }
+</style>
+
 <aside
   class="flex flex-col justify-between bg-white w-64 border-r border-gray-200 py-4 px-3 select-none min-h-screen"
 >
@@ -76,12 +313,9 @@
 </aside>
 
 <!-- MODAL CÀI ĐẶT -->
-<div
-  id="settingsModal"
-  class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center"
->
+<div id="settingsModal" class="modal hidden">
   <div
-    class="modal-content bg-white rounded-xl shadow-2xl w-96 max-w-full mx-4 transform transition-all scale-95 opacity-0"
+    class="modal-content bg-white rounded-xl shadow-2xl w-96 max-w-full mx-4"
   >
     <div class="flex justify-between items-center p-6 border-b border-gray-200">
       <h3 class="text-xl font-semibold text-gray-800">Cài đặt</h3>
@@ -112,6 +346,7 @@
       <!-- Settings List -->
       <div class="space-y-2">
         <button
+          id="openProfileBtn"
           class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
         >
           <div class="flex items-center gap-3">
@@ -121,6 +356,7 @@
           <i class="fas fa-chevron-right text-gray-400"></i>
         </button>
         <button
+          id="openNotificationBtn"
           class="w-full text-left p-4 rounded-lg hover:bg-gray-50 transition flex items-center justify-between text-gray-700"
         >
           <div class="flex items-center gap-3">
@@ -169,7 +405,6 @@
     console.log("Sidebar + Settings Modal loaded");
 
     const settingsModal = document.getElementById("settingsModal");
-    const modalContent = settingsModal.querySelector(".modal-content");
     const openBtn = document.getElementById("settingsBtn");
     const closeBtn = document.getElementById("closeSettingsModal");
     const modalLogoutBtn = document.getElementById("modalLogoutBtn");
@@ -222,17 +457,11 @@
     openBtn?.addEventListener("click", (e) => {
       e.preventDefault();
       settingsModal.classList.remove("hidden");
-      requestAnimationFrame(() => {
-        modalContent.classList.replace("scale-95", "scale-100");
-        modalContent.classList.replace("opacity-0", "opacity-100");
-      });
     });
 
     // Đóng modal
     const closeModal = () => {
-      modalContent.classList.replace("scale-100", "scale-95");
-      modalContent.classList.replace("opacity-100", "opacity-0");
-      setTimeout(() => settingsModal.classList.add("hidden"), 300);
+      settingsModal.classList.add("hidden");
     };
     closeBtn?.addEventListener("click", closeModal);
     settingsModal.addEventListener("click", (e) => {
@@ -270,6 +499,43 @@
 
     // Export để dùng ở nơi khác
     window.updateSidebarUser = updateUserInfo;
+
+    // ✅ NEW: Open Profile Modal - Work early, before manager init
+    const openProfileBtn = document.getElementById("openProfileBtn");
+    if (openProfileBtn) {
+      openProfileBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        // Wait for ProfileManager if not ready yet
+        const tryOpen = () => {
+          if (window.ProfileManager && ProfileManager.openProfileModal) {
+            ProfileManager.openProfileModal();
+          } else {
+            setTimeout(tryOpen, 100);
+          }
+        };
+        tryOpen();
+      });
+    }
+
+    // ✅ NEW: Open Notification Modal - Work early, before manager init
+    const openNotificationBtn = document.getElementById("openNotificationBtn");
+    if (openNotificationBtn) {
+      openNotificationBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        // Wait for NotificationManager if not ready yet
+        const tryOpen = () => {
+          if (
+            window.NotificationManager &&
+            NotificationManager.openNotificationModal
+          ) {
+            NotificationManager.openNotificationModal();
+          } else {
+            setTimeout(tryOpen, 100);
+          }
+        };
+        tryOpen();
+      });
+    }
 
     // Navigation
     const initNav = setInterval(() => {
