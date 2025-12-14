@@ -1,9 +1,7 @@
 <div class="h-full w-full bg-white">
-  <!-- Calendar Navigation Bar -->
   <nav class="bg-white border-b border-gray-200 px-6 py-4 w-full">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-4">
-        <!-- Navigation Controls -->
         <div class="flex items-center gap-2">
           <button
             id="ai-cal-prev-btn"
@@ -27,7 +25,6 @@
           </button>
         </div>
 
-        <!-- Current Date Display -->
         <div
           id="ai-calendar-title"
           class="text-xl font-semibold text-gray-800 min-w-[200px]"
@@ -36,9 +33,7 @@
         </div>
       </div>
 
-      <!-- Nút AI và View Switcher -->
       <div class="flex items-center gap-4">
-        <!-- Nút Tham khảo AI -->
         <button
           id="ai-suggest-btn"
           class="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all shadow-md flex items-center gap-2"
@@ -46,7 +41,6 @@
           <span>Tham Khảo AI</span>
         </button>
 
-        <!-- View Switcher -->
         <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
           <button
             id="ai-cal-day-view"
@@ -74,9 +68,7 @@
     </div>
   </nav>
 
-  <!-- Calendar Container với ID riêng cho AI -->
   <div id="ai-calendar" class="flex-1 overflow-hidden bg-white">
-    <!-- Loading spinner -->
     <div class="flex items-center justify-center h-full bg-gray-50">
       <div class="text-center text-gray-500">
         <div
@@ -93,28 +85,22 @@
 
 <script>
   (function () {
-    // Biến kiểm soát trạng thái khởi tạo
     let isInitializing = false;
     let isInitialized = false;
 
-    // Đợi AIModule load
     function waitForAIModule() {
       if (window.AIModule) {
-        // Kiểm tra nếu đang khởi tạo thì không làm gì
         if (isInitializing) {
           return;
         }
 
-        // Kiểm tra nếu đã khởi tạo rồi thì chỉ refresh UI
         if (isInitialized && AIModule.isInitialized && AIModule.calendar) {
           AIModule.refreshUI();
           return;
         }
 
-        // Đánh dấu đang khởi tạo
         isInitializing = true;
 
-        // Config IDs riêng cho trang AI
         AIModule.calendarElementId = "ai-calendar";
         AIModule.titleElementId = "ai-calendar-title";
         AIModule.prevBtnId = "ai-cal-prev-btn";
@@ -124,7 +110,6 @@
         AIModule.weekBtnId = "ai-cal-week-view";
         AIModule.monthBtnId = "ai-cal-month-view";
 
-        // Trigger init
         AIModule.init()
           .then(() => {
             isInitialized = true;
@@ -141,7 +126,6 @@
 
     setTimeout(waitForAIModule, 300);
 
-    // LISTEN FOR TAB CHANGES - REFRESH WHEN AI TAB IS SHOWN
     let tabChangeListenerAdded = false;
     if (!tabChangeListenerAdded) {
       tabChangeListenerAdded = true;
@@ -159,7 +143,5 @@
         { once: false }
       );
     }
-
-    // no-op: keep original behavior (refresh when AI section shown)
   })();
 </script>

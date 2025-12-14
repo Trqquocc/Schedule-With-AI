@@ -1,4 +1,3 @@
-<!-- work.html -->
 <!DOCTYPE html>
 <html lang="vi">
   <head>
@@ -14,7 +13,6 @@
   </head>
   <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8">
-      <!-- Header đơn giản -->
       <div class="flex justify-between items-center mb-8">
         <div>
           <h1 class="text-3xl font-bold text-gray-800">Quản lý công việc</h1>
@@ -31,7 +29,6 @@
         </button>
       </div>
 
-      <!-- Filters và Search -->
       <div
         class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6"
       >
@@ -72,9 +69,7 @@
         </div>
       </div>
 
-      <!-- Main Table Container -->
       <div id="work-items-container" class="min-w-full">
-        <!-- Loading state -->
         <div class="text-center py-12 hidden" id="loading-indicator">
           <div
             class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"
@@ -82,7 +77,6 @@
           <p class="text-gray-600 font-medium">Đang tải công việc...</p>
         </div>
 
-        <!-- Empty state -->
         <div class="empty-state hidden" id="empty-state-indicator">
           <div class="empty-state-icon">
             <i class="fas fa-inbox"></i>
@@ -116,16 +110,13 @@
           </button>
         </div>
 
-        <!-- Table sẽ được render bởi JavaScript -->
       </div>
     </div>
 
     <script>
-      // Khởi tạo ngay khi page load
       document.addEventListener("DOMContentLoaded", function () {
         console.log("📋 Work page loaded");
 
-        // Xử lý nút tạo công việc - CHỈ MỘT NÚT DUY NHẤT
         const createBtn = document.getElementById("create-task-btn");
         if (createBtn) {
           createBtn.addEventListener("click", function () {
@@ -135,7 +126,6 @@
           });
         }
 
-        // Khởi tạo WorkManager
         setTimeout(() => {
           if (window.WorkManager && !window.WorkManager.initialized) {
             window.WorkManager.init();
