@@ -136,23 +136,20 @@
   function renderSalaryView(data) {
     const entries = data.entries || [];
 
-    // Lọc ra các công việc đã được đánh dấu hoàn thành
-    const completedEntries = entries.filter((e) => {
-      // Kiểm tra các trường có thể có để xác định trạng thái hoàn thành
-      if (typeof e.completed !== "undefined") {
-        return e.completed === true || e.completed === 1;
-      }
-      if (typeof e.DaHoanThanh !== "undefined") {
-        return Number(e.DaHoanThanh) === 1;
-      }
-      // Mặc định không tính nếu không có trường trạng thái rõ ràng
-      return false;
-    });
+    // Backend đã filter DaHoanThanh = 1, nên tất cả entries đều là hoàn thành
+    // Không cần filter lại
+    const completedEntries = entries;
 
     // Calculate total amount
     const totalAmount = completedEntries.reduce((sum, entry) => {
       return sum + (Number(entry.amount) || 0);
     }, 0);
+
+    console.log(
+      `📊 Loaded ${
+        completedEntries.length
+      } completed schedules, total: ${formatCurrency(totalAmount)}`
+    );
 
     // Render table
     const tableContainer = document.getElementById("salary-table");
@@ -339,7 +336,7 @@
       tab.addEventListener("click", function () {
         // Remove active class from all tabs
         tabs.forEach((t) => t.classList.remove("active"));
-        
+
         // Add active class to clicked tab
         this.classList.add("active");
 
@@ -457,6 +454,18 @@
 
     // Load initial data
     await handleLoadSalary();
+
+    // Listen for event completion to reload salary
+    document.addEventListener("eventCompleted", async (e) => {
+      console.log(
+        "📢 Event completed detected, reloading salary data:",
+        e.detail
+      );
+      if (e.detail.completed) {
+        // Reload salary data when event is marked complete
+        await handleLoadSalary();
+      }
+    });
 
     console.log("✅ SalaryManager initialized successfully");
   }

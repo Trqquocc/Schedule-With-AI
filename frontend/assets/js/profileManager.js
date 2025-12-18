@@ -6,6 +6,19 @@
 (function () {
   "use strict";
 
+  // Suppress Selection Range errors from extensions
+  if (window.getSelection) {
+    const originalGetSelection = window.getSelection;
+    window.getSelection = function () {
+      try {
+        return originalGetSelection();
+      } catch (e) {
+        console.warn("⚠️ Selection error suppressed:", e.message);
+        return { rangeCount: 0, getRangeAt: () => null };
+      }
+    };
+  }
+
   if (window.ProfileManager) {
     console.log("⚠️ ProfileManager already exists");
     return;
@@ -56,8 +69,26 @@
      */
     bindEvents() {
       // Open modal from openProfileBtn
+      const openProfileBtn = document.getElementById("openProfileBtn");
+      console.log(
+        "🔍 Looking for #openProfileBtn:",
+        openProfileBtn ? "✅ FOUND" : "❌ NOT FOUND"
+      );
+
+      if (openProfileBtn) {
+        openProfileBtn.addEventListener("click", (e) => {
+          console.log("🎯 Profile button clicked!");
+          e.preventDefault();
+          e.stopPropagation();
+          this.openProfileModal();
+        });
+        console.log("✅ Profile button event listener attached");
+      }
+
+      // Also attach to document for dynamic elements
       document.addEventListener("click", (e) => {
         if (e.target.closest("#openProfileBtn")) {
+          console.log("🎯 Profile button clicked (delegated)!");
           e.preventDefault();
           e.stopPropagation();
           this.openProfileModal();
@@ -125,10 +156,13 @@
      */
     openProfileModal() {
       console.log("🟢 Opening profile modal");
+      console.log("📦 Current user:", this.currentUser);
 
       const modal = document.getElementById("profileModal");
+      console.log("🔍 Modal element:", modal ? "✅ FOUND" : "❌ NOT FOUND");
+
       if (!modal) {
-        console.error("❌ Profile modal not found");
+        console.error("❌ Profile modal not found in DOM");
         return;
       }
 
@@ -137,8 +171,10 @@
 
       // Show modal using ModalManager if available
       if (window.ModalManager && window.ModalManager.showModalById) {
+        console.log("📤 Using ModalManager.showModalById");
         window.ModalManager.showModalById("profileModal");
       } else {
+        console.log("📤 Using fallback modal display");
         // Fallback: Show modal by removing hidden class
         modal.classList.remove("hidden");
         modal.classList.add("active", "show");
@@ -148,17 +184,21 @@
       console.log("✅ Profile modal opened");
     },
 
-      console.log("✅ Profile modal opened");
-    },
-
     /**
      * ✅ FILL FORM WITH USER DATA
      */
     fillFormWithUserData() {
-      if (!this.currentUser) return;
+      console.log("🔄 Filling form with user data...");
+
+      if (!this.currentUser) {
+        console.error("❌ No current user data available");
+        return;
+      }
 
       // Populate form fields - map by name attribute, not by id
       const form = document.getElementById("profileForm");
+      console.log("🔍 Form element:", form ? "✅ FOUND" : "❌ NOT FOUND");
+
       if (!form) {
         console.error("❌ Profile form not found");
         return;
@@ -177,9 +217,16 @@
 
       // Fill form fields by name attribute
       Object.entries(fieldMap).forEach(([fieldName, value]) => {
-        const element = form.elements[fieldName];
-        if (element) {
-          element.value = value;
+        try {
+          const element = form.elements[fieldName];
+          if (element) {
+            element.value = value;
+            console.log(`  ✅ ${fieldName} = ${value || "(empty)"}`);
+          } else {
+            console.warn(`  ⚠️ Field ${fieldName} not found`);
+          }
+        } catch (e) {
+          console.warn(`  ⚠️ Error setting ${fieldName}:`, e.message);
         }
       });
 
@@ -277,19 +324,30 @@
 
       const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
-      saveBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
 
       try {
-        // Get user ID from localStorage
-        const userId = this.currentUser.id || this.currentUser._id;
+        // Get user ID - try multiple property names for compatibility
+        let userId = null;
+        if (this.currentUser.id) {
+          userId = this.currentUser.id;
+        } else if (this.currentUser._id) {
+          userId = this.currentUser._id;
+        } else if (this.currentUser.userId) {
+          userId = this.currentUser.userId;
+        } else if (this.currentUser.UserID) {
+          userId = this.currentUser.UserID;
+        }
+
         if (!userId) {
+          console.error("Current user:", this.currentUser);
           throw new Error("Không tìm thấy ID người dùng");
         }
 
         // Send to server - use correct endpoint
         const endpoint = `/api/users/${userId}`;
         console.log(`📤 Sending PUT request to: ${endpoint}`);
+        console.log(`📤 User ID: ${userId}`);
 
         const response = await fetch(endpoint, {
           method: "PUT",
@@ -409,11 +467,30 @@
   // Auto-init when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      ProfileManager.init();
+      console.log("⏳ DOMContentLoaded - initializing ProfileManager...");
+      setTimeout(() => {
+        ProfileManager.init();
+      }, 500);
     });
   } else {
-    setTimeout(() => ProfileManager.init(), 100);
+    console.log("⏳ Document already loaded - initializing ProfileManager...");
+    setTimeout(() => {
+      ProfileManager.init();
+    }, 500);
   }
 
-  console.log("✅ ProfileManager loaded");
+  console.log("✅ ProfileManager script loaded");
+
+  // Global error handler for selection errors from extensions
+  window.addEventListener(
+    "error",
+    (event) => {
+      if (event.message && event.message.includes("getRangeAt")) {
+        console.warn("⚠️ Extension selection error suppressed");
+        event.preventDefault();
+        return true;
+      }
+    },
+    true
+  );
 })();
