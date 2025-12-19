@@ -1,14 +1,13 @@
-<!-- AI Suggestion Modal - Complete Fixed Version -->
+
 <div id="aiSuggestionModal" class="modal hidden">
-  <!-- Modal Overlay -->
+
   <div
     class="modal-overlay"
     onclick="ModalManager.hideModalById('aiSuggestionModal')"
   ></div>
 
-  <!-- Modal Content -->
   <div class="modal-content">
-    <!-- Header -->
+
     <div class="ai-modal-header">
       <div class="modal-header-left">
         <div class="modal-icon">
@@ -27,11 +26,10 @@
       </button>
     </div>
 
-    <!-- Body -->
     <div class="ai-modal-body">
-      <!-- Form với ID chính xác -->
+
       <form id="aiSuggestionForm">
-        <!-- Date Range Section -->
+
         <div class="form-section">
           <div class="section-title">
             <i class="fas fa-calendar-alt"></i>
@@ -49,7 +47,6 @@
           </div>
         </div>
 
-        <!-- Task Selection Section -->
         <div class="form-section">
           <div class="section-header">
             <div class="section-title">
@@ -62,10 +59,9 @@
             </button>
           </div>
 
-          <!-- Task List Container -->
           <div class="task-list-container">
             <div class="task-list" id="aiTaskList">
-              <!-- Loading State -->
+
               <div class="loading-state">
                 <div class="loading-spinner">
                   <i class="fas fa-spinner fa-spin"></i>
@@ -74,14 +70,12 @@
               </div>
             </div>
 
-            <!-- Task Stats -->
             <div class="task-stats" id="aiTaskStats">
               Đã chọn: <strong>0</strong> công việc
             </div>
           </div>
         </div>
 
-        <!-- AI Options Section -->
         <div class="form-section">
           <div class="section-title">
             <i class="fas fa-sliders-h"></i>
@@ -89,7 +83,7 @@
           </div>
 
           <div class="ai-options-grid">
-            <!-- Option 1: Avoid Conflict -->
+
             <label class="ai-option">
               <input type="checkbox" id="aiOptionAvoidConflict" checked />
               <div class="option-content">
@@ -103,7 +97,6 @@
               </div>
             </label>
 
-            <!-- Option 2: Consider Priority -->
             <label class="ai-option">
               <input type="checkbox" id="aiOptionConsiderPriority" checked />
               <div class="option-content">
@@ -117,7 +110,6 @@
               </div>
             </label>
 
-            <!-- Option 3: Balance Workload -->
             <label class="ai-option">
               <input type="checkbox" id="aiOptionBalanceWorkload" checked />
               <div class="option-content">
@@ -135,7 +127,6 @@
       </form>
     </div>
 
-    <!-- Footer -->
     <div class="ai-modal-footer">
       <button
         type="button"
@@ -159,13 +150,13 @@
 </div>
 
 <script>
-  console.log("🤖 AI Modal Script - Enhanced Integration v2.0");
+  console.log(" AI Modal Script - Enhanced Integration v2.0");
 
   // Enhanced handler for modal initialization - using global events
   (function () {
     // Initialize when modal is shown via ModalManager
     async function initializeAIModal() {
-      console.log("🚀 Initializing AI modal...");
+      console.log(" Initializing AI modal...");
 
       try {
         // Wait for AIHandler to be available
@@ -183,14 +174,14 @@
 
         // Call AIHandler to initialize and populate modal
         if (window.AIHandler && window.AIHandler.initAIModal) {
-          console.log("📋 Calling AIHandler.initAIModal...");
+          console.log(" Calling AIHandler.initAIModal...");
           await AIHandler.initAIModal();
-          console.log("✅ Modal initialized and populated");
+          console.log(" Modal initialized and populated");
         } else {
-          console.error("❌ AIHandler.initAIModal not available");
+          console.error(" AIHandler.initAIModal not available");
         }
       } catch (error) {
-        console.error("❌ Error initializing AI modal:", error);
+        console.error(" Error initializing AI modal:", error);
       }
     }
 
@@ -205,6 +196,6 @@
     // Expose for manual calls if needed
     window.initializeAIModal = initializeAIModal;
 
-    console.log("✅ AI Modal Event Listener ready");
+    console.log(" AI Modal Event Listener ready");
   })();
 </script>

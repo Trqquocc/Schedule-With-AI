@@ -34,7 +34,6 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // ✅ Set cả req.user và req.userId
     req.user = {
       UserID: decoded.userId,
       username: decoded.username,
@@ -51,5 +50,4 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// ⚠️ QUAN TRỌNG: Export ĐÚNG một lần
 module.exports = { authenticateToken };

@@ -1,4 +1,4 @@
-// Quản lý danh mục công việc với xác thực người dùng
+
 
 const express = require("express");
 const router = express.Router();
@@ -6,7 +6,6 @@ const { dbPoolPromise, sql } = require("../config/database");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware xác thực JWT
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -24,10 +23,8 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Áp dụng middleware cho tất cả routes
 router.use(authenticateToken);
 
-// GET danh sách danh mục theo user
 router.get("/", async (req, res) => {
   try {
     const pool = await dbPoolPromise;
@@ -45,7 +42,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST tạo danh mục mới
 router.post("/", async (req, res) => {
   try {
     const { TenLoai, MoTa } = req.body;
@@ -75,7 +71,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PUT cập nhật danh mục
 router.put("/:id", async (req, res) => {
   try {
     const { TenLoai, MoTa } = req.body;
@@ -99,7 +94,6 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// DELETE xóa danh mục
 router.delete("/:id", async (req, res) => {
   try {
     const pool = await dbPoolPromise;

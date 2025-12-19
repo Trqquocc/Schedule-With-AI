@@ -1,8 +1,5 @@
-/* Minimal stylesheet focused on Login/Register pages
-   Removed unrelated features (modals, icons, calendar, etc.)
-*/
 
-/* Reset + base */
+
 * {
   margin: 0;
   padding: 0;
@@ -15,7 +12,6 @@ body {
   color: #111827;
 }
 
-/* Layout */
 .auth-container {
   display: flex;
   min-height: 100vh;
@@ -42,7 +38,6 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Inputs */
 .input-group {
   margin-bottom: 1.5rem;
   position: relative;
@@ -65,9 +60,8 @@ body {
   border-bottom-color: #1f2937;
 }
 
-/* Password Requirements */
 .password-requirements {
-  display: none; /* Hidden by default */
+  display: none;
   margin-top: 0.75rem;
   padding-left: 1rem;
   font-size: 0.875rem;
@@ -89,10 +83,10 @@ body {
   transition: color 0.3s ease;
 }
 .password-requirements li.invalid {
-  color: #9ca3af; /* Gray for unmet */
+  color: #9ca3af;
 }
 .password-requirements li.valid {
-  color: #10b981; /* Green for met */
+  color: #10b981;
   text-decoration: line-through;
 }
 .password-requirements li::before {
@@ -104,7 +98,6 @@ body {
   content: "✓";
 }
 
-/* Submit */
 .submit-btn {
   width: 100%;
   padding: 1rem;
@@ -127,7 +120,6 @@ body {
   transform: translateY(0);
 }
 
-/* Welcome panel */
 .welcome-panel {
   flex: 1;
   display: none;
@@ -166,7 +158,6 @@ body {
   color: #3f3f46;
 }
 
-/* Mobile link for small screens */
 .mobile-link {
   display: none;
   text-align: center;
@@ -183,7 +174,6 @@ body {
   margin-left: 0.25rem;
 }
 
-/* Loading */
 .loading {
   text-align: center;
   margin-top: 1.25rem;
@@ -211,12 +201,10 @@ body {
   font-size: 0.95rem;
 }
 
-/* Utility */
 .hidden {
   display: none !important;
 }
 
-/* Responsive rules: show welcome panel on desktop, stack on mobile */
 @media (min-width: 1024px) {
   .welcome-panel {
     display: flex;

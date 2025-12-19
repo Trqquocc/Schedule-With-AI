@@ -16,9 +16,27 @@ const categoriesRoutes = require("./routes/categories");
 const salaryRoutes = require("./routes/salary");
 const statisticsRoutes = require("./routes/statistics");
 const usersRoutes = require("./routes/users");
+require("./telegram/bot"); // Khởi tạo bot
+const scheduleSender = require("./telegram/scheduleSender");
+const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+require("dotenv").config({
+  path: require("path").join(__dirname, "..", ".env"),
+});
+
+// DEBUG: Kiểm tra biến môi trường
+console.log("🔍 Current directory:", __dirname);
+console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
+console.log("🔍 TELEGRAM_BOT_TOKEN exists:", !!process.env.TELEGRAM_BOT_TOKEN);
+console.log(
+  "🔍 Token preview:",
+  process.env.TELEGRAM_BOT_TOKEN
+    ? process.env.TELEGRAM_BOT_TOKEN.substring(0, 10) + "..."
+    : "MISSING"
+);
 
 // ===========================
 // CẤU HÌNH CƠ BẢN
@@ -37,6 +55,8 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../frontend"))); // phục vụ file tĩnh
+app.use(cors());
+app.use(express.json());
 
 // ===========================
 // KẾT NỐI DATABASE
@@ -62,6 +82,7 @@ app.use("/api/categories", authenticateToken, categoriesRoutes);
 app.use("/api/salary", authenticateToken, salaryRoutes);
 app.use("/api/statistics", authenticateToken, statisticsRoutes);
 app.use("/api/users", authenticateToken, usersRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // API cũ vẫn dùng (nếu có)
 app.get("/api/work/tasks", authenticateToken, (req, res) =>
@@ -90,6 +111,17 @@ app.get(
   sendFile("index.html")
 );
 
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received");
+  scheduleSender.stop();
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log(" SIGINT received");
+  scheduleSender.stop();
+  process.exit(0);
+});
 // Catch-all
 app.get("*", (req, res) => {
   if (req.path.startsWith("/api/")) {
@@ -100,9 +132,6 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
-// ===========================
-// KHỞI ĐỘNG
-// ===========================
 initializeDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`Server đang chạy tại http://localhost:${PORT}`);

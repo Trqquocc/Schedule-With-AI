@@ -1,13 +1,10 @@
-/**
- * NotificationManager v1.0
- * Xử lý kết nối Telegram và cài đặt thông báo
- */
+
 
 (function () {
   "use strict";
 
   if (window.NotificationManager) {
-    console.log("⚠️ NotificationManager already exists");
+    console.log(" NotificationManager already exists");
     return;
   }
 
@@ -16,50 +13,38 @@
     currentUser: null,
     telegramConnected: false,
 
-    /**
-     * ✅ INIT
-     */
     init() {
       if (this.initialized) {
-        console.log("ℹ️ NotificationManager already initialized");
+        console.log(" NotificationManager already initialized");
         return;
       }
 
-      console.log("🔧 NotificationManager initialization started");
+      console.log(" NotificationManager initialization started");
 
-      // Load user data
       this.loadUserData();
 
-      // Check telegram connection status
       this.checkTelegramStatus();
 
-      // Bind events
       this.bindEvents();
 
       this.initialized = true;
-      console.log("✅ NotificationManager initialized successfully");
+      console.log(" NotificationManager initialized successfully");
     },
 
-    /**
-     * ✅ LOAD USER DATA
-     */
     loadUserData() {
       try {
         const userData = localStorage.getItem("user_data");
         if (userData) {
           this.currentUser = JSON.parse(userData);
-          console.log("📦 User data loaded");
+          console.log(" User data loaded");
         }
       } catch (err) {
-        console.error("❌ Error loading user data:", err);
+        console.error(" Error loading user data:", err);
       }
     },
 
-    /**
-     * ✅ BIND EVENTS
-     */
     bindEvents() {
-      // Open modal button - từ openNotificationBtn hoặc thông báo trong settings
+
       document.addEventListener("click", (e) => {
         if (e.target.closest("#openNotificationBtn")) {
           e.preventDefault();
@@ -68,7 +53,6 @@
         }
       });
 
-      // Close buttons
       const closeBtn = document.getElementById("closeNotificationModal");
       const cancelBtn = document.getElementById("cancelNotificationBtn");
       if (closeBtn) {
@@ -84,7 +68,6 @@
         });
       }
 
-      // Close on backdrop click
       const modal = document.getElementById("notificationModal");
       if (modal) {
         modal.addEventListener("click", (e) => {
@@ -94,7 +77,6 @@
         });
       }
 
-      // Connect button
       const connectBtn = document.getElementById("connectTelegramBtn");
       if (connectBtn) {
         connectBtn.addEventListener("click", (e) => {
@@ -103,7 +85,6 @@
         });
       }
 
-      // Close on ESC key
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
           const modal = document.getElementById("notificationModal");
@@ -113,40 +94,120 @@
         }
       });
 
-      console.log("✅ Events bound");
+      console.log(" Events bound");
     },
 
-    /**
-     * ✅ OPEN MODAL
-     */
     openNotificationModal() {
-      console.log("🟢 Opening notification modal");
+      console.log(" Opening notification modal");
 
       const modal = document.getElementById("notificationModal");
       if (!modal) {
-        console.error("❌ Notification modal not found");
+        console.error(" Notification modal not found");
         return;
       }
 
-      // Load saved settings
       this.loadNotificationSettings();
 
-      // Show modal using ModalManager if available
       if (window.ModalManager && window.ModalManager.showModalById) {
         window.ModalManager.showModalById("notificationModal");
       } else {
-        // Fallback: Show modal by removing hidden class
+
         modal.classList.remove("hidden");
         modal.classList.add("active", "show");
         document.body.style.overflow = "hidden";
       }
 
-      console.log("✅ Notification modal opened");
+      this.checkTelegramStatusInModal();
+
+      setTimeout(() => {
+        const connectBtn = document.getElementById("connectTelegramBtn");
+        if (connectBtn) {
+          connectBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.connectTelegram();
+          };
+          console.log(" Connect button re-bound");
+        }
+
+        const saveBtn = document.getElementById("saveNotificationSettingsBtn");
+        if (saveBtn) {
+          saveBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.saveSettingsAndClose();
+          };
+          console.log(" Save button re-bound");
+        }
+      }, 100);
+
+      console.log(" Notification modal opened");
     },
 
-    /**
-     * ✅ CHECK TELEGRAM STATUS
-     */
+    async checkTelegramStatusInModal() {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+          this.updateConnectionStatus(false);
+          this.toggleConnectionSection(true);
+          return;
+        }
+
+        const response = await fetch("/api/notifications/telegram-status", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const connected = data.connected || false;
+          this.telegramConnected = connected;
+
+          this.updateConnectionStatus(connected);
+          this.toggleConnectionSection(!connected);
+
+          if (connected) {
+            console.log(" Telegram is connected - hiding connection section");
+          }
+        } else {
+          this.updateConnectionStatus(false);
+          this.toggleConnectionSection(true);
+        }
+      } catch (err) {
+        console.warn(" Could not check telegram status:", err);
+        this.updateConnectionStatus(false);
+        this.toggleConnectionSection(true);
+      }
+    },
+
+    toggleConnectionSection(show) {
+      const connectionSection = document.getElementById("connectionSection");
+      const connectButtonGroup = document.getElementById("connectButtonGroup");
+      const connectionStatusText = document.getElementById(
+        "connectionStatusText"
+      );
+
+      if (show) {
+
+        if (connectionSection) connectionSection.classList.remove("hidden");
+        if (connectButtonGroup) connectButtonGroup.classList.remove("hidden");
+        if (connectionStatusText) {
+          connectionStatusText.textContent =
+            "Để nhận thông báo công việc và lịch trình, bạn cần kết nối với Telegram bot.";
+        }
+      } else {
+
+        if (connectionSection) connectionSection.classList.add("hidden");
+        if (connectButtonGroup) connectButtonGroup.classList.add("hidden");
+        if (connectionStatusText) {
+          connectionStatusText.textContent =
+            "Bạn đã kết nối thành công với Telegram. Bây giờ bạn sẽ nhận thông báo tự động.";
+        }
+      }
+    },
+
     async checkTelegramStatus() {
       try {
         const token = localStorage.getItem("auth_token");
@@ -164,25 +225,21 @@
           this.telegramConnected = data.connected || false;
 
           if (this.telegramConnected) {
-            console.log("✅ Telegram connected");
+            console.log(" Telegram connected");
             this.updateConnectionStatus(true);
           }
         }
       } catch (err) {
-        console.warn("⚠️ Could not check telegram status:", err);
+        console.warn(" Could not check telegram status:", err);
       }
     },
 
-    /**
-     * ✅ LOAD NOTIFICATION SETTINGS
-     */
     loadNotificationSettings() {
       try {
         const settings = localStorage.getItem("notification_settings");
         if (settings) {
           const parsed = JSON.parse(settings);
 
-          // Update checkboxes
           const taskNotif = document.getElementById("taskNotifications");
           const eventReminders = document.getElementById("eventReminders");
           const aiSuggestions = document.getElementById("aiSuggestions");
@@ -193,92 +250,138 @@
           if (aiSuggestions)
             aiSuggestions.checked = parsed.aiSuggestions !== false;
 
-          console.log("✅ Settings loaded");
+          const taskReminderTime = document.getElementById("taskReminderTime");
+          if (taskReminderTime && parsed.taskReminderTime) {
+            taskReminderTime.value = parsed.taskReminderTime;
+          }
+
+          const dailyScheduleTime =
+            document.getElementById("dailyScheduleTime");
+          if (dailyScheduleTime && parsed.dailyScheduleTime) {
+            dailyScheduleTime.value = parsed.dailyScheduleTime;
+          }
+
+          const dailySummaryTime = document.getElementById("dailySummaryTime");
+          if (dailySummaryTime && parsed.dailySummaryTime) {
+            dailySummaryTime.value = parsed.dailySummaryTime;
+          }
+
+          console.log(" Settings loaded");
         }
       } catch (err) {
-        console.warn("⚠️ Could not load settings:", err);
+        console.warn(" Could not load settings:", err);
       }
     },
 
-    /**
-     * ✅ CONNECT TELEGRAM
-     */
     async connectTelegram() {
-      console.log("🔗 Connecting to Telegram...");
+      console.log("🔗 Starting Telegram connection...");
 
-      const tokenInput = document.getElementById("telegramToken");
-      const token = tokenInput?.value?.trim();
-
-      if (!token) {
-        this.showStatus("❌ Vui lòng nhập mã token", "error");
-        return;
-      }
-
-      // Validate token format (should be alphanumeric, length > 10)
-      if (!/^[a-zA-Z0-9_-]{10,}$/.test(token)) {
-        this.showStatus(
-          "❌ Mã token không hợp lệ! Kiểm tra lại mã từ bot",
-          "error"
-        );
-        return;
-      }
-
-      // Show loading state
       const connectBtn = document.getElementById("connectTelegramBtn");
+      if (!connectBtn) {
+        console.error(" Connect button not found!");
+        this.showStatus(" Lỗi: Nút kết nối không được tìm thấy", "error");
+        return;
+      }
+
       const originalText = connectBtn.innerHTML;
       connectBtn.disabled = true;
       connectBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i>Đang kết nối...';
+        '<i class="fas fa-spinner fa-spin"></i> Đang mở Telegram...';
 
       try {
-        // Send to server
-        const response = await fetch("/api/notifications/connect-telegram", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-          },
-          body: JSON.stringify({ telegramToken: token }),
-        });
+
+        const response = await fetch(
+          "/api/notifications/telegram-connect-url",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+            },
+          }
+        );
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Kết nối thất bại");
+          const error = await response.json();
+          this.showStatus(` ${error.message}`, "error");
+          connectBtn.disabled = false;
+          connectBtn.innerHTML = originalText;
+          return;
         }
 
         const result = await response.json();
+        const { telegramUrl } = result;
 
-        // Save settings
-        this.saveNotificationSettings();
+        console.log(" Opening Telegram bot...");
+        this.showStatus(
+          " Đang mở Telegram... Hãy nhấn /start hoặc click link",
+          "info"
+        );
 
-        // Update status
-        this.telegramConnected = true;
-        this.updateConnectionStatus(true);
+        window.open(telegramUrl, "_blank", "width=500,height=600");
 
-        this.showStatus("✅ Kết nối Telegram thành công!", "success");
-
-        // Clear token input
-        tokenInput.value = "";
-
-        // Close modal after 2s
         setTimeout(() => {
-          this.closeModal();
+          if (connectBtn) {
+            connectBtn.disabled = false;
+            connectBtn.innerHTML = originalText;
+          }
         }, 2000);
 
-        console.log("✅ Telegram connected successfully");
+        let checkCount = 0;
+        const connectionCheckInterval = setInterval(async () => {
+          checkCount++;
+          try {
+            const token = localStorage.getItem("auth_token");
+            if (!token) {
+              clearInterval(connectionCheckInterval);
+              return;
+            }
+
+            const statusResponse = await fetch(
+              "/api/notifications/telegram-status",
+              {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              if (statusData.connected) {
+                console.log(" Connection confirmed!");
+                this.telegramConnected = true;
+                this.updateConnectionStatus(true);
+                this.toggleConnectionSection(false);
+                this.showStatus(" Kết nối Telegram thành công!", "success");
+                clearInterval(connectionCheckInterval);
+
+                setTimeout(() => {
+                  this.closeModal();
+                }, 1500);
+              }
+            }
+          } catch (err) {
+            console.warn(" Error checking connection status:", err);
+          }
+
+          if (checkCount >= 15) {
+            clearInterval(connectionCheckInterval);
+            console.log(
+              " Connection check timeout - user may need to refresh"
+            );
+          }
+        }, 2000);
       } catch (error) {
-        console.error("❌ Error connecting to Telegram:", error);
-        this.showStatus(`❌ Lỗi: ${error.message}`, "error");
-      } finally {
-        // Restore button
-        connectBtn.disabled = false;
-        connectBtn.innerHTML = originalText;
+        console.error(" Error starting connection:", error);
+        this.showStatus(` Lỗi: ${error.message}`, "error");
+        if (connectBtn) {
+          connectBtn.disabled = false;
+          connectBtn.innerHTML = originalText;
+        }
       }
     },
 
-    /**
-     * ✅ SAVE NOTIFICATION SETTINGS
-     */
     saveNotificationSettings() {
       const settings = {
         taskNotifications:
@@ -287,15 +390,50 @@
           document.getElementById("eventReminders")?.checked ?? true,
         aiSuggestions:
           document.getElementById("aiSuggestions")?.checked ?? true,
+        taskReminderTime:
+          document.getElementById("taskReminderTime")?.value ?? "14:00",
+        dailyScheduleTime:
+          document.getElementById("dailyScheduleTime")?.value ?? "08:00",
+        dailySummaryTime:
+          document.getElementById("dailySummaryTime")?.value ?? "18:00",
       };
 
       localStorage.setItem("notification_settings", JSON.stringify(settings));
-      console.log("✅ Notification settings saved");
+      console.log(" Notification settings saved", settings);
+      return settings;
     },
 
-    /**
-     * ✅ UPDATE CONNECTION STATUS DISPLAY
-     */
+    async saveSettingsAndClose() {
+      try {
+        const settings = this.saveNotificationSettings();
+
+        const token = localStorage.getItem("auth_token");
+        if (token) {
+          const response = await fetch("/api/notifications/update-settings", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(settings),
+          });
+
+          if (response.ok) {
+            this.showStatus(" Cài đặt đã được lưu thành công", "success");
+          }
+        } else {
+          this.showStatus(" Cài đặt đã được lưu", "success");
+        }
+
+        setTimeout(() => {
+          this.closeModal();
+        }, 1000);
+      } catch (error) {
+        console.error(" Error saving settings:", error);
+        this.showStatus(` Lỗi: ${error.message}`, "error");
+      }
+    },
+
     updateConnectionStatus(connected) {
       const statusEl = document.getElementById("connectionStatus");
       if (!statusEl) return;
@@ -313,14 +451,10 @@
       }
     },
 
-    /**
-     * ✅ SHOW STATUS MESSAGE
-     */
     showStatus(message, type = "info") {
       const statusEl = document.getElementById("notificationStatusMessage");
       if (!statusEl) return;
 
-      // Determine colors
       let bgColor = "bg-blue-50";
       let borderColor = "border-blue-200";
       let textColor = "text-blue-700";
@@ -339,47 +473,37 @@
       statusEl.innerHTML = message;
       statusEl.classList.remove("hidden");
 
-      // Auto-hide after 5s
       setTimeout(() => {
         statusEl.classList.add("hidden");
       }, 5000);
     },
 
-    /**
-     * ✅ CLOSE MODAL
-     */
     closeModal() {
       console.log("🚪 Closing notification modal");
 
       const modal = document.getElementById("notificationModal");
       if (!modal) return;
 
-      // Hide modal using ModalManager if available
       if (window.ModalManager && window.ModalManager.close) {
         window.ModalManager.close("notificationModal");
       } else {
-        // Fallback: Hide modal by adding hidden class
+
         modal.classList.add("hidden");
         modal.classList.remove("active", "show");
       }
 
       document.body.style.overflow = "";
-      console.log("✅ Notification modal closed");
+      console.log(" Notification modal closed");
     },
 
-    /**
-     * ✅ CLEANUP
-     */
     cleanup() {
-      console.log("🧹 NotificationManager cleanup");
-      // Perform any cleanup if needed
+      console.log(" NotificationManager cleanup");
+
     },
   };
 
-  // Export
   window.NotificationManager = NotificationManager;
 
-  // Auto-init when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       NotificationManager.init();
@@ -388,5 +512,5 @@
     setTimeout(() => NotificationManager.init(), 100);
   }
 
-  console.log("✅ NotificationManager loaded");
+  console.log(" NotificationManager loaded");
 })();

@@ -6,6 +6,7 @@ const config = {
   password: process.env.DB_PASSWORD,
   server: process.env.DB_SERVER,
   database: process.env.DB_DATABASE,
+  port: process.env.DB_PORT || 1433,
   options: {
     encrypt: false,
     trustServerCertificate: true,
@@ -18,22 +19,19 @@ const config = {
   },
 };
 
-// ✅ FIX: Không sử dụng destructuring từ chính file này
-// Tạo pool connection
 const dbPoolPromise = new sql.ConnectionPool(config)
   .connect()
   .then((pool) => {
-    console.log("✅ Connected to SQL Server");
+    console.log("Connected to SQL Server");
     return pool;
   })
   .catch((err) => {
-    console.error("❌ Database connection failed:", err);
+    console.error("Database connection failed:", err);
     process.exit(1);
   });
 
-// ✅ FIX: Export với tên khác để tránh trùng lặp
 module.exports = {
   sql,
-  dbPoolPromise, // Đổi tên thành dbPoolPromise
   config,
+  dbPoolPromise,
 };

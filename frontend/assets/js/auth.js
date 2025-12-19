@@ -1,7 +1,4 @@
-// ===============================================
-// ===============   FRONTEND   ==================
-// =============== Runs in browser ===============
-// ===============================================
+
 
 const AuthManager = {
   async login(username, password) {
@@ -20,7 +17,6 @@ const AuthManager = {
         throw new Error(result.message || "Đăng nhập thất bại");
       }
 
-      // ✅ FIX: Sử dụng cùng key với register và logout
       localStorage.setItem("auth_token", result.data.token);
       localStorage.setItem("user_data", JSON.stringify(result.data.user));
 
@@ -66,33 +62,24 @@ const AuthManager = {
     setTimeout(() => window.location.replace("/login.html"), 600);
   },
 
-  // ✅ THÊM: Helper function để lấy token
   getToken() {
     return localStorage.getItem("auth_token");
   },
 
-  // ✅ THÊM: Helper function để lấy user data
   getUserData() {
     const userData = localStorage.getItem("user_data");
     return userData ? JSON.parse(userData) : null;
   },
 
-  // ✅ THÊM: Kiểm tra đã đăng nhập chưa
   isAuthenticated() {
     return !!this.getToken();
   },
 };
 
-// Chỉ đăng ký cho browser
 if (typeof window !== "undefined") {
   window.AuthManager = AuthManager;
   console.log("AuthManager loaded (fixed version)");
 }
-
-// ===============================================
-// ===============    BACKEND    =================
-// =========== Runs ONLY under Node.js ===========
-// ===============================================
 
 if (typeof window === "undefined") {
   const express = require("express");
@@ -100,10 +87,8 @@ if (typeof window === "undefined") {
   const jwt = require("jsonwebtoken");
   const sql = require("mssql");
 
-  // Import pool & secret từ file config của bạn
   const { dbPoolPromise, JWT_SECRET } = require("../config");
 
-  // --------- API: GET /tasks ----------
   router.get("/tasks", async (req, res) => {
     const token = req.headers.authorization?.split(" ")[1];
 

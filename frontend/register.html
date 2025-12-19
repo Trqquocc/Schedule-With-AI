@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng ký - Quản lý công việc</title>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="login.css">
         <link rel="stylesheet" href="assets/css/login.css" />
 </head>
 <body>
     <div class="auth-container">
-        <!-- Left Panel - Register Form -->
+
         <div class="form-panel">
             <div class="form-wrapper">
                 <h1 class="form-title">Đăng kí</h1>
-                
+
                 <form id="registerForm" method="post">
                     <div class="input-group">
                         <input
@@ -65,7 +65,6 @@
                     </button>
                 </form>
 
-                <!-- Mobile Login Link -->
                 <div class="mobile-link">
                     <p>
                         Đã có tài khoản?
@@ -73,7 +72,6 @@
                     </p>
                 </div>
 
-                <!-- Loading -->
                 <div id="loading" class="loading hidden">
                     <div class="spinner"></div>
                     <p>Đang đăng ký...</p>
@@ -81,7 +79,6 @@
             </div>
         </div>
 
-        <!-- Right Panel - Welcome Section -->
         <div class="welcome-panel welcome-panel-right">
             <div class="welcome-content">
                 <h1 class="welcome-title">Hello, Welcome!</h1>
@@ -99,7 +96,6 @@
         document.addEventListener("DOMContentLoaded", function () {
             const registerForm = document.getElementById("registerForm");
             const loading = document.getElementById("loading");
-
 
             registerForm.addEventListener("submit", async function (e) {
                 e.preventDefault();
@@ -123,7 +119,6 @@
                      alert("Mật khẩu không hợp lệ. Vui lòng đáp ứng tất cả các yêu cầu.");
                      return;
                 }
-
 
                 try {
                     loading.classList.remove("hidden");

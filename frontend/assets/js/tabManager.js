@@ -1,7 +1,4 @@
-/**
- * Tab Manager - Manages tab switching in sections (e.g., Salary tabs)
- * WRAPPED VERSION: Simple wrapper pattern
- */
+
 
 (function () {
   "use strict";
@@ -14,7 +11,7 @@
   window.TabManager = {
     init() {
       this.initSalaryTabs();
-      console.log("✅ TabManager initialized");
+      console.log(" TabManager initialized");
     },
 
     initSalaryTabs() {
@@ -29,7 +26,7 @@
         !salaryContent ||
         !salaryStatsContent
       ) {
-        console.warn("⚠️ Salary tab elements not found");
+        console.warn(" Salary tab elements not found");
         return;
       }
 
@@ -43,7 +40,7 @@
         this.showContent(salaryStatsContent, salaryContent);
       });
 
-      console.log("✅ Salary tabs initialized");
+      console.log(" Salary tabs initialized");
     },
 
     activateTab(activeTab, inactiveTab) {
@@ -65,5 +62,5 @@
     },
   };
 
-  console.log("✅ TabManager loaded");
+  console.log(" TabManager loaded");
 })();

@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { dbPoolPromise, sql } = require("../config/database");
 
-// GET /api/salary?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/", async (req, res) => {
   try {
     const userId = req.userId;
@@ -14,7 +13,6 @@ router.get("/", async (req, res) => {
 
     const pool = await dbPoolPromise;
 
-    // Lấy các lịch đã hoàn thành trong khoảng, kèm thông tin công việc (LuongTheoGio)
     const result = await pool
       .request()
       .input("UserID", sql.Int, userId)
@@ -40,12 +38,12 @@ router.get("/", async (req, res) => {
       `);
 
     const entries = result.recordset.map((r) => {
-      // Tính số giờ: nếu có GioBatDau và GioKetThuc thì dùng diff, ngược lại dùng ThoiGianUocTinh (phút)
+
       let hours = 0;
       if (r.GioBatDau && r.GioKetThuc) {
         const start = new Date(r.GioBatDau);
         const end = new Date(r.GioKetThuc);
-        hours = Math.round(((end - start) / (1000 * 60) / 60) * 100) / 100; // giờ, 2 chữ số
+        hours = Math.round(((end - start) / (1000 * 60) / 60) * 100) / 100;
       } else if (r.ThoiGianUocTinh) {
         hours = Math.round((r.ThoiGianUocTinh / 60) * 100) / 100;
       }

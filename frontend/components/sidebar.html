@@ -1,6 +1,6 @@
-<!-- components/sidebar.html -->
+
 <style>
-  /* ✅ CRITICAL: Scope sidebar styles to SIDEBAR ONLY - do NOT affect modals/buttons globally */
+  /*  CRITICAL: Scope sidebar styles to SIDEBAR ONLY - do NOT affect modals/buttons globally */
   #sidebar-container * {
     box-sizing: border-box !important;
   }
@@ -328,7 +328,7 @@
   }
 
   #settingsModal .modal-content h3::before {
-    content: "⚙️" !important;
+    content: "" !important;
     font-size: 28px !important;
   }
 
@@ -616,7 +616,6 @@
     </nav>
   </div>
 
-  <!-- USER INFO -->
   <div class="border-t border-gray-200 pt-4 mt-4">
     <div class="flex items-center gap-3 px-4">
       <div
@@ -652,7 +651,6 @@
   </div>
 </aside>
 
-<!-- MODAL CÀI ĐẶT -->
 <div id="settingsModal" class="modal hidden">
   <div
     class="modal-content bg-white rounded-xl shadow-2xl w-96 max-w-full mx-4"
@@ -668,7 +666,7 @@
     </div>
 
     <div class="p-6 space-y-6">
-      <!-- User Info -->
+
       <div
         class="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100"
       >
@@ -687,7 +685,6 @@
         </div>
       </div>
 
-      <!-- Settings List -->
       <div class="space-y-2 border-b border-gray-200 pb-4">
         <button
           id="openProfileBtn"
@@ -864,7 +861,7 @@
     // Export để dùng ở nơi khác
     window.updateSidebarUser = updateUserInfo;
 
-    // ✅ NEW: Open Profile Modal - Work early, before manager init
+    //  NEW: Open Profile Modal - Work early, before manager init
     const openProfileBtn = document.getElementById("openProfileBtn");
     if (openProfileBtn) {
       openProfileBtn.addEventListener("click", (e) => {
@@ -881,7 +878,7 @@
       });
     }
 
-    // ✅ NEW: Open Notification Modal - Work early, before manager init
+    //  NEW: Open Notification Modal - Work early, before manager init
     const openNotificationBtn = document.getElementById("openNotificationBtn");
     if (openNotificationBtn) {
       openNotificationBtn.addEventListener("click", (e) => {

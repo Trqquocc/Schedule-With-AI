@@ -1,9 +1,9 @@
-<!-- components/modals/profile-modal.html -->
+
 <div id="profileModal" class="modal hidden">
   <div
     class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8 transform transition-all"
   >
-    <!-- Header -->
+
     <div
       class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50"
     >
@@ -28,10 +28,9 @@
       </button>
     </div>
 
-    <!-- Body -->
     <div class="p-8 max-h-[calc(100vh-300px)] overflow-y-auto">
       <form id="profileForm" class="space-y-6">
-        <!-- Avatar Section -->
+
         <div
           class="flex flex-col items-center gap-4 pb-6 border-b border-gray-200"
         >
@@ -58,9 +57,8 @@
           <p class="text-sm text-gray-500">Nhấp để thay đổi ảnh đại diện</p>
         </div>
 
-        <!-- Form Fields - 2 Columns -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Họ Tên -->
+
           <div class="form-group">
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-user text-indigo-500 mr-2"></i>Họ Tên
@@ -75,7 +73,6 @@
             />
           </div>
 
-          <!-- Tên Đăng Nhập -->
           <div class="form-group">
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-at text-indigo-500 mr-2"></i>Tên Đăng Nhập
@@ -93,7 +90,6 @@
             </p>
           </div>
 
-          <!-- Email -->
           <div class="form-group">
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-envelope text-indigo-500 mr-2"></i>Email
@@ -108,7 +104,6 @@
             />
           </div>
 
-          <!-- Số Điện Thoại -->
           <div class="form-group">
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-phone text-indigo-500 mr-2"></i>Số Điện Thoại
@@ -122,7 +117,6 @@
             />
           </div>
 
-          <!-- Ngày Sinh -->
           <div class="form-group">
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-birthday-cake text-indigo-500 mr-2"></i>Ngày Sinh
@@ -135,7 +129,6 @@
             />
           </div>
 
-          <!-- Giới Tính -->
           <div class="form-group">
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-venus-mars text-indigo-500 mr-2"></i>Giới Tính
@@ -153,7 +146,6 @@
           </div>
         </div>
 
-        <!-- Bio / Description -->
         <div class="form-group">
           <label class="block text-sm font-semibold text-gray-700 mb-2">
             <i class="fas fa-align-left text-indigo-500 mr-2"></i>Tiểu Sử
@@ -167,7 +159,6 @@
           ></textarea>
         </div>
 
-        <!-- Status Message -->
         <div
           id="profileStatusMessage"
           class="hidden p-4 rounded-lg text-sm"
@@ -175,7 +166,6 @@
       </form>
     </div>
 
-    <!-- Footer -->
     <div class="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
       <button
         type="button"

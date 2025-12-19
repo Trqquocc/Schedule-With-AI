@@ -1,7 +1,4 @@
-/**
- * Profile Manager - Manages user profile and settings
- * WRAPPED VERSION: Prevents duplicate initialization
- */
+
 
 (function () {
   "use strict";
@@ -17,30 +14,29 @@
 
     init() {
       if (this.initialized) {
-        console.log("ℹ️ ProfileManager already initialized");
+        console.log(" ProfileManager already initialized");
         return;
       }
 
-      console.log("🚀 Initializing ProfileManager...");
+      console.log(" Initializing ProfileManager...");
       this.initialized = true;
 
       this.loadUserProfile();
       this.bindEvents();
 
-      console.log("✅ ProfileManager initialized successfully");
+      console.log(" ProfileManager initialized successfully");
     },
 
     loadUserProfile() {
       const user = JSON.parse(localStorage.getItem("user_data") || "{}");
 
       if (!user.ID) {
-        console.warn("⚠️ No user ID found in localStorage");
+        console.warn(" No user ID found in localStorage");
         return;
       }
 
       console.log("📄 Loading user profile for:", user.username);
 
-      // Điền vào form
       const fields = {
         hoten: user.hoten || "",
         username: user.username || "",
@@ -56,7 +52,6 @@
         }
       });
 
-      // Cập nhật avatar chữ cái đầu
       const avatar = document.querySelector(".avatar-letter");
       if (avatar) {
         avatar.textContent = (user.hoten || user.username || "?")
@@ -64,7 +59,7 @@
           .toUpperCase();
       }
 
-      console.log("✅ User profile loaded");
+      console.log(" User profile loaded");
     },
 
     bindEvents() {
@@ -90,7 +85,7 @@
         });
       }
 
-      console.log("✅ ProfileManager events bound");
+      console.log(" ProfileManager events bound");
     },
 
     async saveProfile() {
@@ -116,22 +111,20 @@
         if (result.success) {
           Utils.showToast("Cập nhật thông tin thành công", "success");
 
-          // Cập nhật localStorage
           const user = JSON.parse(localStorage.getItem("user_data") || "{}");
           const updatedUser = { ...user, ...formData };
           localStorage.setItem("user_data", JSON.stringify(updatedUser));
 
-          // Cập nhật UI toàn bộ app
           if (window.App && App.updateUserInfo) {
             App.updateUserInfo();
           }
 
-          console.log("✅ Profile saved successfully");
+          console.log(" Profile saved successfully");
         } else {
           throw new Error(result.message || "Không thể cập nhật");
         }
       } catch (error) {
-        console.error("❌ Error saving profile:", error);
+        console.error(" Error saving profile:", error);
         if (typeof Utils !== "undefined" && Utils.showToast) {
           Utils.showToast("Lỗi cập nhật: " + error.message, "error");
         }
@@ -147,7 +140,7 @@
     },
 
     cleanup() {
-      console.log("🧹 Cleaning up ProfileManager...");
+      console.log(" Cleaning up ProfileManager...");
 
       this.eventListeners.forEach(({ element, event, handler }) => {
         if (element && element.removeEventListener) {
@@ -158,9 +151,9 @@
       this.eventListeners = [];
       this.initialized = false;
 
-      console.log("✅ ProfileManager cleaned up");
+      console.log(" ProfileManager cleaned up");
     },
   };
 
-  console.log("✅ ProfileManager loaded");
+  console.log(" ProfileManager loaded");
 })();

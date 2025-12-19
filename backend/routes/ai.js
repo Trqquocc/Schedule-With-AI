@@ -4,7 +4,6 @@ const { authenticateToken } = require("../middleware/auth");
 const { dbPoolPromise, sql } = require("../config/database");
 require("dotenv").config();
 
-// GEMINI AI INITIALIZATION
 let geminiModel = null;
 let geminiAvailable = false;
 
@@ -27,9 +26,6 @@ try {
     });
 
     geminiAvailable = true;
-    console.log(
-      "Gemini AI initialized successfully with model: gemini-2.5-flash"
-    );
   } else {
     console.warn("GEMINI_API_KEY is missing or empty in .env file");
     console.log("AI will run in simulation mode");
@@ -39,15 +35,6 @@ try {
   console.log("AI will run in simulation mode");
 }
 
-// HELPER FUNCTIONS
-
-/**
- * Phân tích additionalInstructions để trích xuất các yêu cầu lặp lại
- * Ví dụ:
- * - "công việc ABCD được làm vào 6h sáng hằng ngày trong tuần" → Mỗi ngày T2-CN lúc 6h
- * - "tập gym 6h sáng mỗi ngày" → Mỗi ngày lúc 6h
- * - "môn A 6h-9h tối từ T2 và T7 hàng tuần" → T2,T7 từ 18h-21h
- */
 function analyzeRecurringPatterns(additionalInstructions) {
   if (!additionalInstructions?.trim()) return [];
 
@@ -113,7 +100,7 @@ function analyzeRecurringPatterns(additionalInstructions) {
     // Kiểm tra duplicates
     const timeKey = `${startHour}:${startMin}-${endHour || "end"}:${endMin}`;
     if (seenTimes.has(timeKey)) {
-      console.log(`  ⏭️ Skipping duplicate time: ${timeKey}`);
+      console.log(`Skipping duplicate time: ${timeKey}`);
       continue;
     }
     seenTimes.add(timeKey);
@@ -126,7 +113,7 @@ function analyzeRecurringPatterns(additionalInstructions) {
     });
 
     console.log(
-      `  ✅ Found time: ${startHour.toString().padStart(2, "0")}:${startMin
+      ` Found time: ${startHour.toString().padStart(2, "0")}:${startMin
         .toString()
         .padStart(2, "0")}${
         endHour ? ` - ${endHour.toString().padStart(2, "0")}:${endMin}` : ""
@@ -186,14 +173,8 @@ function analyzeRecurringPatterns(additionalInstructions) {
       rawText: additionalInstructions,
     };
     patterns.push(pattern);
-    console.log(`✅ Pattern created:`, pattern);
   } else {
-    console.log(
-      `⚠️ Not enough data for pattern - times: ${times.length}, days: ${days.length}`
-    );
   }
-
-  console.log(`📋 Total patterns found: ${patterns.length}`);
   return patterns;
 }
 
@@ -206,7 +187,6 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
     const pool = await dbPoolPromise;
     const taskIdList = taskIds.join(",");
 
-    // SỬA QUERY NÀY - LẤY MauSac TỪ CongViec
     const query = `
       SELECT 
         cv.MaCongViec as id,
@@ -245,7 +225,7 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
         complexity: task.complexity || 2,
         focusLevel: task.focusLevel || 2,
         suitableTime: timeMap[task.suitableTimeCode] || "anytime",
-        color: task.color || getColorByPriority(task.priority || 2), // Dùng màu từ database hoặc fallback
+        color: task.color || getColorByPriority(task.priority || 2),
       };
     });
 
@@ -257,7 +237,6 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
   }
 }
 
-// Thêm hàm helper để tạo màu từ priority (fallback)
 function getColorByPriority(priority) {
   switch (priority) {
     case 1:
@@ -347,7 +326,7 @@ function buildGeminiPrompt(
 
   const recurringPatternsText =
     recurringPatterns.length > 0
-      ? `\n📅 CÁC YÊU CẦU LẶP LẠI ĐÃ PHÁT HIỆN:
+      ? `\nCÁC YÊU CẦU LẶP LẠI ĐÃ PHÁT HIỆN:
 ${recurringPatterns
   .map(
     (p, idx) => `
@@ -386,14 +365,14 @@ ${recurringPatterns
   };
 
   const additionalInstructionsText = additionalInstructions.trim()
-    ? `\n📝 HƯỚNG DẪN THÊM CỦA NGƯỜI DÙNG:\n${additionalInstructions}\n`
+    ? `\nHƯỚNG DẪN THÊM CỦA NGƯỜI DÙNG:\n${additionalInstructions}\n`
     : "";
 
   return `Bạn là trợ lý lập lịch thông minh chuyên biệt. NHIỆM VỤ: Sắp xếp TẤT CẢ ${
     taskDetails.length
   } công việc dưới đây vào lịch.
 
-⚠️ QUAN TRỌNG: BẠN PHẢI TẠO SUGGESTIONS CHO TẤT CẢ CÁC CÔNG VIỆC SAU, KHÔNG ĐƯỢC BỎ SÓT CÔNG VIỆC NÀO:
+ QUAN TRỌNG: BẠN PHẢI TẠO SUGGESTIONS CHO TẤT CẢ CÁC CÔNG VIỆC SAU, KHÔNG ĐƯỢC BỎ SÓT CÔNG VIỆC NÀO:
 
 ═══════════════════════════════════════════════════════════════
 CÁC CÔNG VIỆC BẮT BUỘC PHẢI SẮP XẾP (${taskDetails.length} cái):
@@ -444,7 +423,7 @@ ${
 HƯỚNG DẪN XỬ LÝ CHI TIẾT:
 ═══════════════════════════════════════════════════════════════
 
-🔴 QUAN TRỌNG: NẾU YÊU CẦU CÓ "LẶP LẠI", "HÀNG NGÀY", "HÀNG TUẦN", v.v:
+  QUAN TRỌNG: NẾU YÊU CẦU CÓ "LẶP LẠI", "HÀNG NGÀY", "HÀNG TUẦN", v.v:
    → TẠO NHIỀU ENTRIES (một cho mỗi ngày/lần lặp)
    
    Ví dụ yêu cầu: "công việc ABCD được làm vào 6h sáng hằng ngày trong tuần"
@@ -456,13 +435,13 @@ HƯỚNG DẪN XỬ LÝ CHI TIẾT:
    Ví dụ yêu cầu: "tập gym 6h sáng mỗi ngày (từ T2-CN)"
    → Phải tạo 6 events lúc 06:00 cho mỗi ngày làm việc
 
-👉 PHÂN TÍCH THỜI GIAN TRONG YÊU CẦU:
+   PHÂN TÍCH THỜI GIAN TRONG YÊU CẦU:
    - "6h sáng" → 06:00
    - "6h tối" / "6h chiều muộn" / "18h" → 18:00
    - "6h-9h" → từ 06:00 đến 09:00 (duration = 180 phút)
    - "10h30" / "10:30" → 10:30
 
-👉 PHÂN TÍCH NGÀY TRONG YÊU CẦU (đây là điều QUAN TRỌNG):
+   PHÂN TÍCH NGÀY TRONG YÊU CẦU (đây là điều QUAN TRỌNG):
    - "T2" = Thứ 2 (${dayNames[2]})
    - "T3" = Thứ 3 (${dayNames[3]})
    - "T4" = Thứ 4 (${dayNames[4]})
@@ -475,7 +454,7 @@ HƯỚNG DẪN XỬ LÝ CHI TIẾT:
    - "từ T2 đến T6" = T2, T3, T4, T5, T6 (5 ngày)
    - "T2 và T7" / "T2,T7" = chỉ T2 và T7
 
-👉 THỰC HIỆN LẶP LẠI TRONG KHOẢNG NGÀY:
+   THỰC HIỆN LẶP LẠI TRONG KHOẢNG NGÀY:
    - Khoảng ngày: ${startDate} đến ${endDate}
    - Nếu yêu cầu "hàng ngày", tạo 1 event cho mỗi ngày trong khoảng
    - Nếu yêu cầu "hàng tuần", tạo 1 event cho mỗi lần ngày đó xuất hiện trong khoảng
@@ -576,7 +555,7 @@ async function callGeminiAI(prompt) {
         }
 
         const jsonStr = jsonMatch[0];
-        console.log(`✅ Extracted JSON (${jsonStr.length} chars)`);
+        console.log(`Extracted JSON (${jsonStr.length} chars)`);
 
         let parsed;
         try {
@@ -596,12 +575,12 @@ async function callGeminiAI(prompt) {
         }
 
         console.log(
-          `✅ Parsed ${parsed.suggestions.length} suggestions successfully`
+          `Parsed ${parsed.suggestions.length} suggestions successfully`
         );
         return parsed;
       } catch (attemptError) {
         lastError = attemptError;
-        console.log(`❌ Attempt ${attempt} failed:`, attemptError.message);
+        console.log(` Attempt ${attempt} failed:`, attemptError.message);
       }
     }
 
@@ -794,7 +773,7 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
         );
 
         console.log(
-          "📋 Prompt length:",
+          " Prompt length:",
           prompt.length,
           "chars | First 300 chars:"
         );
@@ -803,13 +782,13 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
         aiResult = await callGeminiAI(prompt);
         mode = "gemini";
         console.log(
-          "✅ Gemini AI processed successfully with",
+          " Gemini AI processed successfully with",
           aiResult.suggestions?.length || 0,
           "suggestions"
         );
       } catch (aiError) {
         console.error(
-          "❌ Gemini AI failed:",
+          "  Gemini AI failed:",
           aiError.message,
           "| Falling back to simulation..."
         );
@@ -824,7 +803,7 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
         mode = "simulation_fallback";
       }
     } else {
-      console.log("⚠️ Gemini not available, using simulation mode...");
+      console.log(" Gemini not available, using simulation mode...");
       aiResult = await generateSimulatedScheduleWithInstructions(
         taskDetails,
         startDate,
@@ -904,12 +883,12 @@ async function generateSimulatedScheduleWithInstructions(
   existingEvents,
   additionalInstructions = ""
 ) {
-  console.log("🎯 Generating simulated schedule WITH instruction analysis...");
+  console.log(" Generating simulated schedule WITH instruction analysis...");
   console.log("Additional instructions:", additionalInstructions);
 
   // Phân tích recurring patterns
   const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
-  console.log(`📋 Found ${recurringPatterns.length} recurring pattern(s)`);
+  console.log(` Found ${recurringPatterns.length} recurring pattern(s)`);
 
   const suggestions = [];
   const start = new Date(startDate);
@@ -919,7 +898,7 @@ async function generateSimulatedScheduleWithInstructions(
   // Nếu có recurring patterns, xử lý cho từng pattern
   if (recurringPatterns.length > 0) {
     console.log(
-      `\n🔄 Processing ${recurringPatterns.length} recurring pattern(s)...`
+      `\n Processing ${recurringPatterns.length} recurring pattern(s)...`
     );
 
     for (const pattern of recurringPatterns) {

@@ -1,22 +1,15 @@
-// frontend/assets/js/salaryManager.js
-// Quản lý hiển thị trang Tính lương và Thống kê
+
 
 (function () {
   "use strict";
 
-  // API endpoints
   const API = {
     salary: "/api/salary",
     stats: "/api/statistics",
   };
 
-  // Chart instances
   let barChart = null;
   let donutChart = null;
-
-  // ============================================================================
-  // UTILITY FUNCTIONS
-  // ============================================================================
 
   function formatCurrency(amount) {
     return new Intl.NumberFormat("vi-VN").format(amount) + " VND";
@@ -42,10 +35,6 @@
   function getAuthToken() {
     return localStorage.getItem("auth_token");
   }
-
-  // ============================================================================
-  // API CALLS
-  // ============================================================================
 
   async function loadSalaryData(from, to) {
     try {
@@ -87,15 +76,11 @@
     }
   }
 
-  // ============================================================================
-  // RENDER FUNCTIONS
-  // ============================================================================
-
   function renderSalaryTable(entries) {
     if (!entries || entries.length === 0) {
       return `
         <div class="empty-state">
-          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-icon"></div>
           <div>Không có dữ liệu công việc đã hoàn thành</div>
         </div>
       `;
@@ -136,34 +121,28 @@
   function renderSalaryView(data) {
     const entries = data.entries || [];
 
-    // Backend đã filter DaHoanThanh = 1, nên tất cả entries đều là hoàn thành
-    // Không cần filter lại
     const completedEntries = entries;
 
-    // Calculate total amount
     const totalAmount = completedEntries.reduce((sum, entry) => {
       return sum + (Number(entry.amount) || 0);
     }, 0);
 
     console.log(
-      `📊 Loaded ${
+      ` Loaded ${
         completedEntries.length
       } completed schedules, total: ${formatCurrency(totalAmount)}`
     );
 
-    // Render table
     const tableContainer = document.getElementById("salary-table");
     if (tableContainer) {
       tableContainer.innerHTML = renderSalaryTable(completedEntries);
     }
 
-    // Render total amount
     const totalAmountEl = document.getElementById("total-amount");
     if (totalAmountEl) {
       totalAmountEl.textContent = formatCurrency(totalAmount);
     }
 
-    // Update quick stats
     updateQuickStats({
       total: completedEntries.length,
       completed: completedEntries.length,
@@ -172,7 +151,7 @@
   }
 
   function renderStatsView(data) {
-    // Lọc các công việc đã hoàn thành từ dữ liệu gốc
+
     const allEntries = data.allEntries || [];
     const completedEntries = allEntries.filter(
       (e) => Number(e.DaHoanThanh) === 1 || e.completed === true
@@ -180,22 +159,19 @@
 
     const total = completedEntries.length;
     const completed = completedEntries.length;
-    const pending = 0; // Vì chúng ta chỉ hiển thị công việc đã hoàn thành
+    const pending = 0;
     const percent = total > 0 ? 100 : 0;
 
-    // Update summary stats
     const statsTotal = document.getElementById("stats-total");
     const statsCompleted = document.getElementById("stats-completed");
     const statsPending = document.getElementById("stats-pending");
 
-    if (statsTotal) statsTotal.textContent = total; // Tổng số công việc hoàn thành
-    if (statsCompleted) statsCompleted.textContent = completed; // Số công việc hoàn thành
-    if (statsPending) statsPending.textContent = pending; // Số công việc chưa hoàn thành sẽ là 0
+    if (statsTotal) statsTotal.textContent = total;
+    if (statsCompleted) statsCompleted.textContent = completed;
+    if (statsPending) statsPending.textContent = pending;
 
-    // Update sidebar stats
     updateSidebarStats({ total, completed, pending, percent });
 
-    // Render charts
     renderCharts(data);
   }
 
@@ -220,16 +196,15 @@
   }
 
   function renderCharts(data) {
-    // Lọc các công việc đã hoàn thành từ dữ liệu gốc
+
     const allEntries = data.allEntries || [];
     const completedEntries = allEntries.filter(
       (e) => Number(e.DaHoanThanh) === 1 || e.completed === true
     );
 
     const completed = completedEntries.length;
-    const pending = 0; // Chỉ tính công việc hoàn thành
+    const pending = 0;
 
-    // Prepare data for charts
     const dailyCompleted = groupCompletedByDate(completedEntries);
     const labels = Object.keys(dailyCompleted).map((date) =>
       new Date(date).toLocaleDateString("vi-VN", {
@@ -239,11 +214,10 @@
     );
     const completedArr = Object.values(dailyCompleted);
 
-    // Bar Chart
     const barCtx = document.getElementById("bar-chart");
     if (barCtx) {
       if (barChart) barChart.destroy();
-      const uncompletedArr = labels.map(() => 0); // Mảng công việc chưa hoàn thành (luôn là 0)
+      const uncompletedArr = labels.map(() => 0);
 
       barChart = new Chart(barCtx, {
         type: "bar",
@@ -259,7 +233,7 @@
             {
               label: "Chưa hoàn thành",
               data: uncompletedArr,
-              backgroundColor: "#e9ecef", // Màu xám nhạt
+              backgroundColor: "#e9ecef",
               borderRadius: 6,
             },
           ],
@@ -277,7 +251,6 @@
       });
     }
 
-    // Donut Chart
     const donutCtx = document.getElementById("donut-chart");
     if (donutCtx) {
       if (donutChart) donutChart.destroy();
@@ -305,7 +278,6 @@
     }
   }
 
-  // Hàm helper mới để nhóm các công việc đã hoàn thành theo ngày
   function groupCompletedByDate(completedEntries) {
     const dailyData = {};
     completedEntries.forEach((entry) => {
@@ -316,15 +288,11 @@
         dailyData[date] = 1;
       }
     });
-    // Sắp xếp theo ngày
+
     return Object.fromEntries(
       Object.entries(dailyData).sort(([a], [b]) => new Date(a) - new Date(b))
     );
   }
-
-  // ============================================================================
-  // EVENT HANDLERS
-  // ============================================================================
 
   function setupTabSwitching() {
     const tabs = document.querySelectorAll(".salary-page .tab");
@@ -334,13 +302,11 @@
 
     tabs.forEach((tab) => {
       tab.addEventListener("click", function () {
-        // Remove active class from all tabs
+
         tabs.forEach((t) => t.classList.remove("active"));
 
-        // Add active class to clicked tab
         this.classList.add("active");
 
-        // Switch views
         const tabType = this.getAttribute("data-tab");
         if (tabType === "salary") {
           salaryView.classList.remove("hidden");
@@ -354,7 +320,7 @@
           if (pageTitle) {
             pageTitle.textContent = "Bảng thống kê";
           }
-          // Reload stats when switching to stats view
+
           handleLoadStats();
         }
       });
@@ -362,13 +328,12 @@
   }
 
   function setupDateFilters() {
-    // Salary filter
+
     const applySalaryBtn = document.getElementById("apply-salary-btn");
     if (applySalaryBtn) {
       applySalaryBtn.addEventListener("click", handleLoadSalary);
     }
 
-    // Stats filter
     const applyStatsBtn = document.getElementById("apply-stats-btn");
     if (applyStatsBtn) {
       applyStatsBtn.addEventListener("click", handleLoadStats);
@@ -393,7 +358,7 @@
       if (tableContainer) {
         tableContainer.innerHTML = `
           <div class="empty-state">
-            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-icon"></div>
             <div>Lỗi: ${escapeHtml(error.message)}</div>
           </div>
         `;
@@ -411,7 +376,7 @@
     try {
       const result = await loadStatsData(from, to);
       if (result.success) {
-        // Truyền toàn bộ dữ liệu (bao gồm cả công việc chưa hoàn thành) để hàm render tự lọc
+
         renderStatsView({
           allEntries: result.data.entries || [],
           ...result.data,
@@ -421,10 +386,6 @@
       console.error("Error loading stats:", error);
     }
   }
-
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
 
   function initializeDateInputs() {
     const today = new Date();
@@ -443,36 +404,28 @@
   }
 
   async function init() {
-    console.log("🚀 Initializing SalaryManager...");
+    console.log(" Initializing SalaryManager...");
 
-    // Initialize date inputs
     initializeDateInputs();
 
-    // Setup event handlers
     setupTabSwitching();
     setupDateFilters();
 
-    // Load initial data
     await handleLoadSalary();
 
-    // Listen for event completion to reload salary
     document.addEventListener("eventCompleted", async (e) => {
       console.log(
         "📢 Event completed detected, reloading salary data:",
         e.detail
       );
       if (e.detail.completed) {
-        // Reload salary data when event is marked complete
+
         await handleLoadSalary();
       }
     });
 
-    console.log("✅ SalaryManager initialized successfully");
+    console.log(" SalaryManager initialized successfully");
   }
-
-  // ============================================================================
-  // EXPOSE TO GLOBAL
-  // ============================================================================
 
   window.SalaryManager = {
     init,
@@ -482,7 +435,6 @@
     renderStatsView,
   };
 
-  // Auto-initialize when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

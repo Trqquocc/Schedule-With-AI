@@ -33,10 +33,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quản lý công việc</title>
 
-    <!-- ✅ Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- ✅ Font Awesome 6.4.0 - Load with high priority -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
     <link
       rel="stylesheet"
@@ -46,10 +44,8 @@
       referrerpolicy="no-referrer"
     />
 
-    <!-- ✅ FullCalendar 6 -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/main.css" />
     <link rel="stylesheet" href="assets/css/calendar.css" />
     <link rel="stylesheet" href="assets/css/ai-calendar.css" />
@@ -59,7 +55,7 @@
     <link rel="stylesheet" href="assets/css/salary.css" />
 
     <style>
-      /* ✅ Clean, modern styling */
+      /*  Clean, modern styling */
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
@@ -99,7 +95,7 @@
         display: block;
       }
 
-      /* ✅ Hide ONLY icon elements until Font Awesome loads */
+      /*  Hide ONLY icon elements until Font Awesome loads */
       body:not(.fa-loaded) i[class*="fa-"],
       body:not(.fa-loaded) span[class*="fa-"] {
         opacity: 0;
@@ -134,7 +130,7 @@
     </style>
   </head>
   <body>
-    <!-- ✅ CRITICAL: Force sidebar visible at page start -->
+
     <script>
       (function forceSidebarEarly() {
         // Create observer before sidebar is even loaded
@@ -160,7 +156,7 @@
           }
         `;
         document.head.appendChild(style);
-        console.log("✅ Sidebar force styles injected at page start");
+        console.log(" Sidebar force styles injected at page start");
       })();
     </script>
 
@@ -172,12 +168,11 @@
     </div>
 
     <div id="main-app" class="flex min-h-screen">
-      <!-- Thêm class flex min-h-screen vào đây -->
+
       <div id="sidebar-container"></div>
-      <!-- Sidebar fixed left:0 -->
 
       <div class="flex-1 flex flex-col" style="margin-left: 256px">
-        <!-- Content chính chiếm phần còn lại - shift right by sidebar width -->
+
         <div class="flex-1 overflow-auto">
           <main id="schedule-section" class="section active"></main>
           <main id="work-section" class="section"></main>
@@ -191,25 +186,24 @@
     <div id="createTaskModal" class="modal hidden"></div>
     <div id="settingsModal" class="modal hidden"></div>
 
-    <!-- 1. utils.js - Phải load ĐẦU TIÊN vì mọi thứ dùng nó -->
     <script src="assets/js/utils.js"></script>
 
-    <!-- 2. Các module core khác (nếu có) -->
     <script src="assets/js/modalManager.js"></script>
     <script src="assets/js/AppNavigation.js"></script>
     <script src="assets/js/componentLoader.js"></script>
-    <!-- phụ thuộc Utils -->
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
-    <!-- 3. Các module lớn (có thể load song song được) -->
     <script src="assets/js/calendarModule.js"></script>
     <script src="assets/js/workManager.js"></script>
     <script src="assets/js/ai-suggestion-handler.js"></script>
     <script src="assets/js/aiModule.js"></script>
     <script src="assets/js/salaryManager.js"></script>
+    <script src="assets/js/statsManager.js"></script>
     <script src="assets/js/tabManager.js"></script>
     <script src="assets/js/profile.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 
     <div id="eventDetailModal" class="modal hidden"></div>
     <div id="aiSuggestionModal" class="modal hidden"></div>
@@ -217,21 +211,17 @@
     <div id="profileModal" class="modal hidden"></div>
     <div id="notificationModal" class="modal hidden"></div>
 
-    <!-- ✅ NEW: Profile & Notification Managers -->
     <script src="assets/js/profileManager.js"></script>
     <script src="assets/js/notificationManager.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- 4. app.js - Phải load CUỐI CÙNG vì nó khởi động toàn bộ app -->
+
     <script src="assets/js/app.js"></script>
 
-    <!-- ✅ AI Modal Test Helper (Development/Testing) -->
     <script src="assets/js/ai-modal-test-helper.js"></script>
 
-    <!-- ✅ AI Modal CSS Verification (Development/Testing) -->
     <script src="assets/js/ai-modal-css-verify.js"></script>
 
-    <!-- ✅ AI Modal Quick Test (Development/Testing) -->
     <script src="assets/js/ai-modal-quick-test.js"></script>
 
     <script src="assets/js/modal-force-display.js"></script>
@@ -240,7 +230,6 @@
 
     <script src="assets/js/modal-absolute-fix.js"></script>
 
-    <!-- ✅ DEBUG SIDEBAR LOADING -->
     <script>
       window.debugSidebar = function () {
         const container = document.getElementById("sidebar-container");
@@ -288,7 +277,7 @@
     </script>
 
     <script>
-      // ✅ Auth check and Font Awesome wait
+      //  Auth check and Font Awesome wait
       (function () {
         const token = localStorage.getItem("auth_token");
         if (!token) return (location.href = "/login.html");
@@ -297,7 +286,7 @@
           const payload = JSON.parse(atob(token.split(".")[1]));
           if (payload.exp * 1000 < Date.now()) throw new Error("Token expired");
 
-          // ✅ Wait for Font Awesome
+          //  Wait for Font Awesome
           function waitForFA(callback, maxWait = 3000) {
             const start = Date.now();
 
@@ -317,13 +306,13 @@
               document.body.removeChild(test);
 
               if (loaded) {
-                console.log("✅ Font Awesome ready");
+                console.log(" Font Awesome ready");
                 document.body.classList.add("fa-loaded");
                 callback();
               } else if (Date.now() - start < maxWait) {
                 setTimeout(check, 50);
               } else {
-                console.warn("⚠️ FA timeout, continuing...");
+                console.warn(" FA timeout, continuing...");
                 document.body.classList.add("fa-loaded");
                 callback();
               }

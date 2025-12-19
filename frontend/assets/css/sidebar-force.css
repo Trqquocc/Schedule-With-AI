@@ -1,15 +1,10 @@
-/* ===================================
-   SIDEBAR FORCE FIX - MINIMAL OVERRIDE
-   Load this LAST to ensure layout works
-   =================================== */
 
-/* Ensure border-box for all elements */
+
 #sidebar-container,
 #sidebar-container * {
   box-sizing: border-box !important;
 }
 
-/* Container - Position at left 0 with fixed position */
 #sidebar-container {
   display: block !important;
   position: fixed !important;
@@ -27,7 +22,6 @@
   overflow: hidden !important;
 }
 
-/* Main app - flex container that works with fixed sidebar */
 #main-app {
   display: flex;
   position: relative;
@@ -35,7 +29,6 @@
   min-height: 100vh;
 }
 
-/* Flex container for content - NO margin needed since inline style handles it */
 #main-app .flex.min-h-screen {
   display: flex !important;
   flex: 1 !important;
@@ -44,7 +37,6 @@
   position: relative !important;
 }
 
-/* Inner flex-1 container */
 #main-app .flex.min-h-screen > .flex-1 {
   flex: 1 !important;
   display: flex !important;
@@ -53,7 +45,6 @@
   overflow: auto !important;
 }
 
-/* Responsive - maintain sidebar visibility */
 @media (max-width: 1024px) {
   #sidebar-container {
     width: 256px !important;

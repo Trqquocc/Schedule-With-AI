@@ -1,8 +1,5 @@
-/* ===================================
-   AI CALENDAR SPECIFIC STYLES
-   =================================== */
 
-/* AI Section Container */
+
 #ai-section {
   display: none;
   width: 100%;
@@ -15,7 +12,6 @@
   flex-direction: column;
 }
 
-/* AI Calendar Container */
 #ai-calendar {
   width: 100% !important;
   max-width: none !important;
@@ -26,7 +22,6 @@
   overflow: hidden;
 }
 
-/* FullCalendar inside AI section */
 #ai-calendar .fc {
   height: 100% !important;
   width: 100% !important;
@@ -49,7 +44,6 @@
   max-width: 100% !important;
 }
 
-/* AI Suggested Events - Special Styling */
 .fc-event.event-ai-suggested {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
   border-color: #7c3aed !important;
@@ -66,7 +60,6 @@
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-/* AI Badge on events */
 .fc-event.event-ai-suggested::after {
   content: "AI";
   position: absolute;
@@ -81,7 +74,6 @@
   letter-spacing: 0.5px;
 }
 
-/* AI Button Styling */
 #ai-suggest-btn {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   transition: all 0.3s ease;
@@ -116,7 +108,6 @@
   transform: translateY(0);
 }
 
-/* Loading Animation for AI Calendar */
 @keyframes pulse {
   0%,
   100% {
@@ -131,7 +122,6 @@
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* AI Event Details Modal */
 #aiEventDetailModal {
   z-index: 10001 !important;
 }
@@ -141,7 +131,6 @@
   font-size: 20px;
 }
 
-/* Success Animation */
 @keyframes slideInUp {
   from {
     opacity: 0;
@@ -157,7 +146,6 @@
   animation: slideInUp 0.4s ease-out;
 }
 
-/* Calendar Navigation Bar Styling */
 #ai-section nav {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
@@ -170,12 +158,10 @@
   transform: translateY(-1px);
 }
 
-/* View Switcher Active State */
 #ai-section .bg-gray-100 button.bg-white {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   #ai-calendar {
     min-height: 500px !important;
@@ -222,7 +208,6 @@
   }
 }
 
-/* Print Styles */
 @media print {
   #ai-suggest-btn,
   #ai-section nav .flex.gap-2 {
@@ -241,7 +226,6 @@
   }
 }
 
-/* Accessibility */
 #ai-suggest-btn:focus {
   outline: 3px solid rgba(139, 92, 246, 0.5);
   outline-offset: 2px;
@@ -252,8 +236,6 @@
   outline-offset: 2px;
   z-index: 10;
 }
-
-
 
 .task-item {
   display: flex;
@@ -345,7 +327,6 @@
   margin-left: 10px;
 }
 
-/* Priority badges */
 .task-priority {
   display: inline-flex;
   align-items: center;
@@ -379,7 +360,6 @@
   gap: 4px;
 }
 
-/* Preview styles */
 .ai-preview-section {
   animation: slideIn 0.3s ease-out;
 }
@@ -430,7 +410,6 @@
   background-color: #f8fafc;
 }
 
-/* AI Modal Fixes */
 #aiSuggestionModal .ai-modal-body {
   min-height: 400px;
   position: relative;
@@ -476,7 +455,6 @@
   margin-left: auto;
 }
 
-/* Loading states */
 #aiSuggestionModal .loading-state {
   text-align: center;
   padding: 40px;

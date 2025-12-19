@@ -1,6 +1,5 @@
-/* FullCalendar Custom Styles v6.0 - Improved UI/UX */
 
-/* ✅ Calendar Container - Full height, no gaps */
+
 #calendar {
   height: 100%;
   min-height: 700px;
@@ -8,7 +7,6 @@
   background: #f9fafb;
 }
 
-/* ✅ Remove default padding from FullCalendar */
 .fc {
   font-family: inherit;
   font-size: 14px;
@@ -19,12 +17,10 @@
   height: 100% !important;
 }
 
-/* ✅ Hide default header (we use custom navbar) */
 .fc-header-toolbar {
   display: none;
 }
 
-/* ✅ Today Highlight - More prominent */
 .fc-day-today {
   background-color: #dbeafe !important;
 }
@@ -37,7 +33,6 @@
   background-color: #dbeafe !important;
 }
 
-/* ✅ Day numbers - Better styling */
 .fc .fc-daygrid-day-number {
   padding: 8px;
   font-size: 14px;
@@ -54,7 +49,6 @@
   letter-spacing: 0.5px;
 }
 
-/* ✅ Event Styles - Modern design with enhanced visual hierarchy */
 .fc-event {
   border: none !important;
   border-radius: 6px;
@@ -69,6 +63,18 @@
   position: relative;
   overflow: hidden;
   color: white !important;
+}
+
+.fc-event[style*="background"] {
+  background-color: inherit !important;
+}
+
+.fc-daygrid-event[style*="background"] {
+  background-color: inherit !important;
+}
+
+.fc-timegrid-event[style*="background"] {
+  background-color: inherit !important;
 }
 
 .fc-event::before {
@@ -134,7 +140,6 @@
   color: rgba(255, 255, 255, 0.95) !important;
 }
 
-/* ✅ Time Grid Events - Better spacing with enhanced styling */
 .fc-timegrid-event {
   border-left: 5px solid !important;
   border-radius: 6px;
@@ -154,7 +159,6 @@
   line-height: 1.3;
 }
 
-/* ✅ Drag & Drop States - Clear visual feedback */
 .fc-event-dragging {
   opacity: 0.7 !important;
   cursor: move !important;
@@ -170,7 +174,6 @@
   cursor: col-resize !important;
 }
 
-/* ✅ External Draggable Items - Better feedback */
 [draggable="true"] {
   cursor: move;
   user-select: none;
@@ -189,7 +192,6 @@
   transform: scale(0.98);
 }
 
-/* ✅ Drop Zone Highlight - More visible */
 .fc-highlight {
   background-color: #bfdbfe !important;
   opacity: 0.4 !important;
@@ -197,14 +199,12 @@
   border-radius: 4px;
 }
 
-/* ✅ Drop Zone Styling */
 .drop-zone-active {
   background-color: rgba(59, 130, 246, 0.08) !important;
   border: 2px dashed #3b82f6 !important;
   box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.15);
 }
 
-/* ✅ Day Grid - Better cell height and spacing */
 .fc .fc-daygrid-day-frame {
   min-height: 120px;
   padding: 4px;
@@ -225,7 +225,6 @@
   padding: 3px 6px;
 }
 
-/* ✅ Week/Day View - Better time slots */
 .fc .fc-timegrid-slot {
   height: 3em;
   border-bottom: 1px solid #e5e7eb;
@@ -238,7 +237,6 @@
   padding: 0 8px;
 }
 
-/* ✅ Time axis - Better styling */
 .fc .fc-timegrid-axis {
   width: 60px;
 }
@@ -247,7 +245,6 @@
   padding: 0 4px;
 }
 
-/* ✅ Now indicator - More prominent */
 .fc .fc-timegrid-now-indicator-line {
   border-top: 2px solid #ef4444;
   z-index: 3;
@@ -258,7 +255,6 @@
   z-index: 3;
 }
 
-/* ✅ More Link - Better styling */
 .fc .fc-daygrid-more-link {
   color: #3b82f6;
   font-weight: 600;
@@ -273,7 +269,6 @@
   text-decoration: none;
 }
 
-/* ✅ Popover for More Events - Modern design */
 .fc .fc-popover {
   border: none;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -301,7 +296,6 @@
   font-size: 20px;
 }
 
-/* ✅ Event Completed State - Clear visual with strikethrough */
 .fc-event.event-completed {
   opacity: 0.6 !important;
   background: repeating-linear-gradient(
@@ -340,7 +334,6 @@
   ) !important;
 }
 
-/* Animation for completion */
 @keyframes completeEvent {
   0% {
     opacity: 1;
@@ -361,13 +354,11 @@
   animation: completeEvent 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ✅ Selection Highlight */
 .fc .fc-highlight {
   background: rgba(59, 130, 246, 0.15);
   border: 2px dashed #3b82f6;
 }
 
-/* ✅ Loading State */
 .calendar-loading {
   display: flex;
   align-items: center;
@@ -392,7 +383,6 @@
   }
 }
 
-/* ✅ Scrollbar Styles - Modern thin scrollbar */
 .fc-scroller::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -412,9 +402,7 @@
 .fc-scroller::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
-/* ✅ Custom Event Priority Colors - Brighter with subtle gradients */
 
-/* Priority 2 - Trung bình: Xanh dương (DEFAULT) */
 .fc-event {
   background: linear-gradient(135deg, #93c5fd 0%, #60a5fa 100%) !important;
   border-left-color: #3b82f6 !important;
@@ -429,7 +417,6 @@
     0 6px 14px rgba(37, 99, 235, 0.25) !important;
 }
 
-/* Priority 1 - Thấp: Xanh lá */
 .fc-event.event-priority-low {
   background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%) !important;
   border-left-color: #10b981 !important;
@@ -445,7 +432,6 @@
   color: #065f46 !important;
 }
 
-/* Priority 3 - Cao: Vàng */
 .fc-event.event-priority-medium {
   background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%) !important;
   border-left-color: #f59e0b !important;
@@ -461,7 +447,6 @@
   color: #78350f !important;
 }
 
-/* Priority 4 - Rất cao: Đỏ */
 .fc-event.event-priority-high {
   background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
   border-left-color: #dc2626 !important;
@@ -476,7 +461,6 @@
     0 6px 14px rgba(220, 38, 38, 0.25) !important;
 }
 
-/* AI Suggested Events - Purple/Violet */
 .event-ai-suggested {
   background: linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%) !important;
   border-left-color: #a855f7 !important;
@@ -492,20 +476,17 @@
   color: #5b21b6 !important;
 }
 
-/* ✅ Empty State Styling */
 .fc .fc-daygrid-day-events:empty::after {
   content: "";
   display: block;
   height: 80px;
 }
 
-/* ✅ Weekend Styling - Subtle difference */
 .fc .fc-day-sat,
 .fc .fc-day-sun {
   background-color: #fafafa;
 }
 
-/* ✅ Grid lines - More subtle */
 .fc-theme-standard td,
 .fc-theme-standard th {
   border-color: #e5e7eb;
@@ -515,7 +496,6 @@
   border-color: #d1d5db;
 }
 
-/* ✅ Accessibility - Focus states */
 .fc-event:focus {
   outline: 3px solid #3b82f6;
   outline-offset: 2px;
@@ -527,7 +507,6 @@
   outline-offset: -2px;
 }
 
-/* ✅ Responsive Design */
 @media (max-width: 768px) {
   #calendar {
     padding: 8px;
@@ -562,7 +541,6 @@
   }
 }
 
-/* ✅ Print Styles */
 @media print {
   .fc-toolbar,
   .modal,
@@ -583,7 +561,6 @@
   }
 }
 
-/* ✅ Smooth Transitions - Better UX */
 .fc-event,
 .fc-daygrid-day,
 .fc-timegrid-slot,
@@ -591,7 +568,6 @@
   transition: all 0.2s ease;
 }
 
-/* ✅ Hover effects for day cells */
 .fc-daygrid-day:hover {
   background-color: #f3f4f6;
 }
@@ -600,7 +576,6 @@
   background-color: #fafafa;
 }
 
-/* ✅ Better visual hierarchy for week numbers */
 .fc .fc-daygrid-week-number {
   background-color: #f3f4f6;
   color: #6b7280;
@@ -609,13 +584,11 @@
   font-size: 11px;
 }
 
-/* ✅ Event mirror during drag (ghost element) */
 .fc-event-mirror {
   opacity: 0.6;
   filter: blur(0.5px);
 }
 
-/* ✅ All day events area */
 .fc .fc-timegrid-divider {
   padding: 4px 0;
 }
@@ -625,18 +598,15 @@
   border-radius: 4px;
 }
 
-/* ✅ Better spacing for event container */
 .fc-timegrid-event-harness {
   margin: 0 2px;
 }
 
-/* ✅ Improve text contrast */
 .fc-event-title,
 .fc-event-time {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* ✅ Loading overlay for calendar updates */
 .calendar-updating {
   position: relative;
   pointer-events: none;
@@ -656,7 +626,6 @@
   z-index: 1000;
 }
 
-/* AI Button Animation */
 #ai-suggest-btn {
   transition: all 0.3s ease;
 }
@@ -680,7 +649,6 @@
   animation: pulse-success 1s ease-in-out;
 }
 
-/* Hiệu ứng cho event bị lỗi */
 @keyframes shake-error {
   0%,
   100% {
@@ -705,23 +673,17 @@
   animation: shake-error 0.5s ease-in-out;
 }
 
-/* Style cho các event trong calendar */
-/* Already styled above with priorities */
-
-/* Style cho task đang được kéo */
 .dragging-task {
   opacity: 0.7;
   transform: scale(0.95);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Style cho vùng drop hợp lệ */
 .fc-highlight {
   background-color: rgba(34, 197, 94, 0.1) !important;
   border-color: rgb(34, 197, 94) !important;
 }
 
-/* Toast animations */
 @keyframes slide-in {
   from {
     transform: translateX(100%);
@@ -750,7 +712,6 @@
   animation: fade-out 0.3s ease-in forwards;
 }
 
-/* Hiệu ứng cho modal và xóa */
 @keyframes fadeOut {
   from {
     opacity: 1;
@@ -781,7 +742,6 @@
   }
 }
 
-/* Hiệu ứng nhấp nháy cảnh báo */
 @keyframes pulseWarning {
   0%,
   100% {
@@ -796,7 +756,6 @@
   animation: pulseWarning 2s infinite;
 }
 
-/* Scrollbar cho modal */
 #eventDetailModal .overflow-y-auto {
   scrollbar-width: thin;
   scrollbar-color: #d1d5db #f3f4f6;
@@ -819,7 +778,7 @@
 #eventDetailModal .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
-/* ✅ Event Completion Modal Enhancements */
+
 #eventDetailModal {
   animation: modalFadeIn 0.3s ease-out;
 }
@@ -835,7 +794,6 @@
   }
 }
 
-/* Enhanced checkbox styling for completion */
 #eventCompletedCheckbox {
   cursor: pointer;
   transition: all 0.3s ease;
@@ -857,7 +815,6 @@
   }
 }
 
-/* Save button glow effect */
 #saveEventStatus {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -875,7 +832,6 @@
   }
 }
 
-/* Completed event visual feedback in modal */
 .event-completed-indicator {
   animation: slideInCheckmark 0.5s ease;
 }
@@ -891,7 +847,6 @@
   }
 }
 
-/* Task completed strikethrough animation */
 .task-title-completed {
   animation: strikethroughAnimation 0.6s ease;
 }
@@ -910,17 +865,25 @@
   }
 }
 
-/* Event hover with completion state */
 .fc-event.event-completed {
+  opacity: 0.6 !important;
   pointer-events: auto;
   cursor: pointer;
+  filter: grayscale(50%) !important;
+  border-left-color: rgba(100, 116, 139, 0.5) !important;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.15) 10px,
+    rgba(255, 255, 255, 0.15) 20px
+  ) !important;
 }
 
 .fc-event.event-completed:active {
   transform: translateY(0) scale(0.98);
 }
 
-/* Smooth removal animation */
 .fc-event.removing {
   animation: shrinkAndFade 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -944,7 +907,6 @@
   }
 }
 
-/* Status update toast animation */
 @keyframes toastSlide {
   from {
     transform: translateX(400px);

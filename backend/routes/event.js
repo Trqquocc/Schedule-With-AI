@@ -164,17 +164,42 @@ router.post("/events", authenticateToken, async (req, res) => {
   }
 });
 
-// ✅ PUT /api/calendar/events/:id - Cập nhật event - FIXED VERSION
+// ✅ PUT /api/calendar/events/:id - Cập nhật event - HANDLES BOTH completed AND DaHoanThanh
 router.put("/events/:id", authenticateToken, async (req, res) => {
-  // Thêm auth nếu chưa
   try {
     const userId = req.user.UserID;
     const eventId = req.params.id;
-    const { ThoiGianBatDau, ThoiGianKetThuc, GhiChu, DaHoanThanh } = req.body;
+    const {
+      ThoiGianBatDau,
+      ThoiGianKetThuc,
+      GhiChu,
+      DaHoanThanh,
+      completed, // ✅ THÊM field này để tương thích với frontend
+      start, // ✅ Alternative field name
+      end, // ✅ Alternative field name
+    } = req.body;
 
-    // ✅ FIX: Chuyển string sang Date
-    const startDate = ThoiGianBatDau ? new Date(ThoiGianBatDau) : null;
-    const endDate = ThoiGianKetThuc ? new Date(ThoiGianKetThuc) : null;
+    // ✅ XỬ LÝ CẢ 2 FIELD NAMES
+    const completedValue =
+      DaHoanThanh !== undefined
+        ? DaHoanThanh
+        : completed !== undefined
+        ? completed
+          ? 1
+          : 0
+        : null;
+
+    const startDate = ThoiGianBatDau
+      ? new Date(ThoiGianBatDau)
+      : start
+      ? new Date(start)
+      : null;
+
+    const endDate = ThoiGianKetThuc
+      ? new Date(ThoiGianKetThuc)
+      : end
+      ? new Date(end)
+      : null;
 
     const pool = await dbPoolPromise;
 
@@ -184,11 +209,7 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
       .input("UserID", sql.Int, userId)
       .input("GioBatDau", sql.DateTime, startDate)
       .input("GioKetThuc", sql.DateTime, endDate)
-      .input(
-        "DaHoanThanh",
-        sql.Bit,
-        DaHoanThanh !== undefined ? DaHoanThanh : null
-      )
+      .input("DaHoanThanh", sql.Bit, completedValue)
       .input("GhiChu", sql.NVarChar, GhiChu || null).query(`
         UPDATE LichTrinh
         SET 
@@ -200,7 +221,7 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
       `);
 
     // Cập nhật trạng thái công việc nếu hoàn thành
-    if (DaHoanThanh !== undefined) {
+    if (completedValue !== null) {
       const eventResult = await pool
         .request()
         .input("MaLichTrinh", sql.Int, eventId)
@@ -215,7 +236,7 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
         await pool
           .request()
           .input("MaCongViec", sql.Int, MaCongViec)
-          .input("TrangThaiThucHien", sql.TinyInt, DaHoanThanh ? 2 : 1)
+          .input("TrangThaiThucHien", sql.TinyInt, completedValue ? 2 : 1)
           .input("UserID", sql.Int, userId).query(`
             UPDATE CongViec
             SET TrangThaiThucHien = @TrangThaiThucHien

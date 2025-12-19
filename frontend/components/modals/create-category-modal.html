@@ -1,14 +1,12 @@
-<!-- components/modals/create-category-modal.html -->
 
-<!-- Modal Overlay -->
+
 <div class="modal-overlay" data-modal-close></div>
 
-<!-- Modal Content -->
 <div
   class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md"
   id="createCategoryModalContent"
 >
-  <!-- Modal Header -->
+
   <div
     class="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-b px-6 py-4 flex justify-between items-center rounded-t-lg"
   >
@@ -22,13 +20,11 @@
     </button>
   </div>
 
-  <!-- Modal Body -->
   <div class="p-6">
     <form id="createCategoryForm" class="space-y-4">
-      <!-- Error/Success Messages -->
+
       <div id="categoryMessages"></div>
 
-      <!-- Tên danh mục -->
       <div>
         <label
           for="newCategoryName"
@@ -46,7 +42,6 @@
         />
       </div>
 
-      <!-- Mô tả -->
       <div>
         <label
           for="newCategoryDesc"
@@ -63,7 +58,6 @@
         ></textarea>
       </div>
 
-      <!-- Modal Footer -->
       <div class="flex justify-end gap-3 pt-4 border-t">
         <button
           type="button"
@@ -231,7 +225,7 @@
 
 <script>
   (function () {
-    console.log("✅ [CREATE-CATEGORY-MODAL] Script loaded");
+    console.log(" [CREATE-CATEGORY-MODAL] Script loaded");
 
     // Delay initialization until elements are available
     function initializeModal() {
@@ -242,13 +236,13 @@
 
       if (!form || !closeBtn || !cancelBtn) {
         console.warn(
-          "⏳ [CREATE-CATEGORY-MODAL] Elements not ready, retrying..."
+          " [CREATE-CATEGORY-MODAL] Elements not ready, retrying..."
         );
         setTimeout(initializeModal, 100);
         return;
       }
 
-      console.log("🔧 [CREATE-CATEGORY-MODAL] Initializing...");
+      console.log(" [CREATE-CATEGORY-MODAL] Initializing...");
 
       // Helper: Show message
       function showMessage(message, type = "success") {
@@ -362,7 +356,7 @@
           }
 
           console.log(
-            "✅ [CREATE-CATEGORY-MODAL] Category created:",
+            " [CREATE-CATEGORY-MODAL] Category created:",
             result.data
           );
 
@@ -387,7 +381,7 @@
             })
           );
         } catch (error) {
-          console.error("❌ [CREATE-CATEGORY-MODAL] Error:", error);
+          console.error(" [CREATE-CATEGORY-MODAL] Error:", error);
           showMessage(error.message || "Lỗi kết nối máy chủ", "error");
         } finally {
           // Hide loading
@@ -402,7 +396,7 @@
       // Expose close function globally
       window.closeCategoryModal = closeModal;
 
-      console.log("✅ [CREATE-CATEGORY-MODAL] Initialization complete");
+      console.log(" [CREATE-CATEGORY-MODAL] Initialization complete");
     }
 
     // Wait for DOM or init immediately

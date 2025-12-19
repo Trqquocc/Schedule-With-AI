@@ -1,4 +1,4 @@
-<!-- frontend/components/calendar-sidebar.html - FINAL UPDATED VERSION -->
+
 <div
   class="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full"
   id="calendar-sidebar"
@@ -27,7 +27,7 @@
 
 <script>
   (function () {
-    console.log("📋 Calendar sidebar loaded");
+    console.log(" Calendar sidebar loaded");
 
     // ============================
     //   LOAD USER TASKS
@@ -43,7 +43,7 @@
 
       const container = document.getElementById("task-list");
       if (!container) {
-        console.error("❌ Task list container not found");
+        console.error(" Task list container not found");
         return;
       }
 
@@ -67,7 +67,7 @@
         }
 
         const allTasks = result.data || [];
-        console.log(`📦 Loaded ${allTasks.length} tasks from API`);
+        console.log(` Loaded ${allTasks.length} tasks from API`);
 
         // Lọc tasks chưa hoàn thành
         const pendingTasks = allTasks.filter((task) => {
@@ -76,7 +76,7 @@
           return status !== 2 && status !== "completed" && status !== "done";
         });
 
-        console.log(`📊 Pending tasks: ${pendingTasks.length}`);
+        console.log(` Pending tasks: ${pendingTasks.length}`);
 
         // Render tasks
         container.innerHTML = "";
@@ -91,12 +91,24 @@
           return;
         }
 
+        //  HELPER: Hàm lấy màu theo độ ưu tiên
+        const getPriorityColor = (priority) => {
+          const colors = {
+            1: "#34D399", // Xanh lá - Low
+            2: "#60A5FA", // Xanh dương - Normal
+            3: "#FBBF24", // Vàng - High
+            4: "#F87171", // Đỏ - Urgent
+          };
+          return colors[priority] || "#60A5FA"; // Mặc định Normal (2)
+        };
+
         // Render từng task (giữ nguyên phần render)
         pendingTasks.forEach((task, index) => {
           const taskId = task.MaCongViec || task.ID || task.id;
           const title = task.TieuDe || task.Title || `Công việc ${index + 1}`;
           const description = task.MoTa || task.Description || "";
-          const color = task.MauSac || "#3B82F6";
+          const priority = parseInt(task.MucDoUuTien || task.Priority || 2);
+          const color = getPriorityColor(priority); //  Lấy màu từ priority thay vì MauSac
           const tag = task.Tag || task.Category || "";
 
           const taskElement = document.createElement("div");
@@ -109,6 +121,7 @@
           taskElement.dataset.taskTitle = title;
           taskElement.dataset.taskDescription = description;
           taskElement.dataset.taskColor = color;
+          taskElement.dataset.taskPriority = priority; //  Thêm priority vào dataset
           taskElement.dataset.dragInitialized = "true";
 
           taskElement.innerHTML = `
@@ -137,11 +150,13 @@
 
           // Bind drag events trực tiếp
           taskElement.addEventListener("dragstart", (e) => {
-            console.log(`🎯 Drag start: ${title} (ID: ${taskId})`);
+            console.log(
+              `🎯 Drag start: ${title} (ID: ${taskId}, Priority: ${priority}, Color: ${color})`
+            );
             e.dataTransfer.setData("text/plain", taskId.toString());
             e.dataTransfer.setData(
               "application/json",
-              JSON.stringify({ taskId, title, color, description })
+              JSON.stringify({ taskId, title, color, description, priority }) //  Thêm priority
             );
             e.dataTransfer.effectAllowed = "move";
             taskElement.classList.add("opacity-50", "bg-blue-50");
@@ -155,7 +170,7 @@
           container.appendChild(taskElement);
         });
 
-        console.log(`✅ Rendered ${pendingTasks.length} tasks in sidebar`);
+        console.log(` Rendered ${pendingTasks.length} tasks in sidebar`);
 
         // Gọi enhanceDragAndDrop sau render
         enhanceDragAndDrop();
@@ -177,7 +192,7 @@
           }
         }, 200);
       } catch (error) {
-        console.error("❌ Error loading tasks in sidebar:", error);
+        console.error(" Error loading tasks in sidebar:", error);
 
         // Hiển thị thông báo lỗi
         const container = document.getElementById("task-list");
@@ -187,7 +202,7 @@
           <i class="fas fa-exclamation-circle text-2xl mb-3"></i>
           <p class="font-medium">Lỗi tải công việc</p>
           <p class="text-sm mt-1">${error.message || "Không thể kết nối"}</p>
-          <button onclick="window.loadUserTasks(true)" 
+          <button onclick="window.loadUserTasks(true)"
                   class="mt-3 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium">
             <i class="fas fa-redo mr-2"></i>Thử lại
           </button>
@@ -197,7 +212,7 @@
     };
 
     window.setupTaskEventListeners = function () {
-      console.log("🔧 Setting up global task event listeners");
+      console.log(" Setting up global task event listeners");
 
       // Lắng nghe sự kiện từ localStorage
       window.addEventListener("storage", function (e) {
@@ -253,20 +268,20 @@
   })();
 
   function enhanceDragAndDrop() {
-    console.log("🔧 Enhancing drag and drop for tasks...");
+    console.log(" Enhancing drag and drop for tasks...");
     const taskItems = document.querySelectorAll(".task-item");
     taskItems.forEach((item) => {
       if (item.dataset.dragInitialized !== "true") {
         item.addEventListener("dragstart", handleDragStart);
         item.addEventListener("dragend", handleDragEnd);
         item.dataset.dragInitialized = "true";
-        console.log(`✅ Drag enabled for task: ${item.dataset.taskTitle}`);
+        console.log(` Drag enabled for task: ${item.dataset.taskTitle}`);
       }
     });
   }
 
   (function initSidebar() {
-    console.log("📋 Calendar sidebar loaded - Initializing tasks...");
+    console.log(" Calendar sidebar loaded - Initializing tasks...");
     setTimeout(() => {
       if (typeof window.loadUserTasks === "function") {
         console.log("🔄 Auto-loading tasks for sidebar...");
@@ -275,7 +290,7 @@
           window.setupTaskEventListeners();
         }
       } else {
-        console.error("❌ loadUserTasks function not found!");
+        console.error(" loadUserTasks function not found!");
         const taskList = document.getElementById("task-list");
         if (taskList) {
           taskList.innerHTML = `
@@ -311,6 +326,7 @@
   function handleDragStart(e) {
     const taskId = this.dataset.taskId;
     const taskTitle = this.dataset.taskTitle || "Công việc";
+    const priority = parseInt(this.dataset.taskPriority) || 2; //  Lấy priority
 
     // Create custom drag preview
     const dragPreview = this.cloneNode(true);
@@ -330,6 +346,7 @@
         title: taskTitle,
         color: this.dataset.taskColor || "#3B82F6",
         description: this.dataset.taskDescription || "",
+        priority: priority, //  Thêm priority
       })
     );
     e.dataTransfer.effectAllowed = "move";
@@ -344,7 +361,7 @@
       }
     }, 0);
 
-    console.log(`🎯 Bắt đầu kéo: "${taskTitle}"`);
+    console.log(`🎯 Bắt đầu kéo: "${taskTitle}" (Priority: ${priority})`);
 
     // Show notification if available
     if (window.Utils && Utils.showToast) {

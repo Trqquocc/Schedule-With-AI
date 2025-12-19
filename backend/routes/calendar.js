@@ -1,5 +1,4 @@
-// backend/routes/calendar.js - BACKEND VERSION
-// Quản lý lịch trình người dùng
+
 
 const express = require("express");
 const router = express.Router();
@@ -7,7 +6,6 @@ const { dbPoolPromise, sql } = require("../config/database");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware xác thực
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -25,12 +23,11 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Mapping màu theo độ ưu tiên - phải trùng với tasks.js
 const PRIORITY_COLORS = {
-  1: "#34D399", // Xanh lá - Thấp
-  2: "#60A5FA", // Xanh lam - Trung bình (mặc định)
-  3: "#FBBF24", // Vàng - Cao
-  4: "#F87171", // Đỏ - Rất cao
+  1: "#34D399",
+  2: "#60A5FA",
+  3: "#FBBF24",
+  4: "#F87171",
 };
 
 router.get("/events", authenticateToken, async (req, res) => {
@@ -38,9 +35,8 @@ router.get("/events", authenticateToken, async (req, res) => {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
-    // ✅ LẤY CẢ NORMAL EVENTS VÀ AI EVENTS (Frontend sẽ filter)
     const result = await pool.request().input("userId", sql.Int, userId).query(`
-      SELECT 
+      SELECT
         lt.MaLichTrinh,
         lt.MaCongViec,
         lt.GioBatDau,
@@ -50,7 +46,7 @@ router.get("/events", authenticateToken, async (req, res) => {
         lt.DaHoanThanh,
         cv.TieuDe,
         cv.MucDoUuTien,
-        ISNULL(cv.MauSac, 
+        ISNULL(cv.MauSac,
           CASE cv.MucDoUuTien
             WHEN 1 THEN '#34D399'
             WHEN 2 THEN '#60A5FA'
@@ -72,13 +68,13 @@ router.get("/events", authenticateToken, async (req, res) => {
       GioBatDau: ev.GioBatDau,
       GioKetThuc: ev.GioKetThuc,
       GhiChu: ev.GhiChu,
-      MauSac: ev.MauSac || "#3788d8", // ĐẢM BẢO LUÔN CÓ MÀU
+      MauSac: ev.MauSac || "#3788d8",
       DaHoanThanh: ev.DaHoanThanh,
       MucDoUuTien: ev.MucDoUuTien,
-      AI_DeXuat: ev.AI_DeXuat || 0, // ✅ LUÔN CÓ FIELD NÀY
+      AI_DeXuat: ev.AI_DeXuat || 0,
     }));
 
-    console.log(`✅ Trả về ${events.length} events với màu sắc`);
+    console.log(` Trả về ${events.length} events với màu sắc`);
 
     res.json({ success: true, data: events });
   } catch (error) {
@@ -87,7 +83,6 @@ router.get("/events", authenticateToken, async (req, res) => {
   }
 });
 
-// GET lịch trình trong khoảng thời gian (cho FullCalendar)
 router.get("/range", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -107,7 +102,7 @@ router.get("/range", authenticateToken, async (req, res) => {
       .input("UserID", sql.Int, userId)
       .input("StartDate", sql.DateTime, start)
       .input("EndDate", sql.DateTime, end).query(`
-        SELECT 
+        SELECT
           lt.MaLichTrinh,
           lt.MaCongViec,
           lt.UserID,
@@ -180,14 +175,13 @@ router.get("/range", authenticateToken, async (req, res) => {
   }
 });
 
-// GET events do AI đề xuất
 router.get("/ai-events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
     const result = await pool.request().input("UserID", sql.Int, userId).query(`
-        SELECT 
+        SELECT
           lt.MaLichTrinh,
           lt.MaCongViec,
           lt.UserID,
@@ -232,7 +226,7 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
         DaHoanThanh: event.DaHoanThanh || false,
         GhiChu: event.GhiChu || "",
         AI_DeXuat: event.AI_DeXuat || true,
-        backgroundColor: event.MauSac || "#8B5CF6", // Màu tím cho AI
+        backgroundColor: event.MauSac || "#8B5CF6",
         borderColor: event.MauSac || "#8B5CF6",
         textColor: "#FFFFFF",
         extendedProps: {
@@ -259,13 +253,11 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
   }
 });
 
-// POST – tạo sự kiện
 router.post("/events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const d = req.body;
 
-    // Validate
     if (!d.TieuDe || !d.GioBatDau) {
       return res.status(400).json({
         success: false,
@@ -303,14 +295,13 @@ router.post("/events", authenticateToken, async (req, res) => {
         )
       `);
 
-    // Nếu có MaCongViec, cập nhật trạng thái công việc
     if (d.MaCongViec) {
       await pool
         .request()
         .input("MaCongViec", sql.Int, d.MaCongViec)
         .input("UserID", sql.Int, userId).query(`
-          UPDATE CongViec 
-          SET TrangThaiThucHien = 1 
+          UPDATE CongViec
+          SET TrangThaiThucHien = 1
           WHERE MaCongViec = @MaCongViec AND UserID = @UserID
         `);
     }
@@ -330,7 +321,6 @@ router.post("/events", authenticateToken, async (req, res) => {
   }
 });
 
-// PUT – cập nhật sự kiện
 router.put("/events/:id", authenticateToken, async (req, res) => {
   try {
     const pool = await dbPoolPromise;
@@ -393,7 +383,6 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE – xoá event
 router.delete("/events/:id", authenticateToken, async (req, res) => {
   try {
     const pool = await dbPoolPromise;

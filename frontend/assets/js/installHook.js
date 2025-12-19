@@ -1,6 +1,4 @@
-/**
- * Install Hook - Ensures proper library loading order
- */
+
 if (typeof InstallHook === "undefined") {
   const InstallHook = {
     libraries: {
@@ -9,40 +7,37 @@ if (typeof InstallHook === "undefined") {
     },
 
     async init() {
-      console.log("🔧 Running install hooks...");
+      console.log(" Running install hooks...");
 
-      // Check if FullCalendar is loaded
       this.checkLibraries();
 
-      // Add CSS to prevent text selection on calendar
       this.addCalendarStyles();
 
-      console.log("✅ Install hooks complete");
+      console.log(" Install hooks complete");
     },
 
     checkLibraries() {
-      // Check FullCalendar
+
       if (typeof FullCalendar !== "undefined") {
         this.libraries.fullcalendar = true;
-        console.log("✅ FullCalendar loaded");
+        console.log(" FullCalendar loaded");
       } else {
-        console.warn("⚠️ FullCalendar not loaded yet");
+        console.warn(" FullCalendar not loaded yet");
       }
 
-      // Check Utils
       if (typeof Utils !== "undefined") {
         this.libraries.utils = true;
-        console.log("✅ Utils loaded");
+        console.log(" Utils loaded");
       } else {
-        console.warn("⚠️ Utils not loaded yet");
+        console.warn(" Utils not loaded yet");
       }
     },
 
     addCalendarStyles() {
-      // ✅ FIX: Add CSS to prevent Selection errors
+
       const style = document.createElement("style");
       style.textContent = `
-        /* Prevent text selection on calendar elements */
+
         .fc-event,
         .fc-daygrid-event,
         .fc-timegrid-event,
@@ -52,25 +47,22 @@ if (typeof InstallHook === "undefined") {
           -moz-user-select: none !important;
           -ms-user-select: none !important;
         }
-        
-        /* Prevent selection highlight */
+
         .fc-event::selection,
         .fc-daygrid-event::selection,
         .fc-timegrid-event::selection {
           background: transparent !important;
         }
-        
-        /* Prevent default drag behavior */
+
         .fc-event {
           cursor: pointer !important;
           -webkit-user-drag: none !important;
         }
       `;
       document.head.appendChild(style);
-      console.log("✅ Calendar styles added");
+      console.log(" Calendar styles added");
     },
 
-    // Wait for a library to be loaded
     async waitForLibrary(name, timeout = 5000) {
       const startTime = Date.now();
 
@@ -83,11 +75,10 @@ if (typeof InstallHook === "undefined") {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      console.log(`✅ ${name} is ready`);
+      console.log(` ${name} is ready`);
     },
   };
 
-  // Auto-run on load
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => InstallHook.init());
   } else {

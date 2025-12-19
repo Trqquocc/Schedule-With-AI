@@ -1,4 +1,4 @@
-// frontend/assets/js/workManager.js
+
 
 (function () {
   "use strict";
@@ -14,11 +14,11 @@
 
     async init() {
       if (this.initialized) {
-        console.log("ℹ️ WorkManager already initialized");
+        console.log(" WorkManager already initialized");
         return;
       }
 
-      console.log("🚀 Khởi tạo WorkManager...");
+      console.log(" Khởi tạo WorkManager...");
       this.initialized = true;
 
       if (!(await this.waitForContainer())) {
@@ -35,13 +35,13 @@
         const checkContainer = (attempt = 0) => {
           const container = document.getElementById("work-items-container");
           if (container) {
-            console.log("✅ Work container found");
+            console.log(" Work container found");
             this.hideErrorState();
             resolve(true);
           } else if (attempt < retries) {
             setTimeout(() => checkContainer(attempt + 1), delay);
           } else {
-            console.error("❌ Work container not found");
+            console.error(" Work container not found");
             resolve(false);
           }
         };
@@ -82,7 +82,7 @@
         const tasks = result.data || [];
         this.renderTasks(tasks);
       } catch (err) {
-        console.error("❌ Error loading tasks:", err);
+        console.error(" Error loading tasks:", err);
         this.showErrorState();
         if (typeof Utils !== "undefined" && Utils.showToast) {
           Utils.showToast(err.message || "Không thể tải công việc", "error");
@@ -99,7 +99,7 @@
     hideSuccessOverlayTimeout: null,
 
     showSuccessOverlay(message = "Thành công!") {
-      // XÓA các timeout cũ trước khi tạo mới
+
       if (this.showSuccessOverlayTimeout) {
         clearTimeout(this.showSuccessOverlayTimeout);
         this.showSuccessOverlayTimeout = null;
@@ -110,7 +110,6 @@
         this.hideSuccessOverlayTimeout = null;
       }
 
-      // Tạo overlay nếu chưa có
       let overlay = document.getElementById("success-overlay");
       if (!overlay) {
         overlay = document.createElement("div");
@@ -133,14 +132,12 @@
     `;
         document.body.appendChild(overlay);
 
-        // Thêm sự kiện đóng overlay
         document
           .getElementById("close-overlay-btn")
           .addEventListener("click", () => {
             this.hideSuccessOverlay();
           });
 
-        // Đóng khi click ra ngoài
         overlay.addEventListener("click", (e) => {
           if (e.target === overlay) {
             this.hideSuccessOverlay();
@@ -148,16 +145,13 @@
         });
       }
 
-      // Cập nhật message động
       const overlayTitle = document.getElementById("overlay-title");
       if (overlayTitle) {
         overlayTitle.textContent = message;
       }
 
-      // Ẩn overlay trước nếu đang hiển thị (reset animation)
       this.hideSuccessOverlayImmediately();
 
-      // Hiển thị overlay với animation
       this.showSuccessOverlayTimeout = setTimeout(() => {
         overlay.classList.remove("hidden");
         this.showSuccessOverlayTimeout = setTimeout(() => {
@@ -167,7 +161,6 @@
         }, 10);
       }, 10);
 
-      // Tự động ẩn sau 3 giây (tăng từ 2.5s lên 3s)
       this.hideSuccessOverlayTimeout = setTimeout(() => {
         this.hideSuccessOverlay();
       }, 3000);
@@ -186,9 +179,9 @@
     hideSuccessOverlay() {
       const overlay = document.getElementById("success-overlay");
       if (overlay) {
-        overlay.classList.add("opacity-0"); // Fade out
+        overlay.classList.add("opacity-0");
         setTimeout(() => {
-          overlay.remove(); // Remove khỏi DOM hoàn toàn
+          overlay.remove();
         }, 300);
       }
     },
@@ -196,26 +189,53 @@
     renderTasks(tasks) {
       const container = document.getElementById("work-items-container");
       if (!container) {
-        console.error("❌ No container for rendering tasks");
+        console.error(" No container for rendering tasks");
         return;
       }
 
-      // Ẩn loading indicator
+      const getPriorityColor = (priority) => {
+        const priorityColors = {
+          1: "#34D399",
+          2: "#60A5FA",
+          3: "#FBBF24",
+          4: "#F87171",
+        };
+        return priorityColors[priority] || "#60A5FA";
+      };
+
+      const getPriorityClass = (priority) => {
+        const priorityMap = {
+          1: "low",
+          2: "medium",
+          3: "high",
+          4: "very-high",
+        };
+        return priorityMap[priority] || "medium";
+      };
+
+      const getPriorityText = (priority) => {
+        const textMap = {
+          1: "Thấp",
+          2: "Trung bình",
+          3: "Cao",
+          4: "Rất cao",
+        };
+        return textMap[priority] || "Trung bình";
+      };
+
       const loadingIndicator = document.getElementById("loading-indicator");
       if (loadingIndicator) {
         loadingIndicator.classList.add("hidden");
       }
 
-      // Ẩn empty state nếu có
       const emptyState = document.getElementById("empty-state-indicator");
 
       if (tasks.length === 0) {
-        // Hiển thị empty state
+
         if (emptyState) {
           emptyState.classList.remove("hidden");
         }
 
-        // Xóa bảng nếu có
         const table = container.querySelector(".work-table-container");
         if (table) {
           table.remove();
@@ -224,238 +244,223 @@
         return;
       }
 
-      // Ẩn empty state vì có công việc
       if (emptyState) {
         emptyState.classList.add("hidden");
       }
 
-      // Phân loại công việc
       const pendingTasks = tasks.filter((task) => task.TrangThaiThucHien !== 2);
       const completedTasks = tasks.filter(
         (task) => task.TrangThaiThucHien === 2
       );
 
       let html = `
-        <!-- Công việc đang chờ -->
-        <div class="mb-10">
-          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <i class="fas fa-clock mr-2 text-yellow-500"></i>
-            Công việc đang chờ (${pendingTasks.length})
-          </h3>
-          <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-      `;
+    <!-- Công việc đang chờ -->
+    <div class="mb-10">
+      <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-clock mr-2 text-yellow-500"></i>
+        Công việc đang chờ (${pendingTasks.length})
+      </h3>
+      <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+  `;
 
       if (pendingTasks.length === 0) {
         html += `
-          <div class="text-center py-8">
-            <i class="fas fa-check-circle text-4xl text-green-400 mb-2"></i>
-            <p class="text-gray-500">Không có công việc đang chờ</p>
-          </div>
-        `;
+      <div class="text-center py-8">
+        <i class="fas fa-check-circle text-4xl text-green-400 mb-2"></i>
+        <p class="text-gray-500">Không có công việc đang chờ</p>
+      </div>
+    `;
       } else {
         html += `
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                  <input type="checkbox" id="select-all-pending" class="rounded">
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Ưu tiên</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Thời gian</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-        `;
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+              <input type="checkbox" id="select-all-pending" class="rounded">
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Ưu tiên</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Thời gian</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+    `;
 
-        // Render công việc đang chờ
         pendingTasks.forEach((task) => {
-          const priorityMap = { 1: "low", 2: "medium", 3: "high", 4: "high" };
-          const priorityClass = priorityMap[task.MucDoUuTien] || "medium";
-          const categoryColor = task.MauSac || "#3B82F6";
-          const taskId = task.MaCongViec || task.ID;
+          const taskId = task.ID || task.MaCongViec || 0;
+          const priority = task.MucDoUuTien || 2;
+          const priorityClass = getPriorityClass(priority);
+          const priorityText = getPriorityText(priority);
+          const categoryColor = getPriorityColor(priority);
 
           html += `
-            <tr id="task-${taskId}" class="task-row" data-task-id="${taskId}">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <input type="checkbox" class="task-checkbox pending-checkbox rounded">
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 w-3 h-10 rounded-sm mr-3" style="background-color: ${categoryColor}"></div>
-                  <div>
-                    <div class="font-medium text-gray-900">${
-                      task.TieuDe || ""
-                    }</div>
-                    ${
-                      task.MoTa
-                        ? `<div class="text-sm text-gray-600 mt-1">${task.MoTa}</div>`
-                        : ""
-                    }
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${
-                    priorityClass === "high"
-                      ? "bg-red-100 text-red-800"
-                      : priorityClass === "medium"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-green-100 text-green-800"
-                  }">
-                  ${
-                    priorityClass === "high"
-                      ? "Cao"
-                      : priorityClass === "medium"
-                      ? "Trung bình"
-                      : "Thấp"
-                  }
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                <i class="fas fa-clock mr-1"></i>${
-                  task.ThoiGianUocTinh || 60
-                } phút
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button type="button" class="action-btn-complete text-green-600 hover:text-green-900 mr-3" 
-                        data-task-id="${taskId}" 
-                        title="Hoàn thành">
-                  <i class="fas fa-check"></i> Hoàn thành
-                </button>
-                <button type="button" class="action-btn-edit text-blue-600 hover:text-blue-900 mr-3" 
-                        data-task-id="${taskId}" 
-                        title="Sửa">
-                  <i class="fas fa-edit"></i> Sửa
-                </button>
-                <button type="button" class="action-btn-delete text-red-600 hover:text-red-900" 
-                        data-task-id="${taskId}" 
-                        title="Xóa">
-                  <i class="fas fa-trash"></i> Xóa
-                </button>
-              </td>
-            </tr>
-          `;
+        <tr id="task-${taskId}" class="task-row" data-task-id="${taskId}">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <input type="checkbox" class="task-checkbox pending-checkbox rounded">
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 w-3 h-10 rounded-sm mr-3" style="background-color: ${categoryColor}"></div>
+              <div>
+                <div class="font-medium text-gray-900">${
+                  task.TieuDe || ""
+                }</div>
+                ${
+                  task.MoTa
+                    ? `<div class="text-sm text-gray-600 mt-1">${task.MoTa}</div>`
+                    : ""
+                }
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+              ${
+                priorityClass === "very-high"
+                  ? "bg-red-100 text-red-800"
+                  : priorityClass === "high"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : priorityClass === "medium"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-green-100 text-green-800"
+              }">
+              ${priorityText}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+            <i class="fas fa-clock mr-1"></i>${task.ThoiGianUocTinh || 60} phút
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button type="button" class="action-btn-complete text-green-600 hover:text-green-900 mr-3"
+                    data-task-id="${taskId}"
+                    title="Hoàn thành">
+              <i class="fas fa-check"></i> Hoàn thành
+            </button>
+            <button type="button" class="action-btn-edit text-blue-600 hover:text-blue-900 mr-3"
+                    data-task-id="${taskId}"
+                    title="Sửa">
+              <i class="fas fa-edit"></i> Sửa
+            </button>
+            <button type="button" class="action-btn-delete text-red-600 hover:text-red-900"
+                    data-task-id="${taskId}"
+                    title="Xóa">
+              <i class="fas fa-trash"></i> Xóa
+            </button>
+          </td>
+        </tr>
+      `;
         });
 
         html += `
-            </tbody>
-          </table>
-        `;
+        </tbody>
+      </table>
+    `;
       }
 
       html += `
-          </div>
-        </div>
-      `;
+      </div>
+    </div>
+  `;
 
-      // Render công việc đã hoàn thành (nếu có)
       if (completedTasks.length > 0) {
         html += `
-        <div>
-          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <i class="fas fa-check-circle mr-2 text-green-500"></i>
-            Công việc đã hoàn thành (${completedTasks.length})
-          </h3>
-          <div class="bg-gray-50 rounded-lg shadow border border-gray-200 overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-100">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    <input type="checkbox" id="select-all-completed" class="rounded">
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Ưu tiên</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Thời gian</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-        `;
+    <div>
+      <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-check-circle mr-2 text-green-500"></i>
+        Công việc đã hoàn thành (${completedTasks.length})
+      </h3>
+      <div class="bg-gray-50 rounded-lg shadow border border-gray-200 overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                <input type="checkbox" id="select-all-completed" class="rounded">
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Ưu tiên</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Thời gian</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+    `;
 
         completedTasks.forEach((task) => {
-          const priorityMap = { 1: "low", 2: "medium", 3: "high", 4: "high" };
-          const priorityClass = priorityMap[task.MucDoUuTien] || "medium";
-          const categoryColor = task.MauSac || "#3B82F6";
-          const taskId = task.MaCongViec || task.ID;
+          const taskId = task.ID || task.MaCongViec || 0;
+          const priority = task.MucDoUuTien || 2;
+          const priorityClass = getPriorityClass(priority);
+          const priorityText = getPriorityText(priority);
+          const categoryColor = getPriorityColor(priority);
 
           html += `
-            <tr id="task-${taskId}" class="task-row completed-row" data-task-id="${taskId}">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <input type="checkbox" class="task-checkbox completed-checkbox rounded">
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 w-3 h-10 rounded-sm mr-3" style="background-color: ${categoryColor}"></div>
-                  <div>
-                    <div class="font-medium text-gray-500 line-through">${
-                      task.TieuDe || ""
-                    }</div>
-                    ${
-                      task.MoTa
-                        ? `<div class="text-sm text-gray-400 mt-1 line-through">${task.MoTa}</div>`
-                        : ""
-                    }
-                  </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${
-                    priorityClass === "high"
-                      ? "bg-red-100 text-red-800"
-                      : priorityClass === "medium"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-green-100 text-green-800"
-                  }">
-                  ${
-                    priorityClass === "high"
-                      ? "Cao"
-                      : priorityClass === "medium"
-                      ? "Trung bình"
-                      : "Thấp"
-                  }
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <i class="fas fa-clock mr-1"></i>${
-                  task.ThoiGianUocTinh || 60
-                } phút
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button type="button" class="action-btn-reopen text-yellow-600 hover:text-yellow-900 mr-3" 
-                        data-task-id="${taskId}" 
-                        title="Mở lại">
-                  <i class="fas fa-undo"></i> Mở lại
-                </button>
-                <button type="button" class="action-btn-edit text-blue-600 hover:text-blue-900 mr-3" 
-                        data-task-id="${taskId}" 
-                        title="Sửa">
-                  <i class="fas fa-edit"></i> Sửa
-                </button>
-                <button type="button" class="action-btn-delete text-red-600 hover:text-red-900" 
-                        data-task-id="${taskId}" 
-                        title="Xóa">
-                  <i class="fas fa-trash"></i> Xóa
-                </button>
-              </td>
-            </tr>
-          `;
+        <tr id="task-${taskId}" class="task-row completed-row" data-task-id="${taskId}">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <input type="checkbox" class="task-checkbox completed-checkbox rounded">
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 w-3 h-10 rounded-sm mr-3" style="background-color: ${categoryColor}"></div>
+              <div>
+                <div class="font-medium text-gray-500 line-through">${
+                  task.TieuDe || ""
+                }</div>
+                ${
+                  task.MoTa
+                    ? `<div class="text-sm text-gray-400 mt-1 line-through">${task.MoTa}</div>`
+                    : ""
+                }
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+              ${
+                priorityClass === "very-high"
+                  ? "bg-red-100 text-red-800"
+                  : priorityClass === "high"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : priorityClass === "medium"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-green-100 text-green-800"
+              }">
+              ${priorityText}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <i class="fas fa-clock mr-1"></i>${task.ThoiGianUocTinh || 60} phút
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button type="button" class="action-btn-reopen text-yellow-600 hover:text-yellow-900 mr-3"
+                    data-task-id="${taskId}"
+                    title="Mở lại">
+              <i class="fas fa-undo"></i> Mở lại
+            </button>
+            <button type="button" class="action-btn-edit text-blue-600 hover:text-blue-900 mr-3"
+                    data-task-id="${taskId}"
+                    title="Sửa">
+              <i class="fas fa-edit"></i> Sửa
+            </button>
+            <button type="button" class="action-btn-delete text-red-600 hover:text-red-900"
+                    data-task-id="${taskId}"
+                    title="Xóa">
+              <i class="fas fa-trash"></i> Xóa
+            </button>
+          </td>
+        </tr>
+      `;
         });
 
         html += `
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
       }
 
       container.innerHTML = html;
 
-      // Setup events sau khi render
       setTimeout(() => {
         this.setupTableEvents();
         this.setupFilters();
@@ -466,10 +471,8 @@
     setupGlobalEvents() {
       console.log("🔗 Setting up global events");
 
-      // Xóa event listeners cũ nếu có
       this.removeEventListeners();
 
-      // Thêm event listener cho nút refresh
       const refreshBtn = document.getElementById("refresh-tasks-btn");
       if (refreshBtn) {
         const refreshHandler = (e) => {
@@ -484,16 +487,15 @@
         });
       }
 
-      // Thêm event listener cho nút tạo công việc (chính)
       this.setupCreateTaskButton();
 
-      console.log("✅ Global events setup complete");
+      console.log(" Global events setup complete");
     },
 
     setupCreateTaskButton() {
       const createBtn = document.getElementById("create-task-btn");
       if (createBtn) {
-        // Xóa listener cũ nếu có
+
         createBtn.removeEventListener("click", createBtn._handler);
 
         const createHandler = (e) => {
@@ -506,7 +508,6 @@
         createBtn._handler = createHandler;
         createBtn.addEventListener("click", createHandler);
 
-        // Lưu để có thể xóa sau
         this.eventListeners.push({
           element: createBtn,
           event: "click",
@@ -521,26 +522,22 @@
       const container = document.getElementById("work-items-container");
       if (!container) return;
 
-      // Xóa listener cũ nếu có
       if (container._clickHandler) {
         container.removeEventListener("click", container._clickHandler);
       }
 
-      // Event delegation cho tất cả các nút action
       const clickHandler = (e) => {
-        // Tìm nút được click
+
         const target = e.target;
 
-        // Kiểm tra nếu click vào nút action
         if (
           target.tagName === "BUTTON" &&
           target.classList.contains("action-btn-")
         ) {
-          // Đã có class cụ thể, không cần làm gì thêm
+
           return;
         }
 
-        // Tìm phần tử cha là button có class action-btn-
         const actionBtn = e.target.closest('[class*="action-btn-"]');
         if (!actionBtn || !actionBtn.dataset.taskId) return;
 
@@ -566,7 +563,6 @@
       container._clickHandler = clickHandler;
       container.addEventListener("click", clickHandler);
 
-      // Xử lý select all checkboxes
       const selectAllPending = document.getElementById("select-all-pending");
       if (selectAllPending) {
         const selectAllHandler = (e) => {
@@ -599,7 +595,7 @@
         });
       }
 
-      console.log("✅ Table events setup complete");
+      console.log(" Table events setup complete");
     },
 
     setupFilters() {
@@ -607,7 +603,6 @@
       const priorityFilter = document.getElementById("priority-filter");
       const searchInput = document.getElementById("task-search");
 
-      // Xóa listeners cũ
       if (statusFilter && statusFilter._changeHandler) {
         statusFilter.removeEventListener("change", statusFilter._changeHandler);
       }
@@ -672,12 +667,10 @@
 
       let visibleCount = 0;
 
-      // Hàm xử lý filter cho từng dòng
       const processRow = (row) => {
         const taskId = row.dataset.taskId;
         const isCompleted = row.classList.contains("completed-row");
 
-        // Lấy thông tin ưu tiên
         const prioritySpan = row.querySelector("td:nth-child(3) span");
         let priorityValue = "medium";
         if (prioritySpan) {
@@ -696,7 +689,6 @@
             .querySelector("td:nth-child(2) .text-sm")
             ?.textContent.toLowerCase() || "";
 
-        // Kiểm tra status filter
         let statusMatch = true;
         if (statusFilter === "pending") {
           statusMatch = !isCompleted;
@@ -704,20 +696,17 @@
           statusMatch = isCompleted;
         }
 
-        // Kiểm tra priority filter
         let priorityMatch = true;
         if (priorityFilter !== "all") {
           priorityMatch = priorityValue === priorityFilter;
         }
 
-        // Kiểm tra search
         let searchMatch = true;
         if (searchText) {
           searchMatch =
             title.includes(searchText) || description.includes(searchText);
         }
 
-        // Hiển thị/ẩn dòng
         const shouldShow = statusMatch && priorityMatch && searchMatch;
         row.style.display = shouldShow ? "" : "none";
 
@@ -727,7 +716,6 @@
       pendingRows.forEach(processRow);
       completedRows.forEach(processRow);
 
-      // Hiển thị/ẩn section nếu không có công việc nào
       const pendingSection = document.querySelector(".mb-10");
       const completedSection = document.querySelector("div:not(.mb-10)");
 
@@ -749,7 +737,7 @@
     async updateTaskStatus(taskId, completed) {
       try {
         console.log(
-          `📝 Updating task ${taskId} to ${completed ? "completed" : "pending"}`
+          ` Updating task ${taskId} to ${completed ? "completed" : "pending"}`
         );
 
         if (typeof Utils === "undefined") {
@@ -766,16 +754,14 @@
 
         this.triggerSidebarRefresh();
 
-        // SỬA Ở ĐÂY: Gọi đúng message
         const successMessage = completed
           ? "Đã hoàn thành công việc"
           : "Đã mở lại công việc";
         this.showSuccessOverlay(successMessage);
 
-        // Reload tasks
         await this.loadTasks();
       } catch (err) {
-        console.error("❌ Error updating task:", err);
+        console.error(" Error updating task:", err);
         if (typeof Utils !== "undefined" && Utils.showToast) {
           Utils.showToast("Cập nhật trạng thái thất bại", "error");
         }
@@ -788,7 +774,6 @@
           throw new Error("Utils module not available");
         }
 
-        // Tìm công việc trong bảng để hiển thị thông tin
         const taskRow = document.getElementById(`task-${taskId}`);
         let taskTitle = "";
 
@@ -798,7 +783,6 @@
               ?.textContent || "Công việc này";
         }
 
-        // Kiểm tra nếu Swal không tồn tại, dùng confirm
         if (typeof Swal === "undefined") {
           const confirmDelete = confirm(
             `Bạn có chắc chắn muốn xóa công việc "${taskTitle}"?`
@@ -834,7 +818,6 @@
           return;
         }
 
-        // Dùng Swal nếu có
         const confirmation = await Swal.fire({
           title: "Xác nhận xóa",
           html: `Bạn có chắc chắn muốn xóa công việc "<strong>${taskTitle}</strong>"?`,
@@ -868,7 +851,6 @@
             showConfirmButton: false,
           });
 
-          // Xoá task row từ DOM ngay lập tức
           const taskRow = document.getElementById(`task-${taskId}`);
           if (taskRow) {
             taskRow.style.animation = "fadeOut 0.3s ease-out forwards";
@@ -884,7 +866,7 @@
             })
           );
         } else {
-          // Xử lý các trường hợp đặc biệt
+
           if (result.requireConfirmation) {
             const forceConfirmation = await Swal.fire({
               title: "Xác nhận thêm",
@@ -928,7 +910,7 @@
           }
         }
       } catch (err) {
-        console.error("❌ Error deleting task:", err);
+        console.error(" Error deleting task:", err);
 
         if (typeof Swal !== "undefined") {
           await Swal.fire({
@@ -946,46 +928,42 @@
     editTask(taskId) {
       console.log(`✏️ Editing task ${taskId}`);
 
-      // Load task data từ server - SỬA ENDPOINT
       Utils.makeRequest(`/api/tasks/${taskId}`, "GET")
         .then((result) => {
           if (result.success && result.data) {
-            console.log("✅ Task data loaded:", result.data);
+            console.log(" Task data loaded:", result.data);
 
-            // Mở modal edit với dữ liệu task
             if (window.ModalManager && window.ModalManager.showModalById) {
-              // Mở modal trước
+
               window.ModalManager.showModalById("createTaskModal");
 
-              // Load dữ liệu vào form sau khi modal mở
               setTimeout(() => {
                 if (window.loadTaskDataIntoForm) {
                   window.loadTaskDataIntoForm(result.data);
-                  console.log("✅ Form loaded with task data");
+                  console.log(" Form loaded with task data");
                 } else {
-                  console.error("❌ loadTaskDataIntoForm function not found");
+                  console.error(" loadTaskDataIntoForm function not found");
                   if (typeof Utils !== "undefined" && Utils.showToast) {
                     Utils.showToast("Không thể tải form chỉnh sửa", "error");
                   }
                 }
-              }, 500); // Tăng thời gian đợi để modal load xong
+              }, 500);
             } else {
-              console.error("❌ ModalManager not found");
+              console.error(" ModalManager not found");
               if (typeof Utils !== "undefined" && Utils.showToast) {
                 Utils.showToast("Không thể mở chỉnh sửa", "error");
               }
             }
           } else {
-            console.error("❌ Task not found in response");
+            console.error(" Task not found in response");
             if (typeof Utils !== "undefined" && Utils.showToast) {
               Utils.showToast("Không tìm thấy công việc", "error");
             }
           }
         })
         .catch((error) => {
-          console.error("❌ Error loading task:", error);
+          console.error(" Error loading task:", error);
 
-          // Log chi tiết lỗi
           console.error("Error details:", {
             taskId: taskId,
             endpoint: `/api/tasks/${taskId}`,
@@ -1000,7 +978,7 @@
     },
 
     removeEventListeners() {
-      console.log("🧹 Removing event listeners...");
+      console.log(" Removing event listeners...");
 
       this.eventListeners.forEach(({ element, event, handler }) => {
         if (element && element.removeEventListener) {
@@ -1010,14 +988,12 @@
 
       this.eventListeners = [];
 
-      // Xóa listeners từ container
       const container = document.getElementById("work-items-container");
       if (container && container._clickHandler) {
         container.removeEventListener("click", container._clickHandler);
         container._clickHandler = null;
       }
 
-      // Xóa listeners từ các nút khác
       const createBtn = document.getElementById("create-task-btn");
       if (createBtn && createBtn._handler) {
         createBtn.removeEventListener("click", createBtn._handler);
@@ -1044,13 +1020,12 @@
         selectAllCompleted._handler = null;
       }
 
-      console.log("✅ Event listeners removed");
+      console.log(" Event listeners removed");
     },
 
     triggerSidebarRefresh: function () {
       console.log("📢 WorkManager: Triggering sidebar refresh");
 
-      // Cách 1: Dispatch custom event
       const event = new CustomEvent("task-changed", {
         detail: {
           action: "refresh",
@@ -1060,14 +1035,12 @@
       });
       document.dispatchEvent(event);
 
-      // Cách 2: Gọi trực tiếp nếu hàm tồn tại
       if (typeof window.triggerSidebarRefresh === "function") {
         setTimeout(() => {
           window.triggerSidebarRefresh();
         }, 300);
       }
 
-      // Cách 3: Gửi storage event (hoạt động trên cùng tab)
       try {
         localStorage.setItem("__task_refresh_trigger", Date.now().toString());
         setTimeout(() => {
@@ -1079,9 +1052,8 @@
     },
 
     cleanup() {
-      console.log("🧹 Cleaning up WorkManager...");
+      console.log(" Cleaning up WorkManager...");
 
-      // Xóa các timeout
       if (this.showSuccessOverlayTimeout) {
         clearTimeout(this.showSuccessOverlayTimeout);
         this.showSuccessOverlayTimeout = null;
@@ -1094,11 +1066,10 @@
 
       this.removeEventListeners();
       this.initialized = false;
-      console.log("✅ WorkManager cleaned up");
+      console.log(" WorkManager cleaned up");
     },
   };
 
-  // Global event listeners
   document.addEventListener("work-tab-activated", () => {
     console.log("📢 Work tab activated event received");
     if (window.WorkManager) {
@@ -1144,12 +1115,11 @@
     }, 500);
   });
 
-  // Auto-init khi DOM ready và work section active
   document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       const workSection = document.getElementById("work-section");
       if (workSection && workSection.classList.contains("active")) {
-        console.log("🔍 Work section is active on page load");
+        console.log(" Work section is active on page load");
         if (window.WorkManager && !window.WorkManager.initialized) {
           window.WorkManager.init();
         } else if (window.WorkManager) {
@@ -1159,7 +1129,6 @@
     }, 1000);
   });
 
-  // Public methods
   window.WorkManager.refresh = function () {
     console.log("🔄 WorkManager.refresh() called");
     this.loadTasks();
@@ -1168,10 +1137,10 @@
   window.WorkManager.checkAndReload = function () {
     const workSection = document.getElementById("work-section");
     if (workSection && workSection.classList.contains("active")) {
-      console.log("🔍 Work section is active - reloading tasks");
+      console.log(" Work section is active - reloading tasks");
       this.loadTasks();
     }
   };
 
-  console.log("✅ WorkManager loaded");
+  console.log(" WorkManager loaded");
 })();

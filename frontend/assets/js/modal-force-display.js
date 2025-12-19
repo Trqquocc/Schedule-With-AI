@@ -1,35 +1,29 @@
-/**
- * EMERGENCY FIX: Force AI Modal Content Display
- * This runs AFTER modal is opened to force correct dimensions
- */
+
 
 (function () {
   "use strict";
 
-  // ✅ Function to force modal content display
   function forceModalContentDisplay(modalId) {
-    console.log(`🔧 FORCING display for ${modalId}...`);
+    console.log(` FORCING display for ${modalId}...`);
 
     const modal = document.getElementById(modalId);
     if (!modal) {
-      console.error(`❌ Modal ${modalId} not found`);
+      console.error(` Modal ${modalId} not found`);
       return false;
     }
 
-    // Find modal content
     const content = modal.querySelector(".modal-content");
     if (!content) {
-      console.error(`❌ .modal-content not found in ${modalId}`);
+      console.error(` .modal-content not found in ${modalId}`);
       return false;
     }
 
-    console.log("📦 Before fix:", {
+    console.log(" Before fix:", {
       width: content.offsetWidth,
       height: content.offsetHeight,
       display: window.getComputedStyle(content).display,
     });
 
-    // ✅ NUCLEAR OPTION: Set inline styles directly
     content.style.cssText = `
       display: flex !important;
       flex-direction: column !important;
@@ -51,7 +45,6 @@
       margin: 0 auto !important;
     `;
 
-    // Force children visibility
     const header = content.querySelector(".ai-modal-header");
     const body = content.querySelector(".ai-modal-body");
     const footer = content.querySelector(".ai-modal-footer");
@@ -90,21 +83,18 @@
       `;
     }
 
-    // Force reflow
     void content.offsetHeight;
 
-    // Verify after fix
     setTimeout(() => {
-      console.log("📦 After fix:", {
+      console.log(" After fix:", {
         width: content.offsetWidth,
         height: content.offsetHeight,
         display: window.getComputedStyle(content).display,
       });
 
       if (content.offsetWidth === 0 || content.offsetHeight === 0) {
-        console.error("❌ STILL 0x0! Last resort...");
+        console.error(" STILL 0x0! Last resort...");
 
-        // ABSOLUTE LAST RESORT: Clone and replace
         const parent = content.parentElement;
         const clone = content.cloneNode(true);
         clone.style.cssText = content.style.cssText;
@@ -112,26 +102,23 @@
 
         console.log("🔄 Content cloned and replaced");
       } else {
-        console.log("✅ Modal content now visible!");
+        console.log(" Modal content now visible!");
       }
     }, 100);
 
     return true;
   }
 
-  // ✅ Listen for modal open events
   window.addEventListener("modalOpened", (e) => {
     if (e.detail?.modalId === "aiSuggestionModal") {
       console.log("🎯 AI Modal opened, forcing display...");
 
-      // Force display with delays to ensure DOM is ready
       setTimeout(() => forceModalContentDisplay("aiSuggestionModal"), 50);
       setTimeout(() => forceModalContentDisplay("aiSuggestionModal"), 200);
       setTimeout(() => forceModalContentDisplay("aiSuggestionModal"), 500);
     }
   });
 
-  // ✅ Also listen for modalShown event
   window.addEventListener("modalShown", (e) => {
     if (e.detail?.modalId === "aiSuggestionModal") {
       console.log("🎯 AI Modal shown, forcing display...");
@@ -139,19 +126,17 @@
     }
   });
 
-  // ✅ Export for manual use
   window.forceAIModalDisplay = () => {
     return forceModalContentDisplay("aiSuggestionModal");
   };
 
-  console.log("✅ Modal force display script loaded");
+  console.log(" Modal force display script loaded");
 
-  // ✅ AUTO-FIX on page load if modal is already visible
   window.addEventListener("load", () => {
     setTimeout(() => {
       const modal = document.getElementById("aiSuggestionModal");
       if (modal && !modal.classList.contains("hidden")) {
-        console.log("🔧 Auto-fixing visible modal on load...");
+        console.log(" Auto-fixing visible modal on load...");
         forceModalContentDisplay("aiSuggestionModal");
       }
     }, 1000);
