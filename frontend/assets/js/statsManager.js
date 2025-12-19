@@ -1,271 +1,255 @@
 (function () {
   "use strict";
 
+  const API = {
+    stats: "/api/statistics",
+  };
+
+  let barChart = null;
+  let donutChart = null;
+
+  function formatDate(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    return date.toLocaleDateString("vi-VN");
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function getAuthToken() {
+    return localStorage.getItem("auth_token");
+  }
+
+  async function loadStatsData(from, to) {
+    try {
+      const token = getAuthToken();
+      const params = new URLSearchParams();
+      if (from) params.append("from", from);
+      if (to) params.append("to", to);
+
+      const url = `${API.stats}?${params.toString()}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Không thể tải dữ liệu thống kê");
+      return await response.json();
+    } catch (error) {
+      console.error("Error loading stats:", error);
+      throw error;
+    }
+  }
+
+  function renderStatsView(data) {
+    const total = data.total || 0;
+    const completed = data.completed || 0;
+    const pending = data.pending || 0;
+    const percent = data.percent || 0;
+
+    console.log(`📊 Stats - Total: ${total}, Completed: ${completed}, Pending: ${pending}, Percent: ${percent}%`);
+
+    // Cập nhật số liệu tổng quan
+    const statsTotal = document.getElementById("stats-total");
+    const statsCompleted = document.getElementById("stats-completed");
+    const statsPending = document.getElementById("stats-pending");
+
+    if (statsTotal) statsTotal.textContent = total;
+    if (statsCompleted) statsCompleted.textContent = completed;
+    if (statsPending) statsPending.textContent = pending;
+
+    // Cập nhật sidebar stats
+    updateSidebarStats({ total, completed, pending, percent });
+
+    // Render biểu đồ
+    renderCharts(data);
+  }
+
+  function updateSidebarStats(stats) {
+    const sideTotal = document.getElementById("side-total");
+    const sideCompleted = document.getElementById("side-completed");
+    const sidePercent = document.getElementById("side-percent");
+
+    if (sideTotal) sideTotal.textContent = stats.total || 0;
+    if (sideCompleted) sideCompleted.textContent = stats.completed || 0;
+    if (sidePercent) sidePercent.textContent = (stats.percent || 0) + "%";
+  }
+
+  function renderCharts(data) {
+    const completed = data.completed || 0;
+    const pending = data.pending || 0;
+    const dailyData = data.daily || [];
+
+    // Biểu đồ cột - Công việc theo ngày
+    renderBarChart(dailyData);
+
+    // Biểu đồ tròn - Tỷ lệ hoàn thành
+    renderDonutChart(completed, pending);
+  }
+
+  function renderBarChart(dailyData) {
+    const barCtx = document.getElementById("bar-chart");
+    if (!barCtx) return;
+
+    if (barChart) {
+      barChart.destroy();
+    }
+
+    // Chuyển đổi dữ liệu daily
+    const labels = dailyData.map((item) =>
+      new Date(item.date).toLocaleDateString("vi-VN", {
+        month: "short",
+        day: "numeric",
+      })
+    );
+    const completedData = dailyData.map((item) => item.completed || 0);
+    const pendingData = dailyData.map((item) => (item.total || 0) - (item.completed || 0));
+
+    barChart = new Chart(barCtx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Hoàn thành",
+            data: completedData,
+            backgroundColor: "#1971c2",
+            borderRadius: 6,
+          },
+          {
+            label: "Chưa hoàn thành",
+            data: pendingData,
+            backgroundColor: "#e9ecef",
+            borderRadius: 6,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: "bottom" },
+        },
+        scales: {
+          y: { 
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          },
+        },
+      },
+    });
+  }
+
+  function renderDonutChart(completed, pending) {
+    const donutCtx = document.getElementById("donut-chart");
+    if (!donutCtx) return;
+
+    if (donutChart) {
+      donutChart.destroy();
+    }
+
+    donutChart = new Chart(donutCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["Hoàn thành", "Chưa hoàn thành"],
+        datasets: [
+          {
+            data: [completed, pending],
+            backgroundColor: ["#1971c2", "#e7f5ff"],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                return `${label}: ${value} (${percentage}%)`;
+              }
+            }
+          }
+        },
+      },
+    });
+  }
+
+  function setupDateFilter() {
+    const applyStatsBtn = document.getElementById("apply-stats-btn");
+    if (applyStatsBtn) {
+      applyStatsBtn.addEventListener("click", handleLoadStats);
+    }
+  }
+
+  async function handleLoadStats() {
+    const fromInput = document.getElementById("stats-from");
+    const toInput = document.getElementById("stats-to");
+
+    const from = fromInput ? fromInput.value : "";
+    const to = toInput ? toInput.value : "";
+
+    try {
+      const result = await loadStatsData(from, to);
+      if (result.success) {
+        renderStatsView(result.data);
+      }
+    } catch (error) {
+      console.error("Error loading stats:", error);
+      alert("Lỗi khi tải dữ liệu thống kê: " + error.message);
+    }
+  }
+
+  function initializeDateInputs() {
+    const today = new Date();
+    const lastMonth = new Date(today.getTime() - 30 * 24 * 3600 * 1000);
+    const formatDate = (d) => d.toISOString().split("T")[0];
+
+    const statsFrom = document.getElementById("stats-from");
+    const statsTo = document.getElementById("stats-to");
+
+    if (statsFrom) statsFrom.value = formatDate(lastMonth);
+    if (statsTo) statsTo.value = formatDate(today);
+  }
+
+  async function init() {
+    console.log("📊 Initializing StatsManager...");
+
+    initializeDateInputs();
+    setupDateFilter();
+
+    // Tự động load dữ liệu khi tab stats được active
+    const statsView = document.getElementById("stats-view");
+    if (statsView && !statsView.classList.contains("hidden")) {
+      await handleLoadStats();
+    }
+
+    console.log("✅ StatsManager initialized successfully");
+  }
+
+  // Export public methods
   window.StatsManager = {
-    async init() {
-      await this.loadStats();
-      this.setupEventListeners();
-    },
-
-    setupEventListeners() {
-      const applyStatsBtn = document.getElementById("apply-stats-btn");
-      if (applyStatsBtn) {
-        applyStatsBtn.addEventListener("click", () => {
-          const fromInput = document.getElementById("stats-from");
-          const toInput = document.getElementById("stats-to");
-          const from = fromInput ? fromInput.value : "";
-          const to = toInput ? toInput.value : "";
-          this.loadStatsWithDateRange(from, to);
-        });
-      }
-    },
-
-    async loadStatsWithDateRange(from, to) {
-      try {
-        const params = new URLSearchParams();
-        if (from) params.append("from", from);
-        if (to) params.append("to", to);
-
-        const endpoint = `/api/statistics?${params.toString()}`;
-        const statsResult = await Utils.makeRequest(endpoint, "GET");
-
-        if (!statsResult.success || !statsResult.data) {
-          console.warn("Không lấy được dữ liệu thống kê");
-          return;
-        }
-
-        const statsData = statsResult.data;
-
-        const tasksResult = await Utils.makeRequest("/api/tasks", "GET");
-        const tasks = tasksResult.data || [];
-
-        const stats = {
-          totalTasks: statsData.total || 0,
-          completedTasks: statsData.completed || 0,
-          pendingTasks: statsData.pending || 0,
-          completionRate: statsData.percent || 0,
-          inProgressTasks: 0,
-          fixedTimeTasks: tasks.filter((t) => t.CoThoiGianCoDinh).length,
-          hourlyRate:
-            tasks.reduce((sum, t) => sum + (t.LuongTheoGio || 0), 0) /
-            (tasks.length || 1),
-          dailyStats: statsData.daily || [],
-        };
-
-        this.updateStatsUI(stats);
-
-        localStorage.setItem("user_stats", JSON.stringify(stats));
-
-        return stats;
-      } catch (error) {
-        console.error("Lỗi tải thống kê với khoảng ngày:", error);
-      }
-    },
-
-    async loadStats() {
-      try {
-        const statsResult = await Utils.makeRequest("/api/statistics", "GET");
-
-        if (!statsResult.success || !statsResult.data) {
-          console.warn("Không lấy được dữ liệu thống kê, sử dụng API cũ");
-          return await this.loadStatsLegacy();
-        }
-
-        const statsData = statsResult.data;
-
-        const tasksResult = await Utils.makeRequest("/api/tasks", "GET");
-        const tasks = tasksResult.data || [];
-
-        const stats = {
-          totalTasks: tasks.length,
-          completedTasks:
-            statsData.completed ||
-            tasks.filter((t) => t.TrangThaiThucHien === 2).length,
-          pendingTasks:
-            statsData.pending ||
-            tasks.filter((t) => t.TrangThaiThucHien === 0).length,
-          inProgressTasks: tasks.filter((t) => t.TrangThaiThucHien === 1)
-            .length,
-          completionRate: statsData.percent || 0,
-          fixedTimeTasks: tasks.filter((t) => t.CoThoiGianCoDinh).length,
-          hourlyRate:
-            tasks.reduce((sum, t) => sum + (t.LuongTheoGio || 0), 0) /
-            (tasks.length || 1),
-          dailyStats: statsData.daily || [],
-        };
-
-        this.updateStatsUI(stats);
-
-        localStorage.setItem("user_stats", JSON.stringify(stats));
-
-        return stats;
-      } catch (error) {
-        console.error("Lỗi tải thống kê:", error);
-        return await this.loadStatsLegacy();
-      }
-    },
-
-    async loadStatsLegacy() {
-      try {
-        const tasksResult = await Utils.makeRequest("/api/tasks", "GET");
-        const tasks = tasksResult.data || [];
-
-        const stats = {
-          totalTasks: tasks.length,
-          completedTasks: tasks.filter((t) => t.TrangThaiThucHien === 2).length,
-          pendingTasks: tasks.filter((t) => t.TrangThaiThucHien === 0).length,
-          inProgressTasks: tasks.filter((t) => t.TrangThaiThucHien === 1)
-            .length,
-          fixedTimeTasks: tasks.filter((t) => t.CoThoiGianCoDinh).length,
-          hourlyRate:
-            tasks.reduce((sum, t) => sum + (t.LuongTheoGio || 0), 0) /
-            (tasks.length || 1),
-        };
-
-        this.updateStatsUI(stats);
-
-        localStorage.setItem("user_stats", JSON.stringify(stats));
-
-        return stats;
-      } catch (error) {
-        console.error("Lỗi tải thống kê fallback:", error);
-        return null;
-      }
-    },
-
-    updateStatsUI(stats) {
-      const elements = {
-        "stats-total-tasks": stats.totalTasks,
-        "stats-completed-tasks": stats.completedTasks,
-        "stats-completion-rate":
-          Math.round((stats.completedTasks / stats.totalTasks) * 100) || 0,
-        "stats-pending-tasks": stats.pendingTasks,
-        "stats-fixed-tasks": stats.fixedTimeTasks,
-        "stats-total": stats.totalTasks,
-        "stats-completed": stats.completedTasks,
-        "stats-pending": stats.pendingTasks,
-      };
-
-      Object.entries(elements).forEach(([id, value]) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.textContent = value;
-        }
-      });
-
-      if (stats.dailyStats && stats.dailyStats.length > 0) {
-        this.renderCharts(stats);
-      }
-    },
-
-    renderCharts(stats) {
-      if (typeof Chart === "undefined") {
-        console.warn("Chart.js chưa được load");
-        return;
-      }
-
-      const dailyData = stats.dailyStats || [];
-      const labels = dailyData.map((d) =>
-        new Date(d.date).toLocaleDateString("vi-VN")
-      );
-      const completedData = dailyData.map((d) => d.completed || 0);
-      const totalData = dailyData.map((d) => d.total || 0);
-
-      this.renderBarChart(labels, completedData, totalData);
-
-      this.renderDonutChart(stats);
-    },
-
-    renderBarChart(labels, completedData, totalData) {
-      const ctx = document.getElementById("bar-chart");
-      if (!ctx) return;
-
-      if (window.barChartInstance) {
-        window.barChartInstance.destroy();
-      }
-
-      window.barChartInstance = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Hoàn thành",
-              data: completedData,
-              backgroundColor: "#34D399",
-              borderColor: "#10B981",
-              borderWidth: 1,
-            },
-            {
-              label: "Chưa hoàn thành",
-              data: totalData.map((t, i) => t - (completedData[i] || 0)),
-              backgroundColor: "#FBBF24",
-              borderColor: "#F59E0B",
-              borderWidth: 1,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              position: "bottom",
-            },
-          },
-          scales: {
-            x: {
-              stacked: true,
-            },
-            y: {
-              stacked: true,
-              beginAtZero: true,
-            },
-          },
-        },
-      });
-    },
-
-    renderDonutChart(stats) {
-      const ctx = document.getElementById("donut-chart");
-      if (!ctx) return;
-
-      if (window.donutChartInstance) {
-        window.donutChartInstance.destroy();
-      }
-
-      const completed = stats.completedTasks || 0;
-      const pending = stats.pendingTasks || 0;
-
-      window.donutChartInstance = new Chart(ctx, {
-        type: "doughnut",
-        data: {
-          labels: ["Hoàn thành", "Chưa hoàn thành"],
-          datasets: [
-            {
-              data: [completed, pending],
-              backgroundColor: ["#34D399", "#FBBF24"],
-              borderColor: ["#10B981", "#F59E0B"],
-              borderWidth: 2,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              position: "bottom",
-            },
-          },
-        },
-      });
-    },
+    init,
+    loadStatsData,
+    renderStatsView,
+    handleLoadStats,
   };
 
-  window.updateStats = function () {
-    StatsManager.loadStats();
-  };
-
-  console.log(" StatsManager loaded");
+  console.log("📊 StatsManager module loaded");
 })();
