@@ -1,6 +1,18 @@
 (function () {
   "use strict";
 
+  if (window.getSelection) {
+    const originalGetSelection = window.getSelection;
+    window.getSelection = function () {
+      try {
+        return originalGetSelection();
+      } catch (e) {
+        console.warn("⚠️ Selection error suppressed:", e.message);
+        return { rangeCount: 0, getRangeAt: () => null };
+      }
+    };
+  }
+
   if (window.ProfileManager) {
     console.log("⚠️ ProfileManager already exists");
     return;
@@ -39,8 +51,81 @@
     },
 
     bindEvents() {
-      console.log("⚠️ ProfileManager bindEvents() is now handled by profile-modal.html inline script");
-      return;
+
+      const openProfileBtn = document.getElementById("openProfileBtn");
+      console.log(
+        "🔍 Looking for #openProfileBtn:",
+        openProfileBtn ? "✅ FOUND" : "❌ NOT FOUND"
+      );
+
+      if (openProfileBtn) {
+        openProfileBtn.addEventListener("click", (e) => {
+          console.log("🎯 Profile button clicked!");
+          e.preventDefault();
+          e.stopPropagation();
+          this.openProfileModal();
+        });
+        console.log("✅ Profile button event listener attached");
+      }
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest("#openProfileBtn")) {
+          console.log("🎯 Profile button clicked (delegated)!");
+          e.preventDefault();
+          e.stopPropagation();
+          this.openProfileModal();
+        }
+      });
+
+      const closeBtn = document.getElementById("closeProfileModal");
+      const cancelBtn = document.getElementById("cancelProfileBtn");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.closeModal();
+        });
+      }
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.closeModal();
+        });
+      }
+
+      const modal = document.getElementById("profileModal");
+      if (modal) {
+        modal.addEventListener("click", (e) => {
+          if (e.target === modal) {
+            this.closeModal();
+          }
+        });
+      }
+
+      const saveBtn = document.getElementById("saveProfileBtn");
+      if (saveBtn) {
+        saveBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.saveProfile();
+        });
+      }
+
+      const avatarInput = document.getElementById("avatarInput");
+      if (avatarInput) {
+        avatarInput.addEventListener("change", (e) =>
+          this.handleAvatarUpload(e)
+        );
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const modal = document.getElementById("profileModal");
+          if (modal && !modal.classList.contains("hidden")) {
+            this.closeModal();
+          }
+        }
+      });
+
+      console.log("✅ Events bound");
     },
 
     openProfileModal(event) {
@@ -49,18 +134,24 @@
         event.stopPropagation();
       }
       console.log("🟢 Opening profile modal");
+      console.log("📦 Current user:", this.currentUser);
 
       const modal = document.getElementById("profileModal");
+      console.log("🔍 Modal element:", modal ? "✅ FOUND" : "❌ NOT FOUND");
+
       if (!modal) {
-        console.error("❌ Profile modal not found");
+        console.error("❌ Profile modal not found in DOM");
         return;
       }
 
       this.fillFormWithUserData();
 
       if (window.ModalManager && window.ModalManager.showModalById) {
+        console.log("📤 Using ModalManager.showModalById");
         window.ModalManager.showModalById("profileModal");
       } else {
+
+        console.log("📤 Using fallback modal display");
         modal.classList.remove("hidden");
         modal.classList.add("active", "show");
         document.body.style.overflow = "hidden";
@@ -69,10 +160,18 @@
       console.log("✅ Profile modal opened");
     },
 
+
     fillFormWithUserData() {
-      if (!this.currentUser) return;
+      console.log("🔄 Filling form with user data...");
+
+      if (!this.currentUser) {
+        console.error("❌ No current user data available");
+        return;
+      }
 
       const form = document.getElementById("profileForm");
+      console.log("🔍 Form element:", form ? "✅ FOUND" : "❌ NOT FOUND");
+
       if (!form) {
         console.error("❌ Profile form not found");
         return;
@@ -89,13 +188,17 @@
       };
 
       Object.entries(fieldMap).forEach(([fieldName, value]) => {
-        const element = form.elements[fieldName];
-        if (element && fieldName === "ngaysinh" && value) {
-          try {
-            element.value = new Date(value).toISOString().split("T")[0];
-          } catch (e) { }
-        } else if (element) {
-          element.value = value;
+
+        try {
+          const element = form.elements[fieldName];
+          if (element) {
+            element.value = value;
+            console.log(`  ✅ ${fieldName} = ${value || "(empty)"}`);
+          } else {
+            console.warn(`  ⚠️ Field ${fieldName} not found`);
+          }
+        } catch (e) {
+          console.warn(`  ⚠️ Error setting ${fieldName}:`, e.message);
         }
       });
 
@@ -177,19 +280,28 @@
 
       const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
-      saveBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
 
       try {
-        const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
-        const userId = userData.ID || userData.id || userData.UserID;
-        
+        let userId = null;
+        if (this.currentUser.id) {
+          userId = this.currentUser.id;
+        } else if (this.currentUser._id) {
+          userId = this.currentUser._id;
+        } else if (this.currentUser.userId) {
+          userId = this.currentUser.userId;
+        } else if (this.currentUser.UserID) {
+          userId = this.currentUser.UserID;
+        }
+
         if (!userId) {
-          throw new Error("❌ User ID not found in localStorage");
+          console.error("Current user:", this.currentUser);
+          throw new Error("Không tìm thấy ID người dùng");
         }
         
         const endpoint = `/api/users/${userId}`;
         console.log(`📤 Sending PUT request to: ${endpoint}`);
+        console.log(`📤 User ID: ${userId}`);
 
         const payload = {
           hoten: updatedUser.hoten,
@@ -280,9 +392,32 @@
   };
   window.ProfileManager = ProfileManager;
 
-  setTimeout(() => {
-    ProfileManager.init();
-  }, 200);
 
-  console.log("✅ ProfileManager loaded");
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("⏳ DOMContentLoaded - initializing ProfileManager...");
+      setTimeout(() => {
+        ProfileManager.init();
+      }, 500);
+    });
+  } else {
+    console.log("⏳ Document already loaded - initializing ProfileManager...");
+    setTimeout(() => {
+      ProfileManager.init();
+    }, 500);
+  }
+
+  console.log("✅ ProfileManager script loaded");
+
+  window.addEventListener(
+    "error",
+    (event) => {
+      if (event.message && event.message.includes("getRangeAt")) {
+        console.warn("⚠️ Extension selection error suppressed");
+        event.preventDefault();
+        return true;
+      }
+    },
+    true
+  );
 })();

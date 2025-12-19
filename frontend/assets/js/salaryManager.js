@@ -118,20 +118,17 @@
 
   function renderSalaryView(data) {
     const entries = data.entries || [];
-
-    const completedEntries = entries.filter((e) => {
-      if (typeof e.completed !== "undefined") {
-        return e.completed === true || e.completed === 1;
-      }
-      if (typeof e.DaHoanThanh !== "undefined") {
-        return Number(e.DaHoanThanh) === 1;
-      }
-      return false;
-    });
-
+    const completedEntries = entries;
     const totalAmount = completedEntries.reduce((sum, entry) => {
       return sum + (Number(entry.amount) || 0);
     }, 0);
+
+
+    console.log(
+      `📊 Loaded ${
+        completedEntries.length
+      } completed schedules, total: ${formatCurrency(totalAmount)}`
+    );
 
     const tableContainer = document.getElementById("salary-table");
     if (tableContainer) {
@@ -300,7 +297,6 @@
     tabs.forEach((tab) => {
       tab.addEventListener("click", function () {
         tabs.forEach((t) => t.classList.remove("active"));
-        
         this.classList.add("active");
 
         const tabType = this.getAttribute("data-tab");
@@ -405,6 +401,18 @@
     setupDateFilters();
 
     await handleLoadSalary();
+
+    // Listen for event completion to reload salary
+    document.addEventListener("eventCompleted", async (e) => {
+      console.log(
+        "📢 Event completed detected, reloading salary data:",
+        e.detail
+      );
+      if (e.detail.completed) {
+        // Reload salary data when event is marked complete
+        await handleLoadSalary();
+      }
+    });
 
     console.log("✅ SalaryManager initialized successfully");
   }

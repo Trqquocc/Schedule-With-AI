@@ -400,6 +400,10 @@
         eventDidMount: (info) => {
           const el = info.el;
           el.style.cursor = "pointer";
+
+
+          el.setAttribute("data-event-id", info.event.id);
+
           const priority = info.event.extendedProps.priority || 2;
           if (priority === 1) {
             el.classList.add("event-priority-low");
@@ -1295,19 +1299,28 @@
           setTimeout(() => modal.remove(), 300);
         }
 
+<<<<<<< HEAD
         const eventEl =
           document.querySelector(`[data-event-id="${eventId}"]`) ||
           document.querySelector(
             `.fc-event[title*="${event.title.substring(0, 20)}"]`
           );
+=======
+        // ✅ CHỈ TÌM VÀ XÓA EVENT CỤ THỂ THEO ID
+        const eventEl = document.querySelector(`[data-event-id="${eventId}"]`);
+>>>>>>> 6a37c95cdd090058f2f0e1f1433a9ec699f4cda2
 
         if (eventEl) {
+          console.log(`🎯 Found event element with ID ${eventId} for deletion`);
           eventEl.style.animation = "shrinkOut 0.5s ease forwards";
           eventEl.style.transformOrigin = "center";
           setTimeout(() => {
             event.remove();
           }, 500);
         } else {
+          console.warn(
+            `⚠️ Event element with ID ${eventId} not found in DOM, removing from calendar`
+          );
           event.remove();
         }
 
@@ -1325,7 +1338,8 @@
 
         const confirmBtn = document.getElementById("confirmDeleteBtn");
         if (confirmBtn) {
-          confirmBtn.innerHTML = originalText;
+          confirmBtn.innerHTML =
+            '<i class="fas fa-skull-crossbones mr-2"></i> Xóa vĩnh viễn';
           confirmBtn.disabled = false;
         }
 
@@ -1350,38 +1364,73 @@
 
     async _updateEventStatus(event) {
       try {
+        console.log("🔍 Updating event status:", {
+          id: event.id,
+          title: event.title,
+          currentCompleted: event.extendedProps.completed,
+        });
+
         const checkbox = document.getElementById("eventCompletedCheckbox");
+        if (!checkbox) {
+          console.error("❌ Checkbox not found");
+          return;
+        }
+
         const completed = checkbox.checked;
+        console.log(`📝 Event ${event.id}: Setting completed to ${completed}`);
 
         const wasCompleted = event.extendedProps.completed;
 
+<<<<<<< HEAD
+=======
+        // Immediate visual feedback
+>>>>>>> 6a37c95cdd090058f2f0e1f1433a9ec699f4cda2
         const saveBtn = document.getElementById("saveEventStatus");
         const originalBtnText = saveBtn.innerHTML;
         saveBtn.disabled = true;
         saveBtn.innerHTML =
           '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 
+<<<<<<< HEAD
         const eventEls = document.querySelectorAll(
           `[data-event-id="${
             event.id
           }"], .fc-event[title*="${event.title.substring(0, 20)}"]`
         );
+=======
+        // ✅ CHỈ TÌM EVENT CỤ THỂ THEO ID - KHÔNG DÙNG TITLE
+        const eventEl = document.querySelector(`[data-event-id="${event.id}"]`);
+>>>>>>> 6a37c95cdd090058f2f0e1f1433a9ec699f4cda2
 
-        eventEls.forEach((el) => {
+        if (!eventEl) {
+          console.warn(`⚠️ Could not find event element with ID ${event.id}`);
+        } else {
+          console.log(`🎨 Found event element for ID ${event.id}`);
+
+          // Apply visual changes immediately
           if (completed) {
-            el.classList.add("event-completed", "completing");
-            el.style.textDecoration = "line-through";
-            el.style.opacity = "0.6";
+            eventEl.classList.add("event-completed", "completing");
+            eventEl.style.textDecoration = "line-through";
+            eventEl.style.opacity = "0.6";
           } else {
-            el.classList.remove("event-completed", "completing");
-            el.style.textDecoration = "none";
-            el.style.opacity = "1";
+            eventEl.classList.remove("event-completed", "completing");
+            eventEl.style.textDecoration = "none";
+            eventEl.style.opacity = "1";
           }
-        });
+        }
 
+<<<<<<< HEAD
+=======
+        // ✅ Gửi request với field đúng
+>>>>>>> 6a37c95cdd090058f2f0e1f1433a9ec699f4cda2
         const updateData = {
           completed: completed,
         };
+
+        console.log(
+          `📤 Sending PUT to /api/calendar/events/${event.id}:`,
+          updateData
+        );
 
         const res = await Utils.makeRequest(
           `/api/calendar/events/${event.id}`,
@@ -1389,7 +1438,15 @@
           updateData
         );
 
+        console.log("📥 Response:", res);
+
         if (res.success) {
+<<<<<<< HEAD
+=======
+          console.log("✅ Event status updated successfully");
+
+          // Update event state in FullCalendar
+>>>>>>> 6a37c95cdd090058f2f0e1f1433a9ec699f4cda2
           event.setExtendedProp("completed", completed);
           const statusEl = document.querySelector(
             '[class*="text-green-600"], [class*="text-orange-600"]'
@@ -1414,12 +1471,34 @@
             "success"
           );
 
+<<<<<<< HEAD
           saveBtn.disabled = false;
           saveBtn.innerHTML = originalBtnText;
+=======
+          // Dispatch event to notify salary manager and other components
+          document.dispatchEvent(
+            new CustomEvent("eventCompleted", {
+              detail: {
+                eventId: event.id,
+                title: event.title,
+                completed: completed,
+                taskId: event.extendedProps?.taskId,
+              },
+            })
+          );
+          console.log("📢 Dispatched eventCompleted event");
+
+          // Restore button
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalBtnText;
+
+          // Close modal after short delay
+>>>>>>> 6a37c95cdd090058f2f0e1f1433a9ec699f4cda2
           setTimeout(() => {
             document.getElementById("eventDetailModal")?.remove();
           }, 600);
         } else {
+<<<<<<< HEAD
           eventEls.forEach((el) => {
             if (wasCompleted) {
               el.classList.add("event-completed");
@@ -1432,6 +1511,24 @@
             }
           });
 
+=======
+          console.error("❌ Update failed:", res.message);
+
+          // ✅ ROLLBACK CHỈ EVENT CỤ THỂ - KHÔNG ẢNH HƯỞNG EVENTS KHÁC
+          if (eventEl) {
+            if (wasCompleted) {
+              eventEl.classList.add("event-completed");
+              eventEl.style.textDecoration = "line-through";
+              eventEl.style.opacity = "0.6";
+            } else {
+              eventEl.classList.remove("event-completed");
+              eventEl.style.textDecoration = "none";
+              eventEl.style.opacity = "1";
+            }
+          }
+
+          // Restore button and checkbox
+>>>>>>> 6a37c95cdd090058f2f0e1f1433a9ec699f4cda2
           saveBtn.disabled = false;
           saveBtn.innerHTML = originalBtnText;
           checkbox.checked = wasCompleted;
@@ -1439,7 +1536,24 @@
           throw new Error(res.message || "Cập nhật trạng thái thất bại");
         }
       } catch (err) {
-        console.error("Cập nhật trạng thái lỗi:", err);
+        console.error("❌ Cập nhật trạng thái lỗi:", err);
+
+        // ✅ ROLLBACK AN TOÀN - CHỈ EVENT ĐANG XỬ LÝ
+        const eventEl = document.querySelector(`[data-event-id="${event.id}"]`);
+        const wasCompleted = event.extendedProps.completed;
+
+        if (eventEl) {
+          if (wasCompleted) {
+            eventEl.classList.add("event-completed");
+            eventEl.style.textDecoration = "line-through";
+            eventEl.style.opacity = "0.6";
+          } else {
+            eventEl.classList.remove("event-completed");
+            eventEl.style.textDecoration = "none";
+            eventEl.style.opacity = "1";
+          }
+        }
+
         Utils.showToast?.(
           "❌ " + (err.message || "Lỗi cập nhật trạng thái"),
           "error"
@@ -1449,6 +1563,12 @@
         if (saveBtn) {
           saveBtn.disabled = false;
           saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Lưu thay đổi';
+        }
+
+        // Restore checkbox
+        const checkbox = document.getElementById("eventCompletedCheckbox");
+        if (checkbox) {
+          checkbox.checked = wasCompleted;
         }
       }
     },

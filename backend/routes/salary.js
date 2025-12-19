@@ -7,7 +7,9 @@ router.get("/", async (req, res) => {
     const userId = req.userId;
     const { from, to } = req.query;
     const endDate = to ? new Date(to) : new Date();
-    const startDate = from ? new Date(from) : new Date(endDate.getTime() - 30 * 24 * 3600 * 1000);
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate.getTime() - 30 * 24 * 3600 * 1000);
 
     const pool = await dbPoolPromise;
 
@@ -15,11 +17,9 @@ router.get("/", async (req, res) => {
       .request()
       .input("UserID", sql.Int, userId)
       .input("StartDate", sql.DateTime, startDate)
-      .input("EndDate", sql.DateTime, endDate)
-      .query(`
+      .input("EndDate", sql.DateTime, endDate).query(`
         SELECT
           lt.MaLichTrinh,
-          lt.TieuDe AS LichTieuDe,
           lt.GioBatDau,
           lt.GioKetThuc,
           lt.GhiChu,
@@ -42,7 +42,9 @@ router.get("/", async (req, res) => {
       if (r.GioBatDau && r.GioKetThuc) {
         const start = new Date(r.GioBatDau);
         const end = new Date(r.GioKetThuc);
+
         hours = Math.round(((end - start) / (1000 * 60)) / 60 * 100) / 100;
+
       } else if (r.ThoiGianUocTinh) {
         hours = Math.round((r.ThoiGianUocTinh / 60) * 100) / 100;
       }
@@ -52,7 +54,7 @@ router.get("/", async (req, res) => {
 
       return {
         id: r.MaLichTrinh,
-        title: r.CongViecTieuDe || r.LichTieuDe || "(Không có tiêu đề)",
+        title: r.CongViecTieuDe || "(Không có tiêu đề)",
         date: r.GioKetThuc || r.GioBatDau,
         rate,
         hours,
