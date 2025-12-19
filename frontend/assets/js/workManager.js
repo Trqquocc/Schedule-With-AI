@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -99,7 +97,6 @@
     hideSuccessOverlayTimeout: null,
 
     showSuccessOverlay(message = "Thành công!") {
-
       if (this.showSuccessOverlayTimeout) {
         clearTimeout(this.showSuccessOverlayTimeout);
         this.showSuccessOverlayTimeout = null;
@@ -231,7 +228,6 @@
       const emptyState = document.getElementById("empty-state-indicator");
 
       if (tasks.length === 0) {
-
         if (emptyState) {
           emptyState.classList.remove("hidden");
         }
@@ -243,7 +239,6 @@
 
         return;
       }
-
       if (emptyState) {
         emptyState.classList.add("hidden");
       }
@@ -495,7 +490,6 @@
     setupCreateTaskButton() {
       const createBtn = document.getElementById("create-task-btn");
       if (createBtn) {
-
         createBtn.removeEventListener("click", createBtn._handler);
 
         const createHandler = (e) => {
@@ -527,14 +521,12 @@
       }
 
       const clickHandler = (e) => {
-
         const target = e.target;
 
         if (
           target.tagName === "BUTTON" &&
           target.classList.contains("action-btn-")
         ) {
-
           return;
         }
 
@@ -866,7 +858,6 @@
             })
           );
         } else {
-
           if (result.requireConfirmation) {
             const forceConfirmation = await Swal.fire({
               title: "Xác nhận thêm",
@@ -934,7 +925,6 @@
             console.log(" Task data loaded:", result.data);
 
             if (window.ModalManager && window.ModalManager.showModalById) {
-
               window.ModalManager.showModalById("createTaskModal");
 
               setTimeout(() => {

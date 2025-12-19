@@ -1,4 +1,3 @@
-
 if (typeof InstallHook === "undefined") {
   const InstallHook = {
     libraries: {
@@ -17,7 +16,6 @@ if (typeof InstallHook === "undefined") {
     },
 
     checkLibraries() {
-
       if (typeof FullCalendar !== "undefined") {
         this.libraries.fullcalendar = true;
         console.log(" FullCalendar loaded");
@@ -34,7 +32,6 @@ if (typeof InstallHook === "undefined") {
     },
 
     addCalendarStyles() {
-
       const style = document.createElement("style");
       style.textContent = `
 

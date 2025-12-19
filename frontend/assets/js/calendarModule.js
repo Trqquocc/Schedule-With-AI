@@ -50,7 +50,6 @@
                 if (node.classList && node.classList.contains("task-item")) {
                   this.makeTaskDraggable(node);
                 }
-
                 const taskItems = node.querySelectorAll
                   ? node.querySelectorAll(".task-item")
                   : [];
@@ -63,7 +62,6 @@
           }
         });
       });
-
       const taskList = document.getElementById("task-list");
       if (taskList) {
         observer.observe(taskList, {
@@ -96,19 +94,16 @@
 
     makeTaskDraggable(element) {
       if (element.hasAttribute("data-draggable-init")) return;
-
       const taskId = element.dataset.taskId;
       const title = element.dataset.taskTitle || element.textContent.trim();
       const priority = parseInt(element.dataset.taskPriority) || 2;
       const description = element.dataset.taskDescription || "";
-
       const color = this.getPriorityColor(priority);
 
       if (!taskId) {
         console.warn(" Task element missing taskId");
         return;
       }
-
       try {
         if (typeof FullCalendar !== "undefined" && FullCalendar.Draggable) {
           const draggable = new FullCalendar.Draggable(element, {
@@ -174,7 +169,6 @@
         console.log(" HTML5 drag end");
       });
     },
-
     async _initInternal() {
       const calendarEl = await this.waitForElement("calendar", 8000);
       if (!calendarEl) throw new Error("Không tìm thấy phần tử #calendar");
@@ -189,7 +183,6 @@
         this.initializeNavbarEvents();
       }, 200);
     },
-
     waitForElement(id, timeout = 8000) {
       return new Promise((resolve) => {
         const el = document.getElementById(id);
@@ -419,16 +412,18 @@
         eventDidMount: (info) => {
           const el = info.el;
           el.style.cursor = "pointer";
-          // Set BOTH data-event-id (with hyphen) and data-eventid (without hyphen) for compatibility
+
           el.setAttribute("data-event-id", info.event.id);
           el.setAttribute("data-eventid", info.event.id);
 
-          // Apply priority classes
           const priority = info.event.extendedProps.priority || 2;
-          if (priority === 1) el.classList.add("event-priority-low");
-          else if (priority === 3) el.classList.add("event-priority-medium");
-          else if (priority === 4) el.classList.add("event-priority-high");
-
+          if (priority === 1) {
+            el.classList.add("event-priority-low");
+          } else if (priority === 3) {
+            el.classList.add("event-priority-medium");
+          } else if (priority === 4) {
+            el.classList.add("event-priority-high");
+          }
           if (info.event.extendedProps.aiSuggested) {
             el.classList.add("event-ai-suggested");
           }
@@ -538,7 +533,6 @@
     async _handleEventReceive(info) {
       try {
         console.log("🎯 FullCalendar eventReceive triggered:", info);
-
         const draggedEl = info.draggedEl;
         let taskId, title, color, priority;
 
@@ -634,13 +628,11 @@
         const newStart = info.event.start;
         const newEnd =
           info.event.end || new Date(newStart.getTime() + 60 * 60 * 1000);
-
         if (this.hasTimeConflict(info.event)) {
           Utils.showToast?.("⛔ Thời gian này đã có sự kiện khác!", "error");
           info.revert();
           return;
         }
-
         Utils.showToast?.("🔄 Đang cập nhật thời gian...", "info");
 
         const updateData = {
@@ -1425,7 +1417,6 @@
         : "N/A";
       const endStr = event.end ? event.end.toLocaleString("vi-VN") : "N/A";
 
-      // Format thời gian cho cảnh báo
       const dateStr = event.start
         ? event.start.toLocaleDateString("vi-VN")
         : "";
@@ -1600,7 +1591,6 @@
       </div>
     </div>`;
 
-      // Remove old modal
       document.getElementById("eventDetailModal")?.remove();
       document.body.insertAdjacentHTML("beforeend", modalHtml);
 
@@ -1614,16 +1604,13 @@
       document.getElementById("saveEventStatus").onclick = () =>
         this._updateEventStatus(event);
 
-      // Real-time checkbox completion - AUTO SAVE when clicked
       const completionCheckbox = document.getElementById(
         "eventCompletedCheckbox"
       );
       completionCheckbox.addEventListener("change", async () => {
-        // Auto-save immediately without waiting for button click
         this._updateEventStatus(event);
       });
 
-      // Allow Ctrl+S to save quickly
       const handleSaveShortcut = (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "s") {
           e.preventDefault();
@@ -1633,7 +1620,6 @@
       };
       document.addEventListener("keydown", handleSaveShortcut);
 
-      // Xử lý xóa với xác nhận kép
       const deleteBtn = document.getElementById("showDeleteConfirmBtn");
       const deleteConfirmation = document.getElementById("deleteConfirmation");
       const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
@@ -1652,7 +1638,6 @@
         confirmDeleteBtn.disabled = true;
       });
 
-      // Kiểm tra input xác nhận
       deleteConfirmInput.addEventListener("input", (e) => {
         const inputText = e.target.value.trim();
         const eventTitleShort = event.title.substring(0, 20);
@@ -1668,14 +1653,12 @@
         }
       });
 
-      // Xác nhận xóa
       confirmDeleteBtn.addEventListener("click", () => {
         if (deleteConfirmInput.value.trim() === event.title.substring(0, 20)) {
           this._deleteEvent(event);
         }
       });
 
-      // Cho phép Enter để xác nhận
       deleteConfirmInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter" && !confirmDeleteBtn.disabled) {
           confirmDeleteBtn.click();
@@ -1683,9 +1666,104 @@
       });
     },
 
-    // ==========================================================
-    // UPDATE EVENT STATUS - REAL-TIME WITH IMMEDIATE FEEDBACK (ĐÃ SỬA)
-    // ==========================================================
+    async _deleteEvent(event) {
+      const eventId = event.id;
+
+      if (!eventId || eventId.toString().startsWith("temp-")) {
+        Utils.showToast?.("⚠️ Sự kiện chưa được lưu vào database", "warning");
+        document.getElementById("eventDetailModal")?.remove();
+        event.remove();
+        return;
+      }
+
+      try {
+        const confirmBtn = document.getElementById("confirmDeleteBtn");
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin mr-2"></i> Đang xóa...';
+        confirmBtn.disabled = true;
+
+        const result = await Utils.makeRequest(
+          `/api/calendar/events/${eventId}`,
+          "DELETE"
+        );
+
+        if (!result.success) {
+          if (
+            (result.message && result.message.includes("liên quan")) ||
+            result.message.includes("task")
+          ) {
+            throw new Error(
+              "Sự kiện đang liên kết với công việc. Vui lòng kiểm tra lại."
+            );
+          }
+          throw new Error(result.message || "Xóa sự kiện thất bại");
+        }
+
+        const modal = document.getElementById("eventDetailModal");
+        if (modal) {
+          modal.style.animation = "fadeOut 0.3s ease forwards";
+          setTimeout(() => modal.remove(), 300);
+        }
+
+        const eventEl =
+          document.querySelector(`[data-event-id="${eventId}"]`) ||
+          document.querySelector(
+            `.fc-event[title*="${event.title.substring(0, 20)}"]`
+          );
+
+        if (eventEl) {
+          console.log(`🎯 Found event element with ID ${eventId} for deletion`);
+          eventEl.style.animation = "shrinkOut 0.5s ease forwards";
+          eventEl.style.transformOrigin = "center";
+          setTimeout(() => {
+            event.remove();
+          }, 500);
+        } else {
+          console.warn(
+            `⚠️ Event element with ID ${eventId} not found in DOM, removing from calendar`
+          );
+          event.remove();
+        }
+
+        Utils.showToast?.("🗑️ Đã xóa sự kiện thành công!", "success");
+
+        console.log(`✅ Event ${eventId} deleted successfully`);
+
+        document.dispatchEvent(
+          new CustomEvent("eventDeleted", {
+            detail: { eventId, eventTitle: event.title },
+          })
+        );
+      } catch (error) {
+        console.error("❌ Error deleting event:", error);
+
+        const confirmBtn = document.getElementById("confirmDeleteBtn");
+        if (confirmBtn) {
+          confirmBtn.innerHTML =
+            '<i class="fas fa-skull-crossbones mr-2"></i> Xóa vĩnh viễn';
+          confirmBtn.disabled = false;
+        }
+
+        let errorMessage = "Lỗi khi xóa sự kiện";
+        if (
+          error.message.includes("liên kết") ||
+          error.message.includes("task")
+        ) {
+          errorMessage = "⛔ " + error.message;
+        } else if (
+          error.message.includes("database") ||
+          error.message.includes("ID hợp lệ")
+        ) {
+          errorMessage = "⚠️ " + error.message;
+        } else {
+          errorMessage = error.message || "Lỗi khi xóa sự kiện";
+        }
+
+        Utils.showToast?.(errorMessage, "error");
+      }
+    },
+
     async _updateEventStatus(event) {
       try {
         console.log("🔍 Updating event status:", {
@@ -1703,15 +1781,37 @@
         const completed = checkbox.checked;
         console.log(`📝 Event ${event.id}: Setting completed to ${completed}`);
 
-        // Store original state for rollback
         const wasCompleted = event.extendedProps.completed;
 
-        // Immediate visual feedback
         const saveBtn = document.getElementById("saveEventStatus");
         const originalBtnText = saveBtn.innerHTML;
         saveBtn.disabled = true;
         saveBtn.innerHTML =
           '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
+        const eventEls = document.querySelectorAll(
+          `[data-event-id="${
+            event.id
+          }"], .fc-event[title*="${event.title.substring(0, 20)}"]`
+        );
+        // ✅ CHỈ TÌM EVENT CỤ THỂ THEO ID - KHÔNG DÙNG TITLE
+        const eventEl = document.querySelector(`[data-event-id="${event.id}"]`);
+
+        if (!eventEl) {
+          console.warn(`⚠️ Could not find event element with ID ${event.id}`);
+        } else {
+          console.log(`🎨 Found event element for ID ${event.id}`);
+
+          // Apply visual changes immediately
+          if (completed) {
+            eventEl.classList.add("event-completed", "completing");
+            eventEl.style.textDecoration = "line-through";
+            eventEl.style.opacity = "0.6";
+          } else {
+            eventEl.classList.remove("event-completed", "completing");
+            eventEl.style.textDecoration = "none";
+            eventEl.style.opacity = "1";
+          }
+        }
 
         // ✅ Gửi request với field đúng
         const updateData = {
@@ -1732,9 +1832,6 @@
         console.log("📥 Response:", res);
 
         if (res.success) {
-          console.log("✅ Event status updated successfully");
-
-          // Update event state in FullCalendar
           event.setExtendedProp("completed", completed);
 
           // Re-render the event to apply CSS changes
@@ -1761,8 +1858,6 @@
                 '<i class="fas fa-clock"></i> Chưa hoàn thành';
             }
           }
-
-          // Show success toast
           Utils.showToast?.(
             completed
               ? "✅ Đã hoàn thành công việc!"
@@ -1770,31 +1865,24 @@
             "success"
           );
 
-          // Dispatch event to notify salary manager and other components
-          document.dispatchEvent(
-            new CustomEvent("eventCompleted", {
-              detail: {
-                eventId: event.id,
-                title: event.title,
-                completed: completed,
-                taskId: event.extendedProps?.taskId,
-              },
-            })
-          );
-          console.log("📢 Dispatched eventCompleted event");
-
-          // Restore button
           saveBtn.disabled = false;
           saveBtn.innerHTML = originalBtnText;
-
-          // Close modal after short delay
           setTimeout(() => {
             document.getElementById("eventDetailModal")?.remove();
           }, 600);
         } else {
-          console.error("❌ Update failed:", res.message);
+          eventEls.forEach((el) => {
+            if (wasCompleted) {
+              el.classList.add("event-completed");
+              el.style.textDecoration = "line-through";
+              el.style.opacity = "0.6";
+            } else {
+              el.classList.remove("event-completed");
+              el.style.textDecoration = "none";
+              el.style.opacity = "1";
+            }
+          });
 
-          // Restore button and checkbox
           saveBtn.disabled = false;
           saveBtn.innerHTML = originalBtnText;
           checkbox.checked = wasCompleted;
@@ -1809,7 +1897,6 @@
           "error"
         );
 
-        // Restore button
         const saveBtn = document.getElementById("saveEventStatus");
         if (saveBtn) {
           saveBtn.disabled = false;

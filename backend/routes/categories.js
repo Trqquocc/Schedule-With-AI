@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 426072f71e0530329486d23943d72eac896d8ba1
 const express = require("express");
 const router = express.Router();
 const { dbPoolPromise, sql } = require("../config/database");

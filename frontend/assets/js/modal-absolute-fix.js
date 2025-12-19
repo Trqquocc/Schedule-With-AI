@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -67,7 +65,6 @@
     }
 
     if (body) {
-
       const bodyHeight = modalHeight - 80 - 80;
       body.style.height = `${bodyHeight}px`;
       body.style.minHeight = `${bodyHeight}px`;

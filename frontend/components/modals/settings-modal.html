@@ -11,7 +11,6 @@
   </div>
 
   <div class="space-y-4">
-
     <div class="bg-gray-50 p-4 rounded-lg">
       <div class="flex items-center space-x-3">
         <div
@@ -27,7 +26,6 @@
     </div>
 
     <div class="space-y-2">
-
       <button
         id="updateProfileBtn"
         class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
@@ -83,7 +81,6 @@
     <div class="border-t border-gray-200 my-4"></div>
 
     <div class="space-y-2">
-
       <button
         class="w-full text-left p-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
       >
@@ -114,7 +111,6 @@
 </div>
 
 <style>
-  /* Additional styles for settings modal */
   .settings-option {
     transition: all 0.2s ease;
   }
@@ -125,9 +121,7 @@
 </style>
 
 <script>
-  // Initialize settings modal interactions
   document.addEventListener("DOMContentLoaded", function () {
-    // Add hover effects programmatically
     const settingButtons = document.querySelectorAll(
       "#settingsModal button:not(#closeSettingsBtn)"
     );
@@ -141,21 +135,17 @@
       });
     });
 
-    // Handle update profile button
     const updateProfileBtn = document.getElementById("updateProfileBtn");
     if (updateProfileBtn) {
       updateProfileBtn.addEventListener("click", function () {
         console.log("Navigate to profile section");
-        // This will be handled by the main ModalManager
       });
     }
 
-    // Handle logout button
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", function () {
         console.log("Logout requested");
-        // This will be handled by the main ModalManager
       });
     }
   });

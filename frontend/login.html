@@ -1,102 +1,100 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Đăng nhập - Quản lý công việc</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="login.css">
-        <link rel="stylesheet" href="assets/css/login.css" />
-</head>
-<body>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="login.css" />
+    <link rel="stylesheet" href="assets/css/login.css" />
+  </head>
+  <body>
     <div class="auth-container">
-
-        <div class="welcome-panel welcome-panel-left">
-            <div class="welcome-content">
-                <h1 class="welcome-title">Hello, Welcome!</h1>
-                <a href="register.html" class="switch-btn">
-                    Đăng kí
-                </a>
-            </div>
+      <div class="welcome-panel welcome-panel-left">
+        <div class="welcome-content">
+          <h1 class="welcome-title">Hello, Welcome!</h1>
+          <a href="register.html" class="switch-btn"> Đăng kí </a>
         </div>
+      </div>
 
-        <div class="form-panel">
-            <div class="form-wrapper">
-                <h1 class="form-title">Đăng nhập</h1>
+      <div class="form-panel">
+        <div class="form-wrapper">
+          <h1 class="form-title">Đăng nhập</h1>
 
-                <form id="loginForm" method="post">
-                    <div class="input-group">
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            required
-                            autocomplete="username"
-                            placeholder="Tên Đăng Nhập"
-                        />
-                    </div>
-
-                    <div class="input-group">
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            required
-                            autocomplete="current-password"
-                            placeholder="Mật khẩu"
-                        />
-                    </div>
-
-                    <button type="submit" class="submit-btn">
-                        Đăng nhập
-                    </button>
-                </form>
-
-                <div class="mobile-link">
-                    <p>
-                        Chưa có tài khoản?
-                        <a href="register.html">Đăng ký ngay</a>
-                    </p>
-                </div>
-
-                <div id="loading" class="loading hidden">
-                    <div class="spinner"></div>
-                    <p>Đang đăng nhập...</p>
-                </div>
+          <form id="loginForm" method="post">
+            <div class="input-group">
+              <input
+                type="text"
+                id="username"
+                name="username"
+                required
+                autocomplete="username"
+                placeholder="Tên Đăng Nhập"
+              />
             </div>
+
+            <div class="input-group">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Mật khẩu"
+              />
+            </div>
+
+            <button type="submit" class="submit-btn">Đăng nhập</button>
+          </form>
+
+          <div class="mobile-link">
+            <p>
+              Chưa có tài khoản?
+              <a href="register.html">Đăng ký ngay</a>
+            </p>
+          </div>
+
+          <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Đang đăng nhập...</p>
+          </div>
         </div>
+      </div>
     </div>
 
     <script src="assets/js/utils.js"></script>
     <script src="assets/js/auth.js"></script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const loginForm = document.getElementById("loginForm");
-            const loading = document.getElementById("loading");
+      document.addEventListener("DOMContentLoaded", function () {
+        const loginForm = document.getElementById("loginForm");
+        const loading = document.getElementById("loading");
 
-            loginForm.addEventListener("submit", async function (e) {
-                e.preventDefault();
+        loginForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
 
-                const username = document.getElementById("username").value;
-                const password = document.getElementById("password").value;
+          const username = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
 
-                if (!username || !password) {
-                    alert("Vui lòng nhập đầy đủ thông tin!");
-                    return;
-                }
+          if (!username || !password) {
+            alert("Vui lòng nhập đầy đủ thông tin!");
+            return;
+          }
 
-                try {
-                    loading.classList.remove("hidden");
-                    await AuthManager.login(username, password);
-                } catch (error) {
-                    alert("Đăng nhập thất bại: " + error.message);
-                } finally {
-                    loading.classList.add("hidden");
-                }
-            });
+          try {
+            loading.classList.remove("hidden");
+            await AuthManager.login(username, password);
+          } catch (error) {
+            alert("Đăng nhập thất bại: " + error.message);
+          } finally {
+            loading.classList.add("hidden");
+          }
         });
+      });
     </script>
-</body>
+  </body>
 </html>

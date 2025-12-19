@@ -1,5 +1,3 @@
-
-
 #aiSuggestionModal {
   display: none !important;
   position: fixed !important;
@@ -49,7 +47,6 @@
 }
 
 #aiSuggestionModal .modal-content {
-
   width: 800px !important;
   max-width: 90vw !important;
   min-width: 600px !important;

@@ -1,14 +1,10 @@
-
-
 <div class="modal-overlay" data-modal-close></div>
 
 <div class="modal-content-wrapper">
-
   <div
     class="modal-content bg-white rounded-lg shadow-xl"
     id="createTaskModalContent"
   >
-
     <div
       class="modal-header sticky top-0 z-10 bg-white border-b px-6 py-4 flex justify-between items-center"
     >
@@ -24,7 +20,6 @@
 
     <div class="modal-body p-6">
       <form id="createTaskForm" class="space-y-6">
-
         <div>
           <label
             for="taskTitle"
@@ -75,7 +70,6 @@
             id="category-container"
             class="border border-gray-300 rounded-md p-3 min-h-[60px] max-h-[200px] overflow-y-auto bg-gray-50"
           >
-
             <div class="text-gray-500 text-center py-4" id="category-loading">
               <i class="fas fa-spinner fa-spin mr-2"></i>
               Đang tải danh mục...
@@ -321,9 +315,7 @@
         </div>
       </form>
     </div>
-
   </div>
-
 </div>
 
 <script>
@@ -333,11 +325,9 @@
     const categoryModal = document.getElementById("createCategoryModal");
     if (!categoryModal) return;
 
-    // Đảm bảo modal luôn ẩn khi load
     categoryModal.style.display = "none";
     categoryModal.classList.add("hidden");
 
-    // Log để debug
     setTimeout(() => {
       console.log("🛡️ Guard check - Category modal state:");
       console.log("  - Display style:", categoryModal.style.display);
@@ -351,12 +341,7 @@
       );
     }, 500);
   })();
-  // ============================================
-  // HÀM CHÍNH - HOÀN CHỈNH
-  // ============================================
 
-  // 1. HÀM LOAD CATEGORIES (BẠN ĐANG THIẾU)
-  // 1. Hàm format datetime
   function formatDateTime(date) {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -367,7 +352,6 @@
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
-  // 2. Hàm calculate end time
   function calculateEndTime() {
     const startInput = document.getElementById("taskFixedStartTime");
     const durationInput = document.getElementById("taskFixedDuration");
@@ -397,7 +381,6 @@
         console.error(
           ` [CREATE-TASK-MODAL] Category container not found (retry ${loadCategoriesRetries}/${MAX_RETRIES})...`
         );
-        // Retry sau 100ms nếu container chưa load
         await new Promise((resolve) => setTimeout(resolve, 100));
         return loadCategoriesForModal();
       } else {
@@ -408,10 +391,8 @@
       }
     }
 
-    // Reset retries counter khi thành công tìm container
     loadCategoriesRetries = 0;
 
-    // Hiển thị loading
     container.innerHTML = `
       <div id="category-loading" class="text-gray-500 text-center py-4">
         <i class="fas fa-spinner fa-spin mr-2"></i>
@@ -467,7 +448,6 @@
     const container = document.getElementById("category-container");
     if (!container) return;
 
-    // XÓA loading state
     const loadingEl = document.getElementById("category-loading");
     if (loadingEl) loadingEl.remove();
 
@@ -506,7 +486,6 @@
     );
   }
 
-  // 4. HÀM XỬ LÝ TAG
   function getTagsFromInput() {
     const tagInput = document.getElementById("taskTag");
     if (!tagInput) return [];
@@ -527,10 +506,8 @@
     return selectedRadio ? selectedRadio.value : null;
   }
 
-  // 3. HÀM HIỂN THỊ DIALOG XÁC NHẬN
   function showConfirmDialog(title, message) {
     return new Promise((resolve) => {
-      // Kiểm tra xem có SweetAlert2 không
       if (typeof Swal !== "undefined") {
         Swal.fire({
           title: title,
@@ -545,7 +522,6 @@
           resolve(result.isConfirmed);
         });
       } else {
-        // Fallback sử dụng confirm
         const result = confirm(
           `${title}\n\n${message.replace(/<[^>]*>/g, "")}`
         );
@@ -554,15 +530,12 @@
     });
   }
 
-  // 3. HÀM HIỂN THỊ THÔNG BÁO
   function showNotification(message, type = "info") {
-    // Kiểm tra xem đã có Utils chưa
     if (window.Utils && typeof Utils.showToast === "function") {
       Utils.showToast(message, type);
       return;
     }
 
-    // Fallback: Tạo toast đơn giản
     const toast = document.createElement("div");
     toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-0 ${
       type === "success"
@@ -681,7 +654,6 @@
       createCategoryBtn._clickHandler
     );
 
-    // Đóng modal category
     const closeModal = () => {
       categoryModal.classList.add("hidden");
       categoryModal.style.display = "none";
@@ -702,7 +674,6 @@
       window.closeCategoryModal = closeModal;
     }
 
-    // Xử lý đóng bằng nút X
     const closeCategoryBtn = document.getElementById("closeCategoryModalBtn");
     const cancelCategoryBtn = document.getElementById("cancelCategoryBtn");
 
@@ -724,7 +695,6 @@
       });
     }
 
-    // Xử lý đóng bằng click overlay
     if (categoryOverlay) {
       categoryOverlay.addEventListener("click", function (e) {
         e.preventDefault();
@@ -734,17 +704,13 @@
       });
     }
 
-    // Xử lý click ra ngoài modal
     categoryModal.addEventListener("click", function (e) {
-      // Chỉ đóng nếu click vào overlay (self)
       if (e.target === this) {
         console.log("🎯 Category modal backdrop clicked");
         closeModal();
       }
     });
 
-    // Xử lý form category
-    // Submit form
     if (categoryForm) {
       categoryForm.addEventListener("submit", async function (e) {
         e.preventDefault();
@@ -788,10 +754,8 @@
             console.log(" Category created successfully");
             showNotification("Tạo danh mục thành công!", "success");
 
-            // Đóng modal danh mục
             closeModal();
 
-            // Reload categories vào form tạo công việc
             console.log("🔄 Reloading categories...");
             setTimeout(() => {
               loadCategoriesForModal();
@@ -816,7 +780,6 @@
       e.stopPropagation();
       console.log("🎯 Opening category modal via ModalManager...");
 
-      // Sử dụng ModalManager để mở modal
       if (window.ModalManager && ModalManager.showModalById) {
         ModalManager.showModalById("createCategoryModal");
       } else {
@@ -824,7 +787,6 @@
       }
     });
   }
-  // 7. HÀM ĐÓNG MODAL CHÍNH
   function closeMainModal() {
     console.log("🚪 [CREATE-TASK-MODAL] Closing modal...");
 
@@ -848,7 +810,6 @@
     console.log(" Modal closed and form reset");
   }
 
-  // 8. HÀM KHỞI TẠO MODAL CHÍNH
   function initCreateTaskModal() {
     console.log(" [CREATE-TASK-MODAL] Initializing modal...");
 
@@ -867,17 +828,12 @@
     // Load danh mục
     console.log("   📂 Loading categories...");
     loadCategoriesForModal();
-
-    // Setup nút tạo danh mục mới
     setupCategoryButton();
 
     // Xử lý form tạo task - gọi mỗi lần để reset event listeners
     handleCreateTaskForm();
-
-    // Xử lý toggle thời gian cố định
     handleFixedTimeToggle();
 
-    // Xử lý nút đóng/hủy
     const closeBtn = document.getElementById("closeCreateTaskBtn");
     const cancelBtn = document.getElementById("cancelCreateTaskBtn");
     const modalOverlay = document.querySelector(
@@ -906,7 +862,6 @@
     if (modalOverlay)
       modalOverlay.addEventListener("click", modalOverlay._overlayHandler);
 
-    // Hoặc thêm riêng event listener:
     document.addEventListener("modalClosed", function (e) {
       if (e.detail && e.detail.modalId === "createTaskModal") {
         resetFormToCreateMode();
@@ -914,7 +869,6 @@
       }
     });
 
-    // Set default datetime cho thời gian cố định
     const startTimeInput = document.getElementById("taskFixedStartTime");
     if (startTimeInput) {
       const now = new Date();
@@ -929,13 +883,11 @@
   function loadTaskDataIntoForm(taskData) {
     console.log(" Loading task data into form:", taskData);
 
-    // Đổi tiêu đề modal thành "Chỉnh sửa công việc"
     const modalTitle = document.querySelector("#createTaskModalContent h2");
     if (modalTitle) {
       modalTitle.textContent = "Chỉnh sửa công việc";
     }
 
-    // Đổi text nút submit thành "Cập nhật"
     const submitBtn = document.querySelector(
       "#createTaskForm button[type='submit'] .submit-text"
     );
@@ -943,7 +895,6 @@
       submitBtn.textContent = "Cập nhật";
     }
 
-    // Điền dữ liệu vào form
     if (taskData.TieuDe) {
       document.getElementById("taskTitle").value = taskData.TieuDe;
     }
@@ -981,7 +932,6 @@
       document.getElementById("taskTag").value = taskData.Tag;
     }
 
-    // Xử lý danh mục
     if (taskData.MaLoai) {
       setTimeout(() => {
         const categoryRadio = document.querySelector(
@@ -990,10 +940,9 @@
         if (categoryRadio) {
           categoryRadio.checked = true;
         }
-      }, 500); // Đợi categories load xong
+      }, 500);
     }
 
-    // Xử lý thời gian cố định
     if (taskData.CoThoiGianCoDinh) {
       document.getElementById("taskFixedTime").checked = true;
       document.getElementById("fixedTimeFields").classList.remove("hidden");
@@ -1015,7 +964,6 @@
       }
     }
 
-    // Lưu taskId để biết đang edit task nào
     window.currentEditingTaskId = taskData.MaCongViec || taskData.ID;
     console.log(
       " Task data loaded into form. Editing task ID:",
@@ -1023,7 +971,6 @@
     );
   }
 
-  // HÀM XỬ LÝ FORM UPDATE (sửa form submit handler)
   async function handleUpdateTaskForm(taskId, formData) {
     try {
       const token = localStorage.getItem("auth_token");
@@ -1047,27 +994,22 @@
       if (result.success) {
         showNotification("Cập nhật công việc thành công!", "success");
         triggerModalSidebarRefresh();
-        // Hiển thị overlay thành công
         if (window.WorkManager && window.WorkManager.showSuccessOverlay) {
           window.WorkManager.showSuccessOverlay("Cập nhật thành công!");
         }
 
-        // Đóng modal
         closeMainModal();
 
-        // Gọi hàm reload tasks
         if (window.WorkManager && window.WorkManager.reload) {
           window.WorkManager.reload();
         }
 
-        // Dispatch event
         window.dispatchEvent(
           new CustomEvent("taskUpdated", {
             detail: { taskId: taskId },
           })
         );
 
-        // Reset editing state
         window.currentEditingTaskId = null;
       } else {
         showNotification(
@@ -1169,7 +1111,6 @@
         ` [CREATE-TASK-MODAL] ${isEditing ? "Updating" : "Creating"} task...`
       );
 
-      // Hiển thị loading
       const submitBtn = form.querySelector("button[type='submit']");
       const submitText = submitBtn.querySelector(".submit-text");
       const submitLoading = submitBtn.querySelector(".submit-loading");
@@ -1181,7 +1122,6 @@
       }
 
       try {
-        // Lấy dữ liệu từ form (giữ nguyên phần này)
         const formData = {
           TieuDe: document.getElementById("taskTitle").value.trim(),
           MoTa: document.getElementById("taskDescription").value.trim(),
@@ -1206,7 +1146,6 @@
           MaLoai: getSelectedCategoryId(),
         };
 
-        // Validate dữ liệu
         if (!formData.TieuDe) {
           showNotification("Vui lòng nhập tiêu đề công việc", "error");
           throw new Error("Title is required");
@@ -1250,7 +1189,6 @@
           const duration =
             parseInt(document.getElementById("taskFixedDuration").value) || 60;
 
-          // Tính thời gian kết thúc
           const start = new Date(startTime);
           const end = new Date(start.getTime() + duration * 60000);
           formData.GioKetThucCoDinh = end.toISOString().slice(0, 16);
@@ -1269,12 +1207,9 @@
           formData
         );
 
-        // GỌI HÀM KHÁC NHAU CHO CREATE VÀ UPDATE
         if (isEditing) {
-          // Gọi hàm update
           await handleUpdateTaskForm(window.currentEditingTaskId, formData);
         } else {
-          // Gọi hàm create (giữ nguyên phần cũ)
           const token = localStorage.getItem("auth_token");
           if (!token) {
             showNotification("Vui lòng đăng nhập lại", "error");
@@ -1296,7 +1231,6 @@
           if (result.success) {
             showNotification("Tạo công việc thành công!", "success");
 
-            // Hiển thị overlay thành công
             if (window.WorkManager && window.WorkManager.showSuccessOverlay) {
               window.WorkManager.showSuccessOverlay("Tạo mới thành công!");
             }
@@ -1309,7 +1243,6 @@
               window.WorkManager.reload();
             }
 
-            // Dispatch event
             window.dispatchEvent(
               new CustomEvent("taskCreated", {
                 detail: { task: result.data },
@@ -1336,7 +1269,6 @@
           showNotification("Lỗi kết nối máy chủ", "error");
         }
       } finally {
-        // Ẩn loading
         if (submitText && submitLoading) {
           submitText.classList.remove("hidden");
           submitLoading.classList.add("hidden");
@@ -1350,7 +1282,6 @@
     console.log(" Form submit handler attached");
   }
 
-  // HÀM RESET FORM VỀ TRẠNG THÁI TẠO MỚI
   function resetFormToCreateMode() {
     console.log("🔄 [CREATE-TASK-MODAL] Resetting form to create mode...");
 
@@ -1376,13 +1307,11 @@
         priorityInput.value = "2";
       }
 
-      // Reset tiêu đề modal
       const modalTitle = document.querySelector("#createTaskModalContent h2");
       if (modalTitle) {
         modalTitle.textContent = "Tạo công việc mới";
       }
 
-      // Reset nút submit
       const submitBtn = document.querySelector(
         "#createTaskForm button[type='submit'] .submit-text"
       );
@@ -1390,7 +1319,6 @@
         submitBtn.textContent = "Tạo công việc";
       }
 
-      // Reset editing state
       window.currentEditingTaskId = null;
 
       // Clear any error messages
@@ -1407,7 +1335,6 @@
   function triggerModalSidebarRefresh() {
     console.log("📢 Modal: Triggering sidebar refresh");
 
-    // Dispatch event
     const event = new CustomEvent("task-changed", {
       detail: {
         action: "refresh",
@@ -1417,7 +1344,6 @@
     });
     document.dispatchEvent(event);
 
-    // Hoặc gọi trực tiếp
     if (typeof window.triggerSidebarRefresh === "function") {
       setTimeout(() => {
         window.triggerSidebarRefresh();
@@ -1425,15 +1351,10 @@
     }
   }
 
-  // ============================================
-  // XUẤT HÀM RA GLOBAL
-  // ============================================
-
   window.initCreateTaskModal = initCreateTaskModal;
   window.loadCategoriesForModal = loadCategoriesForModal;
   window.showNotification = showNotification;
 
-  // Debug function
   window.debugCategories = async function () {
     console.log(" === DEBUG CATEGORIES ===");
     const container = document.getElementById("category-container");
@@ -1463,7 +1384,6 @@
 
   console.log(" [CREATE-TASK-MODAL] Script loaded successfully");
 
-  // Tự động khởi tạo nếu modal đã hiển thị
   document.addEventListener("DOMContentLoaded", function () {
     const modalContent = document.getElementById("createTaskModalContent");
     if (modalContent && modalContent.style.display !== "none") {
@@ -1471,7 +1391,6 @@
     }
   });
 
-  // Lắng nghe sự kiện modal được mở
   document.addEventListener("modalOpened", function (e) {
     if (e.detail && e.detail.modalId === "createTaskModal") {
       console.log("📢 Modal opened event - initializing with delay");
@@ -1479,7 +1398,6 @@
     }
   });
 
-  // Khởi tạo modal khi DOM loaded
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       setTimeout(initCreateTaskModal, 200);
@@ -1488,17 +1406,12 @@
     setTimeout(initCreateTaskModal, 200);
   }
 
-  // Lắng nghe event modal opened từ ModalManager
   document.addEventListener("modalShown", function (e) {
     if (e.detail && e.detail.modalId === "createTaskModal") {
       console.log("🎯 Modal shown event - initializing");
       setTimeout(initCreateTaskModal, 100);
     }
   });
-
-  // ============================================
-  // GLOBAL CATEGORY MODAL FUNCTIONS
-  // ============================================
 
   window.closeCategoryModal = function () {
     console.log("🚪 Closing category modal...");
@@ -1508,17 +1421,14 @@
       return;
     }
 
-    // Đóng modal
     modal.classList.add("hidden");
     modal.style.display = "none";
     modal.style.visibility = "hidden";
     modal.style.opacity = "0";
 
-    // Reset form
     const form = document.getElementById("createCategoryForm");
     if (form) form.reset();
 
-    // Restore body scroll
     document.body.style.overflow = "";
 
     console.log(" Category modal closed successfully");
@@ -1532,27 +1442,21 @@
       return;
     }
 
-    // Mở modal
     modal.classList.remove("hidden");
     modal.style.display = "flex";
     modal.style.visibility = "visible";
     modal.style.opacity = "1";
 
-    // Prevent body scroll
     document.body.style.overflow = "hidden";
 
     console.log(" Category modal opened successfully");
   };
 
-  // Expose globally
   window.loadCategoriesForModal = loadCategoriesForModal;
   window.initCreateTaskModal = initCreateTaskModal;
 </script>
 
 <style>
-  /* ===== MODAL CONTAINER STYLES ===== */
-
-  /* Modal Content Wrapper - Fixed Layout */
   .modal-content-wrapper {
     position: fixed;
     top: 50%;
@@ -1567,7 +1471,6 @@
     z-index: 10050;
   }
 
-  /* Modal Content */
   #createTaskModalContent {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     border-radius: 12px;
@@ -1579,7 +1482,6 @@
     overflow: hidden;
   }
 
-  /* Modal Header */
   .modal-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -1613,7 +1515,6 @@
     transform: rotate(90deg);
   }
 
-  /* Modal Body - Scrollable */
   .modal-body {
     padding: 24px !important;
     overflow-y: auto;
@@ -1622,7 +1523,6 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Custom Scrollbar */
   .modal-body::-webkit-scrollbar {
     width: 8px;
   }
@@ -1640,13 +1540,11 @@
     background: #94a3b8;
   }
 
-  /* Firefox Scrollbar */
   .modal-body {
     scrollbar-color: #cbd5e1 transparent;
     scrollbar-width: thin;
   }
 
-  /* Form Groups */
   #createTaskForm .space-y-6 > div {
     margin-bottom: 18px;
   }
@@ -1687,7 +1585,6 @@
     min-height: 80px;
   }
 
-  /* Select Styling */
   #createTaskForm select {
     appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -1698,7 +1595,6 @@
     color: #1e293b;
   }
 
-  /* Category Container - Enhanced */
   #category-container {
     min-height: 80px;
     max-height: 200px;
@@ -1732,7 +1628,6 @@
     background: #94a3b8;
   }
 
-  /* Category Items */
   #category-container .flex {
     border: 2px solid #e2e8f0;
     border-radius: 8px;
@@ -1764,7 +1659,6 @@
     height: 18px;
   }
 
-  /* Create Category Button */
   #createNewCategoryBtn {
     color: #667eea;
     font-size: 12px;
@@ -1789,7 +1683,6 @@
     font-size: 10px;
   }
 
-  /* Submit Button Area */
   #createTaskForm .flex.justify-end {
     margin-top: 32px;
     padding-top: 24px;
@@ -1841,7 +1734,6 @@
     cursor: not-allowed;
   }
 
-  /* Loading Spinner */
   #createTaskForm .animate-spin {
     display: inline-block;
     animation: spin 1s linear infinite;
@@ -1856,7 +1748,6 @@
     }
   }
 
-  /* Modal Slide Animation */
   @keyframes modalSlideIn {
     from {
       opacity: 0;
@@ -1868,7 +1759,6 @@
     }
   }
 
-  /* Fixed Time Fields */
   #fixedTimeFields {
     animation: slideDown 0.3s ease-out;
     background: #f0f4ff;
@@ -1890,7 +1780,6 @@
     }
   }
 
-  /* Error Message */
   #createTaskForm .text-red-600 {
     color: #dc2626;
     font-size: 13px;
@@ -1900,7 +1789,6 @@
     gap: 6px;
   }
 
-  /* Success Overlay */
   #success-overlay {
     position: fixed;
     top: 0;
@@ -1969,7 +1857,6 @@
     font-size: 14px;
   }
 
-  /* Category Modal Loading */
   #category-loading {
     color: #94a3b8;
     font-size: 14px;
@@ -1980,7 +1867,6 @@
     font-size: 18px;
   }
 
-  /* Responsive */
   @media (max-width: 768px) {
     .modal-content-wrapper {
       max-width: 90%;
@@ -2024,7 +1910,7 @@
     #createTaskForm input,
     #createTaskForm textarea,
     #createTaskForm select {
-      font-size: 16px; /* Fix mobile zoom */
+      font-size: 16px;
     }
 
     .modal-header {

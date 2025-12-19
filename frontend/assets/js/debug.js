@@ -1,6 +1,10 @@
+<<<<<<< HEAD
 
 (function () {
 
+=======
+(function () {
+>>>>>>> 426072f71e0530329486d23943d72eac896d8ba1
   const originalLog = console.log;
   const originalWarn = console.warn;
   const originalError = console.error;

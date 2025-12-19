@@ -1,9 +1,7 @@
-<!-- pages/salary.html - Trang Tính lương & Thống kê -->
 <link rel="stylesheet" href="/frontend/assets/css/salary.css" />
 
 <div class="salary-page">
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <h1>Quản lý lương</h1>
             <div class="tabs">
@@ -12,9 +10,7 @@
             </div>
         </div>
 
-        <!-- Salary View -->
         <div id="salary-view">
-            <!-- Date Filter -->
             <div class="date-filter">
                 <label>Chọn khoảng thời gian:</label>
                 <input type="date" id="salary-from">
@@ -23,7 +19,6 @@
                 <button class="btn-apply" id="apply-salary-btn">Áp dụng</button>
             </div>
 
-            <!-- Main Content -->
             <div class="main-grid">
                 <div>
                     <div class="card">
@@ -32,7 +27,6 @@
                         </div>
                         <div class="card-body">
                             <div class="table-container" id="salary-table">
-                                <!-- Table will be inserted here -->
                             </div>
                             <div class="total-box">
                                 <div class="label">Tổng lương:</div>
@@ -69,9 +63,7 @@
             </div>
         </div>
 
-        <!-- Stats View -->
         <div id="stats-view" class="hidden">
-            <!-- Date Filter -->
             <div class="date-filter">
                 <label>Chọn khoảng thời gian:</label>
                 <input type="date" id="stats-from">
@@ -80,10 +72,8 @@
                 <button class="btn-apply" id="apply-stats-btn">Áp dụng</button>
             </div>
 
-            <!-- Main Content -->
             <div class="main-grid">
                 <div>
-                    <!-- Summary Cards -->
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-label">Tổng công việc</div>
@@ -95,7 +85,6 @@
                         </div>
                     </div>
 
-                    <!-- Charts -->
                     <div class="chart-container">
                         <div class="chart-title">Biểu đồ công việc theo ngày</div>
                         <canvas id="bar-chart" height="80"></canvas>

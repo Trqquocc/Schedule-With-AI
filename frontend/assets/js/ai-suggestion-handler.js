@@ -1,4 +1,3 @@
-
 (() => {
   "use strict";
 
@@ -18,7 +17,6 @@
     _isSubmitting: false,
 
     async initAIModal() {
-
       if (this._isModalInitialized) {
         console.log(" Modal already initialized, reloading tasks only...");
         try {
@@ -75,9 +73,7 @@
             reject(new Error("Modal not ready after maximum attempts"));
           } else {
             if (attempts % 10 === 0) {
-              console.log(
-                ` Waiting for modal... (${attempts}/${maxAttempts})`
-              );
+              console.log(` Waiting for modal... (${attempts}/${maxAttempts})`);
             }
             setTimeout(check, 100);
           }
@@ -199,8 +195,7 @@
           this.renderTasksToModal(tasks, taskList);
           console.log(" Tasks rendered to modal");
         } else {
-          console.error(" Task list element not found");
-
+          console.error("❌ Task list element not found");
           const taskListContainer = modal.querySelector(".task-list-container");
           if (taskListContainer) {
             const newTaskList = document.createElement("div");
@@ -279,7 +274,6 @@
 
       console.log(` Đã render ${tasks.length} tasks vào modal`);
     },
-
     escapeHtml(text) {
       const div = document.createElement("div");
       div.textContent = text;
@@ -370,14 +364,12 @@
       );
 
       taskItems.forEach((item) => {
-
         const newItem = item.cloneNode(true);
         item.parentNode.replaceChild(newItem, item);
 
         newItem.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-
           this.toggleTaskSelection(newItem);
         });
       });
@@ -519,7 +511,6 @@
 
     async handleFormSubmitAction() {
       try {
-
         const now = Date.now();
         if (!this._lastSubmitTime) this._lastSubmitTime = 0;
         const timeSinceLastSubmit = now - this._lastSubmitTime;
@@ -539,7 +530,6 @@
 
         const form = modal.querySelector("#aiSuggestionForm");
         if (!form) {
-
           const previewContainer = modal.querySelector(".ai-preview-container");
           if (previewContainer) {
             console.log(" Đang ở preview mode, không xử lý submit form");
@@ -1081,7 +1071,6 @@
         }
 
         try {
-
           const res = await Utils.makeRequest(
             this.API_ENDPOINTS.suggestSchedule,
             "POST",
@@ -1109,7 +1098,6 @@
           console.error(" Lỗi resubmit:", error);
           this.showError(error.message || "Lỗi gửi lại yêu cầu AI");
         } finally {
-
           if (resubmitBtn) {
             resubmitBtn.innerHTML =
               originalBtnHTML ||
@@ -1280,12 +1268,10 @@
           this.showError("Lỗi lưu lịch trình AI");
           return;
         }
-        console.log(
-          ` Saved ${saveResult.savedCount} suggestions to database`
-        );
+        console.log(` Saved ${saveResult.savedCount} suggestions to database`);
         console.log(` Deleted ${saveResult.deletedOld} old AI events`);
 
-        console.log(" Waiting 2000ms for DB transaction completion...");
+        console.log("⏳ Waiting 2000ms for DB transaction completion...");
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         console.log("🔄 Refreshing calendar from database...");
@@ -1302,7 +1288,7 @@
           return;
         }
 
-        this.showSuccess(` Đã áp dụng ${suggestions.length} lịch trình AI!`);
+        this.showSuccess(`✅ Đã áp dụng ${suggestions.length} lịch trình AI!`);
 
         setTimeout(() => {
           this.closeModal();
@@ -1548,7 +1534,6 @@
     async handleSuccessResult(result, formData) {
       console.log("AI thành công, hiển thị preview...");
       this.displaySuccessResults(result.data);
-
     },
 
     setDefaultDates() {

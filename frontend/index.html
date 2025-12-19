@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
   <style>
-    /* Ensure border-box sizing for accurate dimensions */
     #sidebar-container,
     #sidebar-container * {
       box-sizing: border-box !important;
@@ -55,13 +54,11 @@
     <link rel="stylesheet" href="assets/css/salary.css" />
 
     <style>
-      /*  Clean, modern styling */
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
       }
 
-      /* Loading screen */
       #auth-loading {
         position: fixed;
         inset: 0;
@@ -95,7 +92,6 @@
         display: block;
       }
 
-      /*  Hide ONLY icon elements until Font Awesome loads */
       body:not(.fa-loaded) i[class*="fa-"],
       body:not(.fa-loaded) span[class*="fa-"] {
         opacity: 0;
@@ -107,13 +103,11 @@
         transition: opacity 0.2s ease-in-out;
       }
 
-      /* Calendar height */
       #calendar {
         min-height: 600px;
         height: calc(100vh - 200px);
       }
 
-      /* Drag & drop */
       .fc-event-dragging {
         opacity: 0.7;
         cursor: move !important;
@@ -130,10 +124,8 @@
     </style>
   </head>
   <body>
-
     <script>
       (function forceSidebarEarly() {
-        // Create observer before sidebar is even loaded
         const style = document.createElement("style");
         style.innerHTML = `
           #sidebar-container {
@@ -168,11 +160,9 @@
     </div>
 
     <div id="main-app" class="flex min-h-screen">
-
       <div id="sidebar-container"></div>
 
       <div class="flex-1 flex flex-col" style="margin-left: 256px">
-
         <div class="flex-1 overflow-auto">
           <main id="schedule-section" class="section active"></main>
           <main id="work-section" class="section"></main>
@@ -225,7 +215,6 @@
     <script src="assets/js/ai-modal-quick-test.js"></script>
 
     <script src="assets/js/modal-force-display.js"></script>
-
     <script src="assets/js/modal-content-loader.js"></script>
 
     <script src="assets/js/modal-absolute-fix.js"></script>
@@ -255,12 +244,10 @@
         }
       };
 
-      // Run automatically after page loads
       window.addEventListener("load", () => {
         setTimeout(() => {
           console.log("\n=== AUTO DEBUG AFTER LOAD ===");
           window.debugSidebar();
-          // Also check computed styles of #sidebar-container itself
           const container = document.getElementById("sidebar-container");
           const containerStyles = window.getComputedStyle(container);
           console.log("\n=== CONTAINER COMPUTED STYLES ===");
@@ -291,7 +278,6 @@
             const start = Date.now();
 
             function check() {
-              // Test if FA renders icons
               const test = document.createElement("i");
               test.className = "fas fa-check";
               test.style.cssText = "position:absolute;left:-9999px;";
@@ -321,7 +307,6 @@
             check();
           }
 
-          // Start app
           waitForFA(() => {
             document.getElementById("auth-loading")?.remove();
             document.getElementById("main-app")?.classList.add("ready");

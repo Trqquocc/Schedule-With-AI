@@ -246,20 +246,16 @@
 
 <script>
   (function () {
-    console.log("Sidebar + Settings Modal loaded"); // KHAI BÁO PHẦN TỬ CHÍNH
+    console.log("Sidebar + Settings Modal loaded"); 
 
-    const settingsModal = document.getElementById("settingsModal"); // #tagnote:settingsModal
+    const settingsModal = document.getElementById("settingsModal");
     const modalContent = settingsModal.querySelector(".modal-content");
-    const openBtn = document.getElementById("settingsBtn"); // #tagnote:settingsBtn
-    const closeBtn = document.getElementById("closeSettingsModal"); // #tagnote:closeSettingsModal
-    const modalLogoutBtn = document.getElementById("modalLogoutBtn"); // #tagnote:modalLogoutBtn // KHAI BÁO MODAL XÁC NHẬN ĐĂNG XUẤT
-
-    const logoutConfirmModal = document.getElementById("logoutConfirmModal"); // #tagnote:logoutConfirmModal
-    const confirmLogoutBtn = document.getElementById("confirmLogoutBtn"); // #tagnote:confirmLogoutBtn
-    const cancelLogoutBtn = document.getElementById("cancelLogoutBtn"); // #tagnote:cancelLogoutBtn // Hàm cập nhật thông tin người dùng (dùng chung) #tagnote:updateUserInfo
-
-    function updateUserInfo(user) {
-      if (!user) return; // Sidebar
+    const openBtn = document.getElementById("settingsBtn"); 
+    const closeBtn = document.getElementById("closeSettingsModal"); 
+    const modalLogoutBtn = document.getElementById("modalLogoutBtn");
+    const logoutConfirmModal = document.getElementById("logoutConfirmModal");
+    const confirmLogoutBtn = document.getElementById("confirmLogoutBtn"); 
+    const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
 
       const userNameEl = document.querySelector(".user-name");
       if (userNameEl)
@@ -293,21 +289,18 @@
         )
           .charAt(0)
           .toUpperCase();
-    } // Hàm đặt section active #tagnote:setActiveSection
 
     function setActiveSection(section) {
       document.querySelectorAll(".nav-btn").forEach((btn) => {
         if (btn.dataset.section === section) {
-          // Thêm class active
           btn.classList.add("bg-gray-200", "text-gray-900", "font-medium");
           btn.classList.remove("text-gray-600", "hover:bg-gray-100");
         } else {
-          // Xóa class active
           btn.classList.remove("bg-gray-200", "text-gray-900", "font-medium");
           btn.classList.add("text-gray-600", "hover:bg-gray-100");
         }
       });
-    } // Load user khi mở trang #tagnote:DOMContentLoaded
+    } 
 
     document.addEventListener("DOMContentLoaded", () => {
       const userData = localStorage.getItem("user_data");
@@ -318,16 +311,15 @@
         } catch (e) {
           console.error("Lỗi parse user_data:", e);
         }
-      } // Đặt section mặc định active (Lịch trình)
+      } 
       setActiveSection("schedule");
-    }); // ĐÓNG MODAL CÀI ĐẶT CHUNG #tagnote:closeModal
+    }); 
 
     const closeModal = () => {
       modalContent.classList.replace("scale-100", "scale-95");
       modalContent.classList.replace("opacity-100", "opacity-0");
       setTimeout(() => settingsModal.classList.add("hidden"), 300);
-    }; // Mở modal Cài đặt #tagnote:openSettingsModal
-
+    }; 
     openBtn?.addEventListener("click", (e) => {
       e.preventDefault();
       settingsModal.classList.remove("hidden");
@@ -335,61 +327,56 @@
         modalContent.classList.replace("scale-95", "scale-100");
         modalContent.classList.replace("opacity-0", "opacity-100");
       });
-    }); // Gắn sự kiện Đóng Modal Cài đặt
+    }); 
 
     closeBtn?.addEventListener("click", closeModal);
     settingsModal.addEventListener("click", (e) => {
       if (e.target === settingsModal) closeModal();
-    }); // -------------------------------------------------------------- // LOGIC CHO MODAL XÁC NHẬN ĐĂNG XUẤT #tagnote:LOGOUT_LOGIC // -------------------------------------------------------------- // Hàm mở modal xác nhận đăng xuất #tagnote:openLogoutConfirmModal
+    });
     const openLogoutConfirmModal = (e) => {
-      e.preventDefault(); // ĐÓNG MODAL CÀI ĐẶT TRƯỚC (NẾU ĐANG MỞ)
+      e.preventDefault();
       if (!settingsModal.classList.contains("hidden")) {
         closeModal();
       }
       logoutConfirmModal.classList.remove("hidden");
-    }; // Hàm đóng modal xác nhận đăng xuất #tagnote:closeLogoutConfirmModal
+    }; 
 
     const closeLogoutConfirmModal = () => {
       logoutConfirmModal.classList.add("hidden");
-    }; // Hàm thực hiện đăng xuất (Chỉ chạy khi xác nhận) #tagnote:executeLogout
+    };
     const executeLogout = async () => {
-      // 1. Đóng modal xác nhận
       closeLogoutConfirmModal();
 
       try {
-        // 2. Gọi API Đăng xuất (nếu có Utils)
         if (typeof Utils !== "undefined") {
           await Utils.makeRequest("/api/auth/logout", "POST");
         }
       } catch (err) {
-        /* bỏ qua lỗi */
-      } // 3. Xóa dữ liệu local
+      } 
 
       localStorage.removeItem("auth_token");
       localStorage.removeItem("token");
-      localStorage.removeItem("user_data"); // 4. Thông báo (nếu có Utils)
-
+      localStorage.removeItem("user_data");
       if (typeof Utils !== "undefined") {
         Utils.showToast("Đã đăng xuất thành công", "success");
-      } // 5. Chuyển hướng
+      }
 
       setTimeout(() => (window.location.href = "/login.html"), 800);
-    }; // Gán sự kiện cho các nút ĐĂNG XUẤT (Sidebar và Modal Cài đặt) #tagnote:LOGOUT_BUTTON_LISTENERS
+    }; 
 
     document
-      .querySelector("[data-logout]") // Nút trong Sidebar
+      .querySelector("[data-logout]") 
       ?.addEventListener("click", openLogoutConfirmModal);
-    modalLogoutBtn?.addEventListener("click", openLogoutConfirmModal); // Nút trong Modal Cài đặt // Gán sự kiện cho nút HỦY (Đóng modal xác nhận)
+    modalLogoutBtn?.addEventListener("click", openLogoutConfirmModal);
 
     cancelLogoutBtn?.addEventListener("click", closeLogoutConfirmModal);
     logoutConfirmModal?.addEventListener("click", (e) => {
-      // Đóng khi click ra ngoài
       if (e.target === logoutConfirmModal) closeLogoutConfirmModal();
-    }); // Gán sự kiện cho nút XÁC NHẬN ĐĂNG XUẤT (Thực hiện logic đăng xuất)
+    });
 
-    confirmLogoutBtn?.addEventListener("click", executeLogout); // Export để dùng ở nơi khác
+    confirmLogoutBtn?.addEventListener("click", executeLogout);
 
-    window.updateSidebarUser = updateUserInfo; // Logic Navigation #tagnote:NAVIGATION_LOGIC
+    window.updateSidebarUser = updateUserInfo;
 
     const initNav = setInterval(() => {
       if (window.AppNavigation?.navigateToSection) {

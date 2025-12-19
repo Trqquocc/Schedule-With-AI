@@ -8,7 +8,6 @@
     },
 
     setupEventListeners() {
-
       const applyStatsBtn = document.getElementById("apply-stats-btn");
       if (applyStatsBtn) {
         applyStatsBtn.addEventListener("click", () => {
@@ -23,7 +22,6 @@
 
     async loadStatsWithDateRange(from, to) {
       try {
-
         const params = new URLSearchParams();
         if (from) params.append("from", from);
         if (to) params.append("to", to);
@@ -66,7 +64,6 @@
 
     async loadStats() {
       try {
-
         const statsResult = await Utils.makeRequest("/api/statistics", "GET");
 
         if (!statsResult.success || !statsResult.data) {
@@ -110,7 +107,6 @@
 
     async loadStatsLegacy() {
       try {
-
         const tasksResult = await Utils.makeRequest("/api/tasks", "GET");
         const tasks = tasksResult.data || [];
 
@@ -138,7 +134,6 @@
     },
 
     updateStatsUI(stats) {
-
       const elements = {
         "stats-total-tasks": stats.totalTasks,
         "stats-completed-tasks": stats.completedTasks,
@@ -164,7 +159,6 @@
     },
 
     renderCharts(stats) {
-
       if (typeof Chart === "undefined") {
         console.warn("Chart.js chưa được load");
         return;

@@ -1,12 +1,9 @@
-
-
 <div class="modal-overlay" data-modal-close></div>
 
 <div
   class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md"
   id="createCategoryModalContent"
 >
-
   <div
     class="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-b px-6 py-4 flex justify-between items-center rounded-t-lg"
   >
@@ -22,7 +19,6 @@
 
   <div class="p-6">
     <form id="createCategoryForm" class="space-y-4">
-
       <div id="categoryMessages"></div>
 
       <div>
@@ -81,7 +77,6 @@
 </div>
 
 <style>
-  /* Ensure modal displays when it should */
   #createCategoryModal.active .modal-content,
   #createCategoryModal.show .modal-content {
     display: block !important;
@@ -89,7 +84,6 @@
     opacity: 1 !important;
   }
 
-  /* Modal Container */
   #createCategoryModalContent {
     animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     max-width: 500px;
@@ -100,7 +94,6 @@
     z-index: 10051;
   }
 
-  /* Form Styles */
   #createCategoryForm input,
   #createCategoryForm textarea {
     width: 100%;
@@ -134,7 +127,6 @@
     font-size: 14px;
   }
 
-  /* Button Styles */
   #createCategoryForm button[type="button"],
   #createCategoryForm button[type="submit"] {
     padding: 10px 20px;
@@ -174,7 +166,6 @@
     cursor: not-allowed;
   }
 
-  /* Animation */
   @keyframes modalSlideIn {
     from {
       opacity: 0;
@@ -186,7 +177,6 @@
     }
   }
 
-  /* Messages */
   #categoryMessages {
     margin-bottom: 16px;
   }
@@ -227,7 +217,6 @@
   (function () {
     console.log(" [CREATE-CATEGORY-MODAL] Script loaded");
 
-    // Delay initialization until elements are available
     function initializeModal() {
       const form = document.getElementById("createCategoryForm");
       const closeBtn = document.getElementById("closeCategoryBtn");
@@ -244,7 +233,6 @@
 
       console.log(" [CREATE-CATEGORY-MODAL] Initializing...");
 
-      // Helper: Show message
       function showMessage(message, type = "success") {
         if (!messagesContainer) return;
         messagesContainer.innerHTML = "";
@@ -265,7 +253,6 @@
         }
       }
 
-      // Helper: Close modal
       function closeModal() {
         if (window.ModalManager && window.ModalManager.hideModalById) {
           window.ModalManager.hideModalById("createCategoryModal");
@@ -274,21 +261,18 @@
         if (messagesContainer) messagesContainer.innerHTML = "";
       }
 
-      // Handler: Close button
       closeBtn.addEventListener("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
         closeModal();
       });
 
-      // Handler: Cancel button
       cancelBtn.addEventListener("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
         closeModal();
       });
 
-      // Handler: Modal overlay
       const modal = document.getElementById("createCategoryModal");
       if (modal) {
         const overlay = modal.querySelector(".modal-overlay");
@@ -301,7 +285,6 @@
         }
       }
 
-      // Handler: Form submit
       form.addEventListener("submit", async function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -317,7 +300,6 @@
           return;
         }
 
-        // Show loading
         if (submitText && submitLoading) {
           submitText.classList.add("hidden");
           submitLoading.classList.remove("hidden");
@@ -362,19 +344,16 @@
 
           showMessage("Tạo danh mục thành công!", "success");
 
-          // Reload categories if function exists
           if (window.loadCategoriesForModal) {
             setTimeout(() => {
               window.loadCategoriesForModal();
             }, 500);
           }
 
-          // Close modal after delay
           setTimeout(() => {
             closeModal();
           }, 1000);
 
-          // Dispatch event for task modal to refresh
           document.dispatchEvent(
             new CustomEvent("categoryCreated", {
               detail: { category: result.data },
@@ -384,7 +363,6 @@
           console.error(" [CREATE-CATEGORY-MODAL] Error:", error);
           showMessage(error.message || "Lỗi kết nối máy chủ", "error");
         } finally {
-          // Hide loading
           if (submitText && submitLoading) {
             submitText.classList.remove("hidden");
             submitLoading.classList.add("hidden");
@@ -393,13 +371,11 @@
         }
       });
 
-      // Expose close function globally
       window.closeCategoryModal = closeModal;
 
       console.log(" [CREATE-CATEGORY-MODAL] Initialization complete");
     }
 
-    // Wait for DOM or init immediately
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", initializeModal);
     } else {

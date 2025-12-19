@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -9,7 +7,6 @@
   }
 
   window.ComponentLoader = {
-
     loadedComponents: new Set(),
     loadedScripts: new Set(),
     currentSection: null,
@@ -127,9 +124,7 @@
             console.error(` SIDEBAR LOADING FAILED:`, error);
             container.innerHTML = html;
           }
-        }
-
-        else if (containerId.includes("Modal")) {
+        } else if (containerId.includes("Modal")) {
           console.log(`🎭 Loading modal: ${containerId}`);
           const tempDiv = document.createElement("div");
           tempDiv.innerHTML = html;
@@ -152,7 +147,6 @@
 
               container.innerHTML = deepestModal.outerHTML;
             } else {
-
               container.innerHTML = nestedModal.outerHTML;
             }
 
@@ -161,7 +155,6 @@
               this.checkModalStructure(containerId);
             }, 50);
           } else {
-
             container.innerHTML = html;
           }
         } else {
@@ -200,7 +193,6 @@
           const newScript = document.createElement("script");
 
           if (script.src) {
-
             if (this.loadedScripts.has(script.src)) {
               console.log(`⏭️ Script already loaded: ${script.src}`);
               script.remove();
@@ -222,7 +214,6 @@
               document.head.appendChild(newScript);
             });
           } else {
-
             newScript.textContent = script.textContent;
             document.head.appendChild(newScript);
           }
@@ -233,7 +224,6 @@
         }
       }
     },
-
     async loadPageContent(sectionName) {
       console.log(`\n🔄 Loading section: ${sectionName}`);
 
@@ -258,7 +248,6 @@
 
       return true;
     },
-
     async loadSectionExtras(sectionName) {
       switch (sectionName) {
         case "schedule":
@@ -269,10 +258,8 @@
           break;
 
         case "ai":
-
           console.log(" AI section - no extras needed");
           break;
-
       }
     },
 
@@ -319,6 +306,12 @@
             ProfileManager.init();
           }
         },
+
+        settings: () => {
+          if (window.ProfileManager?.init) ProfileManager.init();
+          if (window.NotificationManager?.init) NotificationManager.init();
+          console.log("👤 Initialized managers for settings modal");
+        },
       };
 
       const initFn = initMap[sectionName];
@@ -337,7 +330,6 @@
       console.log(" ComponentLoader v3.0 - Initializing...\n");
 
       try {
-
         console.log(" Loading sidebar...");
         await this.loadComponent(
           "sidebar-container",
@@ -412,7 +404,6 @@
           await this.loadComponent(modal.id, modal.path, {
             executeScripts: true,
           });
-
           setTimeout(() => {
             this.fixNestedModals(modal.id);
           }, 100);
@@ -450,7 +441,6 @@
             const duplicate = modals[i];
 
             while (duplicate.firstChild) {
-
               if (duplicate.firstChild.id === id) {
                 duplicate.firstChild.remove();
                 continue;
@@ -585,7 +575,6 @@
 
   setTimeout(() => {
     if (window.ComponentLoader) {
-
       ComponentLoader.fixNestedModals("aiSuggestionModal");
     }
   }, 1000);

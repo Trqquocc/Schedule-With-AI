@@ -1,11 +1,9 @@
-// middleware/auth.js - CHỈ CẦN MỘT HÀM authenticateToken
 
 const jwt = require("jsonwebtoken");
 const { dbPoolPromise, sql } = require("../config/database");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware xác thực đồng bộ duy nhất
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -20,7 +18,6 @@ const authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Kiểm tra user tồn tại trong database
     const pool = await dbPoolPromise;
     const userCheck = await pool
       .request()

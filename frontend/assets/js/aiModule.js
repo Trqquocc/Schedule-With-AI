@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -26,7 +24,6 @@
     monthBtnId: "ai-cal-month-view",
 
     async init() {
-
       const aiSection = document.getElementById("ai-section");
       const isAISectionActive =
         aiSection &&
@@ -35,7 +32,6 @@
 
       if (!isAISectionActive) {
         console.log("⏭️ Not in AI section, delaying initialization...");
-
         this.shouldInitWhenActivated = true;
         return;
       }
@@ -100,13 +96,11 @@
     },
 
     setupVisibilityHandler() {
-
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
           const aiSection = document.getElementById("ai-section");
           if (aiSection && aiSection.style.display !== "none") {
             console.log("👀 Tab visible, refreshing AI calendar...");
-
             if (this.refreshTimeout) clearTimeout(this.refreshTimeout);
             this.refreshTimeout = setTimeout(() => {
               this.refreshFromDatabase();
@@ -168,7 +162,6 @@
           }
 
           const calendarEvents = events.map((ev, idx) => {
-
             const color =
               ev.Color || this.getPriorityColor(ev.priority) || "#8B5CF6";
 
@@ -312,9 +305,7 @@
 
         this.calendar.render();
 
-        console.log(
-          ` Added ${addedCount} new AI suggestions with task titles`
-        );
+        console.log(` Added ${addedCount} new AI suggestions with task titles`);
         return aiEvents;
       } catch (err) {
         console.error(" Error loading AI suggestions:", err);
@@ -326,7 +317,6 @@
       console.log(" Opening AI suggestion modal...");
 
       try {
-
         if (window.ModalManager && window.ModalManager.showModalById) {
           console.log(" Using ModalManager to show modal");
           window.ModalManager.showModalById("aiSuggestionModal");
@@ -403,7 +393,6 @@
         if (modal) {
           modal.classList.remove("active", "show");
           modal.classList.add("hidden");
-
           modal.style.display = "";
           modal.style.opacity = "";
           modal.style.visibility = "";
@@ -601,9 +590,7 @@
         existingEvents.forEach((event) => {
           try {
             event.remove();
-          } catch (e) {
-
-          }
+          } catch (e) {}
         });
 
         events.forEach((event) => {
@@ -621,14 +608,12 @@
       console.log("🆕 Creating new AI calendar");
 
       this.calendar = new FullCalendar.Calendar(containerEl, {
-
         headerToolbar: false,
         initialView: this.currentView,
         height: "100%",
         editable: false,
         selectable: false,
         events: events,
-
       });
 
       this.calendar.render();
@@ -641,7 +626,6 @@
       const originalNavigation = window.AppNavigation?.navigateToSection;
 
       if (originalNavigation) {
-
         window.AppNavigation.navigateToSection = function (sectionId) {
           console.log(
             `🧭 Navigating to ${sectionId}, preserving AI calendar...`
@@ -786,7 +770,6 @@
       Object.entries(controls).forEach(([id, handler]) => {
         const btn = document.getElementById(id);
         if (btn) {
-
           const newBtn = btn.cloneNode(true);
           btn.parentNode.replaceChild(newBtn, btn);
           newBtn.addEventListener("click", (e) => {
@@ -800,7 +783,6 @@
     },
 
     destroy() {
-
       const isAICalendar =
         this.calendarElementId && this.calendarElementId.includes("ai");
 
@@ -865,10 +847,7 @@
               try {
                 event.remove();
               } catch (e) {
-                console.warn(
-                  ` Failed to remove event ${event.id}:`,
-                  e.message
-                );
+                console.warn(` Failed to remove event ${event.id}:`, e.message);
               }
             });
             this.calendar.render();
@@ -894,7 +873,6 @@
         let addedCount = 0;
         aiEvents.forEach((event) => {
           try {
-
             const existingEvent = this.calendar.getEventById(event.id);
             if (!existingEvent) {
               this.calendar.addEvent(event);
@@ -1010,7 +988,6 @@
           this.init();
         }, 100);
       } else {
-
         console.log("🔄 Refreshing existing AI calendar...");
         setTimeout(() => {
           this.refreshFromDatabase();
@@ -1023,10 +1000,8 @@
       console.log("📌 Other section activated, preserving AI calendar");
 
       if (this.calendar) {
-
         const calendarEl = document.getElementById(this.calendarElementId);
         if (calendarEl) {
-
           calendarEl.style.opacity = "0.95";
           calendarEl.style.pointerEvents = "none";
         }
@@ -1062,7 +1037,6 @@
             reason: ev.reason || "",
             durationMinutes: ev.durationMinutes || 60,
             priority: ev.priority || "medium",
-
             originalColor: ev.Color || ev.color,
           },
         }));
@@ -1185,7 +1159,6 @@
 
       const aiCalendar = document.getElementById(this.calendarElementId);
       if (aiCalendar) {
-
         aiCalendar.style.opacity = "1";
         aiCalendar.style.pointerEvents = "auto";
         aiCalendar.style.position = "relative";

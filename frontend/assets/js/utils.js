@@ -1,50 +1,26 @@
-// frontend/assets/js/utils.js
 if (typeof window.Utils === "undefined") {
   window.Utils = {
     API_BASE: "http://localhost:3000",
 
-    /**
-     * Lưu trữ token trong localStorage
-     * @param {string} token - JWT token
-     */
     setToken(token) {
       if (token) {
         localStorage.setItem("auth_token", token);
       }
     },
 
-    /**
-     * Lấy token từ localStorage
-     * @returns {string|null} - Token hoặc null
-     */
     getToken() {
       return localStorage.getItem("auth_token");
     },
 
-    /**
-     * Xóa token và dữ liệu người dùng
-     */
     clearAuth() {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("user_data");
     },
 
-    /**
-     * Kiểm tra xem đã đăng nhập chưa
-     * @returns {boolean}
-     */
     isLoggedIn() {
       return !!this.getToken();
     },
 
-    /**
-     * Thực hiện request API với token tự động
-     * @param {string} endpoint - Đường dẫn API
-     * @param {string} method - HTTP method
-     * @param {object} data - Dữ liệu gửi đi
-     * @param {object} customHeaders - Headers tùy chỉnh
-     * @returns {Promise<object>} - Kết quả từ server
-     */
     async makeRequest(
       endpoint,
       method = "GET",
@@ -57,14 +33,12 @@ if (typeof window.Utils === "undefined") {
 
       const token = this.getToken();
 
-      // Headers mặc định
       const headers = {
         "Content-Type": "application/json",
         Accept: "application/json",
         ...customHeaders,
       };
 
-      // Thêm token nếu có
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
@@ -72,15 +46,13 @@ if (typeof window.Utils === "undefined") {
       const options = {
         method: method.toUpperCase(),
         headers,
-        credentials: "include", // Quan trọng cho session/cookie
+        credentials: "include",
       };
 
-      // Thêm body cho các method không phải GET/HEAD
       if (data && !["GET", "HEAD"].includes(method.toUpperCase())) {
         options.body = JSON.stringify(data);
       }
 
-      // Thêm query params cho GET request
       if (
         (method.toUpperCase() === "GET" || method.toUpperCase() === "DELETE") &&
         data
@@ -100,12 +72,10 @@ if (typeof window.Utils === "undefined") {
 
         const response = await fetch(url, options);
 
-        // Xử lý response không có nội dung
         if (response.status === 204) {
           return { success: true, message: "Thành công" };
         }
 
-        // Parse response text thành JSON
         let result = {};
         const text = await response.text();
 
@@ -122,11 +92,9 @@ if (typeof window.Utils === "undefined") {
           }
         }
 
-        // Xử lý lỗi token
         if (response.status === 401 || response.status === 403) {
           this.clearAuth();
 
-          // Chỉ redirect nếu không phải trang login
           if (!window.location.pathname.includes("login.html")) {
             this.showToast(
               response.status === 401
@@ -146,7 +114,6 @@ if (typeof window.Utils === "undefined") {
           };
         }
 
-        // Xử lý lỗi server khác
         if (!response.ok) {
           const errorMessage =
             result.message ||
@@ -156,7 +123,6 @@ if (typeof window.Utils === "undefined") {
           throw new Error(errorMessage);
         }
 
-        // Thêm thông tin status vào result nếu chưa có
         if (!result.status) {
           result.status = response.status;
         }
@@ -166,7 +132,6 @@ if (typeof window.Utils === "undefined") {
       } catch (err) {
         console.error("❌ Request failed:", err.message, err);
 
-        // Phân loại lỗi
         let userMessage = err.message;
         if (err.name === "TypeError" && err.message.includes("fetch")) {
           userMessage =
@@ -175,7 +140,6 @@ if (typeof window.Utils === "undefined") {
 
         this.showToast(userMessage, "error");
 
-        // Re-throw để có thể catch ở nơi gọi
         throw {
           success: false,
           message: userMessage,
@@ -184,40 +148,22 @@ if (typeof window.Utils === "undefined") {
       }
     },
 
-    /**
-     * Shortcut cho GET request
-     */
     async get(endpoint, params = null) {
       return this.makeRequest(endpoint, "GET", params);
     },
 
-    /**
-     * Shortcut cho POST request
-     */
     async post(endpoint, data = null) {
       return this.makeRequest(endpoint, "POST", data);
     },
 
-    /**
-     * Shortcut cho PUT request
-     */
     async put(endpoint, data = null) {
       return this.makeRequest(endpoint, "PUT", data);
     },
 
-    /**
-     * Shortcut cho DELETE request
-     */
     async delete(endpoint, data = null) {
       return this.makeRequest(endpoint, "DELETE", data);
     },
 
-    /**
-     * Upload file
-     * @param {string} endpoint - Đường dẫn API
-     * @param {FormData} formData - FormData chứa file
-     * @returns {Promise<object>}
-     */
     async uploadFile(endpoint, formData) {
       const token = this.getToken();
       const url = endpoint.startsWith("http")
@@ -246,13 +192,6 @@ if (typeof window.Utils === "undefined") {
       }
     },
 
-    /**
-     * Hiển thị thông báo toast
-     * @param {string} message - Nội dung thông báo
-     * @param {string} type - Loại thông báo: success, error, warning, info
-     * @param {number} duration - Thời gian hiển thị (ms)
-     */
-    // Cải thiện hàm showToast nếu cần
     showToast: function (message, type = "info") {
       const toastContainer =
         document.getElementById("toast-container") ||
@@ -291,7 +230,6 @@ if (typeof window.Utils === "undefined") {
 
       toastContainer.appendChild(toast);
 
-      // Auto remove after 3 seconds (5 seconds for success)
       const duration = type === "success" ? 5000 : 3000;
       setTimeout(() => {
         toast.classList.add("animate-fade-out");
@@ -305,15 +243,9 @@ if (typeof window.Utils === "undefined") {
       return toastId;
     },
 
-    /**
-     * Hiển thị confirm dialog
-     * @param {string} message - Nội dung confirm
-     * @param {string} title - Tiêu đề (optional)
-     * @returns {Promise<boolean>}
-     */
+
     confirm(message, title = "Xác nhận") {
       return new Promise((resolve) => {
-        // Tạo modal confirm
         const modal = document.createElement("div");
         modal.className =
           "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
@@ -349,19 +281,12 @@ if (typeof window.Utils === "undefined") {
         modal.querySelector("#confirm-cancel").onclick = () =>
           handleConfirm(false);
 
-        // Đóng khi click ra ngoài
         modal.onclick = (e) => {
           if (e.target === modal) handleConfirm(false);
         };
       });
     },
 
-    /**
-     * Định dạng ngày tháng
-     * @param {Date|string} date - Ngày cần định dạng
-     * @param {string} format - Định dạng (short, medium, long, datetime)
-     * @returns {string}
-     */
     formatDate(date, format = "medium") {
       if (!date) return "";
 
@@ -401,12 +326,6 @@ if (typeof window.Utils === "undefined") {
       return formats[format] || formats.medium;
     },
 
-    /**
-     * Debounce function
-     * @param {Function} func - Hàm cần debounce
-     * @param {number} wait - Thời gian chờ (ms)
-     * @returns {Function}
-     */
     debounce(func, wait) {
       let timeout;
       return function executedFunction(...args) {
@@ -419,12 +338,6 @@ if (typeof window.Utils === "undefined") {
       };
     },
 
-    /**
-     * Throttle function
-     * @param {Function} func - Hàm cần throttle
-     * @param {number} limit - Thời gian giới hạn (ms)
-     * @returns {Function}
-     */
     throttle(func, limit) {
       let inThrottle;
       return function (...args) {
@@ -436,11 +349,6 @@ if (typeof window.Utils === "undefined") {
       };
     },
 
-    /**
-     * Sao chép text vào clipboard
-     * @param {string} text - Text cần copy
-     * @returns {Promise<boolean>}
-     */
     async copyToClipboard(text) {
       try {
         await navigator.clipboard.writeText(text);
@@ -453,11 +361,6 @@ if (typeof window.Utils === "undefined") {
       }
     },
 
-    /**
-     * Tải file từ URL
-     * @param {string} url - URL file
-     * @param {string} filename - Tên file khi tải về
-     */
     downloadFile(url, filename) {
       const a = document.createElement("a");
       a.href = url;

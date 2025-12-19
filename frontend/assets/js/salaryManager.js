@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -151,7 +149,6 @@
   }
 
   function renderStatsView(data) {
-
     const allEntries = data.allEntries || [];
     const completedEntries = allEntries.filter(
       (e) => Number(e.DaHoanThanh) === 1 || e.completed === true
@@ -196,7 +193,6 @@
   }
 
   function renderCharts(data) {
-
     const allEntries = data.allEntries || [];
     const completedEntries = allEntries.filter(
       (e) => Number(e.DaHoanThanh) === 1 || e.completed === true
@@ -288,7 +284,6 @@
         dailyData[date] = 1;
       }
     });
-
     return Object.fromEntries(
       Object.entries(dailyData).sort(([a], [b]) => new Date(a) - new Date(b))
     );
@@ -302,7 +297,6 @@
 
     tabs.forEach((tab) => {
       tab.addEventListener("click", function () {
-
         tabs.forEach((t) => t.classList.remove("active"));
 
         this.classList.add("active");
@@ -320,7 +314,6 @@
           if (pageTitle) {
             pageTitle.textContent = "Bảng thống kê";
           }
-
           handleLoadStats();
         }
       });
@@ -328,7 +321,6 @@
   }
 
   function setupDateFilters() {
-
     const applySalaryBtn = document.getElementById("apply-salary-btn");
     if (applySalaryBtn) {
       applySalaryBtn.addEventListener("click", handleLoadSalary);
@@ -376,7 +368,6 @@
     try {
       const result = await loadStatsData(from, to);
       if (result.success) {
-
         renderStatsView({
           allEntries: result.data.entries || [],
           ...result.data,
@@ -419,7 +410,6 @@
         e.detail
       );
       if (e.detail.completed) {
-
         await handleLoadSalary();
       }
     });

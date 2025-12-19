@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -44,7 +42,6 @@
     },
 
     bindEvents() {
-
       document.addEventListener("click", (e) => {
         if (e.target.closest("#openNotificationBtn")) {
           e.preventDefault();
@@ -111,7 +108,6 @@
       if (window.ModalManager && window.ModalManager.showModalById) {
         window.ModalManager.showModalById("notificationModal");
       } else {
-
         modal.classList.remove("hidden");
         modal.classList.add("active", "show");
         document.body.style.overflow = "hidden";
@@ -190,7 +186,6 @@
       );
 
       if (show) {
-
         if (connectionSection) connectionSection.classList.remove("hidden");
         if (connectButtonGroup) connectButtonGroup.classList.remove("hidden");
         if (connectionStatusText) {
@@ -198,7 +193,6 @@
             "Để nhận thông báo công việc và lịch trình, bạn cần kết nối với Telegram bot.";
         }
       } else {
-
         if (connectionSection) connectionSection.classList.add("hidden");
         if (connectButtonGroup) connectButtonGroup.classList.add("hidden");
         if (connectionStatusText) {
@@ -228,6 +222,8 @@
             console.log(" Telegram connected");
             this.updateConnectionStatus(true);
           }
+        } else if (response.status === 404) {
+          console.log("⏳ Telegram status endpoint not yet implemented");
         }
       } catch (err) {
         console.warn(" Could not check telegram status:", err);
@@ -239,7 +235,6 @@
         const settings = localStorage.getItem("notification_settings");
         if (settings) {
           const parsed = JSON.parse(settings);
-
           const taskNotif = document.getElementById("taskNotifications");
           const eventReminders = document.getElementById("eventReminders");
           const aiSuggestions = document.getElementById("aiSuggestions");
@@ -289,7 +284,6 @@
         '<i class="fas fa-spinner fa-spin"></i> Đang mở Telegram...';
 
       try {
-
         const response = await fetch(
           "/api/notifications/telegram-connect-url",
           {
@@ -367,9 +361,7 @@
 
           if (checkCount >= 15) {
             clearInterval(connectionCheckInterval);
-            console.log(
-              " Connection check timeout - user may need to refresh"
-            );
+            console.log(" Connection check timeout - user may need to refresh");
           }
         }, 2000);
       } catch (error) {
@@ -487,7 +479,6 @@
       if (window.ModalManager && window.ModalManager.close) {
         window.ModalManager.close("notificationModal");
       } else {
-
         modal.classList.add("hidden");
         modal.classList.remove("active", "show");
       }
@@ -498,7 +489,6 @@
 
     cleanup() {
       console.log(" NotificationManager cleanup");
-
     },
   };
 

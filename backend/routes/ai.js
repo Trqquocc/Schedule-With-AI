@@ -43,7 +43,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
 
   console.log(`🔍 Analyzing text: "${text}"`);
 
-  // Bước 1: Phát hiện tần suất
   const isDailyPattern =
     /mỗi ngày|hàng ngày|every day|daily|từ.*đến|t2.*cn|thứ 2.*chủ nhật|monday.*sunday|trong tuần|weekday/.test(
       text
@@ -59,15 +58,13 @@ function analyzeRecurringPatterns(additionalInstructions) {
   console.log(`  isWeeklyPattern: ${isWeeklyPattern}`);
   console.log(`  hasSpecificDays: ${hasSpecificDays}`);
 
-  // Bước 2: Trích xuất thời gian
-  // Regex chặt chẽ: chỉ tìm số kèm "h" hoặc "giờ" liền sau
   const timeRegex =
     /(\d{1,2})(?::(\d{2}))?\s*(?:h|giờ|am|pm)(?:\s*(?:sáng|chiều|tối|đêm))?\s*(?:(?:đến|-)\s*)?(\d{1,2})?(?::(\d{2}))?\s*(?:h|giờ|am|pm)?/gi;
 
   const times = [];
   let timeMatch;
   const textLower = additionalInstructions.toLowerCase();
-  const seenTimes = new Set(); // Để tránh duplicate times
+  const seenTimes = new Set();
 
   while ((timeMatch = timeRegex.exec(textLower)) !== null) {
     let startHour = parseInt(timeMatch[1]);
@@ -75,7 +72,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
     let endHour = timeMatch[3] ? parseInt(timeMatch[3]) : null;
     const endMin = timeMatch[4] ? parseInt(timeMatch[4]) : 0;
 
-    // Kiểm tra "sáng" hay "tối" trước/sau thời gian
     const beforeText = textLower.substring(
       Math.max(0, timeMatch.index - 30),
       timeMatch.index
@@ -86,7 +82,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
     );
     const context = beforeText + afterText;
 
-    // Điều chỉnh giờ nếu là tối (18h+)
     if (
       (context.includes("tối") ||
         context.includes("chiều") ||
@@ -97,7 +92,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
       if (endHour && endHour < 12) endHour += 12;
     }
 
-    // Kiểm tra duplicates
     const timeKey = `${startHour}:${startMin}-${endHour || "end"}:${endMin}`;
     if (seenTimes.has(timeKey)) {
       console.log(`Skipping duplicate time: ${timeKey}`);
@@ -121,7 +115,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
     );
   }
 
-  // Bước 3: Trích xuất ngày trong tuần
   const dayMap = {
     "\\bt2\\b|thứ\\s*2|thứ\\s*hai|monday": 2,
     "\\bt3\\b|thứ\\s*3|thứ\\s*ba|tuesday": 3,
@@ -135,11 +128,9 @@ function analyzeRecurringPatterns(additionalInstructions) {
   const days = [];
 
   if (isDailyPattern && !hasSpecificDays) {
-    // "mỗi ngày trong tuần" = T2-CN (theo quy tắc làm việc)
     days.push(1, 2, 3, 4, 5, 6, 7);
     console.log(`  Daily pattern detected: all days (1-7)`);
   } else if (isDailyPattern && hasSpecificDays) {
-    // Nếu nói "mỗi ngày" mà vẫn chỉ ngày cụ thể
     Object.entries(dayMap).forEach(([pattern, dayNum]) => {
       if (new RegExp(pattern, "i").test(text)) {
         if (!days.includes(dayNum)) days.push(dayNum);
@@ -148,14 +139,12 @@ function analyzeRecurringPatterns(additionalInstructions) {
     if (days.length === 0) days.push(1, 2, 3, 4, 5, 6, 7);
     console.log(`  Daily + specific days: ${days}`);
   } else {
-    // Tìm các ngày được chỉ định
     Object.entries(dayMap).forEach(([pattern, dayNum]) => {
       if (new RegExp(pattern, "i").test(text)) {
         if (!days.includes(dayNum)) days.push(dayNum);
       }
     });
 
-    // Nếu là "hàng tuần" nhưng không có ngày cụ thể, mặc định T2-CN
     if (isWeeklyPattern && days.length === 0) {
       days.push(1, 2, 3, 4, 5, 6, 7);
       console.log(`  Weekly pattern, no specific days: defaulting to all days`);
@@ -164,7 +153,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
     console.log(`  Extracted days: ${days}`);
   }
 
-  // Bước 4: Tạo pattern nếu có thời gian
   if (times.length > 0 && days.length > 0) {
     const pattern = {
       frequency: isDailyPattern ? "daily" : "weekly",
@@ -196,7 +184,7 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
         cv.MucDoPhucTap as complexity,
         cv.MucDoTapTrung as focusLevel,
         cv.ThoiDiemThichHop as suitableTimeCode,
-        cv.MauSac as color  -- LẤY TỪ CongViec
+        cv.MauSac as color
       FROM CongViec cv
       WHERE cv.MaCongViec IN (${taskIdList}) 
         AND cv.UserID = @userId
@@ -240,15 +228,15 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
 function getColorByPriority(priority) {
   switch (priority) {
     case 1:
-      return "#10B981"; // Xanh lá
+      return "#10B981";
     case 2:
-      return "#3B82F6"; // Xanh dương
+      return "#3B82F6";
     case 3:
-      return "#F59E0B"; // Vàng cam
+      return "#F59E0B";
     case 4:
-      return "#EF4444"; // Đỏ
+      return "#EF4444";
     default:
-      return "#8B5CF6"; // Tím
+      return "#8B5CF6";
   }
 }
 
@@ -321,7 +309,6 @@ function buildGeminiPrompt(
     )
     .join("\n");
 
-  // Phân tích recurring patterns từ additionalInstructions
   const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
 
   const recurringPatternsText =
@@ -516,7 +503,6 @@ async function callGeminiAI(prompt) {
       try {
         console.log(`Attempt ${attempt}/${maxRetries}`);
 
-        // Exponential backoff: 2s, 4s, 8s
         if (attempt > 1) {
           const delayMs = Math.pow(2, attempt) * 1000;
           console.log(`⏳ Waiting ${delayMs}ms before retry...`);
@@ -532,10 +518,8 @@ async function callGeminiAI(prompt) {
         console.log(`First 200 chars: ${text.substring(0, 200)}`);
         console.log(`Gemini response: ${text.substring(0, 300)}`);
 
-        // Cách 1: Tìm JSON trong response (greedy)
         let jsonMatch = text.match(/{[\s\S]*}/);
 
-        // Cách 2: Nếu không tìm thấy, thử tìm trong backticks
         if (!jsonMatch) {
           const backtickMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
           if (backtickMatch) {
@@ -544,7 +528,6 @@ async function callGeminiAI(prompt) {
           }
         }
 
-        // Cách 3: Thử parse toàn bộ text nếu nó là JSON
         if (!jsonMatch && text.trim().startsWith("{")) {
           jsonMatch = [text.trim()];
         }
@@ -702,8 +685,6 @@ async function generateSimulatedSchedule(
     },
   };
 }
-
-// API ENDPOINTS
 
 router.post("/suggest-schedule", authenticateToken, async (req, res) => {
   console.log("\n" + "=".repeat(50));
@@ -886,7 +867,6 @@ async function generateSimulatedScheduleWithInstructions(
   console.log(" Generating simulated schedule WITH instruction analysis...");
   console.log("Additional instructions:", additionalInstructions);
 
-  // Phân tích recurring patterns
   const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
   console.log(` Found ${recurringPatterns.length} recurring pattern(s)`);
 
@@ -895,7 +875,6 @@ async function generateSimulatedScheduleWithInstructions(
   const end = new Date(endDate);
   const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
-  // Nếu có recurring patterns, xử lý cho từng pattern
   if (recurringPatterns.length > 0) {
     console.log(
       `\n Processing ${recurringPatterns.length} recurring pattern(s)...`
@@ -914,13 +893,11 @@ async function generateSimulatedScheduleWithInstructions(
         )
       );
 
-      // Tìm task phù hợp - ưu tiên task được nhắc trong instructions
       let selectedTask = null;
       const instructionLower = additionalInstructions.toLowerCase();
 
       for (const task of taskDetails) {
         const taskTitle = task.title.toLowerCase();
-        // Kiểm tra xem task có được nhắc đến trong instructions không
         if (instructionLower.includes(taskTitle)) {
           selectedTask = task;
           console.log(`    ✓ Found task in instructions: "${task.title}"`);
@@ -928,7 +905,6 @@ async function generateSimulatedScheduleWithInstructions(
         }
       }
 
-      // Nếu không tìm thấy task cụ thể, dùng task đầu tiên
       if (!selectedTask) {
         selectedTask = taskDetails[0];
         console.log(
@@ -936,19 +912,16 @@ async function generateSimulatedScheduleWithInstructions(
         );
       }
 
-      // Tạo events cho TẤT CẢ ngày khớp trong khoảng ngày
       for (let i = 0; i <= daysDiff; i++) {
         const currentDate = new Date(start);
         currentDate.setDate(currentDate.getDate() + i);
-        const dayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay(); // Sunday=7, Monday=1
+        const dayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay();
 
-        // Kiểm tra xem ngày này có trong danh sách không
         if (pattern.days.includes(dayOfWeek)) {
           for (const time of pattern.times) {
             const eventDate = new Date(currentDate);
             eventDate.setHours(time.startHour, time.startMin, 0, 0);
 
-            // Tính thời lượng
             let durationMinutes = selectedTask.estimatedMinutes || 60;
             if (time.endHour !== null) {
               const startTotalMin = time.startHour * 60 + time.startMin;
@@ -959,7 +932,7 @@ async function generateSimulatedScheduleWithInstructions(
             suggestions.push({
               taskId: selectedTask.id,
               scheduledTime: eventDate.toISOString(),
-              durationMinutes: Math.max(durationMinutes, 30), // Tối thiểu 30 phút
+              durationMinutes: Math.max(durationMinutes, 30),
               reason: `${selectedTask.title} - Lúc ${time.startHour
                 .toString()
                 .padStart(2, "0")}:${time.startMin
@@ -993,7 +966,6 @@ async function generateSimulatedScheduleWithInstructions(
     console.log(`\n📊 Total recurring events created: ${suggestions.length}`);
   }
 
-  // Nếu vẫn chưa có suggestions (không có pattern), dùng cách cũ
   if (suggestions.length === 0) {
     console.log("⚠️ No recurring patterns found, using default scheduling...");
     const baseSchedule = await generateSimulatedSchedule(
@@ -1057,7 +1029,6 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, message: "Danh sách rỗng" });
   }
 
-  // ❌ PREVENT DUPLICATE SAVES - Check if suggestions already exist
   const uniqueKey = `${userId}_${suggestions
     .map((s) => s.taskId)
     .sort()
@@ -1079,7 +1050,6 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
   try {
     const pool = await dbPoolPromise;
 
-    // ✅ 1. XÓA TẤT CẢ AI SUGGESTIONS CŨ (chỉ AI events, không xoá normal tasks)
     const deleteResult = await pool.request().input("userId", sql.Int, userId)
       .query(`
         DELETE FROM LichTrinh 
@@ -1089,7 +1059,6 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
     const deletedCount = deleteResult.rowsAffected?.[0] || 0;
     console.log(`🗑️ Deleted ${deletedCount} old AI events (kept normal tasks)`);
 
-    // ✅ 2. LƯU AI SUGGESTIONS MỚI (với dedupication logic)
     const savedIds = [];
     const saveStartTime = Date.now();
 
@@ -1107,7 +1076,6 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
       );
       console.log(`   Duration: ${s.durationMinutes} min`);
 
-      // ✅ Check if this exact event already exists (prevent duplicates)
       const checkDuplicate = await pool
         .request()
         .input("taskId", sql.Int, s.taskId)
@@ -1155,7 +1123,6 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
     );
     console.log(`   IDs: ${savedIds.join(", ")}`);
 
-    // ✅ 3. TRACK AI PROPOSAL VÀO PhienAIDeXuat TABLE (NẾU TỒN TẠI)
     try {
       const summaryContent = suggestions
         .map(
@@ -1196,7 +1163,6 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
   }
 });
 
-// SỬA ENDPOINT GET /ai-events
 router.get("/ai-events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -1291,7 +1257,6 @@ router.delete("/clear-old-suggestions", authenticateToken, async (req, res) => {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
-    // 1. Đếm số lượng AI suggestions cũ
     const countResult = await pool.request().input("userId", sql.Int, userId)
       .query(`
         SELECT COUNT(*) as count 
@@ -1301,7 +1266,6 @@ router.delete("/clear-old-suggestions", authenticateToken, async (req, res) => {
 
     const oldCount = countResult.recordset[0]?.count || 0;
 
-    // 2. Xóa tất cả AI suggestions cũ
     const deleteResult = await pool.request().input("userId", sql.Int, userId)
       .query(`
         DELETE FROM LichTrinh 
@@ -1339,10 +1303,10 @@ router.get("/events/ai", authenticateToken, async (req, res) => {
           lt.GhiChu,
           cv.TieuDe,
           cv.MucDoUuTien,
-          cv.MauSac AS Color  -- ĐÚNG: Lấy từ CongViec
+          cv.MauSac AS Color
         FROM LichTrinh lt
         INNER JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @userId  -- SỬA: Dùng lt.UserID thay vì cv.UserID
+        WHERE lt.UserID = @userId
           AND lt.AI_DeXuat = 1
         ORDER BY lt.GioBatDau DESC
       `);
@@ -1376,7 +1340,6 @@ router.get("/debug-ai-events", authenticateToken, async (req, res) => {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
-    // Debug 1: Kiểm tra có AI events không
     const countResult = await pool.request().input("userId", sql.Int, userId)
       .query(`
       SELECT COUNT(*) as count 
@@ -1384,7 +1347,6 @@ router.get("/debug-ai-events", authenticateToken, async (req, res) => {
       WHERE UserID = @userId AND AI_DeXuat = 1
     `);
 
-    // Debug 2: Lấy danh sách chi tiết
     const detailResult = await pool.request().input("userId", sql.Int, userId)
       .query(`
       SELECT 
@@ -1427,7 +1389,6 @@ router.get("/test-database-ai", authenticateToken, async (req, res) => {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
-    // 1. Kiểm tra tất cả events của user
     const allEvents = await pool.request().input("userId", sql.Int, userId)
       .query(`
       SELECT 
@@ -1442,7 +1403,6 @@ router.get("/test-database-ai", authenticateToken, async (req, res) => {
       ORDER BY GioBatDau DESC
     `);
 
-    // 2. Kiểm tra events vừa được tạo (last 10)
     const recentEvents = await pool.request().input("userId", sql.Int, userId)
       .query(`
       SELECT TOP 10 
@@ -1477,11 +1437,6 @@ router.get("/test-database-ai", authenticateToken, async (req, res) => {
   }
 });
 
-// ====================================================
-// GET /api/ai/history - Lấy lịch sử AI proposals
-// ====================================================
-// Mục đích: Xem tất cả các lần AI đã đề xuất cho user
-// Response: Danh sách proposals với trạng thái apply
 router.get("/history", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -1489,7 +1444,6 @@ router.get("/history", authenticateToken, async (req, res) => {
 
     const pool = await dbPoolPromise;
 
-    // Kiểm tra table có tồn tại không
     const tableCheckResult = await pool.request().query(`
       SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
       WHERE TABLE_NAME='PhienAIDeXuat'
@@ -1504,7 +1458,6 @@ router.get("/history", authenticateToken, async (req, res) => {
       });
     }
 
-    // Lấy lịch sử proposals
     const result = await pool
       .request()
       .input("userId", sql.Int, userId)
@@ -1524,7 +1477,6 @@ router.get("/history", authenticateToken, async (req, res) => {
         OFFSET @offset ROWS
       `);
 
-    // Đếm tổng số proposals
     const countResult = await pool.request().input("userId", sql.Int, userId)
       .query(`
         SELECT COUNT(*) as total FROM PhienAIDeXuat WHERE UserID = @userId
@@ -1532,7 +1484,6 @@ router.get("/history", authenticateToken, async (req, res) => {
 
     const total = countResult.recordset[0]?.total || 0;
 
-    // Thống kê
     const stats = await pool.request().input("userId", sql.Int, userId).query(`
         SELECT 
           COUNT(*) as totalProposals,
@@ -1581,10 +1532,6 @@ router.get("/history", authenticateToken, async (req, res) => {
   }
 });
 
-// ====================================================
-// PUT /api/ai/history/:id - Cập nhật trạng thái apply
-// ====================================================
-// Mục đích: Đánh dấu proposal đã được apply
 router.put("/history/:id", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -1593,7 +1540,6 @@ router.put("/history/:id", authenticateToken, async (req, res) => {
 
     const pool = await dbPoolPromise;
 
-    // Kiểm tra quyền sở hữu
     const checkResult = await pool
       .request()
       .input("id", sql.Int, proposalId)
@@ -1609,7 +1555,6 @@ router.put("/history/:id", authenticateToken, async (req, res) => {
       });
     }
 
-    // Cập nhật
     const updateResult = await pool
       .request()
       .input("id", sql.Int, proposalId)
@@ -1638,16 +1583,11 @@ router.put("/history/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// ====================================================
-// GET /api/ai/stats - Thống kê AI usage
-// ====================================================
-// Mục đích: Hiển thị dashboard về AI usage của user
 router.get("/stats", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const pool = await dbPoolPromise;
 
-    // Kiểm tra table
     const tableCheckResult = await pool.request().query(`
       SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
       WHERE TABLE_NAME='PhienAIDeXuat'
@@ -1667,7 +1607,6 @@ router.get("/stats", authenticateToken, async (req, res) => {
       });
     }
 
-    // Lấy thống kê
     const result = await pool.request().input("userId", sql.Int, userId).query(`
         SELECT 
           COUNT(*) as totalRequests,

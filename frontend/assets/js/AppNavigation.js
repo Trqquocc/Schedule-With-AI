@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -73,12 +71,10 @@
           }
         },
         ai: () => {
-
           console.log(" AI tab: Keeping calendar alive, just hiding");
 
           const aiCalendar = document.getElementById("ai-calendar");
           if (aiCalendar && window.AIModule && AIModule.calendar) {
-
             if (AIModule.calendar) {
               AIModule.lastView = AIModule.currentView;
               AIModule.lastDate = AIModule.calendar.getDate();

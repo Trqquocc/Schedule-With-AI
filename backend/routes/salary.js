@@ -38,11 +38,11 @@ router.get("/", async (req, res) => {
       `);
 
     const entries = result.recordset.map((r) => {
-
       let hours = 0;
       if (r.GioBatDau && r.GioKetThuc) {
         const start = new Date(r.GioBatDau);
         const end = new Date(r.GioKetThuc);
+
         hours = Math.round(((end - start) / (1000 * 60) / 60) * 100) / 100;
       } else if (r.ThoiGianUocTinh) {
         hours = Math.round((r.ThoiGianUocTinh / 60) * 100) / 100;

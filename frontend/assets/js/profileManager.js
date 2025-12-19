@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -58,7 +56,6 @@
     },
 
     bindEvents() {
-
       const openProfileBtn = document.getElementById("openProfileBtn");
       console.log(
         " Looking for #openProfileBtn:",
@@ -154,7 +151,6 @@
         window.ModalManager.showModalById("profileModal");
       } else {
         console.log("📤 Using fallback modal display");
-
         modal.classList.remove("hidden");
         modal.classList.add("active", "show");
         document.body.style.overflow = "hidden";
@@ -183,7 +179,7 @@
         hoten: this.currentUser.hoten || "",
         username: this.currentUser.username || "",
         email: this.currentUser.email || "",
-        phone: this.currentUser.phone || "",
+        phone: this.currentUser.SoDienThoai || this.currentUser.phone || "",
         ngaysinh: this.currentUser.ngaysinh || "",
         gioitinh: this.currentUser.gioitinh || "",
         bio: this.currentUser.bio || "",
@@ -236,7 +232,6 @@
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-
           this.currentUser.avatar = e.target.result;
           console.log(" Avatar updated (base64)");
           this.showStatus(" Avatar được cập nhật", "success");
@@ -266,7 +261,7 @@
         hoten: formData.get("hoten") || "",
         username: this.currentUser.username,
         email: formData.get("email") || "",
-        phone: formData.get("phone") || "",
+        SoDienThoai: formData.get("phone") || "",
         ngaysinh: formData.get("ngaysinh") || "",
         gioitinh: formData.get("gioitinh") || "",
         bio: formData.get("bio") || "",
@@ -285,7 +280,6 @@
       saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
 
       try {
-
         let userId = null;
         if (this.currentUser.id) {
           userId = this.currentUser.id;
@@ -301,23 +295,25 @@
           console.error("Current user:", this.currentUser);
           throw new Error("Không tìm thấy ID người dùng");
         }
-
         const endpoint = `/api/users/${userId}`;
         console.log(`📤 Sending PUT request to: ${endpoint}`);
         console.log(`📤 User ID: ${userId}`);
 
-        const response = await fetch(endpoint, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-          },
-          body: JSON.stringify(updatedUser),
-        });
+        const payload = {
+          hoten: updatedUser.hoten,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          phone: updatedUser.SoDienThoai,
+          ngaysinh: updatedUser.ngaysinh,
+          gioitinh: updatedUser.gioitinh,
+          bio: updatedUser.bio,
+        };
 
-        const responseData = await response.json();
+        console.log("📦 Payload being sent:", payload);
 
-        if (!response.ok) {
+        const responseData = await Utils.makeRequest(endpoint, "PUT", payload);
+
+        if (!responseData.success) {
           throw new Error(responseData.message || "Cập nhật thất bại");
         }
 
@@ -346,22 +342,19 @@
         console.error(" Error saving profile:", error);
         this.showStatus(` Lỗi: ${error.message}`, "error");
       } finally {
-
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalText;
       }
     },
 
     closeModal() {
-      console.log("🚪 Closing profile modal");
-
+      console.log("🚪 closeModal() called");
       const modal = document.getElementById("profileModal");
       if (!modal) return;
 
       if (window.ModalManager && window.ModalManager.close) {
         window.ModalManager.close("profileModal");
       } else {
-
         modal.classList.add("hidden");
         modal.classList.remove("active", "show");
       }
@@ -399,7 +392,6 @@
 
     cleanup() {
       console.log(" ProfileManager cleanup");
-
     },
   };
 

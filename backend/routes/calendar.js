@@ -1,5 +1,3 @@
-
-
 const express = require("express");
 const router = express.Router();
 const { dbPoolPromise, sql } = require("../config/database");
@@ -116,7 +114,6 @@ router.get("/range", authenticateToken, async (req, res) => {
           cv.TieuDe AS CongViecTieuDe,
           cv.MoTa,
           cv.MucDoUuTien,
-          -- Lấy màu theo độ ưu tiên
           CASE cv.MucDoUuTien
             WHEN 1 THEN '#34D399'
             WHEN 2 THEN '#60A5FA'
@@ -195,13 +192,12 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
           cv.TieuDe AS CongViecTieuDe,
           cv.MoTa,
           cv.MucDoUuTien,
-          -- Lấy màu theo độ ưu tiên (AI events cũng theo độ ưu tiên)
           CASE cv.MucDoUuTien
             WHEN 1 THEN '#34D399'
             WHEN 2 THEN '#60A5FA'
             WHEN 3 THEN '#FBBF24'
             WHEN 4 THEN '#F87171'
-            ELSE '#8B5CF6'  -- Màu tím cho AI events không có priority
+            ELSE '#8B5CF6'
           END AS MauSac
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec

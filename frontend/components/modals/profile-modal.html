@@ -83,11 +83,7 @@
               name="username"
               placeholder="Tên đăng nhập"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-              readonly
             />
-            <p class="text-xs text-gray-400 mt-1">
-              Không thể thay đổi tên đăng nhập
-            </p>
           </div>
 
           <div class="form-group">
@@ -189,9 +185,273 @@
   /* Profile Modal - Z-Index Layer 3 (above settings modal) */
   #profileModal {
     z-index: 10100 !important;
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(4px) !important;
+  }
+
+  #profileModal.show,
+  #profileModal.active {
+    display: flex !important;
   }
 
   #profileModal .modal-content {
     max-height: 90vh !important;
+    background: white !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+    overflow-y: auto !important;
+  }
+
+  #profileModal.hidden {
+    display: none !important;
   }
 </style>
+
+<script>
+  (function () {
+    "use strict";
+    
+    console.log("🎯 Profile Modal script STARTED");
+    
+    // Immediately bind events without delay
+    bindProfileModalEvents();
+    
+    function bindProfileModalEvents() {
+      const cancelBtn = document.getElementById("cancelProfileBtn");
+      if (!cancelBtn) {
+        setTimeout(bindProfileModalEvents, 50);
+        return;
+      }
+
+      console.log("🔗 Binding profile modal events NOW...");
+      
+      const modal = document.getElementById("profileModal");
+      const closeBtn = document.getElementById("closeProfileModal");
+      const saveBtn = document.getElementById("saveProfileBtn");
+      
+      console.log("Elements found:", {
+        modal: !!modal,
+        closeBtn: !!closeBtn,
+        cancelBtn: !!cancelBtn,
+        saveBtn: !!saveBtn
+      });
+      
+      // ============================================
+      // CLOSE BUTTON (X)
+      // ============================================
+      if (closeBtn) {
+        closeBtn.onclick = function(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          console.log("✅ CLOSE button clicked!");
+          closeProfileModalNow();
+          return false;
+        };
+        console.log("✅ Close button bound (onclick)");
+      }
+      
+      // ============================================
+      // CANCEL BUTTON
+      // ============================================
+      if (cancelBtn) {
+        cancelBtn.onclick = function(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          console.log("✅ CANCEL button clicked - Returning to home interface");
+          closeProfileModalNow();
+
+          console.log("🏠 Navigating to Home/Schedule...");
+          try {
+            if (window.AppNavigation && typeof AppNavigation.navigateToSection === 'function') {
+               AppNavigation.navigateToSection('schedule');
+            } else {
+               const scheduleBtn = document.querySelector('button[data-section="schedule"]');
+               if (scheduleBtn) scheduleBtn.click();
+            }
+          } catch (err) {
+            console.error("Navigation error:", err);
+          }
+          
+          return false;
+        };
+        console.log("✅ Cancel button bound (onclick)");
+      }
+      
+      // ============================================
+      // SAVE BUTTON
+      // ============================================
+      if (saveBtn) {
+        saveBtn.onclick = async function(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          console.log("✅ SAVE button clicked!");
+          await saveProfileDataNow();
+          return false;
+        };
+        console.log("✅ Save button bound (onclick)");
+      }
+      
+      // ============================================
+      // BACKDROP CLICK
+      // ============================================
+      if (modal) {
+        modal.onclick = function(e) {
+          if (e.target === modal) {
+            console.log("🎯 Backdrop clicked!");
+            closeProfileModalNow();
+          }
+        };
+        console.log("✅ Backdrop click bound");
+      }
+      
+      console.log("✅✅✅ All events bound successfully!");
+    }
+    
+    // ============================================
+    // CLOSE MODAL FUNCTION
+    // ============================================
+    function closeProfileModalNow() {
+      const modal = document.getElementById("profileModal");
+      if (!modal) {
+        console.error("❌ Modal not found!");
+        return;
+      }
+      
+      console.log("🚪 Closing profile modal...");
+      
+      // Remove all classes and add hidden
+      modal.classList.remove("show", "active", "flex");
+      modal.classList.add("hidden");
+      modal.style.display = "none";
+      
+      // Allow body scroll
+      document.body.style.overflow = "";
+      
+      console.log("✅✅✅ Modal CLOSED successfully!");
+    }
+    
+    // ============================================
+    // SAVE PROFILE FUNCTION
+    // ============================================
+    async function saveProfileDataNow() {
+      console.log("💾💾💾 SAVING PROFILE DATA NOW...");
+      
+      const form = document.getElementById("profileForm");
+      const saveBtn = document.getElementById("saveProfileBtn");
+      const modal = document.getElementById("profileModal");
+      
+      if (!form) {
+        console.error("❌ Form not found!");
+        alert("❌ Form không tìm thấy");
+        return;
+      }
+      
+      // Validate form
+      if (!form.checkValidity()) {
+        console.warn("⚠️ Form validation failed");
+        form.reportValidity();
+        return;
+      }
+      
+      // Get user data
+      const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
+      const userId = userData.ID || userData.id || userData.UserID;
+      
+      console.log("User ID:", userId);
+      
+      if (!userId) {
+        alert("❌ Không tìm thấy User ID");
+        return;
+      }
+      
+      // Collect form data
+      const formData = new FormData(form);
+      const payload = {
+        hoten: formData.get("hoten") || "",
+        username: formData.get("username") || "",
+        email: formData.get("email") || "",
+        phone: formData.get("phone") || "",
+        ngaysinh: formData.get("ngaysinh") || "",
+        gioitinh: formData.get("gioitinh") || "",
+        bio: formData.get("bio") || "",
+      };
+      
+      console.log("📦 Payload to send:", payload);
+      
+      // Show loading state
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+      }
+      
+      try {
+        const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+        console.log("Token exists:", !!token);
+        
+        const response = await fetch(`/api/users/${userId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        
+        console.log("Response status:", response.status);
+        const result = await response.json();
+        console.log("Response data:", result);
+        
+        if (!response.ok) {
+          throw new Error(result.message || `HTTP ${response.status}`);
+        }
+        
+        // Update localStorage
+        if (result.data) {
+          localStorage.setItem("user_data", JSON.stringify(result.data));
+          console.log("✅ User data updated in localStorage");
+        }
+        
+        // Show success message
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+          Utils.showToast("Lưu thành công", "success");
+        } else {
+          alert("Lưu thành công");
+        }
+        console.log("✅ Profile saved successfully");
+        
+        // Update sidebar
+        if (window.updateSidebarUser) {
+          window.updateSidebarUser(result.data || payload);
+        }
+        
+        // Close modal
+        setTimeout(() => {
+          closeProfileModalNow();
+        }, 300);
+        
+      } catch (error) {
+        console.error("❌ Error:", error);
+        alert("❌ Lỗi: " + error.message);
+      } finally {
+        // Restore button
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fas fa-save"></i>Lưu Thay Đổi';
+        }
+      }
+    }
+    
+    console.log("✅✅✅ Profile modal script READY!");
+  })();
+</script>

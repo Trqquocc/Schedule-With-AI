@@ -1,13 +1,10 @@
-
 <div id="aiSuggestionModal" class="modal hidden">
-
   <div
     class="modal-overlay"
     onclick="ModalManager.hideModalById('aiSuggestionModal')"
   ></div>
 
   <div class="modal-content">
-
     <div class="ai-modal-header">
       <div class="modal-header-left">
         <div class="modal-icon">
@@ -27,9 +24,7 @@
     </div>
 
     <div class="ai-modal-body">
-
       <form id="aiSuggestionForm">
-
         <div class="form-section">
           <div class="section-title">
             <i class="fas fa-calendar-alt"></i>
@@ -61,7 +56,6 @@
 
           <div class="task-list-container">
             <div class="task-list" id="aiTaskList">
-
               <div class="loading-state">
                 <div class="loading-spinner">
                   <i class="fas fa-spinner fa-spin"></i>
@@ -83,7 +77,6 @@
           </div>
 
           <div class="ai-options-grid">
-
             <label class="ai-option">
               <input type="checkbox" id="aiOptionAvoidConflict" checked />
               <div class="option-content">
@@ -152,14 +145,11 @@
 <script>
   console.log(" AI Modal Script - Enhanced Integration v2.0");
 
-  // Enhanced handler for modal initialization - using global events
   (function () {
-    // Initialize when modal is shown via ModalManager
     async function initializeAIModal() {
       console.log(" Initializing AI modal...");
 
       try {
-        // Wait for AIHandler to be available
         if (!window.AIHandler) {
           await new Promise((resolve) => {
             const checkInterval = setInterval(() => {
@@ -172,7 +162,6 @@
           });
         }
 
-        // Call AIHandler to initialize and populate modal
         if (window.AIHandler && window.AIHandler.initAIModal) {
           console.log(" Calling AIHandler.initAIModal...");
           await AIHandler.initAIModal();
@@ -185,7 +174,6 @@
       }
     }
 
-    // Listen for modalOpened event from ModalManager
     window.addEventListener("modalOpened", (e) => {
       if (e.detail && e.detail.modalId === "aiSuggestionModal") {
         console.log("🎯 AI Modal opened via ModalManager, initializing...");
@@ -193,7 +181,6 @@
       }
     });
 
-    // Expose for manual calls if needed
     window.initializeAIModal = initializeAIModal;
 
     console.log(" AI Modal Event Listener ready");

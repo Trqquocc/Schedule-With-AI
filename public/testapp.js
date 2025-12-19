@@ -1,13 +1,8 @@
-// app.js - Tích hợp Frontend với Backend
-
-// Utility function để hiển thị thông báo
 function showMessage(message, isSuccess = true) {
-    // Tạo element thông báo
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isSuccess ? 'success' : 'error'}`;
     messageDiv.textContent = message;
     
-    // Thêm CSS cho thông báo
     messageDiv.style.cssText = `
         position: fixed;
         top: 20px;
@@ -21,7 +16,6 @@ function showMessage(message, isSuccess = true) {
         ${isSuccess ? 'background-color: #4CAF50;' : 'background-color: #f44336;'}
     `;
     
-    // Thêm CSS animation
     if (!document.querySelector('#message-styles')) {
         const style = document.createElement('style');
         style.id = 'message-styles';
@@ -36,13 +30,11 @@ function showMessage(message, isSuccess = true) {
     
     document.body.appendChild(messageDiv);
     
-    // Tự động xóa sau 3 giây
     setTimeout(() => {
         messageDiv.remove();
     }, 3000);
 }
 
-// Function để loading button
 function setButtonLoading(button, isLoading) {
     if (isLoading) {
         button.disabled = true;
@@ -54,7 +46,6 @@ function setButtonLoading(button, isLoading) {
     }
 }
 
-// 1. XỬ LÝ FORM ĐĂNG KÝ
 function handleRegister() {
     const registerForm = document.getElementById('registerForm');
     if (!registerForm) return;
@@ -65,7 +56,6 @@ function handleRegister() {
         const submitButton = registerForm.querySelector('button[type="submit"]');
         setButtonLoading(submitButton, true);
         
-        // Lấy dữ liệu từ form
         const formData = new FormData(registerForm);
         const data = {
             username: formData.get('username'),
@@ -89,7 +79,6 @@ function handleRegister() {
                 showMessage(result.message, true);
                 registerForm.reset();
                 
-                // Chuyển đến trang login sau 2 giây
                 setTimeout(() => {
                     window.location.href = '/login';
                 }, 2000);
@@ -107,7 +96,6 @@ function handleRegister() {
     });
 }
 
-// 2. XỬ LÝ FORM ĐĂNG NHẬP
 function handleLogin() {
     const loginForm = document.getElementById('loginForm');
     if (!loginForm) return;
@@ -118,7 +106,6 @@ function handleLogin() {
         const submitButton = loginForm.querySelector('button[type="submit"]');
         setButtonLoading(submitButton, true);
         
-        // Lấy dữ liệu từ form
         const formData = new FormData(loginForm);
         const data = {
             username: formData.get('username'),
@@ -139,10 +126,8 @@ function handleLogin() {
             if (result.success) {
                 showMessage(result.message, true);
                 
-                // Lưu thông tin user vào sessionStorage
                 sessionStorage.setItem('currentUser', JSON.stringify(result.user));
                 
-                // Chuyển đến trang chính sau 1 giây
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 1000);
@@ -160,15 +145,12 @@ function handleLogin() {
     });
 }
 
-// 3. XỬ LÝ TRANG CHÍNH (INDEX)
 function handleHomePage() {
-    // Kiểm tra đăng nhập
     const currentUser = sessionStorage.getItem('currentUser');
     
     if (currentUser) {
         const user = JSON.parse(currentUser);
         
-        // Hiển thị thông tin user nếu có element
         const userInfo = document.getElementById('userInfo');
         if (userInfo) {
             userInfo.innerHTML = `
@@ -179,19 +161,16 @@ function handleHomePage() {
             `;
         }
         
-        // Hiển thị nút đăng xuất
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.style.display = 'block';
             logoutBtn.addEventListener('click', handleLogout);
         }
         
-        // Ẩn các nút đăng nhập/đăng ký
         const authButtons = document.querySelectorAll('.auth-buttons');
         authButtons.forEach(btn => btn.style.display = 'none');
         
     } else {
-        // Chưa đăng nhập - hiển thị nút đăng nhập/đăng ký
         const guestInfo = document.getElementById('guestInfo');
         if (guestInfo) {
             guestInfo.innerHTML = `
@@ -204,29 +183,23 @@ function handleHomePage() {
     }
 }
 
-// 4. XỬ LÝ ĐĂNG XUẤT
 function handleLogout() {
-    // Xóa thông tin user
     sessionStorage.removeItem('currentUser');
     
     showMessage('Đăng xuất thành công!', true);
     
-    // Chuyển về trang login sau 1 giây
     setTimeout(() => {
         window.location.href = '/login';
     }, 1000);
 }
 
-// 5. VALIDATION FORM REAL-TIME
 function setupFormValidation() {
-    // Validation cho form đăng ký
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         const passwordField = registerForm.querySelector('input[name="password"]');
         const confirmPasswordField = registerForm.querySelector('input[name="confirmPassword"]');
         const emailField = registerForm.querySelector('input[name="username"]');
         
-        // Kiểm tra email format
         if (emailField) {
             emailField.addEventListener('blur', () => {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -239,7 +212,6 @@ function setupFormValidation() {
             });
         }
         
-        // Kiểm tra độ dài password
         if (passwordField) {
             passwordField.addEventListener('input', () => {
                 if (passwordField.value.length > 0 && passwordField.value.length < 6) {
@@ -250,7 +222,6 @@ function setupFormValidation() {
             });
         }
         
-        // Kiểm tra password match
         if (confirmPasswordField && passwordField) {
             confirmPasswordField.addEventListener('input', () => {
                 if (confirmPasswordField.value !== passwordField.value) {
@@ -263,11 +234,9 @@ function setupFormValidation() {
     }
 }
 
-// 6. KHỞI TẠO KHI TRANG LOAD
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Frontend đã sẵn sàng!');
     
-    // Xác định trang hiện tại và khởi tạo tương ứng
     const currentPath = window.location.pathname;
     
     switch (currentPath) {
@@ -286,27 +255,22 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Trang không xác định');
     }
     
-    // Thêm loading animation cho tất cả các form
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
         form.style.transition = 'opacity 0.3s ease';
     });
 });
 
-// 7. UTILITY FUNCTIONS BỔ SUNG
 
-// Kiểm tra trạng thái đăng nhập
 function isLoggedIn() {
     return sessionStorage.getItem('currentUser') !== null;
 }
 
-// Lấy thông tin user hiện tại
 function getCurrentUser() {
     const userData = sessionStorage.getItem('currentUser');
     return userData ? JSON.parse(userData) : null;
 }
 
-// Chuyển hướng nếu chưa đăng nhập
 function requireAuth() {
     if (!isLoggedIn()) {
         showMessage('Vui lòng đăng nhập để truy cập!', false);
@@ -318,7 +282,6 @@ function requireAuth() {
     return true;
 }
 
-// Chuyển hướng nếu đã đăng nhập
 function requireGuest() {
     if (isLoggedIn()) {
         showMessage('Bạn đã đăng nhập rồi!', true);

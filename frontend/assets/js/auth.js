@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 426072f71e0530329486d23943d72eac896d8ba1
 const AuthManager = {
   async login(username, password) {
     try {

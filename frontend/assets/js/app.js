@@ -27,7 +27,7 @@
 
       await this.waitForFontAwesome();
 
-      console.log(" Loading components...");
+      console.log("📦 Loading components...");
       try {
         await ComponentLoader.init();
         console.log(" Components loaded successfully");
@@ -116,7 +116,6 @@
         const startTime = Date.now();
 
         const check = () => {
-
           const testEl = document.createElement("i");
           testEl.className = "fas fa-check";
           testEl.style.position = "absolute";
@@ -159,12 +158,10 @@
       let fixedCount = 0;
 
       icons.forEach((icon) => {
-
         const computed = window.getComputedStyle(icon);
         const fontFamily = computed.fontFamily;
 
         if (!fontFamily.includes("Font Awesome")) {
-
           icon.style.fontFamily =
             '"Font Awesome 6 Free", "Font Awesome 6 Brands"';
           icon.style.fontWeight = "900";
@@ -220,9 +217,7 @@
         const isActive = section.classList.contains("active");
         const display = window.getComputedStyle(section).display;
         console.log(
-          `  - ${section.id}: ${
-            isActive ? "" : ""
-          } active, display: ${display}`
+          `  - ${section.id}: ${isActive ? "" : ""} active, display: ${display}`
         );
       });
 

@@ -63,15 +63,14 @@ router.get("/", authenticateToken, async (req, res) => {
         cv.MucDoTapTrung,
         cv.ThoiDiemThichHop,
         cv.LuongTheoGio,
-        -- Thay vì lấy màu từ LoaiCongViec, chúng ta sẽ lấy theo độ ưu tiên
         CASE cv.MucDoUuTien
-          WHEN 1 THEN '#34D399'  -- Thấp: Xanh lá
-          WHEN 2 THEN '#60A5FA'  -- Trung bình: Xanh lam
-          WHEN 3 THEN '#FBBF24'  -- Cao: Vàng
-          WHEN 4 THEN '#F87171'  -- Rất cao: Đỏ
-          ELSE '#60A5FA'         -- Mặc định: Xanh lam
+          WHEN 1 THEN '#34D399'
+          WHEN 2 THEN '#60A5FA'
+          WHEN 3 THEN '#FBBF24'
+          WHEN 4 THEN '#F87171'
+          ELSE '#60A5FA'
         END AS MauSac,
-        lc.TenLoai  -- Vẫn lấy tên danh mục nếu cần
+        lc.TenLoai
       FROM CongViec cv
       LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
       WHERE cv.UserID = @userId
@@ -145,7 +144,6 @@ router.post("/", authenticateToken, async (req, res) => {
           });
         }
       } else {
-
         const durationMinutes = d.ThoiGianUocTinh
           ? parseInt(d.ThoiGianUocTinh)
           : 60;

@@ -3,9 +3,9 @@ const router = express.Router();
 const { dbPoolPromise, sql } = require("../config/database");
 const { authenticateToken } = require("../middleware/auth");
 
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.userId;
     const { from, to } = req.query;
 
     const endDate = to ? new Date(to) : new Date();

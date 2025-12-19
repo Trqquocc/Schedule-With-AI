@@ -1,4 +1,3 @@
-
 <style>
   /*  CRITICAL: Scope sidebar styles to SIDEBAR ONLY - do NOT affect modals/buttons globally */
   #sidebar-container * {
@@ -179,7 +178,6 @@
     border-radius: 12px !important;
   }
 
-  /* All divs inside aside must be visible */
   #sidebar-container aside > div {
     display: flex !important;
     flex-direction: column !important;
@@ -197,11 +195,6 @@
     flex: 0 0 auto !important;
   }
 
-  /* ===================================
-     SIDEBAR LAYOUT - FIXED POSITIONING
-     =================================== */
-
-  /* Root container - flex layout */
   #main-app {
     display: flex !important;
     position: relative !important;
@@ -209,7 +202,6 @@
     min-height: 100vh !important;
   }
 
-  /* Sidebar fixed container - overlay on left */
   #sidebar-container {
     display: block !important;
     position: fixed !important;
@@ -227,21 +219,12 @@
     overflow: hidden !important;
   }
 
-  /* Sidebar's aside element - positioned inside container */
   #sidebar-container aside {
     position: relative !important;
     left: 0 !important;
     right: 0 !important;
     top: 0 !important;
   }
-
-  /* ===================================
-     SETTINGS MODAL - ENHANCED STYLING
-     =================================== */
-
-  /* ===================================
-   SETTINGS MODAL - LAYER 2 (10000)
-   =================================== */
 
   #settingsModal {
     position: fixed !important;
@@ -263,7 +246,6 @@
     display: none !important;
   }
 
-  /* Modal Content Container */
   #settingsModal .modal-content {
     background: white !important;
     border-radius: 20px !important;
@@ -276,7 +258,6 @@
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
   }
 
-  /* Scrollbar Styling */
   #settingsModal .modal-content::-webkit-scrollbar {
     width: 8px !important;
   }
@@ -294,7 +275,6 @@
     background: #94a3b8 !important;
   }
 
-  /* Modal Header */
   #settingsModal .modal-content > div:first-child {
     background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
     color: white !important;
@@ -332,7 +312,6 @@
     font-size: 28px !important;
   }
 
-  /* Close Button */
   #settingsModal #closeSettingsModal {
     background: rgba(255, 255, 255, 0.2) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -355,14 +334,12 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   }
 
-  /* Modal Body */
   #settingsModal .modal-content > div:nth-child(2) {
     padding: 24px !important;
     overflow-y: auto !important;
     max-height: calc(90vh - 120px) !important;
   }
 
-  /* User Info Card */
   #settingsModal .flex.items-center {
     padding: 20px !important;
     background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%) !important;
@@ -406,7 +383,6 @@
     color: #64748b !important;
   }
 
-  /* Settings Menu Section */
   #settingsModal .space-y-2 {
     display: flex !important;
     flex-direction: column !important;
@@ -416,7 +392,6 @@
     margin-bottom: 20px !important;
   }
 
-  /* Settings Menu Buttons */
   #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) {
     padding: 16px 20px !important;
     border-radius: 14px !important;
@@ -447,7 +422,6 @@
     transform: scale(1.2) !important;
   }
 
-  /* Specific Button Colors */
   #settingsModal #openProfileBtn {
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
   }
@@ -484,7 +458,6 @@
     color: #b45309 !important;
   }
 
-  /* Logout Button */
   #settingsModal #modalLogoutBtn {
     background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
     border: 2px solid #fecaca !important;
@@ -512,7 +485,6 @@
     transform: translateX(-4px) !important;
   }
 
-  /* Footer Version Info */
   #settingsModal .text-center.text-xs {
     padding-top: 20px !important;
     border-top: 2px solid #f1f5f9 !important;
@@ -521,7 +493,6 @@
     letter-spacing: 0.5px !important;
   }
 
-  /* Animations */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -542,7 +513,6 @@
     }
   }
 
-  /* Responsive Design */
   @media (max-width: 480px) {
     #settingsModal .modal-content {
       max-width: 100% !important;
@@ -666,7 +636,6 @@
     </div>
 
     <div class="p-6 space-y-6">
-
       <div
         class="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100"
       >
@@ -770,11 +739,9 @@
     const closeBtn = document.getElementById("closeSettingsModal");
     const modalLogoutBtn = document.getElementById("modalLogoutBtn");
 
-    // Hàm cập nhật thông tin người dùng (dùng chung)
     function updateUserInfo(user) {
       if (!user) return;
 
-      // Sidebar
       document.querySelector(".user-name").textContent =
         user.hoten || user.username || "Người dùng";
       document.querySelector(".user-email").textContent =
@@ -787,7 +754,6 @@
         .charAt(0)
         .toUpperCase();
 
-      // Modal
       document.querySelector(".settings-user-name").textContent =
         user.hoten || user.username || "Người dùng";
       document.querySelector(".settings-user-email").textContent =
@@ -801,7 +767,6 @@
         .toUpperCase();
     }
 
-    // Load user khi mở trang
     document.addEventListener("DOMContentLoaded", () => {
       const userData = localStorage.getItem("user_data");
       if (userData) {
@@ -814,13 +779,100 @@
       }
     });
 
-    // Mở modal
     openBtn?.addEventListener("click", (e) => {
       e.preventDefault();
       settingsModal.classList.remove("hidden");
+      if (window.ProfileManager && !window.ProfileManager.initialized) {
+        console.log("🔧 Initializing ProfileManager from settings modal...");
+        window.ProfileManager.init();
+      }
+      if (
+        window.NotificationManager &&
+        !window.NotificationManager.initialized
+      ) {
+        console.log(
+          "🔧 Initializing NotificationManager from settings modal..."
+        );
+        window.NotificationManager.init();
+      }
     });
 
-    // Đóng modal
+    function bindProfileButton() {
+      const btn = document.getElementById("openProfileBtn");
+      if (!btn) {
+        console.log("⏳ Profile button not ready, retry in 100ms...");
+        setTimeout(bindProfileButton, 100);
+        return;
+      }
+
+      console.log("🔗 Binding profile button...");
+
+      btn.onclick = null;
+
+      btn.onclick = function (e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        console.log("📋 Profile button clicked!");
+        handleOpenProfileModal();
+        return false;
+      };
+
+      console.log("✅ Profile button bound!");
+    }
+
+    function handleOpenProfileModal() {
+      console.log("📋 Opening profile modal from settings...");
+
+      closeModal();
+
+      setTimeout(() => {
+        const profileModal = document.getElementById("profileModal");
+
+        if (!profileModal) {
+          console.error("❌ Profile modal not found in DOM!");
+          console.log(
+            "Available modals:",
+            [...document.querySelectorAll("[id*='Modal']")].map((m) => m.id)
+          );
+          return;
+        }
+
+        console.log("✅ Profile modal found, opening...");
+
+        profileModal.classList.remove("hidden");
+        profileModal.classList.add("active", "show");
+
+        profileModal.style.zIndex = "10100";
+        profileModal.style.display = "flex";
+        profileModal.style.position = "fixed";
+        profileModal.style.inset = "0";
+
+        document.body.style.overflow = "hidden";
+
+        if (
+          window.ProfileManager &&
+          window.ProfileManager.fillFormWithUserData
+        ) {
+          console.log("📝 Filling form with user data...");
+          window.ProfileManager.fillFormWithUserData();
+        }
+
+        console.log("✅ Profile modal opened successfully");
+      }, 100);
+    }
+
+    bindProfileButton();
+
+    setInterval(() => {
+      const btn = document.getElementById("openProfileBtn");
+      if (btn && !btn.onclick) {
+        console.log("🔄 Re-binding profile button (periodic check)...");
+        bindProfileButton();
+      }
+    }, 500);
+
     const closeModal = () => {
       settingsModal.classList.add("hidden");
     };
@@ -829,7 +881,6 @@
       if (e.target === settingsModal) closeModal();
     });
 
-    // Đăng xuất (cả sidebar và modal)
     const handleLogout = async (e) => {
       e.preventDefault();
       if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
@@ -838,9 +889,7 @@
         if (typeof Utils !== "undefined") {
           await Utils.makeRequest("/api/auth/logout", "POST");
         }
-      } catch (err) {
-        /* không sao */
-      }
+      } catch (err) {}
 
       localStorage.removeItem("auth_token");
       localStorage.removeItem("token");
@@ -858,7 +907,6 @@
       ?.addEventListener("click", handleLogout);
     modalLogoutBtn?.addEventListener("click", handleLogout);
 
-    // Export để dùng ở nơi khác
     window.updateSidebarUser = updateUserInfo;
 
     //  NEW: Open Profile Modal - Work early, before manager init

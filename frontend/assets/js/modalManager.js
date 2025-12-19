@@ -1,5 +1,3 @@
-
-
 (function () {
   "use strict";
 
@@ -27,7 +25,6 @@
     },
 
     fixNestedModals() {
-
       const allModals = document.querySelectorAll("#aiSuggestionModal");
       if (allModals.length > 1) {
         console.log(
@@ -133,14 +130,11 @@
         console.log(`   - Content rect:`, contentRect);
 
         if (contentRect.height > window.innerHeight) {
-          console.warn(
-            " Modal content taller than viewport, enabling scroll"
-          );
+          console.warn(" Modal content taller than viewport, enabling scroll");
           modal.style.overflow = "auto";
         }
       }
     },
-
     close(modalId) {
       const targetModal = modalId || this.activeModal;
       const modal = document.getElementById(targetModal);
@@ -161,9 +155,7 @@
       modal.style.visibility = "";
 
       document.body.style.overflow = "";
-
       this.activeModal = null;
-
       window.dispatchEvent(
         new CustomEvent("modalClosed", {
           detail: { modalId: targetModal },
@@ -174,7 +166,6 @@
     },
 
     setupGlobalEventListeners() {
-
       document.addEventListener("click", (e) => {
         if (!this.activeModal) return;
 
@@ -183,7 +174,6 @@
           categoryModal &&
           !categoryModal.classList.contains("hidden") &&
           categoryModal.style.display !== "none";
-
         if (isCategoryModalOpen) {
           console.log(" Category modal is open, ignoring backdrop click");
           return;
@@ -194,7 +184,6 @@
           this.close(this.activeModal);
         }
       });
-
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && this.activeModal) {
           console.log("⌨️ ESC pressed, closing modal");
@@ -204,7 +193,6 @@
 
       console.log(" Global event listeners setup complete");
     },
-
     reinitializeModalHandlers(modal) {
       if (!modal) return;
 
@@ -215,7 +203,6 @@
       );
 
       closeButtons.forEach((btn) => {
-
         const newBtn = btn.cloneNode(true);
         btn.parentNode?.replaceChild(newBtn, btn);
 
