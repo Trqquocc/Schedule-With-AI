@@ -13,7 +13,7 @@ router.get("/profile", authenticateToken, async (req, res) => {
       .request()
       .input("userId", sql.Int, userId)
       .query(
-        "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, Phone as phone, NgaySinh as ngaysinh, GioiTinh as gioitinh, Bio as bio FROM Users WHERE UserID = @userId"
+        "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, SoDienThoai as phone, LuongTheoGio as luongthegio FROM Users WHERE UserID = @userId"
       );
 
     if (!result.recordset || result.recordset.length === 0) {
@@ -47,37 +47,91 @@ router.put("/:id", authenticateToken, async (req, res) => {
         .json({ message: "Không có quyền cập nhật thông tin này" });
     }
 
-    const { hoten, email, phone, ngaysinh, gioitinh, bio, username } = req.body;
-
-    console.log("📦 Received payload:", {
+    const {
       hoten,
       email,
       phone,
-      ngaysinh,
-      gioitinh,
-      bio,
       username,
+      HoTen,
+      Email,
+      SoDienThoai,
+      Password,
+      LuongTheoGio,
+      luongthegio,
+    } = req.body;
+
+    // Support both lowercase and uppercase field names
+    const hoTenValue = hoten || HoTen;
+    const emailValue = email || Email;
+    const phoneValue = phone || SoDienThoai;
+    const passwordValue = Password;
+    const luongTheoGioValue = luongthegio || LuongTheoGio;
+
+    console.log("📦 Received payload:", {
+      hoten: hoTenValue,
+      email: emailValue,
+      phone: phoneValue,
+      hasPassword: !!passwordValue,
+      luongthegio: luongTheoGioValue,
     });
 
-    if (!hoten || !email) {
+    if (!hoTenValue || !emailValue) {
       return res.status(400).json({ message: "Họ tên và email là bắt buộc" });
     }
 
     const pool = await dbPoolPromise;
 
-    const updateResult = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .input("hoten", sql.NVarChar, hoten || "")
-      .input("email", sql.NVarChar, email || "")
-      .input("username", sql.NVarChar, username || "")
-      .input("phone", sql.NVarChar, phone || null)
-      .input("ngaysinh", sql.DateTime, ngaysinh || null)
-      .input("gioitinh", sql.NVarChar, gioitinh || null)
-      .input("bio", sql.NVarChar, bio || null)
-      .query(
-        "UPDATE Users SET HoTen = @hoten, Email = @email, Username = @username, Phone = @phone, NgaySinh = @ngaysinh, GioiTinh = @gioitinh, Bio = @bio WHERE UserID = @userId"
-      );
+    // Build dynamic UPDATE query based on provided fields
+    let updateFields = [];
+    let updateParams = [];
+
+    updateFields.push("HoTen = @hoten");
+    updateParams.push({ name: "hoten", type: sql.NVarChar, value: hoTenValue });
+
+    updateFields.push("Email = @email");
+    updateParams.push({ name: "email", type: sql.NVarChar, value: emailValue });
+
+    if (phoneValue) {
+      updateFields.push("SoDienThoai = @phone");
+      updateParams.push({
+        name: "phone",
+        type: sql.NVarChar,
+        value: phoneValue,
+      });
+    }
+
+    if (passwordValue) {
+      updateFields.push("Password = @password");
+      updateParams.push({
+        name: "password",
+        type: sql.NVarChar,
+        value: passwordValue,
+      });
+    }
+
+    if (luongTheoGioValue) {
+      updateFields.push("LuongTheoGio = @luongthegio");
+      updateParams.push({
+        name: "luongthegio",
+        type: sql.Decimal(10, 2),
+        value: luongTheoGioValue,
+      });
+    }
+
+    // Build the request
+    let request = pool.request();
+    request.input("userId", sql.Int, userId);
+
+    updateParams.forEach((param) => {
+      request.input(param.name, param.type, param.value);
+    });
+
+    const updateQuery = `UPDATE Users SET ${updateFields.join(
+      ", "
+    )} WHERE UserID = @userId`;
+    console.log("📝 Update query:", updateQuery);
+
+    const updateResult = await request.query(updateQuery);
 
     console.log(
       "✅ Update result rows affected:",
@@ -92,7 +146,7 @@ router.put("/:id", authenticateToken, async (req, res) => {
       .request()
       .input("userId", sql.Int, userId)
       .query(
-        "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, Phone as phone, NgaySinh as ngaysinh, GioiTinh as gioitinh, Bio as bio FROM Users WHERE UserID = @userId"
+        "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, SoDienThoai as phone, LuongTheoGio as luongthegio FROM Users WHERE UserID = @userId"
       );
 
     console.log("✅ Updated user data:", selectResult.recordset[0]);
