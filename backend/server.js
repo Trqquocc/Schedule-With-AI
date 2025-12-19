@@ -19,6 +19,7 @@ const usersRoutes = require("./routes/users");
 require("./telegram/bot"); // Khởi tạo bot
 const scheduleSender = require("./telegram/scheduleSender");
 const notificationRoutes = require("./routes/notification.routes");
+const { initializeSchedules } = require("./telegram/bot");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -111,6 +112,13 @@ app.get(
   sendFile("index.html")
 );
 
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 API available at http://localhost:${PORT}/api`);
+
+  // Khởi động lịch trình
+  initializeSchedules();
+});
 process.on("SIGTERM", () => {
   console.log("SIGTERM received");
   scheduleSender.stop();

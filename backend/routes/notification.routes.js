@@ -320,10 +320,76 @@ router.post("/disconnect", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * POST /api/notifications/update-settings
- * Cập nhật cài đặt thông báo
- */
+router.post("/update-schedule-time", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const {
+      taskReminderTime, // GioNhacNhiemVu
+      dailyScheduleTime, // GioLichNgay
+      dailySummaryTime, // GioTongKetNgay
+    } = req.body;
+
+    console.log(`🕒 Updating schedule times for user ${userId}:`, {
+      taskReminderTime,
+      dailyScheduleTime,
+      dailySummaryTime,
+    });
+
+    const sql = require("mssql");
+    const dbConfig = require("../config/database");
+    const scheduleUpdater = require("../telegram/schedule-updater");
+
+    const pool = await sql.connect(dbConfig);
+
+    // Cập nhật thời gian vào database
+    const updateQuery = `
+      UPDATE TelegramConnections
+      SET
+        GioNhacNhiemVu = @taskReminderTime,
+        GioLichNgay = @dailyScheduleTime,
+        GioTongKetNgay = @dailySummaryTime,
+        NgayCapNhat = GETDATE()
+      WHERE UserID = @userId
+        AND TrangThaiKetNoi = 1
+    `;
+
+    await pool
+      .request()
+      .input("userId", sql.Int, userId)
+      .input("taskReminderTime", sql.Time, taskReminderTime || null)
+      .input("dailyScheduleTime", sql.Time, dailyScheduleTime || null)
+      .input("dailySummaryTime", sql.Time, dailySummaryTime || null)
+      .query(updateQuery);
+
+    console.log(`✅ Database updated for user ${userId}`);
+
+    // Cập nhật lịch trình thực tế
+    const updateResult = await scheduleUpdater.updateUserSchedule(userId);
+
+    if (!updateResult.success) {
+      console.warn(`⚠️ Could not update schedule: ${updateResult.message}`);
+    }
+
+    res.json({
+      success: true,
+      message: "Đã cập nhật thời gian thông báo",
+      data: {
+        taskReminderTime,
+        dailyScheduleTime,
+        dailySummaryTime,
+        scheduleUpdated: updateResult.success,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error updating schedule time:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi cập nhật thời gian",
+      error: error.message,
+    });
+  }
+});
+
 router.post("/update-settings", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -398,4 +464,71 @@ router.post("/update-settings", authenticateToken, async (req, res) => {
   }
 });
 
+router.get("/schedule-times", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const sql = require("mssql");
+    const dbConfig = require("../config/database");
+
+    const pool = await sql.connect(dbConfig);
+
+    const result = await pool.request().input("userId", sql.Int, userId).query(`
+        SELECT 
+          GioNhacNhiemVu,
+          GioLichNgay,
+          GioTongKetNgay,
+          ThongBaoNhiemVu,
+          TrangThaiKetNoi
+        FROM TelegramConnections
+        WHERE UserID = @userId
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy cài đặt thời gian",
+      });
+    }
+
+    const settings = result.recordset[0];
+
+    // Format thời gian thành HH:mm
+    const formatTime = (timeValue) => {
+      if (!timeValue) return "14:00"; // Mặc định
+
+      if (typeof timeValue === "string") {
+        return timeValue.substring(0, 5); // "14:30"
+      } else if (timeValue instanceof Date) {
+        return timeValue.toTimeString().substring(0, 5);
+      } else if (
+        timeValue.constructor &&
+        timeValue.constructor.name === "Time"
+      ) {
+        return `${timeValue.hours
+          .toString()
+          .padStart(2, "0")}:${timeValue.minutes.toString().padStart(2, "0")}`;
+      }
+      return "14:00";
+    };
+
+    res.json({
+      success: true,
+      data: {
+        taskReminderTime: formatTime(settings.GioNhacNhiemVu),
+        dailyScheduleTime: formatTime(settings.GioLichNgay),
+        dailySummaryTime: formatTime(settings.GioTongKetNgay),
+        notificationsEnabled: settings.ThongBaoNhiemVu === 1,
+        isConnected: settings.TrangThaiKetNoi === 1,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error getting schedule times:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi lấy thời gian thông báo",
+      error: error.message,
+    });
+  }
+});
 module.exports = router;

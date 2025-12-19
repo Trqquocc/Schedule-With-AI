@@ -516,6 +516,43 @@ async function sendSchedule(userId, schedule) {
   return await sendMessageToUser(userId, message);
 }
 
+async function initializeSchedules() {
+  try {
+    const scheduleUpdater = require("./schedule-updater");
+
+    // Đợi bot sẵn sàng
+    setTimeout(async () => {
+      console.log("🔄 Initializing notification schedules...");
+      await scheduleUpdater.restartAllSchedules();
+      console.log("✅ All schedules initialized");
+    }, 5000);
+  } catch (error) {
+    console.error("❌ Error initializing schedules:", error);
+  }
+}
+
+// Gọi khi bot khởi động
+bot.on("polling_error", (error) => {
+  console.error("❌ Polling error:", error);
+});
+
+bot.on("webhook_error", (error) => {
+  console.error("❌ Webhook error:", error);
+});
+
+// Khởi động lịch trình
+initializeSchedules();
+
+module.exports = {
+  bot,
+  verifyToken,
+  autoConnectUser,
+  sendMessageToUser,
+  sendSchedule,
+  broadcastMessage,
+  isUserConnected,
+  initializeSchedules, // Thêm export mới
+};
 /**
  * Broadcast
  */
