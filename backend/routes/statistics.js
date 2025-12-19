@@ -57,6 +57,55 @@ router.get("/", async (req, res) => {
       completed: r.Completed,
     }));
 
+    // Lấy danh sách chi tiết tất cả công việc
+    const entriesRes = await pool
+      .request()
+      .input("UserID", sql.Int, userId)
+      .input("StartDate", sql.DateTime, startDate)
+      .input("EndDate", sql.DateTime, endDate).query(`
+        SELECT
+          lt.MaLichTrinh,
+          lt.GioBatDau,
+          lt.GioKetThuc,
+          lt.GhiChu,
+          lt.DaHoanThanh,
+          cv.MaCongViec,
+          cv.TieuDe AS CongViecTieuDe,
+          cv.LuongTheoGio,
+          cv.ThoiGianUocTinh
+        FROM LichTrinh lt
+        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
+        WHERE lt.UserID = @UserID
+          AND lt.GioBatDau >= @StartDate
+          AND lt.GioBatDau <= @EndDate
+        ORDER BY lt.GioBatDau DESC
+      `);
+
+    const entries = entriesRes.recordset.map((r) => {
+      let hours = 0;
+      if (r.GioBatDau && r.GioKetThuc) {
+        const start = new Date(r.GioBatDau);
+        const end = new Date(r.GioKetThuc);
+        hours = Math.round(((end - start) / (1000 * 60) / 60) * 100) / 100;
+      } else if (r.ThoiGianUocTinh) {
+        hours = Math.round((r.ThoiGianUocTinh / 60) * 100) / 100;
+      }
+
+      const rate = r.LuongTheoGio ? parseFloat(r.LuongTheoGio) : 0;
+      const amount = Math.round(hours * rate * 100) / 100;
+
+      return {
+        id: r.MaLichTrinh,
+        title: r.CongViecTieuDe || "(Không có tiêu đề)",
+        date: r.GioKetThuc || r.GioBatDau,
+        rate,
+        hours,
+        note: r.GhiChu || "",
+        amount,
+        completed: Number(r.DaHoanThanh) === 1,
+      };
+    });
+
     res.json({
       success: true,
       data: {
@@ -65,6 +114,7 @@ router.get("/", async (req, res) => {
         pending,
         percent,
         daily,
+        entries,
       },
     });
   } catch (error) {
