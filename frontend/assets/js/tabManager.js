@@ -1,7 +1,3 @@
-/**
- * Tab Manager - Manages tab switching in sections (e.g., Salary tabs)
- * WRAPPED VERSION: Simple wrapper pattern
- */
 
 (function () {
   "use strict";

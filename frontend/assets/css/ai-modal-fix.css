@@ -1,9 +1,4 @@
-/* ===================================
-   AI MODAL DISPLAY FIX - CORRECT SELECTOR VERSION
-   Problem: CSS selectors don't match actual DOM structure
-   =================================== */
 
-/* ✅ Modal container - When shown */
 #aiSuggestionModal {
   display: none !important;
   position: fixed !important;
@@ -19,7 +14,6 @@
   backdrop-filter: blur(2px) !important;
 }
 
-/* Active states - WITHOUT .modal-content selector */
 #aiSuggestionModal.active,
 #aiSuggestionModal.show,
 #aiSuggestionModal:not(.hidden) {
@@ -29,7 +23,6 @@
   pointer-events: auto !important;
 }
 
-/* Hidden state */
 #aiSuggestionModal.hidden {
   display: none !important;
   visibility: hidden !important;
@@ -37,8 +30,6 @@
   pointer-events: none !important;
 }
 
-/* ✅ CRITICAL FIX: Target ALL .modal-content inside #aiSuggestionModal
-   regardless of parent state classes */
 #aiSuggestionModal .modal-content {
   display: flex !important;
   flex-direction: column !important;
@@ -56,39 +47,31 @@
   animation: modalSlideIn 0.3s ease-out !important;
 }
 
-/* ✅ NUCLEAR OPTION: Force dimensions with !important on every property */
 #aiSuggestionModal .modal-content {
-  /* Force width */
   width: 800px !important;
   max-width: 90vw !important;
   min-width: 600px !important;
 
-  /* Force height */
   height: auto !important;
   min-height: 400px !important;
   max-height: 90vh !important;
 
-  /* Force display */
   display: flex !important;
   flex-direction: column !important;
   flex-shrink: 0 !important;
 
-  /* Force box model */
   box-sizing: border-box !important;
   padding: 0 !important;
   margin: 0 auto !important;
 
-  /* Force visibility */
   opacity: 1 !important;
   visibility: visible !important;
 
-  /* Background and shadow */
   background: white !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
   border-radius: 12px !important;
 }
 
-/* ✅ Force header visible with fixed height */
 #aiSuggestionModal .ai-modal-header {
   display: flex !important;
   align-items: center !important;
@@ -103,7 +86,6 @@
   box-sizing: border-box !important;
 }
 
-/* ✅ Force body visible with min-height */
 #aiSuggestionModal .ai-modal-body {
   display: block !important;
   padding: 24px !important;
@@ -115,7 +97,6 @@
   background: white !important;
 }
 
-/* ✅ Force footer visible with fixed height */
 #aiSuggestionModal .ai-modal-footer {
   display: flex !important;
   justify-content: space-between !important;
@@ -129,7 +110,6 @@
   box-sizing: border-box !important;
 }
 
-/* ✅ Force form elements visible */
 #aiSuggestionModal #aiSuggestionForm {
   display: block !important;
   width: 100% !important;
@@ -141,7 +121,6 @@
   width: 100% !important;
 }
 
-/* ✅ Animation */
 @keyframes modalSlideIn {
   from {
     opacity: 0;
@@ -153,13 +132,11 @@
   }
 }
 
-/* ✅ EMERGENCY DEBUG: Add visible border for troubleshooting */
 #aiSuggestionModal.debug .modal-content {
   border: 5px solid red !important;
   background: rgba(255, 0, 0, 0.1) !important;
 }
 
-/* ✅ Responsive design */
 @media (max-width: 1024px) {
   #aiSuggestionModal .modal-content {
     width: 95vw !important;
@@ -187,7 +164,6 @@
   }
 }
 
-/* ✅ ABSOLUTE LAST RESORT: Inline style override helper */
 #aiSuggestionModal .modal-content[style] {
   width: 800px !important;
   height: auto !important;

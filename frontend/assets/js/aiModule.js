@@ -1,12 +1,6 @@
-/**
- * AI Module v2.1 - INTEGRATED WITH AI HANDLER
- * Xử lý lịch trình đề xuất bởi AI và hiển thị lên calendar
- */
-
 (function () {
   "use strict";
 
-  // SINGLETON PATTERN - Chỉ một instance duy nhất
   if (window.AIModule && window.AIModule._singleton) {
     console.log("🤖 AIModule singleton already exists, reusing...");
     return window.AIModule;
@@ -20,7 +14,6 @@
     currentView: "timeGridWeek",
     suggestedEvents: [],
 
-    // IDs động (có thể config từ bên ngoài để tránh xung đột)
     calendarElementId: "ai-calendar",
     titleElementId: "ai-calendar-title",
     prevBtnId: "ai-cal-prev-btn",
@@ -30,11 +23,7 @@
     weekBtnId: "ai-cal-week-view",
     monthBtnId: "ai-cal-month-view",
 
-    // ==========================================================
-    // PUBLIC: init()
-    // ==========================================================
     async init() {
-      // Kiểm tra nếu đang ở AI section
       const aiSection = document.getElementById("ai-section");
       const isAISectionActive =
         aiSection &&
@@ -43,12 +32,10 @@
 
       if (!isAISectionActive) {
         console.log("⏭️ Not in AI section, delaying initialization...");
-        // Lưu lại để init khi vào section
         this.shouldInitWhenActivated = true;
         return;
       }
 
-      // Nếu đã init và calendar còn sống -> chỉ refresh
       if (this.isInitialized && this.calendar) {
         console.log("🤖 AIModule already initialized, refreshing UI...");
         await this.refreshFromDatabase();
@@ -78,9 +65,6 @@
       }
     },
 
-    // ==========================================================
-    // PRIVATE: _initInternal()
-    // ==========================================================
     async _initInternal() {
       const calendarEl = await this.waitForElement(
         this.calendarElementId,
@@ -91,27 +75,19 @@
 
       await Promise.all([this.waitForFullCalendar(), this.waitForUtils()]);
 
-      // Xóa loading spinner và render calendar
       calendarEl.innerHTML = "";
       calendarEl.style.minHeight = "700px";
 
-      // Tải events thực tế
       const existingEvents = await this.loadEventsForAI();
 
-      // Render calendar với events hiện có
       this.renderCalendar(existingEvents);
 
       this.setupSectionChangeHandler();
       this.preserveCalendarOnNavigation();
       this.setupVisibilityHandler();
 
-      // KHÔNG gọi refreshFromDatabase ngay - sẽ gọi khi section activated
-      // await this.refreshFromDatabase();
-
-      // Setup section change handler
       this.setupSectionChangeHandler();
 
-      // Setup navbar và nút AI
       setTimeout(() => {
         this.initializeNavbarEvents();
         this.setupAIButton();
@@ -119,15 +95,12 @@
       }, 100);
     },
 
-    // Thêm vào cuối hàm _initInternal
     setupVisibilityHandler() {
-      // Refresh khi tab trở nên visible
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
           const aiSection = document.getElementById("ai-section");
           if (aiSection && aiSection.style.display !== "none") {
             console.log("👀 Tab visible, refreshing AI calendar...");
-            // Debounce refresh
             if (this.refreshTimeout) clearTimeout(this.refreshTimeout);
             this.refreshTimeout = setTimeout(() => {
               this.refreshFromDatabase();
@@ -136,7 +109,6 @@
         }
       });
 
-      // Mutation observer để phát hiện section changes
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (
@@ -159,7 +131,6 @@
       }
     },
 
-    // SỬA HÀM loadEventsForAI()
     async loadEventsForAI() {
       try {
         console.log("🤖 Đang tải lịch AI từ database...");
@@ -169,7 +140,6 @@
           return [];
         }
 
-        // Gọi endpoint AI events
         console.log("📡 Gọi /api/ai/ai-events...");
         const res = await Utils.makeRequest("/api/ai/ai-events", "GET");
 
@@ -191,9 +161,7 @@
             return [];
           }
 
-          // Chuyển đổi sang định dạng FullCalendar với màu sắc đầy đủ
           const calendarEvents = events.map((ev, idx) => {
-            // LẤY MÀU CHÍNH XÁC
             const color =
               ev.Color || this.getPriorityColor(ev.priority) || "#8B5CF6";
 
@@ -219,7 +187,7 @@
                 aiSuggested: true,
                 priority: ev.priority || 2,
                 AI_DeXuat: ev.AI_DeXuat || 1,
-                originalColor: color, // Lưu màu gốc
+                originalColor: color,
               },
             };
           });
@@ -236,21 +204,16 @@
       }
     },
 
-    // THÊM HÀM HELPER MỚI
     getPriorityColor(priority) {
       const colors = {
-        1: "#10B981", // Xanh lá
-        2: "#3B82F6", // Xanh dương
-        3: "#F59E0B", // Vàng cam
-        4: "#EF4444", // Đỏ
+        1: "#10B981",
+        2: "#3B82F6",
+        3: "#F59E0B",
+        4: "#EF4444",
       };
-      return colors[priority] || "#8B5CF6"; // Tím mặc định
+      return colors[priority] || "#8B5CF6";
     },
 
-    // ==========================================================
-    // ⭐ LOAD AI SUGGESTIONS - Hàm chính để hiển thị AI suggestions
-    // ==========================================================
-    // SỬA HÀM loadAISuggestions
     async loadAISuggestions(suggestions) {
       try {
         console.log("🤖 Loading AI suggestions:", suggestions);
@@ -264,16 +227,11 @@
           return [];
         }
 
-        // ✅ KHÔNG XÓA TỪ DATABASE - chúng ta vừa mới lưu!
-        // Chỉ xóa từ calendar DOM là đủ
-
-        // 1. KIỂM TRA CALENDAR
         if (!this.calendar) {
           console.error("❌ Calendar chưa được khởi tạo");
           throw new Error("Calendar chưa sẵn sàng");
         }
 
-        // 2. XÓA CÁC AI EVENTS CŨ TRONG CALENDAR DOM (không xóa DB)
         const existingAIEvents = this.calendar
           .getEvents()
           .filter((event) => event.extendedProps?.aiSuggested === true);
@@ -289,7 +247,6 @@
           }
         });
 
-        // 3. LẤY THÔNG TIN CÔNG VIỆC ĐỂ HIỂN THỊ TÊN
         const taskTitles = {};
         try {
           const res = await Utils.makeRequest("/api/tasks", "GET");
@@ -305,14 +262,12 @@
           console.warn("⚠️ Không thể lấy thông tin công việc:", err);
         }
 
-        // 4. THÊM AI EVENTS MỚI VỚI TÊN CÔNG VIỆC
         const aiEvents = suggestions.map((suggestion, index) => {
           const start = new Date(suggestion.scheduledTime);
           const end = new Date(
             start.getTime() + (suggestion.durationMinutes || 60) * 60000
           );
 
-          // LẤY TÊN CÔNG VIỆC
           const taskTitle =
             taskTitles[suggestion.taskId] ||
             suggestion.taskTitle ||
@@ -320,7 +275,7 @@
 
           return {
             id: `ai-suggestion-${suggestion.taskId || index}-${Date.now()}`,
-            title: taskTitle, // SỬ DỤNG TÊN CÔNG VIỆC THAY VÌ ID
+            title: taskTitle,
             start: start.toISOString(),
             end: end.toISOString(),
             backgroundColor: suggestion.color || "#8B5CF6",
@@ -328,7 +283,7 @@
             classNames: ["event-ai-suggested"],
             extendedProps: {
               taskId: suggestion.taskId,
-              taskTitle: taskTitle, // LƯU TÊN CÔNG VIỆC
+              taskTitle: taskTitle,
               reason: suggestion.reason || "AI đề xuất",
               aiSuggested: true,
               durationMinutes: suggestion.durationMinutes || 60,
@@ -338,7 +293,6 @@
           };
         });
 
-        // 6. THÊM SỰ KIỆN MỚI
         let addedCount = 0;
         aiEvents.forEach((event) => {
           try {
@@ -349,7 +303,6 @@
           }
         });
 
-        // 7. RENDER LẠI CALENDAR
         this.calendar.render();
 
         console.log(
@@ -366,7 +319,6 @@
       console.log("🤖 Opening AI suggestion modal...");
 
       try {
-        // Check if ModalManager is available
         if (window.ModalManager && window.ModalManager.showModalById) {
           console.log("✅ Using ModalManager to show modal");
           window.ModalManager.showModalById("aiSuggestionModal");
@@ -385,7 +337,6 @@
       }
     },
 
-    // SỬA FILE: aiModule.js - THÊM HÀM clearOldAISuggestions()
     async clearOldAISuggestions() {
       try {
         console.log("🗑️ Clearing old AI suggestions from database...");
@@ -395,7 +346,6 @@
           return false;
         }
 
-        // Gọi API để xóa tất cả AI events cũ
         const res = await Utils.makeRequest(
           "/api/ai/clear-old-suggestions",
           "DELETE"
@@ -414,9 +364,6 @@
       }
     },
 
-    /**
-     * Hiển thị lỗi trong modal
-     */
     showModalError(message) {
       const modalBody = document.querySelector(
         "#aiSuggestionModal .ai-modal-body"
@@ -436,13 +383,9 @@
       }
     },
 
-    /**
-     * Helper để đóng modal
-     */
     closeModal() {
       console.log("🤖 AIModule.closeModal() called");
 
-      // ✅ Use ModalManager to close modal consistently
       if (window.ModalManager && ModalManager.close) {
         ModalManager.close("aiSuggestionModal");
         console.log("✅ Modal closed via ModalManager");
@@ -452,7 +395,6 @@
         if (modal) {
           modal.classList.remove("active", "show");
           modal.classList.add("hidden");
-          // Remove inline styles
           modal.style.display = "";
           modal.style.opacity = "";
           modal.style.visibility = "";
@@ -462,17 +404,12 @@
       }
     },
 
-    /**
-     * Initialize AI modal content với AIHandler
-     */
     async initAIModalContent() {
       try {
         console.log("🔄 Initializing AI modal content...");
 
-        // Chờ cho modal và AIHandler sẵn sàng
         await this.waitForModalReady();
 
-        // Gọi AIHandler để populate tasks
         if (window.AIHandler && window.AIHandler.populateAIModal) {
           console.log("📋 Calling AIHandler.populateAIModal...");
           await AIHandler.populateAIModal();
@@ -488,9 +425,6 @@
       }
     },
 
-    /**
-     * Chờ modal và dependencies sẵn sàng
-     */
     async waitForModalReady() {
       return new Promise((resolve, reject) => {
         let attempts = 0;
@@ -517,13 +451,9 @@
       });
     },
 
-    /**
-     * Phương pháp fallback: Tự hiển thị modal
-     */
     showAIModalFallback() {
       console.log("🔄 Using fallback method to show AI modal");
 
-      // Tạo modal HTML tạm thời
       const modalHtml = `
         <div class="modal active show" id="aiSuggestionModal" style="display: flex; z-index: 10001;">
           <div class="modal-overlay"></div>
@@ -557,14 +487,11 @@
         </div>
       `;
 
-      // Remove existing modal
       document.getElementById("aiSuggestionModal")?.remove();
 
-      // Add modal to body
       document.body.insertAdjacentHTML("beforeend", modalHtml);
       document.body.classList.add("modal-open");
 
-      // Gọi AIHandler để load tasks
       setTimeout(() => {
         if (window.AIHandler && window.AIHandler.populateAIModal) {
           AIHandler.populateAIModal();
@@ -572,9 +499,6 @@
       }, 300);
     },
 
-    // ==========================================================
-    // REFRESH UI
-    // ==========================================================
     refreshUI() {
       if (this.calendar) {
         this.calendar.render();
@@ -584,9 +508,6 @@
       }
     },
 
-    // ==========================================================
-    // UTILS
-    // ==========================================================
     waitForElement(id, timeout = 8000) {
       return new Promise((resolve) => {
         const el = document.getElementById(id);
@@ -656,9 +577,6 @@
       `;
     },
 
-    // ==========================================================
-    // RENDER CALENDAR
-    // ==========================================================
     renderCalendar(events) {
       const containerEl = document.getElementById(this.calendarElementId);
 
@@ -667,21 +585,17 @@
         return;
       }
 
-      // Nếu calendar đã tồn tại, chỉ update events
       if (this.calendar) {
         console.log("🔄 Updating existing AI calendar with new events");
 
-        // Xóa events cũ
         const existingEvents = this.calendar.getEvents();
         existingEvents.forEach((event) => {
           try {
             event.remove();
           } catch (e) {
-            // Ignore
           }
         });
 
-        // Thêm events mới
         events.forEach((event) => {
           try {
             this.calendar.addEvent(event);
@@ -690,46 +604,36 @@
           }
         });
 
-        // Refresh view
         this.calendar.render();
         return;
       }
 
-      // Tạo calendar mới
       console.log("🆕 Creating new AI calendar");
 
       this.calendar = new FullCalendar.Calendar(containerEl, {
-        // ... giữ nguyên các options ...
         headerToolbar: false,
         initialView: this.currentView,
         height: "100%",
         editable: false,
         selectable: false,
         events: events,
-        // ... các options khác ...
       });
 
       this.calendar.render();
       console.log("✅ AI Calendar rendered");
     },
 
-    // ==========================================================
-    // PRESERVE CALENDAR ON NAVIGATION
-    // ==========================================================
     preserveCalendarOnNavigation() {
       console.log("🔐 Setting up calendar preservation...");
 
-      // Lưu trạng thái calendar trước khi chuyển section
       const originalNavigation = window.AppNavigation?.navigateToSection;
 
       if (originalNavigation) {
-        // Wrap navigation function
         window.AppNavigation.navigateToSection = function (sectionId) {
           console.log(
             `🧭 Navigating to ${sectionId}, preserving AI calendar...`
           );
 
-          // Nếu đang ở AI section và chuyển đi, lưu trạng thái
           const currentSection = this.currentSection;
           if (currentSection === "ai-section" && sectionId !== "ai-section") {
             if (window.AIModule?.calendar) {
@@ -742,7 +646,6 @@
             }
           }
 
-          // Gọi hàm gốc
           return originalNavigation.call(this, sectionId);
         };
 
@@ -750,14 +653,10 @@
       }
     },
 
-    // ==========================================================
-    // EVENT HANDLING
-    // ==========================================================
     handleEventClick(info) {
       const props = info.event.extendedProps;
       console.log("Event clicked:", info.event.title, props);
 
-      // Hiển thị thông tin sự kiện
       const isAI = props.aiSuggested;
       const modalTitle = isAI ? "🤖 Sự kiện do AI đề xuất" : "📅 Sự kiện";
 
@@ -780,9 +679,6 @@
       }
     },
 
-    // ==========================================================
-    // AI BUTTON SETUP
-    // ==========================================================
     setupAIButton() {
       console.log("🎯 Setting up AI button...");
 
@@ -803,7 +699,6 @@
 
         console.log("✅ AI button found, setting up listener...");
 
-        // Remove old listeners
         const newBtn = btn.cloneNode(true);
         btn.parentNode?.replaceChild(newBtn, btn);
 
@@ -820,9 +715,6 @@
       trySetup();
     },
 
-    // ==========================================================
-    // VIEW MANAGEMENT
-    // ==========================================================
     changeView(view) {
       this.currentView = view;
       if (this.calendar) {
@@ -859,9 +751,6 @@
       }
     },
 
-    // ==========================================================
-    // NAVBAR BUTTONS
-    // ==========================================================
     initializeNavbarEvents() {
       const controls = {
         [this.prevBtnId]: () => {
@@ -884,7 +773,6 @@
       Object.entries(controls).forEach(([id, handler]) => {
         const btn = document.getElementById(id);
         if (btn) {
-          // Remove old listeners by cloning
           const newBtn = btn.cloneNode(true);
           btn.parentNode.replaceChild(newBtn, btn);
           newBtn.addEventListener("click", (e) => {
@@ -897,11 +785,7 @@
       this.setActiveView(this.currentView);
     },
 
-    // ==========================================================
-    // DESTROY & CLEANUP
-    // ==========================================================
     destroy() {
-      // CHỈ destroy nếu đây là calendar thường, không phải AI calendar
       const isAICalendar =
         this.calendarElementId && this.calendarElementId.includes("ai");
 
@@ -935,8 +819,6 @@
       }
     },
 
-    // THAY THẾ hàm refreshFromDatabase trong aiModule.js
-
     async refreshFromDatabase() {
       try {
         console.log("🔄 Refreshing AI calendar from database...");
@@ -947,7 +829,6 @@
           return 0;
         }
 
-        // 1. Lấy events từ database
         const aiEvents = await this.loadEventsForAI();
 
         console.log(`📊 AI events loaded: ${aiEvents.length}`);
@@ -956,7 +837,6 @@
         if (aiEvents.length === 0) {
           console.log("📭 Không có AI events để hiển thị");
 
-          // Vẫn xóa các events cũ nếu có
           const existingEvents = this.calendar.getEvents();
           const aiEventsToRemove = existingEvents.filter(
             (event) => event.extendedProps?.aiSuggested === true
@@ -982,7 +862,6 @@
           return 0;
         }
 
-        // 2. Xóa chỉ các events AI cũ
         const existingEvents = this.calendar.getEvents();
         const aiEventsToRemove = existingEvents.filter(
           (event) => event.extendedProps?.aiSuggested === true
@@ -997,11 +876,9 @@
           }
         });
 
-        // 3. Thêm events AI mới
         let addedCount = 0;
         aiEvents.forEach((event) => {
           try {
-            // Kiểm tra xem event đã tồn tại chưa
             const existingEvent = this.calendar.getEventById(event.id);
             if (!existingEvent) {
               this.calendar.addEvent(event);
@@ -1017,7 +894,6 @@
           }
         });
 
-        // 4. Cập nhật danh sách và render
         this.suggestedEvents = aiEvents;
 
         if (addedCount > 0) {
@@ -1027,10 +903,8 @@
           console.log("📭 Không có AI events mới để thêm");
         }
 
-        // 5. Cập nhật title
         this.updateCalendarTitle();
 
-        // 6. Debug: Hiển thị tất cả events hiện có
         const allEvents = this.calendar.getEvents();
         const aiEventsCount = allEvents.filter(
           (e) => e.extendedProps?.aiSuggested
@@ -1046,9 +920,6 @@
       }
     },
 
-    // ==========================================================
-    // CHECK AND RESTORE CALENDAR
-    // ==========================================================
     async checkAndRestoreCalendar() {
       console.log("🔍 Checking AI calendar state...");
 
@@ -1058,24 +929,19 @@
         return false;
       }
 
-      // Kiểm tra nếu calendar bị mất
       if (!this.calendar) {
         console.log("🔄 AI calendar bị mất, restoring...");
 
-        // Lấy events hiện có
         const events = await this.loadEventsForAI();
 
-        // Tạo lại calendar
         this.renderCalendar(events);
 
-        // Khôi phục view nếu có
         if (this.lastView) {
           setTimeout(() => {
             this.changeView(this.lastView);
           }, 100);
         }
 
-        // Khôi phục date nếu có
         if (this.lastDate && this.calendar) {
           setTimeout(() => {
             this.calendar.gotoDate(this.lastDate);
@@ -1089,13 +955,9 @@
       console.log("✅ AI calendar is intact");
       return true;
     },
-    // ==========================================================
-    // SECTION/TAB CHANGE HANDLER
-    // ==========================================================
     setupSectionChangeHandler() {
       console.log("🔧 Setting up section change handler for AI...");
 
-      // Lắng nghe sự kiện chuyển section
       document.addEventListener("section-changed", (e) => {
         const sectionId = e.detail?.sectionId;
         const isAISection = sectionId === "ai-section" || sectionId === "ai";
@@ -1109,7 +971,6 @@
         }
       });
 
-      // Lắng nghe tab changes
       document.addEventListener("tab-shown", (e) => {
         if (
           e.detail?.tabId === "ai-calendar-tab" ||
@@ -1126,14 +987,12 @@
     handleAISectionActivated() {
       console.log("🤖 AI section activated");
 
-      // Đảm bảo calendar tồn tại
       if (!this.calendar) {
         console.log("📅 AI calendar chưa được init, initializing...");
         setTimeout(() => {
           this.init();
         }, 100);
       } else {
-        // Nếu calendar đã tồn tại, chỉ cần refresh
         console.log("🔄 Refreshing existing AI calendar...");
         setTimeout(() => {
           this.refreshFromDatabase();
@@ -1145,19 +1004,15 @@
     handleOtherSectionActivated() {
       console.log("📌 Other section activated, preserving AI calendar");
 
-      // KHÔNG destroy calendar, chỉ ẩn nếu cần
       if (this.calendar) {
-        // Giữ calendar trong memory nhưng có thể ẩn visual
         const calendarEl = document.getElementById(this.calendarElementId);
         if (calendarEl) {
-          // Chỉ ẩn thay vì destroy
           calendarEl.style.opacity = "0.95";
           calendarEl.style.pointerEvents = "none";
         }
       }
     },
 
-    // THÊM HÀM MỚI: Tải AI suggestions từ database
     async loadAISuggestionsFromDB() {
       try {
         console.log("🤖 Loading AI suggestions from database...");
@@ -1167,7 +1022,6 @@
           return [];
         }
 
-        // API endpoint mới để lấy AI suggestions
         const res = await Utils.makeRequest("/api/calendar/ai-events", "GET");
 
         if (!res.success || !Array.isArray(res.data)) return [];
@@ -1184,11 +1038,10 @@
             note: ev.GhiChu || ev.reason || "AI đề xuất",
             completed: ev.DaHoanThanh === 1,
             taskId: ev.MaCongViec || ev.taskId,
-            aiSuggested: true, // Đánh dấu đây là AI suggestion
+            aiSuggested: true,
             reason: ev.reason || "",
             durationMinutes: ev.durationMinutes || 60,
             priority: ev.priority || "medium",
-            // ⭐ GIỮ LẠI MÀU TỪ DATABASE
             originalColor: ev.Color || ev.color,
           },
         }));
@@ -1210,12 +1063,10 @@
           return [];
         }
 
-        // Gọi API endpoint mới hoặc sửa query
         const res = await Utils.makeRequest("/api/calendar/events", "GET");
 
         if (!res.success || !Array.isArray(res.data)) return [];
 
-        // Lọc các event có AI_DeXuat = true hoặc được AI đề xuất
         const aiEvents = res.data.filter(
           (ev) =>
             ev.extendedProps?.aiSuggested === true ||
@@ -1225,7 +1076,6 @@
 
         console.log(`✅ Found ${aiEvents.length} AI events in database`);
 
-        // Chuyển đổi sang định dạng calendar
         const calendarEvents = aiEvents.map((ev) => {
           return {
             id: ev.MaLichTrinh || ev.ID || `ai-${Date.now()}-${Math.random()}`,
@@ -1260,7 +1110,7 @@
         console.log("🧪 Testing AI event creation...");
 
         const testPayload = {
-          MaCongViec: 5015, // Thay bằng taskId thực tế
+          MaCongViec: 5015,
           GioBatDau: new Date().toISOString(),
           GioKetThuc: new Date(Date.now() + 60 * 60000).toISOString(),
           GhiChu: "Test AI event",
@@ -1283,12 +1133,10 @@
       }
     },
 
-    // THÊM: Hàm để lưu AI suggestions vào database (đã có trong AIHandler)
     async saveAISuggestions(suggestions) {
       try {
         console.log(`💾 Saving ${suggestions.length} AI suggestions...`);
 
-        // Gọi AIHandler để lưu vào database
         if (window.AIHandler && window.AIHandler.saveAISuggestionsToDatabase) {
           const result = await AIHandler.saveAISuggestionsToDatabase(
             suggestions
@@ -1316,28 +1164,23 @@
 
       const aiCalendar = document.getElementById(this.calendarElementId);
       if (aiCalendar) {
-        // Hiển thị lại calendar
         aiCalendar.style.opacity = "1";
         aiCalendar.style.pointerEvents = "auto";
         aiCalendar.style.position = "relative";
         aiCalendar.style.left = "0";
 
-        // Khôi phục view nếu có
         if (this.lastView && this.calendar.view.type !== this.lastView) {
           this.changeView(this.lastView);
         }
 
-        // Khôi phục ngày nếu có
         if (this.lastDate) {
           this.calendar.gotoDate(this.lastDate);
         }
 
-        // Refresh nếu cần
         this.refreshUI();
       }
     },
 
-    // Thêm vào cuối file aiModule.js
     debugAIModule: function () {
       console.log("=== AI Module Debug ===");
       console.log("Calendar exists:", !!this.calendar);
@@ -1348,7 +1191,6 @@
       console.log("Is initialized:", this.isInitialized);
       console.log("Suggested events count:", this.suggestedEvents.length);
 
-      // Test API endpoint
       Utils.makeRequest("/api/ai/ai-events", "GET")
         .then((res) => {
           console.log("AI events API response:", res);
@@ -1366,12 +1208,10 @@
         });
     },
 
-    // Thêm vào cuối file aiModule.js
     debugDatabaseAIEvents: async function () {
       try {
         console.log("🔍 Debugging AI events in database...");
 
-        // Kiểm tra API endpoints
         const endpoints = [
           "/api/calendar/events",
           "/api/ai/ai-events",
@@ -1387,7 +1227,6 @@
               data: Array.isArray(res.data) ? res.data.slice(0, 2) : res.data,
             });
 
-            // Nếu có data, kiểm tra AI_DeXuat
             if (res.success && Array.isArray(res.data)) {
               const aiEvents = res.data.filter(
                 (ev) =>
@@ -1416,7 +1255,6 @@
     },
   };
 
-  // Export singleton
   window.AIModule = AIModule;
   console.log("🤖 AIModule v2.1 (Integrated with AIHandler) đã sẵn sàng!");
 })();

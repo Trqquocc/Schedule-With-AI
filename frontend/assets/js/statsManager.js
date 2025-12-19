@@ -8,18 +8,15 @@
 
     async loadStats() {
       try {
-        // Lấy tất cả công việc
         const tasksResult = await Utils.makeRequest("/api/tasks", "GET");
         const tasks = tasksResult.data || [];
 
-        // Lấy tất cả sự kiện
         const eventsResult = await Utils.makeRequest(
           "/api/calendar/events",
           "GET"
         );
         const events = eventsResult.data || [];
 
-        // Tính toán thống kê
         const stats = {
           totalTasks: tasks.length,
           completedTasks: tasks.filter((t) => t.TrangThaiThucHien === 2).length,
@@ -34,10 +31,8 @@
             (tasks.length || 1),
         };
 
-        // Cập nhật UI
         this.updateStatsUI(stats);
 
-        // Lưu vào localStorage để sử dụng sau
         localStorage.setItem("user_stats", JSON.stringify(stats));
 
         return stats;
@@ -47,7 +42,6 @@
     },
 
     updateStatsUI(stats) {
-      // Cập nhật các phần tử UI hiển thị thống kê
       const elements = {
         "stats-total-tasks": stats.totalTasks,
         "stats-completed-tasks": stats.completedTasks,
@@ -66,7 +60,6 @@
     },
   };
 
-  // Hàm toàn cục để cập nhật thống kê
   window.updateStats = function () {
     StatsManager.loadStats();
   };

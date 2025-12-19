@@ -1,13 +1,7 @@
-/**
- * FIX: AI Modal Content Loader
- * Problem: Modal opens but content is empty (0x0)
- * Solution: Ensure content is loaded AND visible
- */
 
 (function () {
   "use strict";
 
-  // ✅ Wait for modal content to be populated
   async function waitForModalContent(modalId, timeout = 5000) {
     const startTime = Date.now();
 
@@ -22,7 +16,6 @@
           return;
         }
 
-        // Check if content has children
         const hasChildren = content.children.length > 0;
         const hasHTML = content.innerHTML.trim().length > 100;
 
@@ -49,7 +42,6 @@
     });
   }
 
-  // ✅ Force load modal content from HTML file
   async function forceLoadModalContent() {
     try {
       console.log("🔄 Force loading AI modal content...");
@@ -59,14 +51,12 @@
         throw new Error("Modal not found");
       }
 
-      // Check if content already exists
       const existingContent = modal.querySelector(".modal-content");
       if (existingContent && existingContent.children.length > 0) {
         console.log("✅ Content already loaded");
         return true;
       }
 
-      // Load from component file
       const response = await fetch(
         "components/modals/ai-suggestion-modal.html"
       );
@@ -76,17 +66,14 @@
 
       const html = await response.text();
 
-      // Parse HTML
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
 
-      // Extract modal content
       const newContent = doc.querySelector(".modal-content");
       if (!newContent) {
         throw new Error("No .modal-content in HTML file");
       }
 
-      // Replace modal content
       const oldContent = modal.querySelector(".modal-content");
       if (oldContent) {
         modal.replaceChild(newContent, oldContent);
@@ -102,12 +89,10 @@
     }
   }
 
-  // ✅ Initialize AI modal with proper content
   async function initializeAIModalFull() {
     try {
       console.log("🚀 Initializing AI modal (full flow)...");
 
-      // Step 1: Ensure content is loaded
       const modal = document.getElementById("aiSuggestionModal");
       const content = modal?.querySelector(".modal-content");
 
@@ -116,10 +101,8 @@
         await forceLoadModalContent();
       }
 
-      // Step 2: Wait for content to be populated
       await waitForModalContent("aiSuggestionModal");
 
-      // Step 3: Force display with inline styles
       const modalContent = modal.querySelector(".modal-content");
       if (modalContent) {
         modalContent.style.cssText = `
@@ -140,19 +123,16 @@
           visibility: visible !important;
         `;
 
-        // Force reflow
         void modalContent.offsetHeight;
 
         console.log("✅ Modal display forced");
       }
 
-      // Step 4: Initialize AIHandler
       if (window.AIHandler && window.AIHandler.initAIModal) {
         console.log("🔧 Calling AIHandler.initAIModal...");
         await AIHandler.initAIModal();
       }
 
-      // Step 5: Verify dimensions
       setTimeout(() => {
         const finalContent = document.querySelector(
           "#aiSuggestionModal .modal-content"
@@ -179,17 +159,14 @@
     }
   }
 
-  // ✅ Override ModalManager.showModalById for AI modal
   const originalShowModalById = window.ModalManager?.showModalById;
 
   if (originalShowModalById) {
     window.ModalManager.showModalById = function (modalId) {
       console.log(`🎯 Intercepting showModalById: ${modalId}`);
 
-      // Call original
       const result = originalShowModalById.call(this, modalId);
 
-      // Special handling for AI modal
       if (modalId === "aiSuggestionModal") {
         console.log("🤖 AI Modal detected, initializing...");
 
@@ -204,7 +181,6 @@
     console.log("✅ ModalManager.showModalById overridden for AI modal");
   }
 
-  // ✅ Export for manual use
   window.initAIModalFull = initializeAIModalFull;
   window.forceLoadModalContent = forceLoadModalContent;
 

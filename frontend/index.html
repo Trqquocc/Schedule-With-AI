@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
   <style>
-    /* Ensure border-box sizing for accurate dimensions */
     #sidebar-container,
     #sidebar-container * {
       box-sizing: border-box !important;
@@ -33,10 +32,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quản lý công việc</title>
 
-    <!-- ✅ Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- ✅ Font Awesome 6.4.0 - Load with high priority -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
     <link
       rel="stylesheet"
@@ -46,10 +43,8 @@
       referrerpolicy="no-referrer"
     />
 
-    <!-- ✅ FullCalendar 6 -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/main.css" />
     <link rel="stylesheet" href="assets/css/calendar.css" />
     <link rel="stylesheet" href="assets/css/ai-calendar.css" />
@@ -59,13 +54,11 @@
     <link rel="stylesheet" href="assets/css/salary.css" />
 
     <style>
-      /* ✅ Clean, modern styling */
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
       }
 
-      /* Loading screen */
       #auth-loading {
         position: fixed;
         inset: 0;
@@ -99,7 +92,6 @@
         display: block;
       }
 
-      /* ✅ Hide ONLY icon elements until Font Awesome loads */
       body:not(.fa-loaded) i[class*="fa-"],
       body:not(.fa-loaded) span[class*="fa-"] {
         opacity: 0;
@@ -111,13 +103,11 @@
         transition: opacity 0.2s ease-in-out;
       }
 
-      /* Calendar height */
       #calendar {
         min-height: 600px;
         height: calc(100vh - 200px);
       }
 
-      /* Drag & drop */
       .fc-event-dragging {
         opacity: 0.7;
         cursor: move !important;
@@ -134,10 +124,8 @@
     </style>
   </head>
   <body>
-    <!-- ✅ CRITICAL: Force sidebar visible at page start -->
     <script>
       (function forceSidebarEarly() {
-        // Create observer before sidebar is even loaded
         const style = document.createElement("style");
         style.innerHTML = `
           #sidebar-container {
@@ -172,12 +160,9 @@
     </div>
 
     <div id="main-app" class="flex min-h-screen">
-      <!-- Thêm class flex min-h-screen vào đây -->
       <div id="sidebar-container"></div>
-      <!-- Sidebar fixed left:0 -->
 
       <div class="flex-1 flex flex-col" style="margin-left: 256px">
-        <!-- Content chính chiếm phần còn lại - shift right by sidebar width -->
         <div class="flex-1 overflow-auto">
           <main id="schedule-section" class="section active"></main>
           <main id="work-section" class="section"></main>
@@ -191,18 +176,14 @@
     <div id="createTaskModal" class="modal hidden"></div>
     <div id="settingsModal" class="modal hidden"></div>
 
-    <!-- 1. utils.js - Phải load ĐẦU TIÊN vì mọi thứ dùng nó -->
     <script src="assets/js/utils.js"></script>
 
-    <!-- 2. Các module core khác (nếu có) -->
     <script src="assets/js/modalManager.js"></script>
     <script src="assets/js/AppNavigation.js"></script>
     <script src="assets/js/componentLoader.js"></script>
-    <!-- phụ thuộc Utils -->
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
-    <!-- 3. Các module lớn (có thể load song song được) -->
     <script src="assets/js/calendarModule.js"></script>
     <script src="assets/js/workManager.js"></script>
     <script src="assets/js/ai-suggestion-handler.js"></script>
@@ -217,30 +198,27 @@
     <div id="profileModal" class="modal hidden"></div>
     <div id="notificationModal" class="modal hidden"></div>
 
-    <!-- ✅ NEW: Profile & Notification Managers -->
     <script src="assets/js/profileManager.js"></script>
     <script src="assets/js/notificationManager.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- 4. app.js - Phải load CUỐI CÙNG vì nó khởi động toàn bộ app -->
+    
+    <script>
+      window.updateUserInfo = function() {
+        if (window.App && window.App.updateUserInfo) {
+          return window.App.updateUserInfo();
+        }
+        console.log("⏳ App.updateUserInfo not yet available");
+      };
+    </script>
+    
     <script src="assets/js/app.js"></script>
 
-    <!-- ✅ AI Modal Test Helper (Development/Testing) -->
-    <script src="assets/js/ai-modal-test-helper.js"></script>
-
-    <!-- ✅ AI Modal CSS Verification (Development/Testing) -->
-    <script src="assets/js/ai-modal-css-verify.js"></script>
-
-    <!-- ✅ AI Modal Quick Test (Development/Testing) -->
-    <script src="assets/js/ai-modal-quick-test.js"></script>
-
     <script src="assets/js/modal-force-display.js"></script>
-
     <script src="assets/js/modal-content-loader.js"></script>
 
     <script src="assets/js/modal-absolute-fix.js"></script>
 
-    <!-- ✅ DEBUG SIDEBAR LOADING -->
     <script>
       window.debugSidebar = function () {
         const container = document.getElementById("sidebar-container");
@@ -266,12 +244,10 @@
         }
       };
 
-      // Run automatically after page loads
       window.addEventListener("load", () => {
         setTimeout(() => {
           console.log("\n=== AUTO DEBUG AFTER LOAD ===");
           window.debugSidebar();
-          // Also check computed styles of #sidebar-container itself
           const container = document.getElementById("sidebar-container");
           const containerStyles = window.getComputedStyle(container);
           console.log("\n=== CONTAINER COMPUTED STYLES ===");
@@ -288,7 +264,6 @@
     </script>
 
     <script>
-      // ✅ Auth check and Font Awesome wait
       (function () {
         const token = localStorage.getItem("auth_token");
         if (!token) return (location.href = "/login.html");
@@ -297,12 +272,10 @@
           const payload = JSON.parse(atob(token.split(".")[1]));
           if (payload.exp * 1000 < Date.now()) throw new Error("Token expired");
 
-          // ✅ Wait for Font Awesome
           function waitForFA(callback, maxWait = 3000) {
             const start = Date.now();
 
             function check() {
-              // Test if FA renders icons
               const test = document.createElement("i");
               test.className = "fas fa-check";
               test.style.cssText = "position:absolute;left:-9999px;";
@@ -332,7 +305,6 @@
             check();
           }
 
-          // Start app
           waitForFA(() => {
             document.getElementById("auth-loading")?.remove();
             document.getElementById("main-app")?.classList.add("ready");

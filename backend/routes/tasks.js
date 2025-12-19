@@ -4,7 +4,6 @@ const { dbPoolPromise, sql } = require("../config/database");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Mapping trạng thái
 const STATUS_MAP = {
   pending: 0,
   in_progress: 1,
@@ -14,15 +13,13 @@ const STATUS_MAP = {
   canceled: 3,
 };
 
-// Mapping màu theo độ ưu tiên
 const PRIORITY_COLORS = {
-  1: "#34D399", // Xanh lá - Thấp
-  2: "#60A5FA", // Xanh lam - Trung bình (mặc định)
-  3: "#FBBF24", // Vàng - Cao
-  4: "#F87171", // Đỏ - Rất cao
+  1: "#34D399",
+  2: "#60A5FA",
+  3: "#FBBF24",
+  4: "#F87171",
 };
 
-// Middleware xác thực JWT
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -40,7 +37,6 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// GET /api/tasks - Lấy danh sách công việc
 router.get("/", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -67,15 +63,14 @@ router.get("/", authenticateToken, async (req, res) => {
         cv.MucDoTapTrung,
         cv.ThoiDiemThichHop,
         cv.LuongTheoGio,
-        -- Thay vì lấy màu từ LoaiCongViec, chúng ta sẽ lấy theo độ ưu tiên
         CASE cv.MucDoUuTien
-          WHEN 1 THEN '#34D399'  -- Thấp: Xanh lá
-          WHEN 2 THEN '#60A5FA'  -- Trung bình: Xanh lam
-          WHEN 3 THEN '#FBBF24'  -- Cao: Vàng
-          WHEN 4 THEN '#F87171'  -- Rất cao: Đỏ
-          ELSE '#60A5FA'         -- Mặc định: Xanh lam
+          WHEN 1 THEN '#34D399'
+          WHEN 2 THEN '#60A5FA'
+          WHEN 3 THEN '#FBBF24'
+          WHEN 4 THEN '#F87171'
+          ELSE '#60A5FA'
         END AS MauSac,
-        lc.TenLoai  -- Vẫn lấy tên danh mục nếu cần
+        lc.TenLoai
       FROM CongViec cv
       LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
       WHERE cv.UserID = @userId
@@ -94,7 +89,6 @@ router.get("/", authenticateToken, async (req, res) => {
     query += ` ORDER BY cv.NgayTao DESC`;
     const result = await request.query(query);
 
-    // Thêm màu theo độ ưu tiên vào kết quả (đảm bảo có cả ở backend)
     const tasks = result.recordset.map((task) => {
       return {
         ...task,
@@ -115,7 +109,6 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/tasks - Tạo công việc mới (ĐÃ BỔ SUNG THỜI GIAN CỐ ĐỊNH + LẶP LẠI)
 router.post("/", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -128,7 +121,6 @@ router.post("/", authenticateToken, async (req, res) => {
       });
     }
 
-    // Xử lý thời gian cố định
     let gioBatDauCoDinh = null;
     let gioKetThucCoDinh = null;
     let thoiGianUocTinh = parseInt(d.ThoiGianUocTinh) || 60;
@@ -143,7 +135,6 @@ router.post("/", authenticateToken, async (req, res) => {
         });
       }
 
-      // Ưu tiên giờ kết thúc nếu có gửi lên
       if (d.GioKetThucCoDinh) {
         gioKetThucCoDinh = new Date(d.GioKetThucCoDinh);
         if (isNaN(gioKetThucCoDinh.getTime())) {
@@ -153,7 +144,6 @@ router.post("/", authenticateToken, async (req, res) => {
           });
         }
       } else {
-        // Tự động tính giờ kết thúc từ thời lượng
         const durationMinutes = d.ThoiGianUocTinh
           ? parseInt(d.ThoiGianUocTinh)
           : 60;
@@ -205,7 +195,6 @@ router.post("/", authenticateToken, async (req, res) => {
         )
       `);
 
-    // Thêm màu theo độ ưu tiên vào response
     const createdTask = result.recordset[0];
     const responseTask = {
       ...createdTask,
@@ -296,7 +285,6 @@ router.get("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/tasks/:id - Cập nhật công việc (cũng hỗ trợ các trường mới)
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -310,7 +298,6 @@ router.put("/:id", authenticateToken, async (req, res) => {
       .input("MaCongViec", sql.Int, taskId)
       .input("UserID", sql.Int, userId);
 
-    // Xử lý thời gian cố định khi cập nhật
     if (d.CoThoiGianCoDinh !== undefined) {
       fields.push("CoThoiGianCoDinh = @CoThoiGianCoDinh");
       request.input("CoThoiGianCoDinh", sql.Bit, d.CoThoiGianCoDinh ? 1 : 0);
@@ -325,7 +312,6 @@ router.put("/:id", authenticateToken, async (req, res) => {
         fields.push("GioBatDauCoDinh = @GioBatDauCoDinh");
         request.input("GioBatDauCoDinh", sql.DateTime, start);
 
-        // Tính giờ kết thúc nếu không có
         if (!d.GioKetThucCoDinh && d.ThoiGianUocTinh) {
           const end = new Date(
             start.getTime() + (parseInt(d.ThoiGianUocTinh) || 60) * 60000
@@ -349,7 +335,6 @@ router.put("/:id", authenticateToken, async (req, res) => {
       }
     }
 
-    // Các trường khác (giữ nguyên như cũ)
     if (d.TieuDe) {
       fields.push("TieuDe = @TieuDe");
       request.input("TieuDe", sql.NVarChar, d.TieuDe);
@@ -409,7 +394,6 @@ router.put("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /api/tasks/:id - Xóa công việc (giữ nguyên như cũ)
 router.delete("/:id", authenticateToken, async (req, res) => {
   const userId = req.userId;
   const taskId = parseInt(req.params.id);
@@ -424,7 +408,6 @@ router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     await transaction.begin();
 
-    // Kiểm tra công việc
     const taskCheck = await pool
       .request()
       .input("MaCongViec", sql.Int, taskId)
@@ -442,7 +425,6 @@ router.delete("/:id", authenticateToken, async (req, res) => {
     }
     const taskTitle = taskCheck.recordset[0].TieuDe;
 
-    // Đếm lịch trình
     const countRes = await pool
       .request()
       .input("MaCongViec", sql.Int, taskId)
@@ -475,7 +457,6 @@ router.delete("/:id", authenticateToken, async (req, res) => {
       });
     }
 
-    // Xóa cascade thủ công
     await transaction
       .request()
       .input("MaCongViec", sql.Int, taskId)

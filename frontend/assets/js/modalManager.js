@@ -1,7 +1,3 @@
-/**
- * ModalManager v2.2 - FULLY FIXED
- * Fixed: dispatchEvent bug + visibility issues
- */
 
 (function () {
   "use strict";
@@ -16,9 +12,6 @@
     initialized: false,
     cachedContent: new Map(),
 
-    /**
-     * ✅ INIT
-     */
     init() {
       if (this.initialized) {
         console.log("ℹ️ ModalManager already initialized");
@@ -32,11 +25,7 @@
       console.log("✅ ModalManager initialized successfully");
     },
 
-    /**
-     * 🔧 FIX NESTED MODALS - Remove duplicate modals with same ID
-     */
     fixNestedModals() {
-      // Check for duplicate aiSuggestionModal
       const allModals = document.querySelectorAll("#aiSuggestionModal");
       if (allModals.length > 1) {
         console.log(
@@ -45,7 +34,6 @@
 
         const modalsArray = Array.from(allModals);
 
-        // Tìm modal cha (có class active show) và modal con (có class hidden)
         const parentModal = modalsArray.find(
           (m) => m.classList.contains("active") && m.classList.contains("show")
         );
@@ -56,12 +44,10 @@
         if (parentModal && childModal && parentModal !== childModal) {
           console.log("🔧 Đang fix nested modal structure...");
 
-          // Di chuyển tất cả children từ modal con sang modal cha
           while (childModal.firstChild) {
             parentModal.appendChild(childModal.firstChild);
           }
 
-          // Xóa modal con (duplicate)
           childModal.remove();
 
           console.log("✅ Đã xoá modal duplicate!");
@@ -69,9 +55,6 @@
       }
     },
 
-    /**
-     * ✅ SHOW MODAL BY ID - FIXED VERSION
-     */
     showModalById(modalId) {
       console.log(`🟢 showModalById called for: ${modalId}`);
 
@@ -83,25 +66,21 @@
 
       console.log(`✅ Modal found, current classes: ${modal.className}`);
 
-      // 🔥 Let CSS handle the display. Only manage classes.
       modal.classList.remove("hidden");
       modal.classList.add("active", "show");
 
-      // Prevent body scroll
       document.body.style.overflow = "hidden";
 
       this.activeModal = modalId;
 
       console.log(`🎯 Modal ${modalId} updated classes: ${modal.className}`);
 
-      // Dispatch a standardized event for other modules to listen to
       window.dispatchEvent(
         new CustomEvent("modalShown", {
           detail: { modalId },
         })
       );
 
-      // Get computed styles for logging after a tick to allow for re-render
       setTimeout(() => {
         const computed = window.getComputedStyle(modal);
         console.log(`   - Computed Display: ${computed.display}`);
@@ -109,25 +88,19 @@
         console.log(`   - Computed Visibility: ${computed.visibility}`);
       }, 0);
 
-      // ✅ FIX: Use window.dispatchEvent, NOT this.dispatchEvent
       window.dispatchEvent(
         new CustomEvent("modalOpened", {
           detail: { modalId },
         })
       );
 
-      // Reinitialize handlers
       this.reinitializeModalHandlers(modal);
 
-      // Verify after a tick
       setTimeout(() => this.verifyModalVisibility(modalId), 100);
 
       return true;
     },
 
-    /**
-     * ✅ VERIFY MODAL VISIBILITY
-     */
     verifyModalVisibility(modalId) {
       const modal = document.getElementById(modalId);
       if (!modal) return;
@@ -152,7 +125,6 @@
         modal.style.opacity = "1";
       }
 
-      // Check if modal content is visible
       const content = modal.querySelector(".modal-content");
       if (content) {
         const contentRect = content.getBoundingClientRect();
@@ -166,10 +138,6 @@
         }
       }
     },
-
-    /**
-     * ✅ CLOSE MODAL
-     */
     close(modalId) {
       const targetModal = modalId || this.activeModal;
       const modal = document.getElementById(targetModal);
@@ -180,24 +148,13 @@
       }
 
       console.log(`🚪 Closing modal: ${targetModal}`);
-
-      // Remove classes
       modal.classList.remove("active", "show");
-
-      // Add hidden class to ensure it's hidden by CSS
       modal.classList.add("hidden");
-
-      // Reset inline styles that might have been added
       modal.style.display = "";
       modal.style.opacity = "";
       modal.style.visibility = "";
-
-      // Restore body scroll
       document.body.style.overflow = "";
-
       this.activeModal = null;
-
-      // ✅ FIX: Use window.dispatchEvent
       window.dispatchEvent(
         new CustomEvent("modalClosed", {
           detail: { modalId: targetModal },
@@ -207,22 +164,14 @@
       console.log(`✅ Modal ${targetModal} closed`);
     },
 
-    /**
-     * ✅ SETUP GLOBAL EVENT LISTENERS
-     */
     setupGlobalEventListeners() {
-      // Close on backdrop click
       document.addEventListener("click", (e) => {
         if (!this.activeModal) return;
-
-        // Kiểm tra nếu modal danh mục đang mở
         const categoryModal = document.getElementById("createCategoryModal");
         const isCategoryModalOpen =
           categoryModal &&
           !categoryModal.classList.contains("hidden") &&
           categoryModal.style.display !== "none";
-
-        // Nếu modal danh mục đang mở, KHÔNG đóng modal chính
         if (isCategoryModalOpen) {
           console.log("⚠️ Category modal is open, ignoring backdrop click");
           return;
@@ -233,8 +182,6 @@
           this.close(this.activeModal);
         }
       });
-
-      // Close on ESC key
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && this.activeModal) {
           console.log("⌨️ ESC pressed, closing modal");
@@ -244,26 +191,19 @@
 
       console.log("✅ Global event listeners setup complete");
     },
-
-    /**
-     * ✅ REINITIALIZE MODAL HANDLERS
-     */
     reinitializeModalHandlers(modal) {
       if (!modal) return;
 
       console.log(`🔄 Reinitializing handlers for: ${modal.id}`);
 
-      // Close buttons
       const closeButtons = modal.querySelectorAll(
         ".modal-close, [data-modal-close], [id*='cancel'], [id*='close']"
       );
 
       closeButtons.forEach((btn) => {
-        // Remove old listeners by cloning
         const newBtn = btn.cloneNode(true);
         btn.parentNode?.replaceChild(newBtn, btn);
 
-        // Add new listener
         newBtn.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -275,9 +215,6 @@
       console.log(`   ✅ Reinitialized ${closeButtons.length} close buttons`);
     },
 
-    /**
-     * ✅ UTILITY: Show create task modal
-     */
     showCreateTaskModal() {
       return this.showModalById("createTaskModal");
     },
@@ -289,25 +226,21 @@
         return;
       }
 
-      // Hiển thị modal
       modal.classList.add("active", "show");
       modal.classList.remove("hidden");
 
-      // Trigger event
       document.dispatchEvent(
         new CustomEvent("modalShown", {
           detail: { modalId: "createTaskModal" },
         })
       );
 
-      // Load categories
       if (window.loadCategoriesForModal) {
         setTimeout(() => {
           window.loadCategoriesForModal();
         }, 100);
       }
 
-      // Nếu có taskData, fill vào form
       if (taskData && window.fillTaskForm) {
         window.fillTaskForm(taskData);
       }
@@ -321,10 +254,6 @@
       this.close(modalId);
     },
 
-    /**
-     *
-     * ✅ DEBUG HELPER
-     */
     debug() {
       console.log("=== MODAL MANAGER DEBUG ===");
       console.log("Initialized:", this.initialized);
@@ -351,10 +280,8 @@
     },
   };
 
-  // Export to window
   window.ModalManager = ModalManager;
 
-  // Debug helpers
   window.testModal = (modalId = "createTaskModal") => {
     console.log(`🧪 Testing modal: ${modalId}`);
     ModalManager.showModalById(modalId);

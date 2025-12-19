@@ -1,6 +1,4 @@
-// assets/js/debug.js - BẢN FIX CUỐI CÙNG (KHÔNG CÒN LỖI GIẢ NỮA)
 (function () {
-  // TẮT HOÀN TOÀN LOG "container not found" – đây là log giả!
   const originalLog = console.log;
   const originalWarn = console.warn;
   const originalError = console.error;
@@ -12,7 +10,7 @@
       args[0].includes("Container") &&
       args[0].includes("not found")
     ) {
-      return; // BỎ QUA LOG GIẢ
+      return;
     }
     originalLog.apply(console, args);
   };

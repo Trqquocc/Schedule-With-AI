@@ -1,5 +1,3 @@
-// frontend/assets/js/workManager.js
-
 (function () {
   "use strict";
 
@@ -99,7 +97,6 @@
     hideSuccessOverlayTimeout: null,
 
     showSuccessOverlay(message = "Thành công!") {
-      // XÓA các timeout cũ trước khi tạo mới
       if (this.showSuccessOverlayTimeout) {
         clearTimeout(this.showSuccessOverlayTimeout);
         this.showSuccessOverlayTimeout = null;
@@ -110,7 +107,6 @@
         this.hideSuccessOverlayTimeout = null;
       }
 
-      // Tạo overlay nếu chưa có
       let overlay = document.getElementById("success-overlay");
       if (!overlay) {
         overlay = document.createElement("div");
@@ -133,14 +129,12 @@
     `;
         document.body.appendChild(overlay);
 
-        // Thêm sự kiện đóng overlay
         document
           .getElementById("close-overlay-btn")
           .addEventListener("click", () => {
             this.hideSuccessOverlay();
           });
 
-        // Đóng khi click ra ngoài
         overlay.addEventListener("click", (e) => {
           if (e.target === overlay) {
             this.hideSuccessOverlay();
@@ -148,16 +142,13 @@
         });
       }
 
-      // Cập nhật message động
       const overlayTitle = document.getElementById("overlay-title");
       if (overlayTitle) {
         overlayTitle.textContent = message;
       }
 
-      // Ẩn overlay trước nếu đang hiển thị (reset animation)
       this.hideSuccessOverlayImmediately();
 
-      // Hiển thị overlay với animation
       this.showSuccessOverlayTimeout = setTimeout(() => {
         overlay.classList.remove("hidden");
         this.showSuccessOverlayTimeout = setTimeout(() => {
@@ -167,7 +158,6 @@
         }, 10);
       }, 10);
 
-      // Tự động ẩn sau 3 giây (tăng từ 2.5s lên 3s)
       this.hideSuccessOverlayTimeout = setTimeout(() => {
         this.hideSuccessOverlay();
       }, 3000);
@@ -186,9 +176,9 @@
     hideSuccessOverlay() {
       const overlay = document.getElementById("success-overlay");
       if (overlay) {
-        overlay.classList.add("opacity-0"); // Fade out
+        overlay.classList.add("opacity-0");
         setTimeout(() => {
-          overlay.remove(); // Remove khỏi DOM hoàn toàn
+          overlay.remove();
         }, 300);
       }
     },
@@ -200,22 +190,18 @@
         return;
       }
 
-      // Ẩn loading indicator
       const loadingIndicator = document.getElementById("loading-indicator");
       if (loadingIndicator) {
         loadingIndicator.classList.add("hidden");
       }
 
-      // Ẩn empty state nếu có
       const emptyState = document.getElementById("empty-state-indicator");
 
       if (tasks.length === 0) {
-        // Hiển thị empty state
         if (emptyState) {
           emptyState.classList.remove("hidden");
         }
 
-        // Xóa bảng nếu có
         const table = container.querySelector(".work-table-container");
         if (table) {
           table.remove();
@@ -223,13 +209,10 @@
 
         return;
       }
-
-      // Ẩn empty state vì có công việc
       if (emptyState) {
         emptyState.classList.add("hidden");
       }
 
-      // Phân loại công việc
       const pendingTasks = tasks.filter((task) => task.TrangThaiThucHien !== 2);
       const completedTasks = tasks.filter(
         (task) => task.TrangThaiThucHien === 2
@@ -269,7 +252,6 @@
             <tbody class="bg-white divide-y divide-gray-200">
         `;
 
-        // Render công việc đang chờ
         pendingTasks.forEach((task) => {
           const priorityMap = { 1: "low", 2: "medium", 3: "high", 4: "high" };
           const priorityClass = priorityMap[task.MucDoUuTien] || "medium";
@@ -351,7 +333,6 @@
         </div>
       `;
 
-      // Render công việc đã hoàn thành (nếu có)
       if (completedTasks.length > 0) {
         html += `
         <div>
@@ -455,7 +436,6 @@
 
       container.innerHTML = html;
 
-      // Setup events sau khi render
       setTimeout(() => {
         this.setupTableEvents();
         this.setupFilters();
@@ -466,10 +446,8 @@
     setupGlobalEvents() {
       console.log("🔗 Setting up global events");
 
-      // Xóa event listeners cũ nếu có
       this.removeEventListeners();
 
-      // Thêm event listener cho nút refresh
       const refreshBtn = document.getElementById("refresh-tasks-btn");
       if (refreshBtn) {
         const refreshHandler = (e) => {
@@ -484,7 +462,6 @@
         });
       }
 
-      // Thêm event listener cho nút tạo công việc (chính)
       this.setupCreateTaskButton();
 
       console.log("✅ Global events setup complete");
@@ -493,7 +470,6 @@
     setupCreateTaskButton() {
       const createBtn = document.getElementById("create-task-btn");
       if (createBtn) {
-        // Xóa listener cũ nếu có
         createBtn.removeEventListener("click", createBtn._handler);
 
         const createHandler = (e) => {
@@ -506,7 +482,6 @@
         createBtn._handler = createHandler;
         createBtn.addEventListener("click", createHandler);
 
-        // Lưu để có thể xóa sau
         this.eventListeners.push({
           element: createBtn,
           event: "click",
@@ -521,26 +496,20 @@
       const container = document.getElementById("work-items-container");
       if (!container) return;
 
-      // Xóa listener cũ nếu có
       if (container._clickHandler) {
         container.removeEventListener("click", container._clickHandler);
       }
 
-      // Event delegation cho tất cả các nút action
       const clickHandler = (e) => {
-        // Tìm nút được click
         const target = e.target;
 
-        // Kiểm tra nếu click vào nút action
         if (
           target.tagName === "BUTTON" &&
           target.classList.contains("action-btn-")
         ) {
-          // Đã có class cụ thể, không cần làm gì thêm
           return;
         }
 
-        // Tìm phần tử cha là button có class action-btn-
         const actionBtn = e.target.closest('[class*="action-btn-"]');
         if (!actionBtn || !actionBtn.dataset.taskId) return;
 
@@ -566,7 +535,6 @@
       container._clickHandler = clickHandler;
       container.addEventListener("click", clickHandler);
 
-      // Xử lý select all checkboxes
       const selectAllPending = document.getElementById("select-all-pending");
       if (selectAllPending) {
         const selectAllHandler = (e) => {
@@ -607,7 +575,6 @@
       const priorityFilter = document.getElementById("priority-filter");
       const searchInput = document.getElementById("task-search");
 
-      // Xóa listeners cũ
       if (statusFilter && statusFilter._changeHandler) {
         statusFilter.removeEventListener("change", statusFilter._changeHandler);
       }
@@ -672,12 +639,10 @@
 
       let visibleCount = 0;
 
-      // Hàm xử lý filter cho từng dòng
       const processRow = (row) => {
         const taskId = row.dataset.taskId;
         const isCompleted = row.classList.contains("completed-row");
 
-        // Lấy thông tin ưu tiên
         const prioritySpan = row.querySelector("td:nth-child(3) span");
         let priorityValue = "medium";
         if (prioritySpan) {
@@ -696,7 +661,6 @@
             .querySelector("td:nth-child(2) .text-sm")
             ?.textContent.toLowerCase() || "";
 
-        // Kiểm tra status filter
         let statusMatch = true;
         if (statusFilter === "pending") {
           statusMatch = !isCompleted;
@@ -704,20 +668,17 @@
           statusMatch = isCompleted;
         }
 
-        // Kiểm tra priority filter
         let priorityMatch = true;
         if (priorityFilter !== "all") {
           priorityMatch = priorityValue === priorityFilter;
         }
 
-        // Kiểm tra search
         let searchMatch = true;
         if (searchText) {
           searchMatch =
             title.includes(searchText) || description.includes(searchText);
         }
 
-        // Hiển thị/ẩn dòng
         const shouldShow = statusMatch && priorityMatch && searchMatch;
         row.style.display = shouldShow ? "" : "none";
 
@@ -727,7 +688,6 @@
       pendingRows.forEach(processRow);
       completedRows.forEach(processRow);
 
-      // Hiển thị/ẩn section nếu không có công việc nào
       const pendingSection = document.querySelector(".mb-10");
       const completedSection = document.querySelector("div:not(.mb-10)");
 
@@ -766,13 +726,11 @@
 
         this.triggerSidebarRefresh();
 
-        // SỬA Ở ĐÂY: Gọi đúng message
         const successMessage = completed
           ? "Đã hoàn thành công việc"
           : "Đã mở lại công việc";
         this.showSuccessOverlay(successMessage);
 
-        // Reload tasks
         await this.loadTasks();
       } catch (err) {
         console.error("❌ Error updating task:", err);
@@ -788,7 +746,6 @@
           throw new Error("Utils module not available");
         }
 
-        // Tìm công việc trong bảng để hiển thị thông tin
         const taskRow = document.getElementById(`task-${taskId}`);
         let taskTitle = "";
 
@@ -798,7 +755,6 @@
               ?.textContent || "Công việc này";
         }
 
-        // Kiểm tra nếu Swal không tồn tại, dùng confirm
         if (typeof Swal === "undefined") {
           const confirmDelete = confirm(
             `Bạn có chắc chắn muốn xóa công việc "${taskTitle}"?`
@@ -834,7 +790,6 @@
           return;
         }
 
-        // Dùng Swal nếu có
         const confirmation = await Swal.fire({
           title: "Xác nhận xóa",
           html: `Bạn có chắc chắn muốn xóa công việc "<strong>${taskTitle}</strong>"?`,
@@ -868,7 +823,6 @@
             showConfirmButton: false,
           });
 
-          // Xoá task row từ DOM ngay lập tức
           const taskRow = document.getElementById(`task-${taskId}`);
           if (taskRow) {
             taskRow.style.animation = "fadeOut 0.3s ease-out forwards";
@@ -884,7 +838,6 @@
             })
           );
         } else {
-          // Xử lý các trường hợp đặc biệt
           if (result.requireConfirmation) {
             const forceConfirmation = await Swal.fire({
               title: "Xác nhận thêm",
@@ -946,18 +899,14 @@
     editTask(taskId) {
       console.log(`✏️ Editing task ${taskId}`);
 
-      // Load task data từ server - SỬA ENDPOINT
       Utils.makeRequest(`/api/tasks/${taskId}`, "GET")
         .then((result) => {
           if (result.success && result.data) {
             console.log("✅ Task data loaded:", result.data);
 
-            // Mở modal edit với dữ liệu task
             if (window.ModalManager && window.ModalManager.showModalById) {
-              // Mở modal trước
               window.ModalManager.showModalById("createTaskModal");
 
-              // Load dữ liệu vào form sau khi modal mở
               setTimeout(() => {
                 if (window.loadTaskDataIntoForm) {
                   window.loadTaskDataIntoForm(result.data);
@@ -968,7 +917,7 @@
                     Utils.showToast("Không thể tải form chỉnh sửa", "error");
                   }
                 }
-              }, 500); // Tăng thời gian đợi để modal load xong
+              }, 500); 
             } else {
               console.error("❌ ModalManager not found");
               if (typeof Utils !== "undefined" && Utils.showToast) {
@@ -985,7 +934,6 @@
         .catch((error) => {
           console.error("❌ Error loading task:", error);
 
-          // Log chi tiết lỗi
           console.error("Error details:", {
             taskId: taskId,
             endpoint: `/api/tasks/${taskId}`,
@@ -1010,14 +958,12 @@
 
       this.eventListeners = [];
 
-      // Xóa listeners từ container
       const container = document.getElementById("work-items-container");
       if (container && container._clickHandler) {
         container.removeEventListener("click", container._clickHandler);
         container._clickHandler = null;
       }
 
-      // Xóa listeners từ các nút khác
       const createBtn = document.getElementById("create-task-btn");
       if (createBtn && createBtn._handler) {
         createBtn.removeEventListener("click", createBtn._handler);
@@ -1050,7 +996,6 @@
     triggerSidebarRefresh: function () {
       console.log("📢 WorkManager: Triggering sidebar refresh");
 
-      // Cách 1: Dispatch custom event
       const event = new CustomEvent("task-changed", {
         detail: {
           action: "refresh",
@@ -1060,14 +1005,12 @@
       });
       document.dispatchEvent(event);
 
-      // Cách 2: Gọi trực tiếp nếu hàm tồn tại
       if (typeof window.triggerSidebarRefresh === "function") {
         setTimeout(() => {
           window.triggerSidebarRefresh();
         }, 300);
       }
 
-      // Cách 3: Gửi storage event (hoạt động trên cùng tab)
       try {
         localStorage.setItem("__task_refresh_trigger", Date.now().toString());
         setTimeout(() => {
@@ -1081,7 +1024,6 @@
     cleanup() {
       console.log("🧹 Cleaning up WorkManager...");
 
-      // Xóa các timeout
       if (this.showSuccessOverlayTimeout) {
         clearTimeout(this.showSuccessOverlayTimeout);
         this.showSuccessOverlayTimeout = null;
@@ -1098,7 +1040,6 @@
     },
   };
 
-  // Global event listeners
   document.addEventListener("work-tab-activated", () => {
     console.log("📢 Work tab activated event received");
     if (window.WorkManager) {
@@ -1144,7 +1085,6 @@
     }, 500);
   });
 
-  // Auto-init khi DOM ready và work section active
   document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       const workSection = document.getElementById("work-section");
@@ -1159,7 +1099,6 @@
     }, 1000);
   });
 
-  // Public methods
   window.WorkManager.refresh = function () {
     console.log("🔄 WorkManager.refresh() called");
     this.loadTasks();

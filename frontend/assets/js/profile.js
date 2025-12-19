@@ -1,8 +1,3 @@
-/**
- * Profile Manager - Manages user profile and settings
- * WRAPPED VERSION: Prevents duplicate initialization
- */
-
 (function () {
   "use strict";
 
@@ -40,7 +35,6 @@
 
       console.log("📄 Loading user profile for:", user.username);
 
-      // Điền vào form
       const fields = {
         hoten: user.hoten || "",
         username: user.username || "",
@@ -56,7 +50,6 @@
         }
       });
 
-      // Cập nhật avatar chữ cái đầu
       const avatar = document.querySelector(".avatar-letter");
       if (avatar) {
         avatar.textContent = (user.hoten || user.username || "?")
@@ -116,12 +109,10 @@
         if (result.success) {
           Utils.showToast("Cập nhật thông tin thành công", "success");
 
-          // Cập nhật localStorage
           const user = JSON.parse(localStorage.getItem("user_data") || "{}");
           const updatedUser = { ...user, ...formData };
           localStorage.setItem("user_data", JSON.stringify(updatedUser));
 
-          // Cập nhật UI toàn bộ app
           if (window.App && App.updateUserInfo) {
             App.updateUserInfo();
           }

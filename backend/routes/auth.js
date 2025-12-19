@@ -22,7 +22,6 @@ router.post("/register", async (req, res) => {
 
     const pool = await dbPoolPromise;
 
-    // Kiểm tra trùng
     const check = await pool
       .request()
       .input("username", sql.NVarChar, username)
@@ -38,7 +37,6 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    // Tạo user
     const hashed = await bcrypt.hash(password, 12);
     const result = await pool
       .request()
@@ -53,7 +51,6 @@ router.post("/register", async (req, res) => {
 
     const newUser = result.recordset[0];
 
-    // Tạo 4 danh mục mặc định (đã chắc chắn chạy được vì IDENTITY đã OK)
     const defaultCats = [
       { TenLoai: "Công việc", MoTa: "Công việc hàng ngày" },
       { TenLoai: "Cá nhân", MoTa: "Việc cá nhân" },
@@ -72,14 +69,13 @@ router.post("/register", async (req, res) => {
         );
     }
 
-    // TRẢ VỀ ĐÚNG CẤU TRÚC MÀ FRONTEND ĐANG MONG ĐỢI
     const token = jwt.sign(
       {
         userId: newUser.UserID,
-        username: newUser.Username, // ✅ Thêm username
+        username: newUser.Username,
       },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN } // ✅ Dùng constant đã định nghĩa
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     return res.status(201).json({
@@ -125,13 +121,11 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Cập nhật LastLogin
     await pool
       .request()
       .input("UserID", sql.Int, user.UserID)
       .query("UPDATE Users SET LastLogin = GETDATE() WHERE UserID = @UserID");
 
-    // Tạo token
     const token = jwt.sign(
       { userId: user.UserID, username: user.Username },
       JWT_SECRET,

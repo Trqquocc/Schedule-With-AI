@@ -43,7 +43,6 @@
               html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
               console.log(`${endpoint}:`, data);
 
-              // Show sample data structure
               if (data.data && data.data.length > 0) {
                 html += `<h4>First item structure:</h4>`;
                 html += `<pre>${JSON.stringify(data.data[0], null, 2)}</pre>`;

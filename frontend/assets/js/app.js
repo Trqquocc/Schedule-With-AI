@@ -18,7 +18,6 @@
       this.initialized = true;
       console.log("🚀 App initialization started...");
 
-      // 1. Check login
       if (!this.isAuthenticated()) {
         console.warn("❌ Not authenticated, redirecting to login...");
         window.location.href = "/login.html";
@@ -26,16 +25,13 @@
       }
       console.log("✅ Authentication verified");
 
-      // 2. ✅ WAIT for Font Awesome (critical for icons)
       await this.waitForFontAwesome();
 
-      // 3. Load all components
       console.log("📦 Loading components...");
       try {
         await ComponentLoader.init();
         console.log("✅ Components loaded successfully");
 
-        // Verify sidebar loaded
         const sidebarContainer = document.getElementById("sidebar-container");
         if (sidebarContainer && sidebarContainer.children.length > 0) {
           console.log(
@@ -51,12 +47,10 @@
         throw err;
       }
 
-      // 4. Update user info
       console.log("👤 Updating user info...");
       this.updateUserInfo();
       console.log("✅ User info updated");
 
-      // 5. Initialize Navigation AFTER components are loaded
       console.log("🧭 Initializing Navigation...");
       if (window.AppNavigation) {
         if (typeof AppNavigation.init === "function") {
@@ -75,7 +69,6 @@
         console.error("❌ Navigation object not found!");
       }
 
-      // 6. Initialize ModalManager
       console.log("🎭 Initializing ModalManager...");
       if (window.ModalManager?.init) {
         ModalManager.init();
@@ -84,7 +77,6 @@
         console.warn("⚠️ ModalManager not available");
       }
 
-      // 7. Hide loading screen
       const authLoading = document.getElementById("auth-loading");
       const mainApp = document.getElementById("main-app");
 
@@ -98,24 +90,20 @@
         console.log("✅ Main app displayed");
       }
 
-      // 8. ✅ Force icon refresh after everything loads
       setTimeout(() => {
         this.refreshIcons();
       }, 300);
 
-      // 9. Final verification
       this.verifyInitialization();
 
       console.log("✅ App fully initialized & running perfectly!");
     },
 
-    // ✅ NEW: Wait for Font Awesome to be fully loaded
     async waitForFontAwesome(timeout = 3000) {
       return new Promise((resolve) => {
         const startTime = Date.now();
 
         const check = () => {
-          // Test if Font Awesome icons render properly
           const testEl = document.createElement("i");
           testEl.className = "fas fa-check";
           testEl.style.position = "absolute";
@@ -147,11 +135,9 @@
       });
     },
 
-    // ✅ NEW: Refresh all icons to ensure they display
     refreshIcons() {
       console.log("🎨 Refreshing icons...");
 
-      // ✅ CHỈ select icon elements (i, span), KHÔNG phải tất cả elements có class fa-
       const icons = document.querySelectorAll(
         'i[class*="fa-"], span[class*="fa-"]'
       );
@@ -160,12 +146,10 @@
       let fixedCount = 0;
 
       icons.forEach((icon) => {
-        // Check if icon has proper font-family
         const computed = window.getComputedStyle(icon);
         const fontFamily = computed.fontFamily;
 
         if (!fontFamily.includes("Font Awesome")) {
-          // Force Font Awesome font
           icon.style.fontFamily =
             '"Font Awesome 6 Free", "Font Awesome 6 Brands"';
           icon.style.fontWeight = "900";
@@ -173,7 +157,6 @@
           fixedCount++;
         }
 
-        // Ensure visibility
         if (icon.style.opacity === "0" || computed.opacity === "0") {
           icon.style.opacity = "1";
         }
@@ -189,7 +172,6 @@
     verifyInitialization() {
       console.log("🔍 Verifying initialization...");
 
-      // Check sections
       const sections = document.querySelectorAll(".section");
       const activeSection = document.querySelector(".section.active");
       console.log(
@@ -198,11 +180,9 @@
         }`
       );
 
-      // Check navigation buttons
       const navButtons = document.querySelectorAll("[data-section]");
       console.log(`  📘 Nav buttons: ${navButtons.length}`);
 
-      // Check icons
       const icons = document.querySelectorAll(
         'i[class*="fa-"], span[class*="fa-"]'
       );
@@ -213,7 +193,6 @@
         `  🎨 Icons: ${icons.length} total, ${visibleIcons.length} visible`
       );
 
-      // Check Navigation object
       if (window.AppNavigation) {
         console.log(
           `  🧭 Navigation: initialized=${AppNavigation.initialized}, current=${AppNavigation.currentSection}`
@@ -222,7 +201,6 @@
         console.error("  ❌ Navigation object missing!");
       }
 
-      // List all sections and their state
       sections.forEach((section) => {
         const isActive = section.classList.contains("active");
         const display = window.getComputedStyle(section).display;
@@ -269,7 +247,6 @@
       const userEmail = user.email || "";
       const avatarLetter = userName.charAt(0).toUpperCase();
 
-      // Update user name
       let nameUpdates = 0;
       document
         .querySelectorAll(".user-name, [data-user-name], #nav-user-name")
@@ -279,7 +256,6 @@
         });
       console.log(`  ✅ Updated ${nameUpdates} user name elements`);
 
-      // Update user email
       let emailUpdates = 0;
       document
         .querySelectorAll(".user-email, [data-user-email]")
@@ -289,7 +265,6 @@
         });
       console.log(`  ✅ Updated ${emailUpdates} user email elements`);
 
-      // Update avatar
       let avatarUpdates = 0;
       document.querySelectorAll(".avatar-letter").forEach((el) => {
         el.textContent = avatarLetter;
@@ -298,7 +273,6 @@
       console.log(`  ✅ Updated ${avatarUpdates} avatar elements`);
     },
 
-    // Manual navigation trigger for debugging
     testNavigation(sectionName) {
       console.log(`🧪 Testing navigation to: ${sectionName}`);
       if (window.AppNavigation && AppNavigation.navigateToSection) {
@@ -308,7 +282,6 @@
       }
     },
 
-    // Get current app state
     getState() {
       return {
         initialized: this.initialized,
@@ -330,7 +303,6 @@
     },
   };
 
-  // Proper auto-start with better timing
   if (document.readyState === "loading") {
     console.log("⏳ Waiting for DOMContentLoaded...");
     document.addEventListener("DOMContentLoaded", () => {
@@ -345,7 +317,6 @@
   console.log("✅ App module loaded");
 })();
 
-// ✅ Global debug helpers
 window.debugApp = function () {
   console.log("=== APP DEBUG INFO ===");
   const state = window.App?.getState();
@@ -359,22 +330,18 @@ window.debugApp = function () {
 window.refreshUI = function () {
   console.log("🔄 Global UI refresh...");
 
-  // Refresh user info
   if (window.App && window.App.updateUserInfo) {
     window.App.updateUserInfo();
   }
 
-  // Refresh calendar drag & drop nếu đang ở schedule tab
   if (window.CalendarModule && CalendarModule.refreshDragDrop) {
     CalendarModule.refreshDragDrop();
   }
 
-  // Refresh work tasks nếu đang ở work tab
   if (window.WorkManager && WorkManager.loadTasks) {
     WorkManager.loadTasks();
   }
 
-  // Refresh icons
   if (window.FontAwesome && FontAwesome.dom && FontAwesome.dom.i2svg) {
     setTimeout(() => FontAwesome.dom.i2svg(), 100);
   }
@@ -386,7 +353,6 @@ window.testNav = function (section) {
   window.App?.testNavigation(section);
 };
 
-// ✅ Icon debug helper
 window.debugIcons = function () {
   const icons = document.querySelectorAll(
     'i[class*="fa-"], span[class*="fa-"]'
@@ -418,7 +384,6 @@ window.debugIcons = function () {
   }
 };
 
-// ✅ Force icon reload helper
 window.fixIcons = function () {
   console.log("🔧 Manually fixing icons...");
   window.App?.refreshIcons();

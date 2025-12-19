@@ -1,4 +1,3 @@
-<!-- frontend/components/calendar-sidebar.html - FINAL UPDATED VERSION -->
 <div
   class="w-80 bg-gray-50 border-r border-gray-200 flex flex-col h-full"
   id="calendar-sidebar"
@@ -29,12 +28,6 @@
   (function () {
     console.log("📋 Calendar sidebar loaded");
 
-    // ============================
-    //   LOAD USER TASKS
-    // ============================
-    // ============================
-    //   LOAD USER TASKS - FIXED VERSION
-    // ============================
     window.loadUserTasks = async function (forceRefresh = false) {
       console.log(
         "🔄 Loading user tasks for sidebar...",
@@ -48,7 +41,6 @@
       }
 
       try {
-        // Hiển thị loading
         container.innerHTML = `
       <div class="text-center py-8">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -56,10 +48,8 @@
       </div>
     `;
 
-        // Thêm timestamp để tránh cache
         const url = forceRefresh ? `/api/tasks?t=${Date.now()}` : "/api/tasks";
 
-        // Gọi API để lấy tasks
         const result = await Utils.makeRequest(url, "GET");
 
         if (!result.success) {
@@ -69,7 +59,6 @@
         const allTasks = result.data || [];
         console.log(`📦 Loaded ${allTasks.length} tasks from API`);
 
-        // Lọc tasks chưa hoàn thành
         const pendingTasks = allTasks.filter((task) => {
           const status =
             task.TrangThaiThucHien || task.Status || task.DaHoanThanh || 0;
@@ -78,7 +67,6 @@
 
         console.log(`📊 Pending tasks: ${pendingTasks.length}`);
 
-        // Render tasks
         container.innerHTML = "";
 
         if (pendingTasks.length === 0) {
@@ -91,7 +79,6 @@
           return;
         }
 
-        // Render từng task (giữ nguyên phần render)
         pendingTasks.forEach((task, index) => {
           const taskId = task.MaCongViec || task.ID || task.id;
           const title = task.TieuDe || task.Title || `Công việc ${index + 1}`;
@@ -135,7 +122,6 @@
     </div>
   `;
 
-          // Bind drag events trực tiếp
           taskElement.addEventListener("dragstart", (e) => {
             console.log(`🎯 Drag start: ${title} (ID: ${taskId})`);
             e.dataTransfer.setData("text/plain", taskId.toString());
@@ -157,10 +143,8 @@
 
         console.log(`✅ Rendered ${pendingTasks.length} tasks in sidebar`);
 
-        // Gọi enhanceDragAndDrop sau render
         enhanceDragAndDrop();
 
-        // Setup calendar drag nếu có
         setTimeout(() => {
           if (
             window.CalendarModule &&
@@ -179,7 +163,6 @@
       } catch (error) {
         console.error("❌ Error loading tasks in sidebar:", error);
 
-        // Hiển thị thông báo lỗi
         const container = document.getElementById("task-list");
         if (container) {
           container.innerHTML = `
@@ -199,7 +182,6 @@
     window.setupTaskEventListeners = function () {
       console.log("🔧 Setting up global task event listeners");
 
-      // Lắng nghe sự kiện từ localStorage
       window.addEventListener("storage", function (e) {
         if (
           e.key === "task-updated" ||
@@ -207,11 +189,10 @@
           e.key === "task-deleted"
         ) {
           console.log("📢 Storage event detected:", e.key);
-          setTimeout(() => window.loadUserTasks(true), 1000); // Tăng delay
+          setTimeout(() => window.loadUserTasks(true), 1000);
         }
       });
 
-      // Hợp nhất listener custom events
       document.addEventListener("task-changed", function (e) {
         console.log("📢 Custom task-changed event received:", e.detail);
         setTimeout(() => window.loadUserTasks(true), 1000);
@@ -222,7 +203,6 @@
         setTimeout(() => window.loadUserTasks(true), 1000);
       });
 
-      // Lắng nghe message
       window.addEventListener("message", function (e) {
         if (e.data && e.data.type === "task-update") {
           console.log("📢 Message event received:", e.data.type);
@@ -230,19 +210,16 @@
         }
       });
 
-      // Interval auto-check (sửa để force reload nếu count thay đổi)
       let lastTaskCount = 0;
       setInterval(() => {
         const taskItems = document.querySelectorAll(".task-item");
         if (taskItems.length !== lastTaskCount || taskItems.length === 0) {
-          // Thêm check nếu empty
           console.log("🔄 Task count changed or empty, force reloading...");
           lastTaskCount = taskItems.length;
           window.loadUserTasks(true);
         }
       }, 3000);
 
-      // Reload khi chuyển tab
       document.addEventListener("section-changed", (e) => {
         if (e.detail?.section === "schedule") {
           console.log("Switched to Schedule tab → reload sidebar tasks");
@@ -294,13 +271,11 @@
   window.triggerSidebarRefresh = function () {
     console.log("📢 Manual sidebar refresh triggered");
 
-    // Trigger storage event (cách đơn giản để đồng bộ)
     localStorage.setItem("task-updated", Date.now().toString());
     setTimeout(() => {
       localStorage.removeItem("task-updated");
     }, 100);
 
-    // Hoặc gọi trực tiếp
     setTimeout(() => {
       if (window.loadUserTasks) {
         window.loadUserTasks(true);
@@ -312,16 +287,13 @@
     const taskId = this.dataset.taskId;
     const taskTitle = this.dataset.taskTitle || "Công việc";
 
-    // Create custom drag preview
     const dragPreview = this.cloneNode(true);
     dragPreview.classList.add("task-item-drag-preview");
     dragPreview.style.width = `${this.offsetWidth}px`;
     document.body.appendChild(dragPreview);
 
-    // Set custom drag image
     e.dataTransfer.setDragImage(dragPreview, 20, 20);
 
-    // Set data
     e.dataTransfer.setData("text/plain", taskId);
     e.dataTransfer.setData(
       "application/json",
@@ -334,10 +306,8 @@
     );
     e.dataTransfer.effectAllowed = "move";
 
-    // Add dragging class for visual feedback
     this.classList.add("dragging", "dragging-task");
 
-    // Remove preview after drag starts
     setTimeout(() => {
       if (dragPreview.parentNode) {
         dragPreview.parentNode.removeChild(dragPreview);
@@ -346,7 +316,6 @@
 
     console.log(`🎯 Bắt đầu kéo: "${taskTitle}"`);
 
-    // Show notification if available
     if (window.Utils && Utils.showToast) {
       Utils.showToast(`📤 Đang kéo: "${taskTitle}"`, "info");
     }
@@ -355,7 +324,6 @@
   function handleDragEnd() {
     this.classList.remove("dragging", "dragging-task");
 
-    // Clean up any remaining previews
     document.querySelectorAll(".task-item-drag-preview").forEach((el) => {
       el.parentNode?.removeChild(el);
     });
@@ -363,7 +331,6 @@
     console.log("🔄 Kết thúc kéo");
   }
 
-  // Refresh button handler
   document.addEventListener("DOMContentLoaded", () => {
     const refreshBtn = document.getElementById("refresh-tasks-btn");
     if (refreshBtn) {
@@ -379,91 +346,19 @@
       });
     }
 
-    // Setup auto-check every 60 seconds
     setInterval(() => {
       if (document.getElementById("calendar-sidebar")?.offsetParent !== null) {
         console.log("🔄 Auto-checking for task updates");
         if (window.loadUserTasks) {
-          window.loadUserTasks(); // Regular refresh, not force
+          window.loadUserTasks();
         }
       }
-    }, 60000); // 60 seconds
+    }, 60000);
   });
 
-  // Keyboard shortcuts for accessibility
-  // document.addEventListener("keydown", (e) => {
-  //   if (e.key === "r" && (e.ctrlKey || e.metaKey)) {
-  //     e.preventDefault();
-  //     const refreshBtn = document.getElementById("refresh-tasks-btn");
-  //     if (refreshBtn) {
-  //       refreshBtn.click();
-  //     }
-  //   }
 
-  //   // Space bar to toggle drag mode for accessibility
-  //   if (
-  //     e.key === " " &&
-  //     document.activeElement.classList.contains("task-item")
-  //   ) {
-  //     e.preventDefault();
-  //     const taskItem = document.activeElement;
-  //     taskItem.draggable = !taskItem.draggable;
-  //     if (taskItem.draggable) {
-  //       taskItem.setAttribute("aria-grabbed", "true");
-  //     } else {
-  //       taskItem.setAttribute("aria-grabbed", "false");
-  //     }
-  //   }
-  // });
-
-  // Accessibility improvements
-  // document.querySelectorAll(".task-item").forEach((item) => {
-  //   item.setAttribute("role", "button");
-  //   item.setAttribute("tabindex", "0");
-  //   item.setAttribute(
-  //     "aria-label",
-  //     `Công việc: ${item.dataset.taskTitle}. Kéo thả vào lịch để lên kế hoạch.`
-  //   );
-  // });
-
-  // const initNav = setInterval(() => {
-  //   if (window.AppNavigation?.navigateToSection) {
-  //     clearInterval(initNav);
-  //     document.querySelectorAll("[data-section]").forEach((btn) => {
-  //       btn.addEventListener("click", (e) => {
-  //         e.preventDefault();
-  //         const section = btn.dataset.section;
-
-  //         // Gọi navigation
-  //         AppNavigation.navigateToSection(section);
-
-  //         // Nếu là tab công việc, trigger reload
-  //         if (section === "work") {
-  //           setTimeout(() => {
-  //             // Dispatch event để các module khác biết
-  //             const event = new CustomEvent("work-tab-activated");
-  //             document.dispatchEvent(event);
-
-  //             // Gọi trực tiếp WorkManager nếu có
-  //             if (
-  //               window.WorkManager &&
-  //               typeof WorkManager.loadTasks === "function"
-  //             ) {
-  //               console.log("🔄 Sidebar: Triggering WorkManager.loadTasks()");
-  //               WorkManager.loadTasks();
-  //             }
-  //           }, 100);
-  //         }
-  //       });
-  //     });
-  //   }
-  // }, 100);
-  // setTimeout(() => clearInterval(initNav), 5000);
-
-  // Export để dùng ở nơi khác
   window.updateSidebarUser = updateUserInfo;
 
-  // Hàm helper để reload work data
   window.reloadWorkData = function () {
     console.log("🔄 reloadWorkData called from sidebar");
     if (window.WorkManager && typeof WorkManager.loadTasks === "function") {
@@ -474,18 +369,15 @@
     }
   };
 
-  // 2. Lắng nghe khi tạo task từ modal (tạo công việc mới (phổ biến nhất)
   document.addEventListener("taskCreated", () => {
     console.log("Task created → force reload sidebar");
     setTimeout(() => window.loadUserTasks(true), 400);
   });
 
-  // 3. Đảm bảo sau mỗi lần load tasks → gọi lại setup drag & drop cho FullCalendar
   const originalLoadUserTasks = window.loadUserTasks;
   window.loadUserTasks = async function (forceRefresh = false) {
     await originalLoadUserTasks(forceRefresh);
 
-    // Sau khi render xong → bật lại kéo thả vào lịch
     setTimeout(() => {
       {
         if (
@@ -506,7 +398,6 @@
     }, 200);
   };
 
-  // 4. Trigger reload ngay khi chuyển sang tab Lịch (schedule)
   document.addEventListener("section-changed", (e) => {
     if (e.detail?.section === "schedule") {
       console.log("Switched to Schedule tab → reload sidebar tasks");
@@ -515,10 +406,6 @@
   });
 
   console.log("FIXED: Sidebar auto-reload + drag-to-calendar restored");
-  // Lắng nghe sự kiện từ nơi khác để reload
-  // document.addEventListener("refresh-work-data", () => {
-  //   window.reloadWorkData();
-  // });
 </script>
 
 <style>
@@ -539,7 +426,6 @@
     box-shadow: inset 1px 0 0 #cbd5e1, 2px 0 8px rgba(0, 0, 0, 0.05);
   }
 
-  /* Sidebar Header */
   #calendar-sidebar .p-4 {
     background: white;
     border-bottom: 1px solid #e2e8f0;
@@ -558,7 +444,6 @@
     letter-spacing: 0.3px;
   }
 
-  /* Refresh Button */
   #refresh-tasks-btn {
     background: transparent;
     border: 2px solid #e2e8f0;
@@ -592,7 +477,6 @@
     }
   }
 
-  /* Task List Container */
   #task-list {
     padding: 16px;
     display: flex;
@@ -601,7 +485,6 @@
     min-height: 300px;
   }
 
-  /* Task Item - Modern Card Design */
   .task-item {
     background: white;
     border-radius: 12px;
@@ -651,7 +534,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  /* Task Item when dragging */
   .task-item.dragging-task {
     opacity: 0.6;
     transform: scale(0.98);
@@ -661,13 +543,11 @@
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   }
 
-  /* Task Color Indicator */
   .task-item {
     border-left-width: 5px;
     border-left-style: solid;
   }
 
-  /* Task Content */
   .task-item .flex-1 {
     margin-left: 12px;
   }
@@ -695,7 +575,6 @@
     overflow: hidden;
   }
 
-  /* Task Meta Info */
   .task-item .flex.items-center.gap-3 {
     margin-top: 10px;
     padding-top: 10px;
@@ -730,7 +609,6 @@
     font-size: 10px;
   }
 
-  /* Grip Icon */
   .task-item .fa-grip-vertical {
     color: #cbd5e1;
     font-size: 14px;
@@ -740,7 +618,6 @@
     background: #f8fafc;
   }
 
-  /* Empty State */
   #task-list .text-center {
     padding: 60px 20px;
     display: flex;
@@ -775,7 +652,6 @@
     color: #94a3b8;
   }
 
-  /* Loading State */
   #task-list .animate-pulse {
     padding: 60px 20px;
     text-align: center;
@@ -810,7 +686,6 @@
     font-size: 13px;
   }
 
-  /* Error State */
   #task-list .text-red-600 {
     padding: 40px 20px;
     text-align: center;
@@ -848,7 +723,6 @@
     transform: translateY(-1px);
   }
 
-  /* Task Priority Badges */
   .task-priority-badge {
     position: absolute;
     top: 12px;
@@ -874,7 +748,6 @@
     box-shadow: 0 0 0 2px white, 0 0 6px #10b981;
   }
 
-  /* Task Time Estimate */
   .task-time-estimate {
     display: inline-flex;
     align-items: center;
@@ -892,12 +765,10 @@
     font-size: 10px;
   }
 
-  /* Hover Effects for Task Items */
   .task-item:hover .font-medium {
     color: #3b82f6;
   }
 
-  /* Scrollbar for Task List */
   #task-list::-webkit-scrollbar {
     width: 6px;
   }
@@ -917,7 +788,6 @@
     background: #94a3b8;
   }
 
-  /* Responsive Design */
   @media (max-width: 1024px) {
     #calendar-sidebar {
       width: 300px;
@@ -972,7 +842,6 @@
     }
   }
 
-  /* Animation for task addition/removal */
   @keyframes taskSlideIn {
     from {
       opacity: 0;
@@ -1007,7 +876,6 @@
     animation: taskSlideOut 0.3s ease-in forwards;
   }
 
-  /* Task category colors */
   .task-item.category-work {
     border-left-color: #3b82f6;
   }
@@ -1028,7 +896,6 @@
     border-left-color: #94a3b8;
   }
 
-  /* Task status indicator */
   .task-status-dot {
     width: 8px;
     height: 8px;
@@ -1052,7 +919,6 @@
     box-shadow: 0 0 4px #10b981;
   }
 
-  /* Drag Preview Effect */
   .task-item-drag-preview {
     position: fixed;
     z-index: 9999;
@@ -1066,7 +932,6 @@
     transform: rotate(2deg);
   }
 
-  /* Better drag visual feedback */
   .task-item.dragging {
     position: relative;
   }
@@ -1087,14 +952,12 @@
     pointer-events: none;
   }
 
-  /* Smooth transitions */
   .task-item,
   #refresh-tasks-btn,
   #calendar-sidebar {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Subtle pulse animation for new tasks */
   @keyframes subtlePulse {
     0%,
     100% {
@@ -1109,7 +972,6 @@
     animation: subtlePulse 1.5s ease-in-out 2;
   }
 
-  /* Empty state improvements */
   #task-list:empty {
     background-image: radial-gradient(
         circle at 25% 25%,
@@ -1125,7 +987,6 @@
     background-position: 0 0, 20px 20px;
   }
 
-  /* Floating action button for mobile */
   @media (max-width: 768px) {
     .sidebar-toggle-btn {
       position: fixed;

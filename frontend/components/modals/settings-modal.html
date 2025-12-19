@@ -11,7 +11,6 @@
   </div>
 
   <div class="space-y-4">
-    <!-- User Profile Section -->
     <div class="bg-gray-50 p-4 rounded-lg">
       <div class="flex items-center space-x-3">
         <div
@@ -26,9 +25,7 @@
       </div>
     </div>
 
-    <!-- Settings Options -->
     <div class="space-y-2">
-      <!-- Update Profile -->
       <button
         id="updateProfileBtn"
         class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
@@ -40,7 +37,6 @@
         <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
       </button>
 
-      <!-- Notification Settings -->
       <button
         class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
       >
@@ -51,7 +47,6 @@
         <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
       </button>
 
-      <!-- Appearance -->
       <button
         class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
       >
@@ -62,7 +57,6 @@
         <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
       </button>
 
-      <!-- Language -->
       <button
         class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
       >
@@ -73,7 +67,6 @@
         <span class="text-xs text-gray-500">Tiếng Việt</span>
       </button>
 
-      <!-- Help & Support -->
       <button
         class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
       >
@@ -85,12 +78,9 @@
       </button>
     </div>
 
-    <!-- Divider -->
     <div class="border-t border-gray-200 my-4"></div>
 
-    <!-- Account Actions -->
     <div class="space-y-2">
-      <!-- Privacy Policy -->
       <button
         class="w-full text-left p-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
       >
@@ -98,7 +88,6 @@
         Chính sách bảo mật
       </button>
 
-      <!-- Terms of Service -->
       <button
         class="w-full text-left p-3 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
       >
@@ -106,7 +95,6 @@
         Điều khoản dịch vụ
       </button>
 
-      <!-- Logout -->
       <button
         id="logoutBtn"
         class="w-full text-left p-3 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors mt-2"
@@ -117,14 +105,12 @@
     </div>
   </div>
 
-  <!-- App Version -->
   <div class="mt-6 pt-4 border-t border-gray-200 text-center">
     <p class="text-xs text-gray-500">Phiên bản 1.0.0</p>
   </div>
 </div>
 
 <style>
-  /* Additional styles for settings modal */
   .settings-option {
     transition: all 0.2s ease;
   }
@@ -135,9 +121,7 @@
 </style>
 
 <script>
-  // Initialize settings modal interactions
   document.addEventListener("DOMContentLoaded", function () {
-    // Add hover effects programmatically
     const settingButtons = document.querySelectorAll(
       "#settingsModal button:not(#closeSettingsBtn)"
     );
@@ -151,21 +135,17 @@
       });
     });
 
-    // Handle update profile button
     const updateProfileBtn = document.getElementById("updateProfileBtn");
     if (updateProfileBtn) {
       updateProfileBtn.addEventListener("click", function () {
         console.log("Navigate to profile section");
-        // This will be handled by the main ModalManager
       });
     }
 
-    // Handle logout button
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", function () {
         console.log("Logout requested");
-        // This will be handled by the main ModalManager
       });
     }
   });

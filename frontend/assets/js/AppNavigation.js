@@ -1,12 +1,5 @@
-/**
- * AppNavigation Module - Handles page navigation and section switching
- * COMPLETELY NEW FILE - Renamed to avoid Native Navigation API conflict
- */
-
 (function () {
   "use strict";
-
-  // ✅ CHECK NEW NAME
   if (window.AppNavigation) {
     console.log("⏭️ AppNavigation already loaded");
     return;
@@ -50,7 +43,6 @@
       console.log(`   Current section: ${this.currentSection}`);
     },
 
-    // THAY THẾ hàm cleanupCurrentSection trong AppNavigation.js
     async cleanupCurrentSection() {
       if (!this.currentSection) return;
 
@@ -78,20 +70,15 @@
           }
         },
         ai: () => {
-          // ⚠️ QUAN TRỌNG: KHÔNG destroy AI calendar khi chuyển tab
-          // Chỉ ẩn nó đi và lưu trạng thái
           console.log("🤖 AI tab: Keeping calendar alive, just hiding");
 
-          // Chỉ ẩn calendar container (không destroy)
           const aiCalendar = document.getElementById("ai-calendar");
           if (aiCalendar && window.AIModule && AIModule.calendar) {
-            // Lưu trạng thái hiện tại
             if (AIModule.calendar) {
               AIModule.lastView = AIModule.currentView;
               AIModule.lastDate = AIModule.calendar.getDate();
             }
 
-            // Chỉ ẩn đi (không destroy)
             aiCalendar.style.opacity = "0";
             aiCalendar.style.pointerEvents = "none";
             aiCalendar.style.position = "absolute";
@@ -170,7 +157,6 @@
 
         this.currentSection = sectionName;
 
-        // ✅ DISPATCH CUSTOM EVENT KHI CHUYỂN TAB
         const event = new CustomEvent("section-changed", {
           detail: {
             section: sectionName,
@@ -185,7 +171,6 @@
       } catch (error) {
         console.error(`❌ Navigation to ${sectionName} failed:`, error);
 
-        // Optional: Dispatch an error event
         const errorEvent = new CustomEvent("section-change-error", {
           detail: {
             section: sectionName,
@@ -246,7 +231,6 @@
 
       console.log(`📦 Loading content for: ${sectionName}`);
 
-      // LUÔN load content qua ComponentLoader (đơn giản hóa)
       if (window.ComponentLoader && ComponentLoader.loadPageContent) {
         console.log(`🔥 Loading content via ComponentLoader...`);
         await ComponentLoader.loadPageContent(sectionName);
@@ -257,7 +241,6 @@
         return;
       }
 
-      // Re-initialize modals và event handlers
       if (window.ModalManager) {
         setTimeout(() => {
           if (window.ModalManager.reinitializeEventHandlers) {
@@ -266,12 +249,10 @@
         }, 100);
       }
 
-      // Update user info
       if (window.App && window.App.updateUserInfo) {
         setTimeout(() => window.App.updateUserInfo(), 100);
       }
 
-      // Section-specific refresh logic
       setTimeout(() => {
         if (sectionName === "schedule" && window.CalendarModule) {
           console.log("🔄 Refreshing calendar...");
@@ -280,11 +261,9 @@
         } else if (sectionName === "work") {
           console.log("🔄 WORK SECTION - Ensuring tasks are loaded...");
 
-          // Dispatch event để sidebar và các module khác biết
           const workEvent = new CustomEvent("work-tab-activated");
           document.dispatchEvent(workEvent);
 
-          // Đảm bảo WorkManager được init và load tasks
           if (window.WorkManager) {
             if (!WorkManager.initialized && WorkManager.init) {
               console.log("🔧 WorkManager not initialized, calling init()");
@@ -297,7 +276,6 @@
             }
           }
 
-          // Setup drag & drop cho tasks mới
           if (CalendarModule && CalendarModule.setupNativeDragDrop) {
             setTimeout(() => {
               CalendarModule.setupNativeDragDrop();
@@ -316,7 +294,6 @@
         }
       }, 200);
 
-      // Scroll to top
       window.scrollTo(0, 0);
 
       console.log(`✅ Section ${sectionName} initialized successfully`);
@@ -329,7 +306,6 @@
     },
   };
 
-  // ✅ EXPOSE WITH NEW NAME
   window.AppNavigation = AppNavigation;
 
   console.log("✅ AppNavigation loaded and ready");

@@ -1,8 +1,6 @@
-// js/ai-suggestion-handler.js - FIXED VERSION v9.2 - FE/BE SEPARATION
 (() => {
   "use strict";
 
-  // Nếu đã có rồi thì không tạo lại
   if (window.AIHandler) {
     console.log("AIHandler đã tồn tại → bỏ qua load lại");
     return;
@@ -18,14 +16,7 @@
     _isModalInitialized: false,
     _isSubmitting: false,
 
-    /**
-     * ======================================================
-     * 1. MAIN INITIALIZATION - ĐẦY ĐỦ
-     * ======================================================
-     */
-
     async initAIModal() {
-      // If already initialized, just reload tasks
       if (this._isModalInitialized) {
         console.log("✅ Modal already initialized, reloading tasks only...");
         try {
@@ -40,19 +31,15 @@
       try {
         console.log("🚀 Initializing AI modal for the first time...");
 
-        // Wait for modal to be in DOM and visible
         await this.waitForModalReady();
         console.log("✅ Modal ready in DOM");
 
-        // Load and populate tasks
         await this.populateAIModal();
         console.log("✅ Tasks populated");
 
-        // Setup event listeners
         this.setupAllEventListeners();
         console.log("✅ Event listeners setup");
 
-        // Set default dates
         this.setDefaultDates();
         console.log("✅ Dates set");
 
@@ -114,8 +101,6 @@
 
         console.log(`📊 Total tasks from API: ${res.data.length}`, res.data);
 
-        // Lọc các task chưa hoàn thành (không phải completed)
-        // TrangThaiThucHien: 0 = chưa làm, null = chưa làm, false = chưa làm, 1 = đã hoàn thành, true = đã hoàn thành
         const pendingTasks = res.data.filter((task) => {
           const status = task.TrangThaiThucHien;
           const isPending = status !== 1 && status !== true;
@@ -129,23 +114,21 @@
           `📊 Found ${pendingTasks.length} pending tasks (out of ${res.data.length})`
         );
 
-        // Map data sang định dạng cho AI
         const tasks = pendingTasks.map((task) => {
           const priority = task.MucDoUuTien || task.priority || 2;
 
-          // Tạo màu dựa trên priority
           const getColorByPriority = (priority) => {
             switch (parseInt(priority)) {
               case 1:
-                return "#10B981"; // Xanh lá
+                return "#10B981";
               case 2:
-                return "#3B82F6"; // Xanh dương
+                return "#3B82F6";
               case 3:
-                return "#F59E0B"; // Vàng cam
+                return "#F59E0B";
               case 4:
-                return "#EF4444"; // Đỏ
+                return "#EF4444";
               default:
-                return "#8B5CF6"; // Tím
+                return "#8B5CF6";
             }
           };
 
@@ -195,31 +178,26 @@
           return;
         }
 
-        // KIỂM TRA NẾU ĐANG Ở PREVIEW MODE
         if (modalBody.querySelector("#aiApplyBtn")) {
           console.log("⚠️ Đang ở preview mode, không populate tasks");
           return;
         }
 
-        // ĐẢM BẢO CÓ FORM
         if (!modalBody.querySelector("#aiSuggestionForm")) {
           console.log("⚠️ Không có form, resetting...");
           await this.resetToFormView();
           return;
         }
 
-        // LOAD TASKS
         const tasks = await this.loadPendingTasks();
         console.log(`📋 Loaded ${tasks.length} tasks`);
 
-        // RENDER TASKS
         const taskList = modal.querySelector("#aiTaskList");
         if (taskList) {
           this.renderTasksToModal(tasks, taskList);
           console.log("✅ Tasks rendered to modal");
         } else {
           console.error("❌ Task list element not found");
-          // TẠO LẠI TASK LIST NẾU KHÔNG CÓ
           const taskListContainer = modal.querySelector(".task-list-container");
           if (taskListContainer) {
             const newTaskList = document.createElement("div");
@@ -240,7 +218,6 @@
       }
     },
 
-    // THAY THẾ TOÀN BỘ HÀM NÀY
     renderTasksToModal(tasks, taskList) {
       console.log("🔄 Rendering tasks to modal...", {
         tasksCount: tasks?.length,
@@ -295,19 +272,16 @@
       taskList.innerHTML = html;
       this.updateTaskStats(tasks.length);
 
-      // THÊM SỰ KIỆN CLICK
       this.setupTaskItemClickEvents();
 
       console.log(`✅ Đã render ${tasks.length} tasks vào modal`);
     },
-    // THÊM HÀM HELPER MỚI
     escapeHtml(text) {
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
     },
 
-    // Thêm hàm helper để chuyển đổi suitableTime thành label dễ đọc
     getSuitableTimeLabel(timeCode) {
       const timeMap = {
         morning: "Buổi sáng",
@@ -319,7 +293,6 @@
       return timeMap[timeCode] || timeCode;
     },
 
-    // Sửa hàm getFormData để lấy selected tasks từ data attribute
     getFormData() {
       try {
         console.log("🔍 Getting form data...");
@@ -348,7 +321,6 @@
           return null;
         }
 
-        // ... phần còn lại giữ nguyên ...
         const startDate = document.getElementById("aiStartDate")?.value;
         const endDate = document.getElementById("aiEndDate")?.value;
 
@@ -394,15 +366,12 @@
       );
 
       taskItems.forEach((item) => {
-        // Xóa old listeners bằng cách clone
         const newItem = item.cloneNode(true);
         item.parentNode.replaceChild(newItem, item);
 
-        // Thêm listener mới - click vào bất kỳ phần nào của item đều toggle selection
         newItem.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          // Toggle selection cho toàn bộ item
           this.toggleTaskSelection(newItem);
         });
       });
@@ -426,7 +395,6 @@
         return;
       }
 
-      // Toggle trạng thái
       const isCurrentlySelected = taskItem.dataset.selected === "true";
       const newSelectedState = !isCurrentlySelected;
 
@@ -434,13 +402,10 @@
         `🔄 Toggling from ${isCurrentlySelected} to ${newSelectedState}`
       );
 
-      // Cập nhật checkbox
       checkbox.checked = newSelectedState;
 
-      // Cập nhật data attribute
       taskItem.dataset.selected = newSelectedState.toString();
 
-      // Cập nhật UI
       const selectionIndicator = taskItem.querySelector(".selection-checkbox");
       if (selectionIndicator) {
         if (newSelectedState) {
@@ -454,7 +419,6 @@
         }
       }
 
-      // Cập nhật số lượng đã chọn
       this.updateSelectedCount();
 
       console.log(`✅ Task ${taskItem.dataset.taskId} selection updated`);
@@ -489,11 +453,6 @@
       return colors[priority] || "#8B5CF6";
     },
 
-    /**
-     * ======================================================
-     * 3. FORM SUBMIT HANDLING - ĐẦY ĐỦ
-     * ======================================================
-     */
     setupAllEventListeners() {
       console.log("🔗 Setting up all event listeners...");
 
@@ -504,7 +463,6 @@
 
       const currentModal = modal;
 
-      // 1. Select all button
       const selectAllBtn = currentModal.querySelector("#selectAllTasksBtn");
       if (selectAllBtn) {
         selectAllBtn.addEventListener("click", (e) => {
@@ -515,13 +473,11 @@
         console.log("✅ Select all button listener added");
       }
 
-      // 2. Form submit listener (prevent duplicate dengan _isSubmitting flag)
       const submitBtn = currentModal.querySelector("#aiSubmitBtn");
       if (submitBtn) {
         submitBtn.addEventListener("click", (e) => {
           e.preventDefault();
 
-          // Prevent duplicate submit
           if (this._isSubmitting) {
             console.warn("⚠️ Đang xử lý yêu cầu, vui lòng chờ...");
             return;
@@ -535,7 +491,6 @@
         console.log("✅ Submit button listener added");
       }
 
-      // 3. Close button listener
       const closeBtn = currentModal.querySelector(".modal-close");
       if (closeBtn) {
         closeBtn.addEventListener("click", (e) => {
@@ -544,7 +499,6 @@
         });
       }
 
-      // 4. Modal overlay close
       const overlay = currentModal.querySelector(".modal-overlay");
       if (overlay) {
         overlay.addEventListener("click", () => {
@@ -552,7 +506,6 @@
         });
       }
 
-      // 5. Checkbox listeners
       this.setupCheckboxListeners();
 
       console.log("✅ All event listeners setup complete");
@@ -560,7 +513,6 @@
 
     async handleFormSubmitAction() {
       try {
-        // ⏳ Logging độ trễ giữa các lần gọi
         const now = Date.now();
         if (!this._lastSubmitTime) this._lastSubmitTime = 0;
         const timeSinceLastSubmit = now - this._lastSubmitTime;
@@ -572,17 +524,14 @@
           `📤 SUBMIT CLICK #${clickCount} | Thời gian kể từ lần trước: ${timeSinceLastSubmit}ms | Giờ: ${new Date().toLocaleTimeString()}`
         );
 
-        // TÌM MODAL
         const modal = document.getElementById("aiSuggestionModal");
         if (!modal) {
           this.showError("Không tìm thấy modal AI");
           return;
         }
 
-        // TÌM FORM TRONG MODAL
         const form = modal.querySelector("#aiSuggestionForm");
         if (!form) {
-          // Nếu không có form, có thể đang ở preview mode
           const previewContainer = modal.querySelector(".ai-preview-container");
           if (previewContainer) {
             console.log("⚠️ Đang ở preview mode, không xử lý submit form");
@@ -592,7 +541,6 @@
           return;
         }
 
-        // LẤY DỮ LIỆU FORM
         const startDate = modal.querySelector("#aiStartDate")?.value;
         const endDate = modal.querySelector("#aiEndDate")?.value;
 
@@ -601,7 +549,6 @@
           return;
         }
 
-        // LẤY TASK ĐÃ CHỌN
         const selectedTasks = [];
         const checkboxes = modal.querySelectorAll(".task-checkbox:checked");
 
@@ -617,7 +564,6 @@
           return;
         }
 
-        // TẠO PAYLOAD
         const payload = {
           tasks: selectedTasks,
           startDate: `${startDate}T00:00:00`,
@@ -636,10 +582,8 @@
 
         console.log("📤 Gửi payload:", payload);
 
-        // HIỂN THỊ LOADING
         this.showFormLoading(true);
 
-        // GỬI REQUEST
         const res = await Utils.makeRequest(
           this.API_ENDPOINTS.suggestSchedule,
           "POST",
@@ -652,13 +596,11 @@
           throw new Error(res.message || "Lỗi từ server AI");
         }
 
-        // LƯU FORM DATA
         const modalBody = modal.querySelector(".ai-modal-body");
         if (modalBody) {
           modalBody.dataset.originalFormData = JSON.stringify(payload);
         }
 
-        // HIỂN THỊ PREVIEW
         this.showAIPreview(
           res.data.suggestions,
           res.data.summary,
@@ -692,12 +634,10 @@
           return;
         }
 
-        // LƯU FORM DATA
         if (originalFormData) {
           modalBody.dataset.originalFormData = JSON.stringify(originalFormData);
         }
 
-        // LẤY THÔNG TIN CÔNG VIỆC ĐỂ HIỂN THỊ TÊN
         let taskDetailsMap = {};
         if (originalFormData?.tasks) {
           try {
@@ -712,7 +652,6 @@
           }
         }
 
-        // RENDER PREVIEW HTML
         let previewHTML = `
       <div class="ai-preview-container" style="padding: 20px;">
         <!-- Header -->
@@ -768,7 +707,6 @@
           </h4>
     `;
 
-        // RENDER TỪNG SUGGESTION VỚI TÊN CÔNG VIỆC
         suggestions.forEach((s, index) => {
           const date = new Date(s.scheduledTime);
           const dateStr = date.toLocaleDateString("vi-VN", {
@@ -781,7 +719,6 @@
             minute: "2-digit",
           });
 
-          // LẤY TÊN CÔNG VIỆC
           const taskTitle =
             taskDetailsMap[s.taskId] || s.taskTitle || `Công việc #${s.taskId}`;
 
@@ -836,7 +773,6 @@
       `;
         });
 
-        // CONTINUE WITH REMAINING HTML...
         previewHTML += `
         </div>
 
@@ -970,7 +906,6 @@
         modalBody.innerHTML = previewHTML;
         console.log("✅ Preview rendered successfully");
 
-        // SETUP EVENT LISTENERS
         this.setupPreviewEventListeners(originalFormData, suggestions);
       } catch (error) {
         console.error("❌ Error rendering AI preview:", error);
@@ -978,14 +913,12 @@
       }
     },
 
-    // HÀM HELPER MỚI: Thiết lập event listeners cho preview
     setupPreviewEventListeners(originalFormData, suggestions) {
       const modalBody = document.querySelector(
         "#aiSuggestionModal .ai-modal-body"
       );
       if (!modalBody) return;
 
-      // Sử dụng event delegation để tránh lỗi null
       modalBody.addEventListener("click", (event) => {
         const target = event.target;
         const button = target.closest("button");
@@ -1033,7 +966,6 @@
           return;
         }
 
-        // RESET TASK LIST
         const taskList = modal.querySelector("#aiTaskList");
         if (taskList) {
           taskList.innerHTML = `
@@ -1046,35 +978,29 @@
       `;
         }
 
-        // RESET STATS
         const statsElement = modal.querySelector("#aiTaskStats");
         if (statsElement) {
           statsElement.innerHTML = `Đã chọn: <strong>0</strong> công việc`;
         }
 
-        // RESET DATES
         this.setDefaultDates();
 
-        // RESET CHECKBOXES
         const checkboxes = modal.querySelectorAll(".task-checkbox");
         checkboxes.forEach((cb) => {
           cb.checked = false;
         });
 
-        // RESET TASK ITEMS UI
         const taskItems = modal.querySelectorAll(".task-item.selectable");
         taskItems.forEach((item) => {
           item.dataset.selected = "false";
           item.classList.remove("selected");
         });
 
-        // RESET FORM
         const form = modal.querySelector("#aiSuggestionForm");
         if (form) {
           form.reset();
         }
 
-        // RESET EDIT SECTION
         const editSection = modal.querySelector("#aiEditSection");
         if (editSection) {
           editSection.style.display = "none";
@@ -1100,7 +1026,6 @@
           return;
         }
 
-        // LẤY ORIGINAL FORM DATA NẾU KHÔNG CÓ
         if (!originalFormData) {
           const savedData = modalBody.dataset.originalFormData;
           if (savedData) {
@@ -1120,7 +1045,6 @@
           }
         }
 
-        // LẤY INSTRUCTIONS
         const instructionsInput = modal.querySelector(
           "#aiAdditionalInstructions"
         );
@@ -1131,7 +1055,6 @@
           return;
         }
 
-        // CẬP NHẬT PAYLOAD VỚI INSTRUCTIONS MỚI
         const payload = {
           ...originalFormData,
           additionalInstructions: instructions,
@@ -1139,7 +1062,6 @@
 
         console.log("🔄 Resubmitting với instructions:", payload);
 
-        // HIỂN THỊ LOADING
         const resubmitBtn = modal.querySelector("#aiResubmitBtn");
         const editSection = modal.querySelector("#aiEditSection");
         const originalBtnHTML = resubmitBtn?.innerHTML;
@@ -1151,7 +1073,6 @@
         }
 
         try {
-          // GỬI LẠI REQUEST
           const res = await Utils.makeRequest(
             this.API_ENDPOINTS.suggestSchedule,
             "POST",
@@ -1162,16 +1083,13 @@
             throw new Error(res.message || "Lỗi từ server AI");
           }
 
-          // ẨN EDIT SECTION
           if (editSection) {
             editSection.style.display = "none";
           }
 
-          // CẬP NHẬT ORIGINAL FORM DATA VỚI INSTRUCTIONS MỚI
           payload.additionalInstructions = instructions;
           modalBody.dataset.originalFormData = JSON.stringify(payload);
 
-          // HIỂN THỊ PREVIEW MỚI
           this.showAIPreview(
             res.data.suggestions,
             res.data.summary,
@@ -1182,7 +1100,6 @@
           console.error("❌ Lỗi resubmit:", error);
           this.showError(error.message || "Lỗi gửi lại yêu cầu AI");
         } finally {
-          // RESET BUTTON
           if (resubmitBtn) {
             resubmitBtn.innerHTML =
               originalBtnHTML ||
@@ -1214,11 +1131,9 @@
           return;
         }
 
-        // XÓA DỮ LIỆU CŨ
         delete modalBody.dataset.originalFormData;
         delete modalBody.dataset.suggestions;
 
-        // TẠO LẠI FORM HTML
         modalBody.innerHTML = `
       <form id="aiSuggestionForm">
         <!-- Date Range Section -->
@@ -1319,10 +1234,8 @@
       </form>
     `;
 
-        // SETUP LẠI FORM
         this.setDefaultDates();
 
-        // LOAD TASKS VÀ SETUP EVENTS
         setTimeout(async () => {
           await this.populateAIModal();
           this.setupAllEventListeners();
@@ -1342,7 +1255,6 @@
           return;
         }
 
-        // HIỂN THỊ LOADING
         const applyBtn = document.getElementById("aiApplyBtn");
         if (applyBtn) {
           applyBtn.innerHTML =
@@ -1350,7 +1262,6 @@
           applyBtn.disabled = true;
         }
 
-        // ✅ 1. LƯU VÀO DATABASE (backend sẽ xóa AI events cũ và prevent duplicates)
         console.log(
           "💾 Saving suggestions to database (backend will delete old AI events)..."
         );
@@ -1364,11 +1275,9 @@
         );
         console.log(`📊 Deleted ${saveResult.deletedOld} old AI events`);
 
-        // ✅ 2. CHỜ DATABASE TRANSACTION HOÀN THÀNH
         console.log("⏳ Waiting 2000ms for DB transaction completion...");
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // ✅ 3. REFRESH CALENDAR FROM DATABASE (mới nhất từ server)
         console.log("🔄 Refreshing calendar from database...");
         if (window.AIModule && window.AIModule.refreshFromDatabase) {
           try {
@@ -1383,14 +1292,11 @@
           return;
         }
 
-        // ✅ 4. HIỂN THỊ THÀNH CÔNG
         this.showSuccess(`✅ Đã áp dụng ${suggestions.length} lịch trình AI!`);
 
-        // 6. ĐÓNG MODAL SAU 1.5 GIÂY
         setTimeout(() => {
           this.closeModal();
 
-          // CHUYỂN SANG TAB AI SAU KHI ĐÓNG MODAL
           setTimeout(() => {
             const aiTabBtn = document.querySelector('[data-tab="ai"]');
             if (aiTabBtn) {
@@ -1402,7 +1308,6 @@
         console.error("❌ Error applying suggestions:", error);
         this.showError("Lỗi áp dụng lịch trình: " + error.message);
 
-        // RESET BUTTON
         const applyBtn = document.getElementById("aiApplyBtn");
         if (applyBtn) {
           applyBtn.innerHTML =
@@ -1416,7 +1321,6 @@
       try {
         console.log("🔍 Getting form data...");
 
-        // Lấy từ data-selected thay vì checkbox
         const selectedItems = document.querySelectorAll(
           '#aiSuggestionModal .task-item[data-selected="true"]'
         );

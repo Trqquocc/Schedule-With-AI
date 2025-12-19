@@ -1,9 +1,7 @@
-<!-- components/modals/notification-modal.html -->
 <div id="notificationModal" class="modal hidden">
   <div
     class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8 transform transition-all"
   >
-    <!-- Header -->
     <div
       class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-teal-50"
     >
@@ -28,9 +26,7 @@
       </button>
     </div>
 
-    <!-- Body -->
     <div class="p-8 max-h-[calc(100vh-300px)] overflow-y-auto">
-      <!-- Status Card -->
       <div
         class="mb-8 p-6 rounded-2xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100"
       >
@@ -52,7 +48,6 @@
         </p>
       </div>
 
-      <!-- Connection Section -->
       <div class="mb-8 pb-8 border-b border-gray-200">
         <h5
           class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"
@@ -62,7 +57,6 @@
         </h5>
 
         <div class="space-y-4">
-          <!-- Step 1 -->
           <div
             class="flex gap-4 p-4 rounded-lg bg-cyan-50 border border-cyan-200"
           >
@@ -84,7 +78,6 @@
             </div>
           </div>
 
-          <!-- Step 2 -->
           <div
             class="flex gap-4 p-4 rounded-lg bg-cyan-50 border border-cyan-200"
           >
@@ -103,7 +96,6 @@
             </div>
           </div>
 
-          <!-- Step 3 -->
           <div
             class="flex gap-4 p-4 rounded-lg bg-cyan-50 border border-cyan-200"
           >
@@ -124,7 +116,6 @@
         </div>
       </div>
 
-      <!-- Token Input Form -->
       <form id="notificationForm" class="space-y-6">
         <div class="form-group">
           <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -142,14 +133,12 @@
           </p>
         </div>
 
-        <!-- Status Message -->
         <div
           id="notificationStatusMessage"
           class="hidden p-4 rounded-lg text-sm"
         ></div>
       </form>
 
-      <!-- Notification Settings -->
       <div class="mt-8 pt-8 border-t border-gray-200">
         <h5
           class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"
@@ -159,7 +148,6 @@
         </h5>
 
         <div class="space-y-4">
-          <!-- Enable Notifications -->
           <div
             class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition"
           >
@@ -186,7 +174,6 @@
             </label>
           </div>
 
-          <!-- Event Reminders -->
           <div
             class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition"
           >
@@ -213,7 +200,6 @@
             </label>
           </div>
 
-          <!-- AI Suggestions -->
           <div
             class="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition"
           >
@@ -243,7 +229,6 @@
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
       <button
         type="button"
@@ -264,7 +249,6 @@
 </div>
 
 <style>
-  /* Notification Modal - Z-Index Layer 3 (above settings modal) */
   #notificationModal {
     z-index: 10100 !important;
   }

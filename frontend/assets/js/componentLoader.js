@@ -1,8 +1,3 @@
-/**
- * ComponentLoader v3.0 - SIMPLIFIED & STABLE VERSION
- * Quản lý load components một cách đơn giản, tránh xung đột
- */
-
 (function () {
   "use strict";
 
@@ -12,12 +7,10 @@
   }
 
   window.ComponentLoader = {
-    // Cache để tránh load lại
     loadedComponents: new Set(),
     loadedScripts: new Set(),
     currentSection: null,
 
-    // Mapping các section tới file HTML
     PAGE_MAP: {
       schedule: "pages/calendar-content.html",
       work: "pages/work.html",
@@ -26,9 +19,6 @@
       ai: "pages/ai-content.html",
     },
 
-    // ==========================================================
-    // LOAD COMPONENT - Core function
-    // ==========================================================
     async loadComponent(containerId, filePath, options = {}) {
       const { forceReload = false, executeScripts = true } = options;
       const container = document.getElementById(containerId);
@@ -38,7 +28,6 @@
         return false;
       }
 
-      // Nếu đã load và không force reload
       if (this.loadedComponents.has(containerId) && !forceReload) {
         console.log(`✓ Component already loaded: ${containerId}`);
         return true;
@@ -54,7 +43,6 @@
 
         const html = await response.text();
 
-        // ✅ SPECIAL HANDLING FOR SIDEBAR - extract only aside element
         if (containerId === "sidebar-container") {
           console.log(`🎭 SIDEBAR LOADING STARTED`);
           try {
@@ -62,14 +50,12 @@
             tempDiv.innerHTML = html;
             console.log(`✅ HTML parsed`);
 
-            // ✅ IMPORTANT: Extract and inject <style> tag FIRST
             const styleTag = tempDiv.querySelector("style");
             if (styleTag) {
               const newStyle = document.createElement("style");
               newStyle.innerHTML = styleTag.innerHTML;
               document.head.appendChild(newStyle);
               console.log(`✅ Sidebar styles injected into <head>`);
-              // Force browser to process styles
               await new Promise((r) => setTimeout(r, 50));
             }
 
@@ -79,11 +65,9 @@
             }
             console.log(`✅ <aside> element found`);
 
-            // Insert aside element directly
             container.innerHTML = asideElement.outerHTML;
             console.log(`✅ Sidebar HTML inserted into #sidebar-container`);
 
-            // Extract and inject settingsModal
             const settingsModal = tempDiv.querySelector("#settingsModal");
             if (settingsModal) {
               const settingsContainer =
@@ -94,7 +78,6 @@
               }
             }
 
-            // Execute inline scripts from sidebar.html
             const scripts = tempDiv.querySelectorAll("script");
             for (let idx = 0; idx < scripts.length; idx++) {
               const newScript = document.createElement("script");
@@ -105,7 +88,6 @@
 
             console.log(`✅ SIDEBAR LOADING COMPLETE`);
 
-            // ✅ NEW: Force sidebar visibility with CSS after loading
             const forceSidebarVisibility = () => {
               const style = document.createElement("style");
               style.innerHTML = `
@@ -139,55 +121,46 @@
             setTimeout(forceSidebarVisibility, 50);
           } catch (error) {
             console.error(`❌ SIDEBAR LOADING FAILED:`, error);
-            container.innerHTML = html; // Fallback
+            container.innerHTML = html; 
           }
         }
-        // ✅ FIX: Check if this is a modal to preserve classes
         else if (containerId.includes("Modal")) {
           console.log(`🎭 Loading modal: ${containerId}`);
           const tempDiv = document.createElement("div");
           tempDiv.innerHTML = html;
 
-          // TÌM MODAL CHÍNH TRONG HTML
           const nestedModal = tempDiv.querySelector(`#${containerId}`);
 
           if (nestedModal) {
             console.log(`🔄 Fixing nested modal structure: ${containerId}`);
 
-            // KIỂM TRA NẾU CÓ CẤU TRÚC LỒNG NHAU PHỨC TẠP
             const nestedInsideNested = nestedModal.querySelector(
               `#${containerId}`
             );
             if (nestedInsideNested) {
               console.warn(`⚠️ DOUBLE NESTED MODAL DETECTED!`);
 
-              // Lấy modal trong cùng
               let deepestModal = nestedInsideNested;
               while (deepestModal.querySelector(`#${containerId}`)) {
                 deepestModal = deepestModal.querySelector(`#${containerId}`);
               }
 
-              // Thay thế toàn bộ container bằng modal trong cùng
               container.innerHTML = deepestModal.outerHTML;
             } else {
-              // BÌNH THƯỜNG: chỉ có một modal nested
               container.innerHTML = nestedModal.outerHTML;
             }
 
-            // ✅ SAU KHI LOAD XONG, GỌI HÀM FIX
             setTimeout(() => {
               this.fixNestedModals(containerId);
               this.checkModalStructure(containerId);
             }, 50);
           } else {
-            // Nếu không tìm thấy modal với ID chính xác, dùng toàn bộ HTML
             container.innerHTML = html;
           }
         } else {
           container.innerHTML = html;
         }
 
-        // Execute scripts nếu cần
         if (executeScripts) {
           await this.executeScripts(container);
         }
@@ -212,9 +185,6 @@
       }
     },
 
-    // ==========================================================
-    // EXECUTE SCRIPTS - Chạy script an toàn
-    // ==========================================================
     async executeScripts(container) {
       const scripts = container.querySelectorAll("script");
 
@@ -222,9 +192,7 @@
         try {
           const newScript = document.createElement("script");
 
-          // External script
           if (script.src) {
-            // Kiểm tra đã load chưa
             if (this.loadedScripts.has(script.src)) {
               console.log(`⏭️ Script already loaded: ${script.src}`);
               script.remove();
@@ -233,7 +201,6 @@
 
             newScript.src = script.src;
 
-            // Promise để đợi script load xong
             await new Promise((resolve, reject) => {
               newScript.onload = () => {
                 this.loadedScripts.add(script.src);
@@ -247,7 +214,6 @@
               document.head.appendChild(newScript);
             });
           } else {
-            // Inline script
             newScript.textContent = script.textContent;
             document.head.appendChild(newScript);
           }
@@ -258,10 +224,6 @@
         }
       }
     },
-
-    // ==========================================================
-    // LOAD PAGE CONTENT - Main function cho việc chuyển tab
-    // ==========================================================
     async loadPageContent(sectionName) {
       console.log(`\n🔄 Loading section: ${sectionName}`);
 
@@ -273,27 +235,19 @@
 
       const containerId = `${sectionName}-section`;
 
-      // Load nội dung chính
       const success = await this.loadComponent(containerId, filePath);
       if (!success) return false;
 
-      // Load các phần bổ sung theo section
       await this.loadSectionExtras(sectionName);
 
-      // Cập nhật section hiện tại
       this.currentSection = sectionName;
 
-      // Khởi động module tương ứng
       setTimeout(() => {
         this.initializeSection(sectionName);
       }, 200);
 
       return true;
     },
-
-    // ==========================================================
-    // LOAD SECTION EXTRAS - Các phần bổ sung cho từng section
-    // ==========================================================
     async loadSectionExtras(sectionName) {
       switch (sectionName) {
         case "schedule":
@@ -304,17 +258,12 @@
           break;
 
         case "ai":
-          // AI section không cần phần bổ sung
           console.log("🤖 AI section - no extras needed");
           break;
 
-        // Thêm các section khác nếu cần
       }
     },
 
-    // ==========================================================
-    // INITIALIZE SECTION - Khởi động module tương ứng
-    // ==========================================================
     initializeSection(sectionName) {
       console.log(`🚀 Initializing section: ${sectionName}`);
 
@@ -358,6 +307,12 @@
             ProfileManager.init();
           }
         },
+
+        settings: () => {
+          if (window.ProfileManager?.init) ProfileManager.init();
+          if (window.NotificationManager?.init) NotificationManager.init();
+          console.log("👤 Initialized managers for settings modal");
+        },
       };
 
       const initFn = initMap[sectionName];
@@ -372,14 +327,10 @@
       }
     },
 
-    // ==========================================================
-    // INITIALIZE APP - Khởi động toàn bộ ứng dụng
-    // ==========================================================
     async init() {
       console.log("🚀 ComponentLoader v3.0 - Initializing...\n");
 
       try {
-        // Load các component cố định
         console.log("📥 Loading sidebar...");
         await this.loadComponent(
           "sidebar-container",
@@ -387,7 +338,6 @@
         );
         console.log("✅ Sidebar loaded\n");
 
-        // Try to load navbar if it exists
         const navbarContainer = document.getElementById("navbar-container");
         if (navbarContainer) {
           console.log("📥 Loading navbar...");
@@ -400,12 +350,10 @@
           console.log("ℹ️ navbar-container not found, skipping\n");
         }
 
-        // Load modals
         console.log("📦 Loading modals...");
         await this.loadModals();
         console.log("✅ Modals loaded\n");
 
-        // Tìm section đang active và load
         const activeSection = document.querySelector(".section.active");
         if (activeSection) {
           const sectionName = activeSection.id.replace("-section", "");
@@ -422,9 +370,6 @@
       }
     },
 
-    // ==========================================================
-    // LOAD MODALS - Load các modal cần thiết
-    // ==========================================================
     async loadModals() {
       console.log("📦 Loading modals...");
 
@@ -460,8 +405,6 @@
           await this.loadComponent(modal.id, modal.path, {
             executeScripts: true,
           });
-
-          // ✅ THÊM: Kiểm tra và fix modal ngay sau khi load
           setTimeout(() => {
             this.fixNestedModals(modal.id);
           }, 100);
@@ -471,17 +414,9 @@
       }
     },
 
-    // ==========================================================
-    // UTILITY METHODS
-    // ==========================================================
-
-    // ==========================================================
-    // FIX NESTED MODALS - Sửa lỗi modal lồng nhau
-    // ==========================================================
     fixNestedModals(modalId = null) {
       console.log("🔧 Checking for nested modals...");
 
-      // Nếu chỉ kiểm tra modal cụ thể
       const modalIds = modalId
         ? [modalId]
         : [
@@ -500,17 +435,13 @@
           console.warn(`⚠️ Multiple ${id} modals found: ${modals.length}`);
           console.log("🔧 Fixing nested structure...");
 
-          // Tìm modal chính (đầu tiên)
           const mainModal = modals[0];
           const isHidden = mainModal.classList.contains("hidden");
 
-          // Duyệt qua các modal duplicate
           for (let i = 1; i < modals.length; i++) {
             const duplicate = modals[i];
 
-            // 1. Di chuyển tất cả children sang modal chính
             while (duplicate.firstChild) {
-              // Nếu child cũng có cùng ID, bỏ qua
               if (duplicate.firstChild.id === id) {
                 duplicate.firstChild.remove();
                 continue;
@@ -518,11 +449,9 @@
               mainModal.appendChild(duplicate.firstChild);
             }
 
-            // 2. Xóa modal duplicate
             duplicate.remove();
           }
 
-          // 3. Đảm bảo modal chính có class đúng
           if (!isHidden) {
             mainModal.classList.remove("hidden");
             mainModal.style.display = "flex";
@@ -535,7 +464,6 @@
       });
     },
 
-    // Helper: Kiểm tra DOM sau khi load modal
     checkModalStructure(modalId) {
       const modal = document.getElementById(modalId);
       if (!modal) {
@@ -553,12 +481,10 @@
       return true;
     },
 
-    // Fix tất cả modals bị nested
     fixAllModals() {
       console.log("🛠️ Fixing ALL nested modals...");
       this.fixNestedModals();
 
-      // Force display cho các modal đang active
       document.querySelectorAll(".modal.active.show").forEach((modal) => {
         if (getComputedStyle(modal).display === "none") {
           modal.style.display = "flex";
@@ -571,7 +497,6 @@
       return true;
     },
 
-    // Debug modal structure
     debugModal(modalId) {
       const modal = document.getElementById(modalId);
       if (!modal) {
@@ -584,7 +509,6 @@
       console.log("Display:", getComputedStyle(modal).display);
       console.log("Children:", modal.children.length);
 
-      // Check for nested
       const nested = modal.querySelector(`#${modalId}`);
       console.log("Has nested self?", !!nested);
 
@@ -596,7 +520,6 @@
       console.log("======================");
     },
 
-    // Force reload một component
     async reloadComponent(containerId, filePath) {
       this.loadedComponents.delete(containerId);
       return await this.loadComponent(containerId, filePath, {
@@ -604,12 +527,10 @@
       });
     },
 
-    // Kiểm tra component đã load chưa
     isLoaded(containerId) {
       return this.loadedComponents.has(containerId);
     },
 
-    // Reset toàn bộ cache
     reset() {
       console.log("🔄 Resetting ComponentLoader...");
       this.loadedComponents.clear();
@@ -617,7 +538,6 @@
       console.log("✅ ComponentLoader reset complete");
     },
 
-    // Debug info
     debug() {
       console.log("\n=== ComponentLoader Debug ===");
       console.log("Current section:", this.currentSection);
@@ -627,23 +547,19 @@
     },
   };
 
-  // Global debug helper
   window.debugLoader = () => window.ComponentLoader.debug();
 
-  // Global helper để fix modal ngay lập tức
   window.fixModal = function (modalId = "aiSuggestionModal") {
     if (window.ComponentLoader && ComponentLoader.fixNestedModals) {
       console.log(`🔧 Manual fix for modal: ${modalId}`);
       ComponentLoader.fixNestedModals(modalId);
 
-      // Force display
       const modal = document.getElementById(modalId);
       if (modal) {
         modal.style.display = "flex";
         modal.style.visibility = "visible";
         modal.style.opacity = "1";
 
-        // Check content dimensions
         const content = modal.querySelector(".modal-content");
         if (content) {
           console.log("📦 Content dimensions:", {
@@ -658,10 +574,8 @@
     }
   };
 
-  // Auto-check on page load
   setTimeout(() => {
     if (window.ComponentLoader) {
-      // Check for common modal issues
       ComponentLoader.fixNestedModals("aiSuggestionModal");
     }
   }, 1000);

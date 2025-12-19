@@ -1,19 +1,10 @@
-/**
- * Users Routes
- * Xử lý các yêu cầu liên quan đến thông tin người dùng
- */
 
 const express = require("express");
 const router = express.Router();
 
-// Middleware
 const { authenticateToken } = require("../middleware/auth");
 const { dbPoolPromise, sql } = require("../config/database");
 
-/**
- * GET /api/users/profile
- * Lấy thông tin hồ sơ của người dùng hiện tại
- */
 router.get("/profile", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.UserID;
@@ -42,51 +33,49 @@ router.get("/profile", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * PUT /api/users/:id
- * Cập nhật thông tin người dùng
- */
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const currentUserId = req.user.UserID;
 
-    // Người dùng chỉ có thể cập nhật thông tin của chính họ
+    console.log(`📝 UPDATE USER REQUEST - UserID: ${userId}, CurrentUserID: ${currentUserId}`);
+
     if (userId !== currentUserId && currentUserId !== 1) {
-      // 1 = admin
       return res
         .status(403)
         .json({ message: "Không có quyền cập nhật thông tin này" });
     }
 
-    const { hoten, email, phone, ngaysinh, gioitinh, bio } = req.body;
+    const { hoten, email, phone, ngaysinh, gioitinh, bio, username } = req.body;
 
-    // Validate input
+    console.log("📦 Received payload:", { hoten, email, phone, ngaysinh, gioitinh, bio, username });
+
     if (!hoten || !email) {
       return res.status(400).json({ message: "Họ tên và email là bắt buộc" });
     }
 
     const pool = await dbPoolPromise;
 
-    // Update user
     const updateResult = await pool
       .request()
       .input("userId", sql.Int, userId)
       .input("hoten", sql.NVarChar, hoten || "")
       .input("email", sql.NVarChar, email || "")
+      .input("username", sql.NVarChar, username || "")
       .input("phone", sql.NVarChar, phone || null)
       .input("ngaysinh", sql.DateTime, ngaysinh || null)
       .input("gioitinh", sql.NVarChar, gioitinh || null)
       .input("bio", sql.NVarChar, bio || null)
       .query(
-        "UPDATE Users SET HoTen = @hoten, Email = @email, Phone = @phone, NgaySinh = @ngaysinh, GioiTinh = @gioitinh, Bio = @bio WHERE UserID = @userId"
+        "UPDATE Users SET HoTen = @hoten, Email = @email, Username = @username, Phone = @phone, NgaySinh = @ngaysinh, GioiTinh = @gioitinh, Bio = @bio WHERE UserID = @userId"
       );
+
+    console.log("✅ Update result rows affected:", updateResult.rowsAffected[0]);
 
     if (updateResult.rowsAffected[0] === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get updated user data
     const selectResult = await pool
       .request()
       .input("userId", sql.Int, userId)
@@ -94,31 +83,28 @@ router.put("/:id", authenticateToken, async (req, res) => {
         "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, Phone as phone, NgaySinh as ngaysinh, GioiTinh as gioitinh, Bio as bio FROM Users WHERE UserID = @userId"
       );
 
+    console.log("✅ Updated user data:", selectResult.recordset[0]);
+
     res.json({
       success: true,
       message: "Thông tin cá nhân được cập nhật thành công",
       data: selectResult.recordset[0],
     });
 
-    console.log(`✅ User ${userId} profile updated`);
+    console.log(`✅ User ${userId} profile updated successfully`);
   } catch (error) {
-    console.error("Error updating user profile:", error);
+    console.error("❌ Error updating user profile:", error);
     res
       .status(500)
       .json({ message: "Error updating profile", error: error.message });
   }
 });
 
-/**
- * GET /api/users/:id
- * Lấy thông tin người dùng theo ID
- */
 router.get("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const currentUserId = req.user.UserID;
 
-    // Người dùng chỉ có thể xem thông tin của chính họ (hoặc admin)
     if (userId !== currentUserId && currentUserId !== 1) {
       return res.status(403).json({ message: "Không có quyền truy cập" });
     }
@@ -147,16 +133,11 @@ router.get("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/users/:id
- * Xóa tài khoản người dùng (chỉ chính user hoặc admin)
- */
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const currentUserId = req.user.UserID;
 
-    // Chỉ có thể xóa tài khoản của chính mình hoặc là admin
     if (userId !== currentUserId && currentUserId !== 1) {
       return res
         .status(403)
@@ -165,7 +146,6 @@ router.delete("/:id", authenticateToken, async (req, res) => {
 
     const pool = await dbPoolPromise;
 
-    // Delete user
     const result = await pool
       .request()
       .input("userId", sql.Int, userId)

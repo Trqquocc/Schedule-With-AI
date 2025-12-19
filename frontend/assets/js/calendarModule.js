@@ -14,9 +14,6 @@
     currentView: "timeGridWeek",
     isDragging: false,
 
-    // ==========================================================
-    // PUBLIC: init()
-    // ==========================================================
     async init() {
       if (this.isInitialized && this.calendar) this.destroy();
 
@@ -26,10 +23,9 @@
         await this._initInternal();
         this.isInitialized = true;
 
-        // ✅ ĐẢM BẢO SETUP DROP ZONE SAU KHI INIT
         setTimeout(() => {
           this.setupDropZone();
-          this.setupTaskDragListeners(); // ĐÃ SỬA TỪ etupTaskDragListeners
+          this.setupTaskDragListeners(); 
         }, 1000);
 
         console.log("✅ CalendarModule khởi tạo thành công với kéo thả!");
@@ -44,21 +40,16 @@
         "🔗 Setting up task drag listeners with FullCalendar.Draggable..."
       );
 
-      // Setup draggable cho tasks hiện có
       this.initializeExternalDraggable();
 
-      // Theo dõi thay đổi DOM để bind Draggable cho task mới
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (mutation.addedNodes.length) {
             mutation.addedNodes.forEach((node) => {
               if (node.nodeType === 1) {
-                // Nếu chính node là task item
                 if (node.classList && node.classList.contains("task-item")) {
                   this.makeTaskDraggable(node);
                 }
-
-                // Hoặc tìm task items bên trong
                 const taskItems = node.querySelectorAll
                   ? node.querySelectorAll(".task-item")
                   : [];
@@ -71,8 +62,6 @@
           }
         });
       });
-
-      // Quan sát task-list container
       const taskList = document.getElementById("task-list");
       if (taskList) {
         observer.observe(taskList, {
@@ -104,30 +93,23 @@
     },
 
     makeTaskDraggable(element) {
-      // Skip if already draggable
       if (element.hasAttribute("data-draggable-init")) return;
-
       const taskId = element.dataset.taskId;
       const title = element.dataset.taskTitle || element.textContent.trim();
       const priority = parseInt(element.dataset.taskPriority) || 2; // Default to priority 2
       const description = element.dataset.taskDescription || "";
-
-      // Get color based on PRIORITY, not stored color
       const color = this.getPriorityColor(priority);
 
       if (!taskId) {
         console.warn("⚠️ Task element missing taskId");
         return;
       }
-
-      // Sử dụng FullCalendar.Draggable
       try {
         if (typeof FullCalendar !== "undefined" && FullCalendar.Draggable) {
           const draggable = new FullCalendar.Draggable(element, {
             eventData: {
               id: `drag-${taskId}`,
               title: title,
-              // IMPORTANT: Don't set color here, let eventDidMount apply CSS classes based on priority
               extendedProps: {
                 taskId: taskId,
                 priority: priority,
@@ -142,7 +124,6 @@
             `✅ Made draggable: ${title} (ID: ${taskId}, Priority: ${priority})`
           );
         } else {
-          // Fallback: HTML5 drag/drop nếu FullCalendar.Draggable không available
           this.bindHTML5DragEvents(element);
         }
       } catch (err) {
@@ -182,10 +163,6 @@
         console.log("📥 HTML5 drag end");
       });
     },
-
-    // ==========================================================
-    // PRIVATE: _initInternal()
-    // ==========================================================
     async _initInternal() {
       const calendarEl = await this.waitForElement("calendar", 8000);
       if (!calendarEl) throw new Error("Không tìm thấy phần tử #calendar");
@@ -196,15 +173,10 @@
       const events = await this.loadEvents();
       this.renderCalendar(events);
 
-      // Setup cả hai phương thức kéo thả
       setTimeout(() => {
         this.initializeNavbarEvents();
       }, 200);
     },
-
-    // ==========================================================
-    // UTILS (giữ nguyên)
-    // ==========================================================
     waitForElement(id, timeout = 8000) {
       return new Promise((resolve) => {
         const el = document.getElementById(id);
@@ -268,7 +240,6 @@
       `;
     },
 
-    // SỬA HÀM loadEvents()
     async loadEvents() {
       if (!Utils?.makeRequest) {
         console.warn("Utils.makeRequest không tồn tại → trả về mảng rỗng");
@@ -285,9 +256,6 @@
 
         console.log(`📊 Received ${res.data.length} total events from server`);
 
-        // ============================================================
-        // 🔴 FILTER LOẠI BỎ AI EVENTS - ENHANCED VERSION
-        // ============================================================
         const aiEvents = res.data.filter(
           (ev) =>
             ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1" || ev.AI_DeXuat === true
@@ -304,10 +272,8 @@
           );
         }
 
-        // ✅ FILTER LOẠI BỎ AI EVENTS VÀ ĐẢM BẢO MÀU SẮC
         const normalEvents = res.data
           .filter((ev) => {
-            // ⚠️ LOẠI BỎ NẾU AI_DeXuat = 1 (tất cả variation)
             const isAI =
               ev.AI_DeXuat === 1 ||
               ev.AI_DeXuat === "1" ||
@@ -320,10 +286,9 @@
                 } | AI_DeXuat=${ev.AI_DeXuat} (type: ${typeof ev.AI_DeXuat})`
               );
             }
-            return !isAI; // ✅ Chỉ trả về events KHÔNG phải AI
+            return !isAI;
           })
           .map((ev) => {
-            // ĐẢM BẢO LUÔN CÓ MÀU SẮC
             const color =
               ev.MauSac || this.getPriorityColor(ev.MucDoUuTien) || "#3788d8";
 
@@ -341,9 +306,9 @@
                   ev.DaHoanThanh === 1 || ev.extendedProps?.completed || false,
                 taskId: ev.MaCongViec || ev.extendedProps?.taskId || null,
                 isFromDrag: ev.isFromDrag || false,
-                isAIEvent: false, // ✅ Set = false vì đã filter AI events
+                isAIEvent: false, 
                 priority: ev.MucDoUuTien || 2,
-                originalColor: color, // Lưu màu gốc
+                originalColor: color, 
               },
             };
           });
@@ -359,7 +324,6 @@
       }
     },
 
-    // THÊM HÀM HELPER ĐỂ LẤY MÀU THEO ĐỘ ƯU TIÊN
     getPriorityColor(priority) {
       const colors = {
         1: "#34D399", // Xanh lá - Thấp
@@ -367,17 +331,13 @@
         3: "#FBBF24", // Vàng - Cao
         4: "#F87171", // Đỏ - Rất cao
       };
-      return colors[priority] || "#3788d8"; // Màu mặc định
+      return colors[priority] || "#3788d8";
     },
 
-    // ==========================================================
-    // RENDER CALENDAR - FIXED EVENT HANDLERS
-    // ==========================================================
     renderCalendar(events) {
       const el = document.getElementById("calendar");
       if (!el) return;
 
-      // Destroy old calendar
       if (this.calendar) {
         try {
           this.calendar.destroy();
@@ -391,7 +351,7 @@
         locale: "vi",
         height: "100%",
         editable: true,
-        droppable: true, // ✅ BẬT CHẾ ĐỘ DROP
+        droppable: true,
         selectable: true,
         selectMirror: true,
         dayMaxEvents: true,
@@ -399,7 +359,6 @@
         nowIndicator: true,
         events: events,
 
-        // ✅ THÊM CẤU HÌNH ĐỂ NHẬN DRAG TỪ NGOÀI
         dropAccept: ".task-item, [draggable='true'], [data-task-id]",
 
         slotMinTime: "06:00:00",
@@ -418,7 +377,6 @@
         moreLinkText: (n) => `+ ${n} thêm`,
         noEventsText: "Không có sự kiện",
 
-        // ✅ THÊM HÀM eventReceive ĐỂ XỬ LÝ KÉO THẢ
         eventReceive: (info) => {
           console.log("🎯 Task dropped onto calendar!", info);
           this._handleEventReceive(info);
@@ -442,9 +400,6 @@
         eventDidMount: (info) => {
           const el = info.el;
           el.style.cursor = "pointer";
-
-          // Apply priority class based on priority level
-          // Priority 1 = Low (Green), 2 = Medium (Blue), 3 = High (Yellow), 4 = Very High (Red)
           const priority = info.event.extendedProps.priority || 2;
           if (priority === 1) {
             el.classList.add("event-priority-low");
@@ -453,9 +408,6 @@
           } else if (priority === 4) {
             el.classList.add("event-priority-high");
           }
-          // Priority 2 is default (Blue) - no class needed
-
-          // Apply AI suggested styling if applicable
           if (info.event.extendedProps.aiSuggested) {
             el.classList.add("event-ai-suggested");
           }
@@ -490,31 +442,24 @@
       window.calendar = this.calendar;
       this.updateCalendarTitle();
 
-      // ✅ KÍCH HOẠT DROP ZONES
       this.setupDropZone();
 
       console.log("✅ FullCalendar đã render với chức năng kéo thả");
     },
 
-    // ==========================================================
-    // TIME CONFLICT CHECK
-    // ==========================================================
     hasTimeConflict(newEvent, excludeTempEvents = true) {
       const events = this.calendar.getEvents();
       const s1 = newEvent.start;
-      const e1 = newEvent.end || new Date(s1.getTime() + 3600000); // 1 giờ mặc định
+      const e1 = newEvent.end || new Date(s1.getTime() + 3600000);
 
       for (const ev of events) {
-        // Bỏ qua event cần kiểm tra
         if (ev.id === newEvent.id) continue;
 
-        // Bỏ qua event tạm nếu cần
         if (excludeTempEvents && ev.id?.startsWith("temp-")) continue;
 
         const s2 = ev.start;
         const e2 = ev.end || new Date(s2.getTime() + 3600000);
 
-        // Kiểm tra overlap chính xác
         if (s1 < e2 && e1 > s2) {
           console.log(`⛔ Overlap detected with event: "${ev.title}"`);
           console.log(
@@ -529,7 +474,6 @@
       return false;
     },
 
-    // Thêm hàm formatDate helper
     formatDate(date) {
       if (!date) return "N/A";
       return date.toLocaleString("vi-VN", {
@@ -541,14 +485,9 @@
       });
     },
 
-    // ==========================================================
-    // EVENT RECEIVE (drag from task list) - FIXED
-    // ==========================================================
     async _handleEventReceive(info) {
       try {
         console.log("🎯 FullCalendar eventReceive triggered:", info);
-
-        // Lấy thông tin từ dragged element
         const draggedEl = info.draggedEl;
         let taskId, title, color;
 
@@ -557,7 +496,6 @@
           title = draggedEl.dataset.taskTitle || "Công việc";
           color = draggedEl.dataset.taskColor || "#3B82F6";
         } else {
-          // Fallback: lấy từ dataTransfer
           taskId = info.jsEvent?.dataTransfer?.getData("text/plain");
           const jsonData =
             info.jsEvent?.dataTransfer?.getData("application/json");
@@ -581,10 +519,8 @@
         const end =
           info.event.end || new Date(start.getTime() + 60 * 60 * 1000);
 
-        // Kiểm tra trùng lịch - SỬA CÁCH KIỂM TRA
         const existingEvents = this.calendar.getEvents();
         const hasConflict = existingEvents.some((existingEvent) => {
-          // Bỏ qua chính event này và các event tạm
           if (existingEvent.id === info.event.id) return false;
           if (existingEvent.id?.startsWith("temp-")) return false;
 
@@ -594,7 +530,6 @@
           const e2 =
             existingEvent.end || new Date(s2.getTime() + 60 * 60 * 1000);
 
-          // Kiểm tra overlap
           return s1 < e2 && e1 > s2;
         });
 
@@ -604,7 +539,6 @@
           return;
         }
 
-        // Gọi hàm save
         await this.saveDroppedEvent(taskId, title, color, start, end);
       } catch (err) {
         console.error("❌ Event receive error:", err);
@@ -613,9 +547,6 @@
       }
     },
 
-    // ==========================================================
-    // EVENT UPDATE (move / resize) - FIXED FIELD NAMES
-    // ==========================================================
     async _handleEventUpdate(info) {
       try {
         console.log("🔄 Event updated:", info.event);
@@ -625,8 +556,6 @@
           throw new Error("Event không có ID");
         }
 
-        // ✅ QUAN TRỌNG: Nếu event ID vẫn là temp-xxx hoặc drag-xxx thì chưa được lưu server
-        // Chỉ cập nhật local, không gửi lên server, và KHÔNG báo toast (đây là hành động bình thường)
         if (
           eventId.toString().startsWith("temp-") ||
           eventId.toString().startsWith("drag-")
@@ -634,12 +563,8 @@
           console.log(
             `⏳ Event ${eventId} chưa lưu server, cập nhật local. POST sẽ gửi lên sau...`
           );
-          // ⚠️ ĐẶC BIỆT: Không báo toast ở đây vì user đang drag/resize, event sẽ được lưu server
-          // trong callback eventReceive. Chỉ báo toast khi có thực sự lỗi
-          return; // Không gửi request, FullCalendar sẽ tự update local
+          return; 
         }
-
-        // Chỉ gửi update nếu ID là số hợp lệ
         const eventIdNum = parseInt(eventId, 10);
         if (isNaN(eventIdNum)) {
           console.warn(
@@ -651,18 +576,13 @@
         const newStart = info.event.start;
         const newEnd =
           info.event.end || new Date(newStart.getTime() + 60 * 60 * 1000);
-
-        // Kiểm tra trùng lịch (loại trừ chính nó)
         if (this.hasTimeConflict(info.event)) {
           Utils.showToast?.("⛔ Thời gian này đã có sự kiện khác!", "error");
           info.revert();
           return;
         }
-
-        // Hiển thị loading thông báo
         Utils.showToast?.("🔄 Đang cập nhật thời gian...", "info");
 
-        // Sử dụng field names ĐÚNG theo backend calendar.js
         const updateData = {
           start: newStart.toISOString(),
           end: newEnd.toISOString(),
@@ -680,10 +600,8 @@
           throw new Error(result.message || "Cập nhật thất bại");
         }
 
-        // Thông báo thành công
         Utils.showToast?.("✅ Đã cập nhật thời gian sự kiện", "success");
 
-        // Hiệu ứng visual cho event vừa cập nhật
         const eventElement = document.querySelector(
           `[data-event-id="${eventId}"]`
         );
@@ -698,7 +616,6 @@
       } catch (error) {
         console.error("❌ Error in eventUpdate:", error);
 
-        // Thông báo lỗi chi tiết
         let errorMessage = "Lỗi khi cập nhật thời gian";
         if (
           error.message.includes("conflict") ||
@@ -726,7 +643,6 @@
         return;
       }
 
-      // Xóa event listeners cũ (nếu đã bind trước đó)
       try {
         if (this._boundCalendarDragOver) {
           calendarEl.removeEventListener(
@@ -744,10 +660,8 @@
           calendarEl.removeEventListener("drop", this._boundCalendarDrop);
         }
       } catch (e) {
-        /* ignore */
       }
 
-      // Thêm event listeners mới (lưu reference để dễ remove sau này)
       this._boundCalendarDragOver = this.handleDragOver.bind(this);
       this._boundCalendarDragLeave = this.handleDragLeave.bind(this);
       this._boundCalendarDrop = this.handleDrop.bind(this);
@@ -756,7 +670,6 @@
       calendarEl.addEventListener("dragleave", this._boundCalendarDragLeave);
       calendarEl.addEventListener("drop", this._boundCalendarDrop);
 
-      // Thêm CSS cho drop zone
       const style = document.createElement("style");
       style.textContent = `
     .drop-zone-active {
@@ -771,7 +684,6 @@
   `;
       document.head.appendChild(style);
 
-      // ✅ Document-level fallback for drops that escape calendar element
       try {
         if (this._docDropListener) {
           document.removeEventListener("drop", this._docDropListener);
@@ -820,7 +732,6 @@
     },
 
     async handleDrop(e) {
-      // Guard against duplicate handling
       if (this._handlingDrop) {
         console.log("⚠️ Drop already being handled, ignoring duplicate");
         return;
@@ -840,7 +751,6 @@
           e.dataTransfer?.types
         );
 
-        // Lấy dữ liệu từ drag - try multiple sources
         let taskId = e.dataTransfer.getData("text/plain");
         let taskData = {};
 
@@ -853,7 +763,6 @@
           }
         }
 
-        // Fallback: check for taskId in alternate data key
         if (!taskId) {
           taskId = e.dataTransfer.getData("taskId") || taskData.taskId;
         }
@@ -869,35 +778,28 @@
 
         console.log(`🎯 Dropping task ${taskId}: ${title}`);
 
-        // Lấy thông tin vị trí drop từ FullCalendar
         const calendar = this.calendar;
 
-        // Chuyển tọa độ chuột sang tọa độ calendar
         const point = {
           clientX: e.clientX,
           clientY: e.clientY,
         };
 
-        // Dùng FullCalendar's public API để lấy date từ điểm drop
-        let dropDate = new Date(); // Mặc định
+        let dropDate = new Date();
 
         try {
-          // Thử lấy date từ calendar
           const calendarApi = calendar;
           const calendarElRect = calendar.el.getBoundingClientRect();
 
-          // Tính toán relative position
           const relativeX = point.clientX - calendarElRect.left;
           const relativeY = point.clientY - calendarElRect.top;
 
-          // Tìm cell tại vị trí drop
           const dateStr = calendarApi.currentData.viewApi.dateEnv
             .toDate(new Date())
             .toISOString();
 
-          // Tạo event với thời gian hợp lý (bắt đầu từ giờ hiện tại)
           dropDate = new Date();
-          dropDate.setMinutes(0); // Làm tròn đến giờ
+          dropDate.setMinutes(0);
           dropDate.setSeconds(0);
           dropDate.setMilliseconds(0);
         } catch (err) {
@@ -907,17 +809,16 @@
           );
         }
 
-        // Tạo event mới
         const newEvent = {
           id: `temp-${Date.now()}`,
           title: title,
           start: dropDate,
-          end: new Date(dropDate.getTime() + 60 * 60 * 1000), // 1 giờ mặc định
+          end: new Date(dropDate.getTime() + 60 * 60 * 1000), 
           backgroundColor: color,
           borderColor: color,
-          editable: true, // ✅ QUAN TRỌNG: Cho phép kéo dịch chuyển
-          durationEditable: true, // Cho phép thay đổi độ dài
-          startEditable: true, // Cho phép thay đổi thời gian bắt đầu
+          editable: true,
+          durationEditable: true,
+          startEditable: true,
           extendedProps: {
             taskId: taskId,
             isFromDrag: true,
@@ -925,10 +826,8 @@
           },
         };
 
-        // Kiểm tra conflict (CHỈ KIỂM TRA NẾU EVENT ĐÃ CÓ TRONG CALENDAR)
         const existingEvents = calendar.getEvents();
         const hasConflict = existingEvents.some((existingEvent) => {
-          // Bỏ qua event tạm thời
           if (existingEvent.id?.startsWith("temp-")) return false;
 
           const s1 = newEvent.start;
@@ -937,7 +836,6 @@
           const e2 =
             existingEvent.end || new Date(s2.getTime() + 60 * 60 * 1000);
 
-          // Kiểm tra overlap
           return s1 < e2 && e1 > s2;
         });
 
@@ -946,10 +844,8 @@
           return;
         }
 
-        // Thêm event vào calendar
         calendar.addEvent(newEvent);
 
-        // Lưu vào server
         await this.saveDroppedEvent(
           taskId,
           title,
@@ -990,12 +886,9 @@
 
           console.log(`📌 New event created with ID: ${newEventId}`);
 
-          // ✅ FIX: Tìm event chính xác theo ID
-          // Thường là drag-{taskId} từ FullCalendar.Draggable
           const events = this.calendar.getEvents();
           let tempEvent = events.find((e) => e.id === `drag-${taskId}`);
 
-          // Fallback: Nếu không tìm được exact match, tìm event đầu tiên bắt đầu với temp- hoặc drag-
           if (!tempEvent) {
             tempEvent = events.find(
               (e) => e.id?.startsWith(`temp-`) || e.id?.startsWith(`drag-`)
@@ -1007,12 +900,9 @@
               `🔄 Updating event ${tempEvent.id} with real ID ${newEventId}...`
             );
 
-            // Cập nhật tất cả properties để FullCalendar re-render
             tempEvent.setProp("id", newEventId);
             tempEvent.setExtendedProp("taskId", taskId);
             tempEvent.setExtendedProp("isFromDrag", true);
-
-            // ✅ QUAN TRỌNG: Đảm bảo event editable
             tempEvent.setProp("editable", true);
             tempEvent.setProp("durationEditable", true);
             tempEvent.setProp("startEditable", true);
@@ -1027,19 +917,16 @@
             );
           }
 
-          // Cập nhật trạng thái task thành "đang thực hiện"
           await Utils.makeRequest(`/api/tasks/${taskId}`, "PUT", {
             TrangThaiThucHien: 1,
           });
 
           Utils.showToast?.("✅ Đã lên lịch thành công!", "success");
 
-          // Reload sidebar để ẩn task đã lên lịch
           if (window.loadUserTasks) {
             window.loadUserTasks(true);
           }
 
-          // Trigger refresh
           this.triggerSidebarRefresh();
         } else {
           throw new Error(res.message || "Lỗi thêm vào lịch");
@@ -1047,7 +934,6 @@
       } catch (error) {
         console.error("❌ Error saving dropped event:", error);
 
-        // Xóa event tạm nếu lỗi
         const events = this.calendar.getEvents();
         const tempEvent = events.find((e) => e.id?.startsWith(`temp-`));
         if (tempEvent) {
@@ -1061,21 +947,18 @@
     triggerSidebarRefresh() {
       console.log("📢 Triggering sidebar refresh...");
 
-      // Cách 1: Dispatch event
       document.dispatchEvent(
         new CustomEvent("task-scheduled", {
           detail: { action: "refresh" },
         })
       );
 
-      // Cách 2: Gọi trực tiếp nếu hàm tồn tại
       if (window.loadUserTasks && typeof window.loadUserTasks === "function") {
         setTimeout(() => {
           window.loadUserTasks(true);
         }, 500);
       }
 
-      // Cách 3: Storage event
       try {
         localStorage.setItem("__calendar_refresh", Date.now().toString());
         setTimeout(() => {
@@ -1089,7 +972,6 @@
     linkWorkTasksToCalendar() {
       console.log("🔗 Linking work tasks to calendar drag & drop...");
 
-      // Đảm bảo các tasks trong work section có đủ attributes cho drag
       const workTasks = document.querySelectorAll(
         "#work-items-container .work-item"
       );
@@ -1097,7 +979,6 @@
       workTasks.forEach((task) => {
         const taskId = task.dataset.taskId;
         if (taskId) {
-          // Thêm attributes cần thiết nếu chưa có
           if (!task.hasAttribute("draggable")) {
             task.setAttribute("draggable", "true");
           }
@@ -1118,24 +999,6 @@
         }
       });
     },
-
-    // refreshDragDrop() {
-    //   console.log("🔄 Refreshing drag & drop...");
-    //   setTimeout(() => {
-    //     this.setupNativeDragDrop();
-    //     this.setupExternalDraggable();
-    //   }, 100);
-    // },
-
-    // ==========================================================
-    // SHOW EVENT DETAILS MODAL - SIMPLIFIED VERSION
-    // ==========================================================
-    // ==========================================================
-    // SHOW EVENT DETAILS MODAL - WITH DELETE BUTTON
-    // ==========================================================
-    // ==========================================================
-    // SHOW EVENT DETAILS MODAL - WITH DANGER ZONE DELETE
-    // ==========================================================
     _showEventDetails(event) {
       const p = event.extendedProps;
       const startStr = event.start
@@ -1143,7 +1006,6 @@
         : "N/A";
       const endStr = event.end ? event.end.toLocaleString("vi-VN") : "N/A";
 
-      // Format thời gian cho cảnh báo
       const dateStr = event.start
         ? event.start.toLocaleDateString("vi-VN")
         : "";
@@ -1322,27 +1184,22 @@
       </div>
     </div>`;
 
-      // Remove old modal
       document.getElementById("eventDetailModal")?.remove();
       document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-      // Event listeners
       document.getElementById("closeEventDetail").onclick = () =>
         document.getElementById("eventDetailModal").remove();
 
       document.getElementById("saveEventStatus").onclick = () =>
         this._updateEventStatus(event);
 
-      // Real-time checkbox completion - AUTO SAVE when clicked
       const completionCheckbox = document.getElementById(
         "eventCompletedCheckbox"
       );
       completionCheckbox.addEventListener("change", async () => {
-        // Auto-save immediately without waiting for button click
         this._updateEventStatus(event);
       });
 
-      // Allow Ctrl+S to save quickly
       const handleSaveShortcut = (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "s") {
           e.preventDefault();
@@ -1352,7 +1209,6 @@
       };
       document.addEventListener("keydown", handleSaveShortcut);
 
-      // Xử lý xóa với xác nhận kép
       const deleteBtn = document.getElementById("showDeleteConfirmBtn");
       const deleteConfirmation = document.getElementById("deleteConfirmation");
       const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
@@ -1371,7 +1227,6 @@
         confirmDeleteBtn.disabled = true;
       });
 
-      // Kiểm tra input xác nhận
       deleteConfirmInput.addEventListener("input", (e) => {
         const inputText = e.target.value.trim();
         const eventTitleShort = event.title.substring(0, 20);
@@ -1387,14 +1242,12 @@
         }
       });
 
-      // Xác nhận xóa
       confirmDeleteBtn.addEventListener("click", () => {
         if (deleteConfirmInput.value.trim() === event.title.substring(0, 20)) {
           this._deleteEvent(event);
         }
       });
 
-      // Cho phép Enter để xác nhận
       deleteConfirmInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter" && !confirmDeleteBtn.disabled) {
           confirmDeleteBtn.click();
@@ -1402,9 +1255,6 @@
       });
     },
 
-    // ==========================================================
-    // DELETE EVENT WITH EXTRA CONFIRMATION
-    // ==========================================================
     async _deleteEvent(event) {
       const eventId = event.id;
 
@@ -1416,21 +1266,18 @@
       }
 
       try {
-        // Hiệu ứng loading cho nút xóa
         const confirmBtn = document.getElementById("confirmDeleteBtn");
         const originalText = confirmBtn.innerHTML;
         confirmBtn.innerHTML =
           '<i class="fas fa-spinner fa-spin mr-2"></i> Đang xóa...';
         confirmBtn.disabled = true;
 
-        // Gọi API xóa sự kiện
         const result = await Utils.makeRequest(
           `/api/calendar/events/${eventId}`,
           "DELETE"
         );
 
         if (!result.success) {
-          // Kiểm tra nếu có lỗi liên quan đến task
           if (
             (result.message && result.message.includes("liên quan")) ||
             result.message.includes("task")
@@ -1442,14 +1289,12 @@
           throw new Error(result.message || "Xóa sự kiện thất bại");
         }
 
-        // Hiệu ứng visual trước khi xóa
         const modal = document.getElementById("eventDetailModal");
         if (modal) {
           modal.style.animation = "fadeOut 0.3s ease forwards";
           setTimeout(() => modal.remove(), 300);
         }
 
-        // Hiệu ứng cho event trong calendar
         const eventEl =
           document.querySelector(`[data-event-id="${eventId}"]`) ||
           document.querySelector(
@@ -1466,12 +1311,10 @@
           event.remove();
         }
 
-        // Thông báo thành công với hiệu ứng
         Utils.showToast?.("🗑️ Đã xóa sự kiện thành công!", "success");
 
         console.log(`✅ Event ${eventId} deleted successfully`);
 
-        // Dispatch event để các component khác biết
         document.dispatchEvent(
           new CustomEvent("eventDeleted", {
             detail: { eventId, eventTitle: event.title },
@@ -1480,7 +1323,6 @@
       } catch (error) {
         console.error("❌ Error deleting event:", error);
 
-        // Khôi phục nút xóa
         const confirmBtn = document.getElementById("confirmDeleteBtn");
         if (confirmBtn) {
           confirmBtn.innerHTML = originalText;
@@ -1505,25 +1347,20 @@
         Utils.showToast?.(errorMessage, "error");
       }
     },
-    // ==========================================================
-    // UPDATE EVENT STATUS - REAL-TIME WITH IMMEDIATE FEEDBACK
-    // ==========================================================
+
     async _updateEventStatus(event) {
       try {
         const checkbox = document.getElementById("eventCompletedCheckbox");
         const completed = checkbox.checked;
 
-        // Store original state for rollback
         const wasCompleted = event.extendedProps.completed;
 
-        // Immediate visual feedback - update checkbox state visually
         const saveBtn = document.getElementById("saveEventStatus");
         const originalBtnText = saveBtn.innerHTML;
         saveBtn.disabled = true;
         saveBtn.innerHTML =
           '<i class="fas fa-spinner fa-spin mr-2"></i> Đang cập nhật...';
 
-        // Apply visual changes immediately to event element
         const eventEls = document.querySelectorAll(
           `[data-event-id="${
             event.id
@@ -1542,9 +1379,8 @@
           }
         });
 
-        // ⚠️ FIX: Sử dụng field names đúng
         const updateData = {
-          completed: completed, // Backend calendar.js kiểm tra d.completed !== undefined
+          completed: completed,
         };
 
         const res = await Utils.makeRequest(
@@ -1554,10 +1390,7 @@
         );
 
         if (res.success) {
-          // Update event state
           event.setExtendedProp("completed", completed);
-
-          // Update modal status text
           const statusEl = document.querySelector(
             '[class*="text-green-600"], [class*="text-orange-600"]'
           );
@@ -1574,8 +1407,6 @@
                 '<i class="fas fa-clock"></i> Chưa hoàn thành';
             }
           }
-
-          // Show success toast
           Utils.showToast?.(
             completed
               ? "✅ Đã hoàn thành công việc!"
@@ -1583,17 +1414,12 @@
             "success"
           );
 
-          // Restore button
           saveBtn.disabled = false;
           saveBtn.innerHTML = originalBtnText;
-
-          // Chỉ cập nhật visual, không xóa event khỏi lịch
-          // Event sẽ vẫn hiển thị nhưng mờ đi với gạch ngang
           setTimeout(() => {
             document.getElementById("eventDetailModal")?.remove();
           }, 600);
         } else {
-          // Rollback visual changes on error
           eventEls.forEach((el) => {
             if (wasCompleted) {
               el.classList.add("event-completed");
@@ -1606,7 +1432,6 @@
             }
           });
 
-          // Restore button
           saveBtn.disabled = false;
           saveBtn.innerHTML = originalBtnText;
           checkbox.checked = wasCompleted;
@@ -1620,7 +1445,6 @@
           "error"
         );
 
-        // Restore button
         const saveBtn = document.getElementById("saveEventStatus");
         if (saveBtn) {
           saveBtn.disabled = false;
@@ -1629,43 +1453,6 @@
       }
     },
 
-    // ==========================================================
-    // EXTERNAL DRAGGABLE (FullCalendar method)
-    // ==========================================================
-    // setupExternalDraggable() {
-    //   console.log("🔍 Searching for draggable items...");
-
-    //   // CHỈ TÌM KIẾM TRONG SIDEBAR, KHÔNG PHẢI TOÀN BỘ TRANG
-    //   const selectors = [
-    //     '#task-list div[draggable="true"]',
-    //     "#task-list > div",
-    //     "#task-list [data-task-id]",
-    //   ];
-
-    //   let draggableItems = [];
-
-    //   selectors.forEach((selector) => {
-    //     const items = document.querySelectorAll(selector);
-    //     console.log(
-    //       `📦 Found ${items.length} items with selector: ${selector}`
-    //     );
-    //     items.forEach((item) => draggableItems.push(item));
-    //   });
-
-    //   console.log(`🎯 Total draggable items found: ${draggableItems.length}`);
-
-    //   if (draggableItems.length === 0) {
-    //     console.log("⚠️ No draggable items found!");
-    //     return;
-    //   }
-
-    //   // CHỈ SETUP DRAG CHO ITEMS TRONG SIDEBAR
-    //   this.setupDragForItems(draggableItems);
-    // },
-
-    // ==========================================================
-    // NAVBAR BUTTONS
-    // ==========================================================
     initializeNavbarEvents() {
       const controls = {
         "cal-prev-btn": () => this.calendar.prev(),
@@ -1679,7 +1466,6 @@
       Object.entries(controls).forEach(([id, handler]) => {
         const btn = document.getElementById(id);
         if (btn) {
-          // Remove old listeners by cloning
           const newBtn = btn.cloneNode(true);
           btn.parentNode.replaceChild(newBtn, btn);
           newBtn.addEventListener("click", (e) => {
@@ -1724,49 +1510,6 @@
         titleEl.textContent = this.calendar.view.title;
     },
 
-    // setupDragForItems(items) {
-    //   if (!items || items.length === 0) return;
-
-    //   items.forEach((item) => {
-    //     // Xóa listener cũ nếu có
-    //     item.removeEventListener("dragstart", this.handleDragStart);
-
-    //     item.addEventListener("dragstart", this.handleDragStart.bind(this));
-    //     item.setAttribute("draggable", "true");
-
-    //     // Thêm data để biết task ID
-    //     const taskId = item.dataset.taskId || item.getAttribute("data-task-id");
-    //     if (taskId) {
-    //       item.dataset.taskId = taskId;
-    //     }
-    //   });
-
-    //   console.log(`Setup drag cho ${items.length} task items`);
-    // },
-
-    // handleDragStart(e) {
-    //   const taskItem = e.target.closest(".task-item"); // Tìm item gần nhất để lấy đầy đủ data
-    //   const taskId = taskItem.dataset.taskId;
-    //   const title = taskItem.dataset.taskTitle || "Công việc";
-    //   const priority = parseInt(taskItem.dataset.taskPriority) || 2; // Lấy từ dataset (nếu sidebar set)
-    //   const color =
-    //     taskItem.dataset.taskColor || this.getPriorityColor(priority); // Ưu tiên color từ dataset
-
-    //   if (taskId) {
-    //     e.dataTransfer.setData("text/plain", taskId);
-    //     e.dataTransfer.setData("taskId", taskId);
-    //     e.dataTransfer.setData("title", title);
-    //     e.dataTransfer.setData("priority", priority);
-    //     e.dataTransfer.setData("color", color);
-    //     console.log("Dragging task:", { taskId, title, priority, color });
-    //   } else {
-    //     console.error("No taskId found");
-    //   }
-    // },
-
-    // ==========================================================
-    // DESTROY & REFRESH
-    // ==========================================================
     destroy() {
       if (this.draggableInstance) {
         try {
@@ -1794,7 +1537,6 @@
     },
   };
 
-  // Export
   window.CalendarModule = CalendarModule;
   console.log("CalendarModule v6.5 FIXED đã sẵn sàng!");
 })();

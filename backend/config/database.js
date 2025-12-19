@@ -18,8 +18,6 @@ const config = {
   },
 };
 
-// ✅ FIX: Không sử dụng destructuring từ chính file này
-// Tạo pool connection
 const dbPoolPromise = new sql.ConnectionPool(config)
   .connect()
   .then((pool) => {
@@ -31,9 +29,8 @@ const dbPoolPromise = new sql.ConnectionPool(config)
     process.exit(1);
   });
 
-// ✅ FIX: Export với tên khác để tránh trùng lặp
 module.exports = {
   sql,
-  dbPoolPromise, // Đổi tên thành dbPoolPromise
+  dbPoolPromise, 
   config,
 };

@@ -1,6 +1,4 @@
-/**
- * Install Hook - Ensures proper library loading order
- */
+
 if (typeof InstallHook === "undefined") {
   const InstallHook = {
     libraries: {
@@ -11,17 +9,14 @@ if (typeof InstallHook === "undefined") {
     async init() {
       console.log("🔧 Running install hooks...");
 
-      // Check if FullCalendar is loaded
       this.checkLibraries();
 
-      // Add CSS to prevent text selection on calendar
       this.addCalendarStyles();
 
       console.log("✅ Install hooks complete");
     },
 
     checkLibraries() {
-      // Check FullCalendar
       if (typeof FullCalendar !== "undefined") {
         this.libraries.fullcalendar = true;
         console.log("✅ FullCalendar loaded");
@@ -29,7 +24,6 @@ if (typeof InstallHook === "undefined") {
         console.warn("⚠️ FullCalendar not loaded yet");
       }
 
-      // Check Utils
       if (typeof Utils !== "undefined") {
         this.libraries.utils = true;
         console.log("✅ Utils loaded");
@@ -39,7 +33,6 @@ if (typeof InstallHook === "undefined") {
     },
 
     addCalendarStyles() {
-      // ✅ FIX: Add CSS to prevent Selection errors
       const style = document.createElement("style");
       style.textContent = `
         /* Prevent text selection on calendar elements */
@@ -70,7 +63,6 @@ if (typeof InstallHook === "undefined") {
       console.log("✅ Calendar styles added");
     },
 
-    // Wait for a library to be loaded
     async waitForLibrary(name, timeout = 5000) {
       const startTime = Date.now();
 
@@ -87,7 +79,6 @@ if (typeof InstallHook === "undefined") {
     },
   };
 
-  // Auto-run on load
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => InstallHook.init());
   } else {

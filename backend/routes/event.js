@@ -1,5 +1,3 @@
-// Quản lý sự kiện
-
 const express = require("express");
 const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
@@ -39,7 +37,6 @@ router.get("/events", async (req, res) => {
     console.log(` Found ${result.recordset.length} events for user ${userId}`);
 
     const events = result.recordset.map((ev) => {
-      // Đảm bảo không có giá trị undefined
       const eventData = {
         ID: ev.ID || 0,
         title: ev.TieuDe || "Không có tiêu đề",
@@ -81,9 +78,7 @@ router.get("/events", async (req, res) => {
   }
 });
 
-// ✅ POST /api/calendar/events - Tạo event mới - FIXED VERSION
 router.post("/events", authenticateToken, async (req, res) => {
-  // Thêm auth nếu chưa
   try {
     const userId = req.user.UserID;
     const {
@@ -101,11 +96,9 @@ router.post("/events", authenticateToken, async (req, res) => {
       });
     }
 
-    // ✅ FIX: Chuyển string sang Date object
     const startDate = new Date(GioBatDau);
     const endDate = GioKetThuc ? new Date(GioKetThuc) : null;
 
-    // Kiểm tra date hợp lệ
     if (isNaN(startDate.getTime())) {
       return res.status(400).json({
         success: false,
@@ -119,8 +112,8 @@ router.post("/events", authenticateToken, async (req, res) => {
       .request()
       .input("UserID", sql.Int, userId)
       .input("MaCongViec", sql.Int, MaCongViec)
-      .input("GioBatDau", sql.DateTime, startDate) // Sử dụng Date
-      .input("GioKetThuc", sql.DateTime, endDate) // Sử dụng Date
+      .input("GioBatDau", sql.DateTime, startDate)
+      .input("GioKetThuc", sql.DateTime, endDate)
       .input("GhiChu", sql.NVarChar, GhiChu || null)
       .input("AI_DeXuat", sql.Bit, AI_DeXuat)
       .input("NgayTao", sql.DateTime, new Date()).query(`
@@ -135,14 +128,13 @@ router.post("/events", authenticateToken, async (req, res) => {
         )
       `);
 
-    // Cập nhật trạng thái công việc nếu cần
     if (MaCongViec) {
       await pool
         .request()
         .input("MaCongViec", sql.Int, MaCongViec)
         .input("UserID", sql.Int, userId).query(`
           UPDATE CongViec
-          SET TrangThaiThucHien = 1  -- Đang thực hiện
+          SET TrangThaiThucHien = 1
           WHERE MaCongViec = @MaCongViec AND UserID = @UserID
         `);
     }
@@ -164,15 +156,12 @@ router.post("/events", authenticateToken, async (req, res) => {
   }
 });
 
-// ✅ PUT /api/calendar/events/:id - Cập nhật event - FIXED VERSION
 router.put("/events/:id", authenticateToken, async (req, res) => {
-  // Thêm auth nếu chưa
   try {
     const userId = req.user.UserID;
     const eventId = req.params.id;
     const { ThoiGianBatDau, ThoiGianKetThuc, GhiChu, DaHoanThanh } = req.body;
 
-    // ✅ FIX: Chuyển string sang Date
     const startDate = ThoiGianBatDau ? new Date(ThoiGianBatDau) : null;
     const endDate = ThoiGianKetThuc ? new Date(ThoiGianKetThuc) : null;
 
@@ -199,7 +188,6 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
         WHERE MaLichTrinh = @MaLichTrinh AND UserID = @UserID
       `);
 
-    // Cập nhật trạng thái công việc nếu hoàn thành
     if (DaHoanThanh !== undefined) {
       const eventResult = await pool
         .request()
@@ -238,16 +226,13 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// ✅ DELETE /api/calendar/events/:id - Xóa event - FIXED VERSION
 router.delete("/events/:id", async (req, res) => {
   try {
     const userId = req.user.UserID;
     const eventId = req.params.id;
 
-    // ✅ FIX: Sử dụng dbPoolPromise
     const pool = await dbPoolPromise;
 
-    // ✅ FIX: Lấy MaCongViec trước khi xóa
     const eventResult = await pool
       .request()
       .input("id", sql.Int, eventId)
@@ -258,7 +243,6 @@ router.delete("/events/:id", async (req, res) => {
 
     const MaCongViec = eventResult.recordset[0]?.MaCongViec;
 
-    // Xóa lịch trình
     await pool
       .request()
       .input("id", sql.Int, eventId)
@@ -267,14 +251,13 @@ router.delete("/events/:id", async (req, res) => {
         "DELETE FROM LichTrinh WHERE MaLichTrinh = @id AND UserID = @userId"
       );
 
-    // ✅ FIX: Cập nhật trạng thái công việc nếu có
     if (MaCongViec) {
       await pool
         .request()
         .input("MaCongViec", sql.Int, MaCongViec)
         .input("UserID", sql.Int, userId).query(`
           UPDATE CongViec
-          SET TrangThaiThucHien = 0  -- Chờ thực hiện
+          SET TrangThaiThucHien = 0
           WHERE MaCongViec = @MaCongViec AND UserID = @UserID
         `);
     }
@@ -293,13 +276,11 @@ router.delete("/events/:id", async (req, res) => {
   }
 });
 
-// ✅ GET /api/calendar/range - Lấy events trong khoảng thời gian
 router.get("/range", async (req, res) => {
   try {
     const userId = req.user.UserID;
     const { start, end } = req.query;
 
-    // ✅ FIX: Sử dụng dbPoolPromise
     const pool = await dbPoolPromise;
 
     if (!start || !end) {
@@ -352,7 +333,6 @@ router.get("/range", async (req, res) => {
   }
 });
 
-// Đảm bảo endpoint này đã có trong event.js
 router.get("/ai-events", async (req, res) => {
   try {
     const userId = req.user.UserID;
@@ -379,7 +359,7 @@ router.get("/ai-events", async (req, res) => {
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
         WHERE lt.UserID = @userId 
-          AND lt.AI_DeXuat = 1  -- CHỈ LẤY AI SUGGESTIONS
+          AND lt.AI_DeXuat = 1
         ORDER BY lt.GioBatDau ASC
       `);
 
@@ -406,7 +386,7 @@ router.get("/ai-events", async (req, res) => {
         extendedProps: {
           note: ev.GhiChu || "",
           completed: ev.DaHoanThanh || false,
-          aiSuggested: true, // Đánh dấu đây là AI suggestion
+          aiSuggested: true,
           taskId: ev.MaCongViec || null,
           description: ev.MoTa || "",
           created: ev.CongViecNgayTao || ev.LichTrinhNgayTao,

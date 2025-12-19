@@ -8,18 +8,14 @@ const { connectDB } = require("./config/database");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Routes
 app.use("/api/auth", authRoutes);
 
-// Serve HTML pages
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
@@ -36,18 +32,15 @@ app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Something went wrong!" });
 });
 
-// 404 handler
 app.use("*", (req, res) => {
   res.status(404).json({ message: "Page not found" });
 });
 
-// Connect to database and start server
 async function startServer() {
   try {
     await connectDB();
@@ -65,7 +58,6 @@ async function startServer() {
   }
 }
 
-// Handle process termination
 process.on("SIGINT", () => {
   console.log("\n👋 Server is shutting down gracefully...");
   process.exit(0);

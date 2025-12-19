@@ -1,6 +1,3 @@
-/* ===================================
-   RESET & BASE STYLES
-   =================================== */
 
 * {
   margin: 0;
@@ -14,10 +11,6 @@ body {
   overflow-x: visible;
 }
 
-/* ===================================
-   SIDEBAR CSS MANAGED IN sidebar.html
-   - DO NOT MODIFY LAYOUT CSS HERE
-   =================================== */
 .nav-btn {
   position: relative;
   overflow: hidden;
@@ -26,7 +19,6 @@ body {
   font-weight: 500;
 }
 
-/* Active nav button with better styling */
 .nav-btn.bg-gray-200 {
   background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
   border-left: 4px solid #3b82f6 !important;
@@ -39,19 +31,16 @@ body {
   transition: all 0.3s ease;
 }
 
-/* Hover effects for nav buttons */
 .nav-btn:hover:not(.bg-gray-200) {
   background-color: #f9fafb !important;
   transform: translateX(2px);
 }
 
-/* User info section enhancement */
 #sidebar-container aside .border-t {
   background: linear-gradient(to bottom, transparent, rgba(248, 250, 252, 0.5));
   padding-top: 1rem;
 }
 
-/* Avatar styling */
 .avatar-letter {
   font-size: 1rem;
   font-weight: 700;
@@ -60,7 +49,6 @@ body {
   justify-content: center;
 }
 
-/* Settings and logout button styling */
 #settingsBtn,
 [data-logout] {
   transition: all 0.2s ease;
@@ -77,10 +65,6 @@ body {
 [data-logout]:hover {
   color: #dc2626 !important;
 }
-
-/* ===================================
-   SECTION VISIBILITY
-   =================================== */
 
 #createCategoryModal {
   display: none !important;
@@ -114,7 +98,6 @@ body {
   justify-content: center !important;
 }
 
-/* Ensure category container is visible */
 #category-container {
   display: block !important;
   visibility: visible !important;
@@ -138,7 +121,6 @@ body {
   flex-direction: column;
 }
 
-/* AI Section đặc biệt quan trọng */
 #ai-section.active {
   display: block !important;
   width: 100% !important;
@@ -147,11 +129,6 @@ body {
   visibility: visible !important;
 }
 
-/* ===================================
-   MODAL STYLES - FIXED VERSION
-   =================================== */
-
-/* Modal container CHÍNH */
 .modal {
   position: fixed;
   top: 0;
@@ -167,7 +144,6 @@ body {
   backdrop-filter: blur(2px);
 }
 
-/* Khi modal có class hidden - LUÔN ẩn */
 .modal.hidden {
   display: none !important;
   visibility: hidden !important;
@@ -175,7 +151,6 @@ body {
   pointer-events: none !important;
 }
 
-/* Khi modal hiển thị */
 .modal.active,
 .modal.show,
 .modal:not(.hidden) {
@@ -185,7 +160,6 @@ body {
   pointer-events: auto !important;
 }
 
-/* Specific modal styling - inherits from .modal base rules */
 #createTaskModal {
   z-index: 9999 !important;
 }
@@ -197,7 +171,6 @@ body {
   visibility: visible !important;
 }
 
-/* Modal overlay - QUAN TRỌNG: phải là direct child */
 .modal > .modal-overlay {
   position: absolute;
   top: 0;
@@ -225,7 +198,6 @@ body {
   pointer-events: none;
 }
 
-/* Modal content - QUAN TRỌNG: phải là direct child */
 .modal > .modal-content {
   display: flex !important;
   flex-direction: column !important;
@@ -245,12 +217,10 @@ body {
   animation: modalSlideIn 0.3s ease-out;
 }
 
-/* Đặc biệt cho AI Suggestion Modal */
 #aiSuggestionModal {
   z-index: 10001 !important;
 }
 
-/* Khi modal có hidden class - luôn ẩn */
 #aiSuggestionModal.hidden {
   display: none;
   visibility: hidden !important;
@@ -258,7 +228,6 @@ body {
   pointer-events: none !important;
 }
 
-/* Khi modal không có hidden class - hiển thị */
 #aiSuggestionModal:not(.hidden) {
   display: flex !important;
   visibility: visible !important;
@@ -288,7 +257,7 @@ body {
   padding: 0 !important;
 }
 
-/* Animation */
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
@@ -300,31 +269,19 @@ body {
   }
 }
 
-/* Ngăn body scroll khi modal mở */
+
 body.modal-open {
   overflow: hidden !important;
-  /* position: fixed; */ /* GÂY LỖI LAYOUT */
+
   width: 100%;
   height: 100%;
 }
 
-/* ===================================
-   FIX NESTED MODAL ISSUE
-   =================================== */
-/* Nếu có modal trong modal, ẩn modal cha khi mở modal con */
-/* .modal.active .modal {
-  display: none !important;
-} */
-
-/* Khi mở modal con, ẩn modal cha */
 .modal-child-active .modal-parent {
   opacity: 0.3 !important;
   pointer-events: none !important;
 }
 
-/* ===================================
-   FORM STYLES
-   =================================== */
 .modal input,
 .modal select,
 .modal textarea {
@@ -345,7 +302,6 @@ body.modal-open {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* AI Form đặc biệt */
 #aiSuggestionForm {
   display: flex;
   flex-direction: column;
@@ -363,9 +319,6 @@ body.modal-open {
   color: #374151;
 }
 
-/* ===================================
-   BUTTON STYLES
-   =================================== */
 .modal .btn {
   padding: 12px 24px;
   border-radius: 8px;
@@ -424,7 +377,6 @@ body.modal-open {
   background: #e5e7eb;
 }
 
-/* Ensure all buttons in modals display properly */
 .modal button {
   display: inline-flex !important;
   width: auto !important;
@@ -432,9 +384,6 @@ body.modal-open {
   justify-content: center !important;
 }
 
-/* ===================================
-   UTILITY CLASSES
-   =================================== */
 .hidden {
   display: none !important;
 }
@@ -471,9 +420,6 @@ body.modal-open {
   z-index: 100 !important;
 }
 
-/* ===================================
-   CALENDAR FIXES FOR AI SECTION
-   =================================== */
 #ai-section #calendar {
   width: 100% !important;
   height: calc(100vh - 180px) !important;
@@ -485,7 +431,6 @@ body.modal-open {
   margin-top: 20px;
 }
 
-/* FullCalendar custom */
 #ai-section .fc {
   height: 100% !important;
   font-size: 14px !important;
@@ -500,9 +445,6 @@ body.modal-open {
   height: calc(100% - 70px) !important;
 }
 
-/* ===================================
-   RESPONSIVE DESIGN
-   =================================== */
 @media (max-width: 768px) {
   .modal {
     padding: 10px;
@@ -540,9 +482,6 @@ body.modal-open {
   }
 }
 
-/* ===================================
-   DEBUG HELPERS (tạm thời)
-   =================================== */
 .debug-modal {
   border: 3px solid red !important;
   background: rgba(255, 0, 0, 0.1) !important;
@@ -561,24 +500,18 @@ body.modal-open {
   z-index: 99999;
 }
 
-/* ===================================
-   FIX CHO SPECIFIC MODAL ISSUES
-   =================================== */
-/* Đảm bảo modal không bị ẩn bởi parent opacity */
 .modal.active {
   opacity: 1 !important;
 }
 
-/* Fix cho modal bị nested */
 #eventDetailModal {
-  z-index: 10002 !important; /* Cao nhất */
+  z-index: 10002 !important;
 }
 
 #eventDetailModal .modal-content {
   max-width: 500px;
 }
 
-/* Loading state cho AI */
 .ai-loading {
   display: flex;
   align-items: center;
@@ -594,9 +527,6 @@ body.modal-open {
   color: #3b82f6;
 }
 
-/* ===================================
-   SCROLLBAR STYLES
-   =================================== */
 .modal-content::-webkit-scrollbar {
   width: 6px;
 }
@@ -615,9 +545,6 @@ body.modal-open {
   background: #94a3b8;
 }
 
-/* ===================================
-   FONT AWESOME FIX (giữ nguyên)
-   =================================== */
 i.fas,
 i.far,
 i.fab,
@@ -641,9 +568,6 @@ body.fa-loaded span[class*="fa-"] {
   transition: opacity 0.2s;
 }
 
-/* ===================================
-   FORCE DISPLAY OVERRIDES
-   =================================== */
 .force-show {
   display: block !important;
   visibility: visible !important;
@@ -655,9 +579,6 @@ body.fa-loaded span[class*="fa-"] {
   display: flex !important;
 }
 
-/* ===================================
-   PRINT STYLES
-   =================================== */
 @media print {
   .modal {
     display: none !important;
@@ -667,17 +588,6 @@ body.fa-loaded span[class*="fa-"] {
     display: none !important;
   }
 }
-/* ===================================
-   AI MODAL SPECIFIC STYLES
-   =================================== */
-
-/* Modal structure đã có, chỉ cần thêm styles cho content */
-
-/* ===================================
-   AI SUGGESTION MODAL STYLES
-   =================================== */
-
-/* AI Modal Specific */
 .ai-modal .modal-content {
   display: flex !important;
   flex-direction: column !important;
@@ -697,7 +607,6 @@ body.fa-loaded span[class*="fa-"] {
   flex-direction: column;
 }
 
-/* Modal Header */
 .ai-modal-header {
   display: flex;
   align-items: center;
@@ -758,14 +667,12 @@ body.fa-loaded span[class*="fa-"] {
   transform: rotate(90deg);
 }
 
-/* Modal Body */
 .ai-modal-body {
   padding: 24px;
   flex: 1;
   overflow-y: auto;
 }
 
-/* Form Sections */
 .form-section {
   margin-bottom: 32px;
 }
@@ -791,7 +698,6 @@ body.fa-loaded span[class*="fa-"] {
   margin-bottom: 16px;
 }
 
-/* Date Range */
 .date-range-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -825,7 +731,6 @@ body.fa-loaded span[class*="fa-"] {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-/* Task List Container */
 .task-list-container {
   border: 2px solid #e5e7eb;
   border-radius: 12px;
@@ -839,7 +744,6 @@ body.fa-loaded span[class*="fa-"] {
   padding: 16px;
 }
 
-/* Task Item */
 .task-item {
   display: flex;
   align-items: center;
@@ -954,7 +858,6 @@ body.fa-loaded span[class*="fa-"] {
   margin-left: 12px;
 }
 
-/* Task Stats */
 .task-stats {
   padding: 12px 16px;
   background: #f3f4f6;
@@ -968,7 +871,6 @@ body.fa-loaded span[class*="fa-"] {
   font-weight: 600;
 }
 
-/* AI Options Grid */
 .ai-options-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1039,7 +941,6 @@ body.fa-loaded span[class*="fa-"] {
   display: block;
 }
 
-/* Buttons */
 .btn-select-all {
   background: #f5f3ff;
   color: #8b5cf6;
@@ -1060,7 +961,6 @@ body.fa-loaded span[class*="fa-"] {
   border-color: #8b5cf6;
 }
 
-/* Loading States */
 .loading-state,
 .empty-state,
 .error-state {
@@ -1103,7 +1003,6 @@ body.fa-loaded span[class*="fa-"] {
   background: #e5e7eb;
 }
 
-/* Success Summary */
 .ai-summary-section {
   background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   border: 2px solid #10b981;
@@ -1205,7 +1104,6 @@ body.fa-loaded span[class*="fa-"] {
   margin-right: 8px;
 }
 
-/* Error Section */
 .error-section {
   background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   border: 2px solid #ef4444;
@@ -1228,7 +1126,6 @@ body.fa-loaded span[class*="fa-"] {
   font-size: 14px;
 }
 
-/* Modal Footer */
 .ai-modal-footer {
   padding: 20px 24px;
   background: #f9fafb;
@@ -1238,7 +1135,6 @@ body.fa-loaded span[class*="fa-"] {
   justify-content: space-between;
 }
 
-/* Button Styles */
 .btn {
   padding: 12px 24px;
   border-radius: 8px;
@@ -1281,12 +1177,10 @@ body.fa-loaded span[class*="fa-"] {
   cursor: not-allowed;
 }
 
-/* Utility Classes */
 .hidden {
   display: none !important;
 }
 
-/* Scrollbar Styling */
 .task-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -1305,7 +1199,6 @@ body.fa-loaded span[class*="fa-"] {
   background: #94a3b8;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .ai-modal .modal-content {
     width: 98%;
@@ -1368,11 +1261,6 @@ body.fa-loaded span[class*="fa-"] {
   }
 }
 
-/* ===================================
-   CALENDAR SIDEBAR TASK STYLES
-   =================================== */
-
-/* Sidebar Container */
 #calendar-sidebar {
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   box-shadow: inset 1px 0 0 #e2e8f0;
@@ -1383,7 +1271,6 @@ body.fa-loaded span[class*="fa-"] {
   box-shadow: inset 1px 0 0 #cbd5e1, 2px 0 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Sidebar Header */
 #calendar-sidebar .p-4 {
   background: white;
   border-bottom: 1px solid #e2e8f0;
@@ -1402,7 +1289,6 @@ body.fa-loaded span[class*="fa-"] {
   letter-spacing: 0.3px;
 }
 
-/* Refresh Button */
 #refresh-tasks-btn {
   background: transparent;
   border: 2px solid #e2e8f0;
@@ -1436,7 +1322,6 @@ body.fa-loaded span[class*="fa-"] {
   }
 }
 
-/* Task List Container */
 #task-list {
   padding: 16px;
   display: flex;
@@ -1445,7 +1330,6 @@ body.fa-loaded span[class*="fa-"] {
   min-height: 300px;
 }
 
-/* Task Item - Modern Card Design */
 .task-item {
   background: white;
   border-radius: 12px;
@@ -1495,7 +1379,6 @@ body.fa-loaded span[class*="fa-"] {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Task Item when dragging */
 .task-item.dragging-task {
   opacity: 0.6;
   transform: scale(0.98);
@@ -1505,7 +1388,6 @@ body.fa-loaded span[class*="fa-"] {
   background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
 }
 
-/* Task Color Indicator */
 .task-item {
   border-left-width: 5px;
   border-left-style: solid;
@@ -1522,7 +1404,6 @@ body.fa-loaded span[class*="fa-"] {
   opacity: 0.7;
 }
 
-/* Task Content */
 .task-item .flex-1 {
   margin-left: 12px;
 }
@@ -1550,7 +1431,6 @@ body.fa-loaded span[class*="fa-"] {
   overflow: hidden;
 }
 
-/* Task Meta Info */
 .task-item .flex.items-center.gap-3 {
   margin-top: 10px;
   padding-top: 10px;
@@ -1585,7 +1465,6 @@ body.fa-loaded span[class*="fa-"] {
   font-size: 10px;
 }
 
-/* Grip Icon */
 .task-item .fa-grip-vertical {
   color: #cbd5e1;
   font-size: 14px;
@@ -1595,7 +1474,6 @@ body.fa-loaded span[class*="fa-"] {
   background: #f8fafc;
 }
 
-/* Empty State */
 #task-list .text-center {
   padding: 60px 20px;
   display: flex;
@@ -1623,7 +1501,6 @@ body.fa-loaded span[class*="fa-"] {
   color: #94a3b8;
 }
 
-/* Loading State */
 #task-list .animate-pulse {
   padding: 60px 20px;
   text-align: center;
@@ -1658,7 +1535,6 @@ body.fa-loaded span[class*="fa-"] {
   font-size: 13px;
 }
 
-/* Error State */
 #task-list .text-red-600 {
   padding: 40px 20px;
   text-align: center;
@@ -1696,7 +1572,6 @@ body.fa-loaded span[class*="fa-"] {
   transform: translateY(-1px);
 }
 
-/* Task Priority Badges */
 .task-priority-badge {
   position: absolute;
   top: 12px;
@@ -1722,7 +1597,6 @@ body.fa-loaded span[class*="fa-"] {
   box-shadow: 0 0 0 2px white, 0 0 6px #10b981;
 }
 
-/* Task Time Estimate */
 .task-time-estimate {
   display: inline-flex;
   align-items: center;
@@ -1740,7 +1614,6 @@ body.fa-loaded span[class*="fa-"] {
   font-size: 10px;
 }
 
-/* Hover Effects for Task Items */
 .task-item:hover .task-title {
   color: #3b82f6;
 }
@@ -1749,7 +1622,6 @@ body.fa-loaded span[class*="fa-"] {
   background: #dbeafe;
 }
 
-/* Drag Preview */
 .task-item-drag-preview {
   background: white;
   border-radius: 12px;
@@ -1763,7 +1635,6 @@ body.fa-loaded span[class*="fa-"] {
   z-index: 9999;
 }
 
-/* Scrollbar for Task List */
 #task-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -1783,7 +1654,6 @@ body.fa-loaded span[class*="fa-"] {
   background: #94a3b8;
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
   #calendar-sidebar {
     width: 300px;
@@ -1838,7 +1708,6 @@ body.fa-loaded span[class*="fa-"] {
   }
 }
 
-/* Animation for task addition/removal */
 @keyframes taskSlideIn {
   from {
     opacity: 0;
@@ -1873,16 +1742,10 @@ body.fa-loaded span[class*="fa-"] {
   animation: taskSlideOut 0.3s ease-in forwards;
 }
 
-/* ===================================
-   PROFILE MODAL STYLING
-   =================================== */
-
-/* Profile Modal - uses .modal class */
 #profileModal {
   z-index: 10040 !important;
 }
 
-/* Modal content animation */
 .modal .modal-content {
   animation: modalSlideIn 0.3s ease-out forwards;
   max-height: 90vh;
@@ -1948,7 +1811,6 @@ body.fa-loaded span[class*="fa-"] {
   }
 }
 
-/* Avatar upload button */
 #profileModal .relative label {
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -1958,10 +1820,6 @@ body.fa-loaded span[class*="fa-"] {
   transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
-
-/* ===================================
-   MODAL ANIMATIONS
-   =================================== */
 
 @keyframes modalSlideIn {
   from {
@@ -1974,7 +1832,6 @@ body.fa-loaded span[class*="fa-"] {
   }
 }
 
-/* Notification Modal - uses .modal class */
 #notificationModal {
   z-index: 10041 !important;
 }
@@ -1990,7 +1847,6 @@ body.fa-loaded span[class*="fa-"] {
   border-color: #06b6d4 !important;
 }
 
-/* Settings Modal - uses .modal class */
 #settingsModal {
   z-index: 10042 !important;
 }
@@ -2003,7 +1859,6 @@ body.fa-loaded span[class*="fa-"] {
   max-width: calc(100% - 32px);
 }
 
-/* Task category colors */
 .task-item.category-work {
   border-left-color: #3b82f6;
 }
@@ -2024,7 +1879,6 @@ body.fa-loaded span[class*="fa-"] {
   border-left-color: #94a3b8;
 }
 
-/* Task status indicator */
 .task-status-dot {
   width: 8px;
   height: 8px;
@@ -2048,7 +1902,6 @@ body.fa-loaded span[class*="fa-"] {
   box-shadow: 0 0 4px #10b981;
 }
 
-/* Task action buttons (if added later) */
 .task-actions {
   display: flex;
   gap: 8px;
@@ -2078,7 +1931,6 @@ body.fa-loaded span[class*="fa-"] {
   border-color: #cbd5e1;
 }
 
-/* Ngăn không cho kéo thả trong work section */
 #work-items-container [draggable="true"],
 #work-items-container [data-task-id] {
   user-select: auto !important;
@@ -2091,7 +1943,6 @@ body.fa-loaded span[class*="fa-"] {
   transition: none !important;
 }
 
-/* Chỉ cho phép kéo thả trong sidebar */
 #task-list [draggable="true"],
 #task-list [data-task-id] {
   user-select: none;

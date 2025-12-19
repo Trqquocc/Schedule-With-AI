@@ -1,6 +1,4 @@
-/* work.css - CSS cho trang quản lý công việc */
 
-/* Container và layout */
 .work-table-container {
   overflow-x: auto;
 }
@@ -57,7 +55,6 @@
   border-left: 4px solid #10b981;
 }
 
-/* Status badges */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -84,7 +81,6 @@
   color: #065f46;
 }
 
-/* Priority indicators */
 .priority-indicator {
   display: inline-flex;
   align-items: center;
@@ -104,7 +100,6 @@
   color: #059669;
 }
 
-/* Action buttons */
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -151,7 +146,6 @@
   background-color: #a7f3d0;
 }
 
-/* Category tags */
 .category-tag {
   display: inline-flex;
   align-items: center;
@@ -169,7 +163,6 @@
   display: inline-block;
 }
 
-/* Empty state */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -205,7 +198,6 @@
   color: #64748b;
 }
 
-/* Empty state features */
 .empty-state-features {
   display: flex;
   justify-content: center;
@@ -234,7 +226,6 @@
   color: #667eea;
 }
 
-/* Loading state */
 .loading-state {
   text-align: center;
   padding: 48px 20px;
@@ -257,7 +248,6 @@
   }
 }
 
-/* Filter and search */
 .work-filters {
   display: flex;
   gap: 16px;
@@ -301,7 +291,6 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Hiệu ứng chuyển động */
 .work-table tr {
   animation: fadeIn 0.3s ease-out;
 }
@@ -317,7 +306,6 @@
   }
 }
 
-/* Hiệu ứng khi xóa */
 .work-table tr.deleting {
   animation: fadeOut 0.3s ease-out forwards;
 }
@@ -332,7 +320,6 @@
   }
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .work-filters {
     flex-direction: column;
@@ -353,7 +340,6 @@
     justify-content: center;
   }
 }
-/* Action buttons */
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -377,7 +363,6 @@
   font-size: 12px;
 }
 
-/* Complete button */
 .complete-btn {
   background-color: #10b981;
   color: white;
@@ -388,7 +373,6 @@
   transform: translateY(-1px);
 }
 
-/* Edit button */
 .edit-btn {
   background-color: #3b82f6;
   color: white;
@@ -399,7 +383,6 @@
   transform: translateY(-1px);
 }
 
-/* Delete button */
 .delete-btn {
   background-color: #ef4444;
   color: white;
@@ -410,7 +393,6 @@
   transform: translateY(-1px);
 }
 
-/* Trạng thái hoàn thành */
 .completed td {
   opacity: 0.7;
 }
@@ -433,7 +415,6 @@
   color: #92400e;
 }
 
-/* Priority indicators */
 .priority-low {
   color: #10b981;
 }
