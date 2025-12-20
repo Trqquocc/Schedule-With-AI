@@ -109,7 +109,8 @@
           taskElement.dataset.taskTitle = title;
           taskElement.dataset.taskDescription = description;
           taskElement.dataset.taskColor = color;
-          taskElement.dataset.taskPriority = priority; //  Thêm priority vào dataset
+          taskElement.dataset.taskPriority = priority;
+          taskElement.dataset.taskDuration = task.ThoiGianUocTinh || 60; // Thêm độ dài ước tính (phút)
           taskElement.dataset.dragInitialized = "true";
 
           taskElement.innerHTML = `
@@ -138,12 +139,19 @@
 
           taskElement.addEventListener("dragstart", (e) => {
             console.log(
-              `🎯 Drag start: ${title} (ID: ${taskId}, Priority: ${priority}, Color: ${color})`
+              `🎯 Drag start: ${title} (ID: ${taskId}, Priority: ${priority}, Duration: ${task.ThoiGianUocTinh}min, Color: ${color})`
             );
             e.dataTransfer.setData("text/plain", taskId.toString());
             e.dataTransfer.setData(
               "application/json",
-              JSON.stringify({ taskId, title, color, description, priority }) //  Thêm priority
+              JSON.stringify({
+                taskId,
+                title,
+                color,
+                description,
+                priority,
+                duration: task.ThoiGianUocTinh || 60,
+              })
             );
             e.dataTransfer.effectAllowed = "move";
             taskElement.classList.add("opacity-50", "bg-blue-50");

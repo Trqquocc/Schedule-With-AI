@@ -10,9 +10,6 @@ const {
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
   console.error("❌ TELEGRAM_BOT_TOKEN is missing in .env file!");
-  console.error(
-    "Please create .env file with TELEGRAM_BOT_TOKEN=your_token_here"
-  );
   process.exit(1);
 }
 
@@ -24,8 +21,6 @@ const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
 // Map pending connections (token -> data)
 const pendingConnections = new Map();
 
-console.log("🤖 Telegram Bot đang chạy...");
-
 /**
  * /start - Lấy mã kết nối hoặc xác thực từ web (auto-connect)
  */
@@ -35,33 +30,69 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   const username = msg.from.username || "";
   const code = match && match[1] ? match[1].trim() : null;
 
-  console.log(`📥 /start from chatId: ${chatId}, @${username}, code: ${code}`);
-
   // Nếu có code từ web, tự động kết nối
   if (code) {
-    console.log(`🔐 Processing connection code: ${code}`);
     await autoConnectUser(code, chatId, username, firstName);
     return;
   }
 
-  // Không có code - gửi hướng dẫn
-  const welcomeMessage = `
-🎉 <b>Chào mừng ${firstName}!</b>
+  // Không có code - kiểm tra xem user đã kết nối chưa
+  try {
+    const pool = await sql.connect(dbConfig);
+    const result = await pool
+      .request()
+      .input("chatId", sql.NVarChar, chatId.toString())
+      .query(
+        `SELECT ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY FROM TelegramConnections WHERE TelegramChatId = @chatId`
+      );
 
-Bạn đã kết nối với bot lịch trình của chúng tôi.
+    if (result.recordset.length > 0) {
+      // User đã kết nối - hiển thị trạng thái hiện tại
+      const settings = result.recordset[0];
+      const taskStatus = settings.ThongBaoNhiemVu ? "✅" : "❌";
+      const eventStatus = settings.ThongBaoSuKien ? "✅" : "❌";
+      const aiStatus = settings.ThongBaoGoiY ? "✅" : "❌";
 
-Bạn sẽ nhận:
-✅ Lịch trình hàng ngày (8:00 AM)
-✅ Nhắc nhở nhiệm vụ (2:00 PM)
-✅ Tổng kết cuối ngày (6:00 PM)
+      const welcomeMessage = `✅ <b>Kết nối Telegram thành công!</b>
 
-<b>Gõ /help để xem các lệnh khác.</b>
-  `;
+Tài khoản của bạn đã được kết nối.
 
-  await bot.sendMessage(chatId, welcomeMessage, {
-    parse_mode: "HTML",
-    disable_web_page_preview: true,
-  });
+Bạn đang nhận:
+${taskStatus} Lịch trình hàng ngày (8:00 AM)
+${taskStatus} Nhắc nhở nhiệm vụ (2:00 PM)
+${aiStatus} Tổng kết cuối ngày (6:00 PM)
+
+Gõ /help để xem các lệnh khác.`;
+
+      await bot.sendMessage(chatId, welcomeMessage, {
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      });
+    } else {
+      // User chưa kết nối - gửi hướng dẫn
+      const welcomeMessage = `🎉 <b>Chào mừng ${firstName}!</b>
+
+Bạn chưa kết nối với bot lịch trình của chúng tôi.
+
+Vui lòng truy cập website để kết nối tài khoản.
+
+Gõ /help để xem các lệnh khác.`;
+
+      await bot.sendMessage(chatId, welcomeMessage, {
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      });
+    }
+  } catch (error) {
+    console.error("❌ Error in /start:", error);
+    const welcomeMessage = `🎉 <b>Chào mừng ${firstName}!</b>
+
+Gõ /help để xem các lệnh khác.`;
+    await bot.sendMessage(chatId, welcomeMessage, {
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    });
+  }
 });
 
 /**
@@ -90,42 +121,49 @@ bot.onText(/\/help/, async (msg) => {
  * /status - Kiểm tra kết nối
  */
 bot.onText(/\/status/, async (msg) => {
-  const chatId = msg.chat.id;
+  bot.onText(/\/status/, async (msg) => {
+    const chatId = msg.chat.id;
 
-  try {
-    const pool = await sql.connect(dbConfig);
-    const result = await pool
-      .request()
-      .input("chatId", sql.NVarChar, chatId.toString())
-      .execute("sp_GetTelegramConnectionByChatId");
+    try {
+      const pool = await sql.connect(dbConfig);
+      const result = await pool
+        .request()
+        .input("chatId", sql.NVarChar, chatId.toString())
+        .query(
+          `SELECT UserID, TelegramChatId, TelegramUsername, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY, NgayKetNoi FROM TelegramConnections WHERE TelegramChatId = @chatId`
+        );
 
-    if (result.recordset.length > 0) {
-      const conn = result.recordset[0];
-      const statusMessage = `
+      if (result.recordset.length > 0) {
+        const conn = result.recordset[0];
+        const taskStatus = conn.ThongBaoNhiemVu ? "✅" : "❌";
+        const eventStatus = conn.ThongBaoSuKien ? "✅" : "❌";
+        const aiStatus = conn.ThongBaoGoiY ? "✅" : "❌";
+
+        const statusMessage = `
 ✅ <b>Kết nối đang hoạt động</b>
 
-📧 Email: ${conn.Email}
 💬 Chat ID: <code>${chatId}</code>
 📅 Kết nối từ: ${new Date(conn.NgayKetNoi).toLocaleDateString("vi-VN")}
 
 <b>Cài đặt thông báo:</b>
-${conn.ThongBaoNhiemVu ? "✅" : "❌"} Nhiệm vụ
-${conn.ThongBaoSuKien ? "✅" : "❌"} Sự kiện
-${conn.ThongBaoGoiY ? "✅" : "❌"} Gợi ý AI
+${taskStatus} Nhiệm vụ
+${eventStatus} Sự kiện
+${aiStatus} Gợi ý AI
 
 Dùng /settings để thay đổi cài đặt.
       `;
-      await bot.sendMessage(chatId, statusMessage, { parse_mode: "HTML" });
-    } else {
-      await bot.sendMessage(
-        chatId,
-        "❌ Bạn chưa kết nối.\n\nGõ /start để kết nối."
-      );
+        await bot.sendMessage(chatId, statusMessage, { parse_mode: "HTML" });
+      } else {
+        await bot.sendMessage(
+          chatId,
+          "❌ Bạn chưa kết nối.\n\nGõ /start để kết nối."
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error checking status:", error);
+      await bot.sendMessage(chatId, "❌ Lỗi kiểm tra trạng thái.");
     }
-  } catch (error) {
-    console.error("❌ Error checking status:", error);
-    await bot.sendMessage(chatId, "❌ Lỗi kiểm tra trạng thái.");
-  }
+  });
 });
 
 /**
@@ -139,7 +177,9 @@ bot.onText(/\/settings/, async (msg) => {
     const result = await pool
       .request()
       .input("chatId", sql.NVarChar, chatId.toString())
-      .execute("sp_GetTelegramConnectionByChatId");
+      .query(
+        `SELECT UserID, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY FROM TelegramConnections WHERE TelegramChatId = @chatId`
+      );
 
     if (result.recordset.length === 0) {
       await bot.sendMessage(
@@ -202,7 +242,9 @@ bot.on("callback_query", async (query) => {
     const userResult = await pool
       .request()
       .input("chatId", sql.NVarChar, chatId.toString())
-      .execute("sp_GetTelegramConnectionByChatId");
+      .query(
+        `SELECT UserID, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY FROM TelegramConnections WHERE TelegramChatId = @chatId`
+      );
 
     if (userResult.recordset.length === 0) {
       await bot.answerCallbackQuery(query.id, {
@@ -215,7 +257,12 @@ bot.on("callback_query", async (query) => {
     const currentSettings = userResult.recordset[0];
 
     // Toggle setting
-    let updateParams = { userId };
+    let updateParams = {
+      userId,
+      thongBaoNhiemVu: currentSettings.ThongBaoNhiemVu,
+      thongBaoSuKien: currentSettings.ThongBaoSuKien,
+      thongBaoGoiY: currentSettings.ThongBaoGoiY,
+    };
 
     if (action === "toggle_tasks") {
       updateParams.thongBaoNhiemVu = !currentSettings.ThongBaoNhiemVu;
@@ -229,16 +276,20 @@ bot.on("callback_query", async (query) => {
     await pool
       .request()
       .input("UserID", sql.Int, updateParams.userId)
-      .input("ThongBaoNhiemVu", sql.Bit, updateParams.thongBaoNhiemVu)
-      .input("ThongBaoSuKien", sql.Bit, updateParams.thongBaoSuKien)
-      .input("ThongBaoGoiY", sql.Bit, updateParams.thongBaoGoiY)
-      .execute("sp_UpdateTelegramNotificationSettings");
+      .input("ThongBaoNhiemVu", sql.Bit, updateParams.thongBaoNhiemVu ? 1 : 0)
+      .input("ThongBaoSuKien", sql.Bit, updateParams.thongBaoSuKien ? 1 : 0)
+      .input("ThongBaoGoiY", sql.Bit, updateParams.thongBaoGoiY ? 1 : 0)
+      .query(
+        `UPDATE TelegramConnections SET ThongBaoNhiemVu = @ThongBaoNhiemVu, ThongBaoSuKien = @ThongBaoSuKien, ThongBaoGoiY = @ThongBaoGoiY WHERE UserID = @UserID`
+      );
 
     // Get updated settings
     const updatedResult = await pool
       .request()
       .input("chatId", sql.NVarChar, chatId.toString())
-      .execute("sp_GetTelegramConnectionByChatId");
+      .query(
+        `SELECT ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY FROM TelegramConnections WHERE TelegramChatId = @chatId`
+      );
 
     const updated = updatedResult.recordset[0];
 
@@ -291,7 +342,9 @@ bot.onText(/\/disconnect/, async (msg) => {
     const userResult = await pool
       .request()
       .input("chatId", sql.NVarChar, chatId.toString())
-      .execute("sp_GetTelegramConnectionByChatId");
+      .query(
+        `SELECT UserID FROM TelegramConnections WHERE TelegramChatId = @chatId`
+      );
 
     if (userResult.recordset.length === 0) {
       await bot.sendMessage(chatId, "❌ Không tìm thấy kết nối.");
@@ -304,7 +357,9 @@ bot.onText(/\/disconnect/, async (msg) => {
     await pool
       .request()
       .input("UserID", sql.Int, userId)
-      .execute("sp_DisconnectTelegram");
+      .query(
+        `UPDATE TelegramConnections SET TrangThaiKetNoi = 0 WHERE UserID = @UserID`
+      );
 
     await bot.sendMessage(
       chatId,
@@ -331,7 +386,9 @@ bot.onText(/\/schedule/, async (msg) => {
     const userResult = await pool
       .request()
       .input("chatId", sql.NVarChar, chatId.toString())
-      .execute("sp_GetTelegramConnectionByChatId");
+      .query(
+        `SELECT UserID FROM TelegramConnections WHERE TelegramChatId = @chatId`
+      );
 
     if (userResult.recordset.length === 0) {
       await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nGõ /start.");
@@ -340,22 +397,16 @@ bot.onText(/\/schedule/, async (msg) => {
 
     const userId = userResult.recordset[0].UserID;
 
-    // Get today's schedule
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-    const scheduleResult = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .input("startDate", sql.DateTime, startOfDay)
-      .input("endDate", sql.DateTime, endOfDay).query(`
-        SELECT MaCongViec, TieuDe, MoTa, GioBatDauCoDinh
-        FROM CongViec
-        WHERE UserID = @userId 
-          AND GioBatDauCoDinh >= @startDate 
-          AND GioBatDauCoDinh <= @endDate
-        ORDER BY GioBatDauCoDinh
+    // Get today's schedule from LichTrinh table
+    // Note: DATEADD(HOUR, 7) adjusts for GMT+7 timezone conversion issue
+    const scheduleResult = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+        SELECT cv.TieuDe, cv.MoTa, lt.GioBatDau, lt.GioKetThuc
+        FROM LichTrinh lt
+        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
+        WHERE lt.UserID = @userId 
+          AND CAST(DATEADD(HOUR, 7, lt.GioBatDau) AS DATE) = CAST(GETDATE() AS DATE)
+        ORDER BY lt.GioBatDau
       `);
 
     if (scheduleResult.recordset.length === 0) {
@@ -366,11 +417,16 @@ bot.onText(/\/schedule/, async (msg) => {
     let message = `📅 <b>Lịch trình hôm nay</b>\n\n`;
 
     scheduleResult.recordset.forEach((task) => {
-      const time = new Date(task.GioBatDauCoDinh).toLocaleTimeString("vi-VN", {
+      const startTime = new Date(task.GioBatDau).toLocaleTimeString("vi-VN", {
         hour: "2-digit",
         minute: "2-digit",
       });
-      message += `⏰ <b>${time}</b> - ${task.TieuDe}\n`;
+      const endTime = task.GioKetThuc ? new Date(task.GioKetThuc).toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }) : "";
+      
+      message += `⏰ <b>${startTime}${endTime ? ` → ${endTime}` : ""}</b> - ${task.TieuDe}\n`;
       if (task.MoTa) {
         message += `   ${task.MoTa}\n`;
       }
@@ -501,7 +557,7 @@ async function sendMessageToUser(userId, message, options = {}) {
 async function sendSchedule(userId, schedule) {
   const { date, tasks } = schedule;
 
-  let message = `📅 <b>Lịch trình ngày ${date}</b>\n\n`;
+  let message = ` <b>Lịch trình ngày ${date}</b>\n\n`;
 
   tasks.forEach((task) => {
     message += `⏰ <b>${task.time}</b> - ${task.title}\n`;
@@ -522,9 +578,7 @@ async function initializeSchedules() {
 
     // Đợi bot sẵn sàng
     setTimeout(async () => {
-      console.log("🔄 Initializing notification schedules...");
       await scheduleUpdater.restartAllSchedules();
-      console.log("✅ All schedules initialized");
     }, 5000);
   } catch (error) {
     console.error("❌ Error initializing schedules:", error);
@@ -533,25 +587,15 @@ async function initializeSchedules() {
 
 // Gọi khi bot khởi động
 bot.on("polling_error", (error) => {
-  console.error("❌ Polling error:", error);
+  console.error(" Polling error:", error);
 });
 
 bot.on("webhook_error", (error) => {
-  console.error("❌ Webhook error:", error);
+  console.error(" Webhook error:", error);
 });
 
 // Khởi động lịch trình được gọi từ server.js
 
-module.exports = {
-  bot,
-  verifyToken,
-  autoConnectUser,
-  sendMessageToUser,
-  sendSchedule,
-  broadcastMessage,
-  isUserConnected,
-  initializeSchedules, // Thêm export mới
-};
 /**
  * Broadcast
  */
@@ -571,7 +615,7 @@ async function broadcastMessage(message, options = {}) {
         });
         successCount++;
       } catch (error) {
-        console.error(`❌ Failed for user ${user.UserID}:`, error.message);
+        console.error(` Failed for user ${user.UserID}:`, error.message);
         failCount++;
       }
     }
@@ -579,7 +623,7 @@ async function broadcastMessage(message, options = {}) {
     console.log(`📊 Broadcast: ${successCount} success, ${failCount} failed`);
     return { successCount, failCount, total: result.recordset.length };
   } catch (error) {
-    console.error("❌ Broadcast error:", error);
+    console.error(" Broadcast error:", error);
     throw error;
   }
 }
@@ -609,17 +653,17 @@ async function isUserConnected(userId) {
  */
 async function autoConnectUser(code, chatId, username, firstName) {
   try {
-    console.log(`🔐 Auto-connecting user with code: ${code}`);
+    console.log(` Auto-connecting user with code: ${code}`);
 
     // 1️⃣ Lấy userId từ code
     global.pendingWebConnections = global.pendingWebConnections || new Map();
     const pending = global.pendingWebConnections.get(code);
 
     if (!pending) {
-      console.log(`❌ Invalid or expired code: ${code}`);
+      console.log(` Invalid or expired code: ${code}`);
       await bot.sendMessage(
         chatId,
-        "❌ Mã kết nối không hợp lệ hoặc đã hết hạn.\n\nVui lòng thử lại từ website."
+        " Mã kết nối không hợp lệ hoặc đã hết hạn.\n\nVui lòng thử lại từ website."
       );
       return {
         success: false,
@@ -635,7 +679,7 @@ async function autoConnectUser(code, chatId, username, firstName) {
       global.pendingWebConnections.delete(code);
       await bot.sendMessage(
         chatId,
-        "❌ Mã kết nối đã hết hạn (10 phút).\n\nVui lòng tạo mã mới từ website."
+        " Mã kết nối đã hết hạn (10 phút).\n\nVui lòng tạo mã mới từ website."
       );
       return {
         success: false,
@@ -647,57 +691,131 @@ async function autoConnectUser(code, chatId, username, firstName) {
     const pool = await sql.connect(dbConfig);
 
     try {
+      // Xóa connection cũ nếu ChatId này đã tồn tại (từ user khác)
       await pool
         .request()
-        .input("UserID", sql.Int, userId)
         .input("TelegramChatId", sql.NVarChar, chatId.toString())
-        .input("TelegramUsername", sql.NVarChar, username || null)
-        .input("TelegramFirstName", sql.NVarChar, firstName || null)
-        .execute("sp_UpsertTelegramConnection");
+        .query(
+          `DELETE FROM TelegramConnections WHERE TelegramChatId = @TelegramChatId`
+        );
 
-      console.log(`✅ User ${userId} connected to chatId ${chatId}`);
+      // Kiểm tra connection đã tồn tại chưa
+      const checkResult = await pool
+        .request()
+        .input("UserID", sql.Int, userId)
+        .query(
+          `SELECT MaKetNoi FROM TelegramConnections WHERE UserID = @UserID`
+        );
+
+      const isFirstTime = checkResult.recordset.length === 0;
+
+      if (!isFirstTime) {
+        // Update existing
+        await pool
+          .request()
+          .input("UserID", sql.Int, userId)
+          .input("TelegramChatId", sql.NVarChar, chatId.toString())
+          .input("TelegramUsername", sql.NVarChar, username || null)
+          .input("TelegramFirstName", sql.NVarChar, firstName || null).query(`
+            UPDATE TelegramConnections
+            SET 
+              TelegramChatId = @TelegramChatId,
+              TelegramUsername = @TelegramUsername,
+              TelegramFirstName = @TelegramFirstName,
+              TrangThaiKetNoi = 1,
+              ThongBaoNhiemVu = 1,
+              NgayCapNhat = GETDATE()
+            WHERE UserID = @UserID
+          `);
+        console.log(
+          `✅ Updated connection for user ${userId} with chatId ${chatId}`
+        );
+      } else {
+        // Insert new
+        await pool
+          .request()
+          .input("UserID", sql.Int, userId)
+          .input("TelegramChatId", sql.NVarChar, chatId.toString())
+          .input("TelegramUsername", sql.NVarChar, username || null)
+          .input("TelegramFirstName", sql.NVarChar, firstName || null).query(`
+            INSERT INTO TelegramConnections 
+              (UserID, TelegramChatId, TelegramUsername, TelegramFirstName, TrangThaiKetNoi, ThongBaoNhiemVu, NgayKetNoi)
+            VALUES 
+              (@UserID, @TelegramChatId, @TelegramUsername, @TelegramFirstName, 1, 1, GETDATE())
+          `);
+        console.log(
+          `✅ Created new connection for user ${userId} with chatId ${chatId}`
+        );
+      }
+
+      // Lấy cài đặt hiện tại từ database
+      const settingsResult = await pool
+        .request()
+        .input("UserID", sql.Int, userId)
+        .query(
+          `SELECT ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY FROM TelegramConnections WHERE UserID = @UserID`
+        );
+
+      const settings = settingsResult.recordset[0] || {};
+      const taskStatus = settings.ThongBaoNhiemVu ? "✅" : "❌";
+      const eventStatus = settings.ThongBaoSuKien ? "✅" : "❌";
+      const aiStatus = settings.ThongBaoGoiY ? "✅" : "❌";
+
+      // Gửi thông báo kết nối thành công với cài đặt thực tế
+      let confirmMessage;
+      if (isFirstTime) {
+        confirmMessage = `🎉 <b>Chào mừng ${firstName}!</b>
+
+Bạn đã kết nối với bot lịch trình của chúng tôi.
+
+Bạn sẽ nhận:
+${taskStatus} Lịch trình hàng ngày (8:00 AM)
+${taskStatus} Nhắc nhở nhiệm vụ (2:00 PM)
+${aiStatus} Tổng kết cuối ngày (6:00 PM)
+
+Gõ /help để xem các lệnh khác.`;
+      } else {
+        confirmMessage = ` <b>Kết nối Telegram thành công!</b>
+
+Tài khoản của bạn đã được kết nối.
+
+Bạn đang nhận:
+${taskStatus} Lịch trình hàng ngày (8:00 AM)
+${taskStatus} Nhắc nhở nhiệm vụ (2:00 PM)
+${aiStatus} Tổng kết cuối ngày (6:00 PM)
+
+Gõ /help để xem các lệnh.`;
+      }
+
+      await bot.sendMessage(chatId, confirmMessage, { parse_mode: "HTML" });
+
+      // Xóa code
+      global.pendingWebConnections.delete(code);
+
+      // Gửi lịch trình hôm nay ngay lập tức
+      await sendTodaySchedule(userId, chatId);
+
+      return {
+        success: true,
+        message: "Kết nối thành công!",
+        chatId: chatId.toString(),
+        username: username,
+        firstName: firstName,
+      };
     } catch (dbError) {
       console.error("❌ Database error:", dbError);
       await bot.sendMessage(
         chatId,
-        "❌ Lỗi lưu kết nối vào database.\n\nVui lòng thử lại sau."
+        " Lỗi lưu kết nối vào database.\n\nVui lòng thử lại sau."
       );
       return {
         success: false,
         message: "Lỗi lưu kết nối: " + dbError.message,
       };
     }
-
-    // 3️⃣ Xóa code
-    global.pendingWebConnections.delete(code);
-
-    // 4️⃣ Gửi thông báo kết nối thành công
-    const confirmMessage = `✅ <b>Kết nối Telegram thành công!</b>
-
-Tài khoản của bạn đã được kết nối.
-
-Bạn sẽ nhận:
-📅 Lịch trình hàng ngày (8:00 AM)
-⏰ Nhắc nhở nhiệm vụ (2:00 PM)
-🌆 Tổng kết cuối ngày (6:00 PM)
-
-Gõ /help để xem các lệnh.`;
-
-    await bot.sendMessage(chatId, confirmMessage, { parse_mode: "HTML" });
-
-    // 5️⃣ Gửi lịch trình hôm nay ngay lập tức
-    await sendTodaySchedule(userId, chatId);
-
-    return {
-      success: true,
-      message: "Kết nối thành công!",
-      chatId: chatId.toString(),
-      username: username,
-      firstName: firstName,
-    };
   } catch (error) {
-    console.error("❌ Error auto-connecting user:", error);
-    await bot.sendMessage(chatId, "❌ Lỗi kết nối: " + error.message);
+    console.error(" Error auto-connecting user:", error);
+    await bot.sendMessage(chatId, " Lỗi kết nối: " + error.message);
     return {
       success: false,
       message: "Lỗi kết nối: " + error.message,
@@ -710,28 +828,20 @@ Gõ /help để xem các lệnh.`;
  */
 async function sendTodaySchedule(userId, chatId) {
   try {
-    console.log(`📅 Sending today's schedule to user ${userId}...`);
+    console.log(` Sending today's schedule to user ${userId}...`);
 
     const pool = await sql.connect(dbConfig);
 
-    const today = new Date();
-    const startOfDay = new Date(today);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(today);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    // Lấy công việc hôm nay
-    const tasksResult = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .input("startDate", sql.DateTime, startOfDay)
-      .input("endDate", sql.DateTime, endOfDay).query(`
-        SELECT TieuDe, MoTa, GioBatDauCoDinh
-        FROM CongViec
-        WHERE UserID = @userId 
-          AND GioBatDauCoDinh >= @startDate 
-          AND GioBatDauCoDinh <= @endDate
-        ORDER BY GioBatDauCoDinh
+    // Lấy công việc hôm nay từ bảng LichTrinh
+    // Note: DATEADD(HOUR, 7) adjusts for GMT+7 timezone conversion issue
+    const tasksResult = await pool.request().input("userId", sql.Int, userId)
+      .query(`
+        SELECT cv.TieuDe, cv.MoTa, lt.GioBatDau, lt.GioKetThuc
+        FROM LichTrinh lt
+        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
+        WHERE lt.UserID = @userId 
+          AND CAST(DATEADD(HOUR, 7, lt.GioBatDau) AS DATE) = CAST(GETDATE() AS DATE)
+        ORDER BY lt.GioBatDau
       `);
 
     if (tasksResult.recordset.length === 0) {
@@ -748,16 +858,24 @@ async function sendTodaySchedule(userId, chatId) {
     let message = `📅 <b>Lịch trình ngày hôm nay</b>\n\n`;
 
     tasksResult.recordset.forEach((task, index) => {
-      const startTime = new Date(task.GioBatDauCoDinh).toLocaleTimeString(
+      const startTime = new Date(task.GioBatDau).toLocaleTimeString(
         "vi-VN",
         {
           hour: "2-digit",
           minute: "2-digit",
         }
       );
+      
+      const endTime = task.GioKetThuc ? new Date(task.GioKetThuc).toLocaleTimeString(
+        "vi-VN",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+        }
+      ) : "";
 
       message += `${index + 1}. <b>${task.TieuDe}</b>\n`;
-      message += `   ⏰ ${startTime}\n`;
+      message += `   ⏰ ${startTime}${endTime ? ` → ${endTime}` : ""}\n`;
       if (task.MoTa) {
         message += `   📝 ${task.MoTa}\n`;
       }
@@ -807,6 +925,7 @@ module.exports = {
   autoConnectUser,
   sendMessageToUser,
   sendSchedule,
+  sendTodaySchedule,
   broadcastMessage,
   isUserConnected,
   initializeSchedules,

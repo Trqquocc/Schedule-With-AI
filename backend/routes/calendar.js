@@ -72,8 +72,6 @@ router.get("/events", authenticateToken, async (req, res) => {
       AI_DeXuat: ev.AI_DeXuat || 0,
     }));
 
-    console.log(` Trả về ${events.length} events với màu sắc`);
-
     res.json({ success: true, data: events });
   } catch (error) {
     console.error("Lỗi lấy events:", error);

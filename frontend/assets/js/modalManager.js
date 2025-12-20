@@ -17,7 +17,7 @@
         return;
       }
 
-      console.log("🎯 ModalManager initialization started");
+      console.log("ModalManager initialization started");
       this.fixNestedModals();
       this.setupGlobalEventListeners();
       this.initialized = true;
@@ -144,7 +144,7 @@
         return;
       }
 
-      console.log(`🚪 Closing modal: ${targetModal}`);
+      console.log(` Closing modal: ${targetModal}`);
 
       modal.classList.remove("active", "show");
 
@@ -180,7 +180,7 @@
         }
 
         if (e.target.classList.contains("modal") && this.activeModal) {
-          console.log("🎯 Backdrop clicked, closing modal");
+          console.log(" Backdrop clicked, closing modal");
           this.close(this.activeModal);
         }
       });
@@ -209,7 +209,7 @@
         newBtn.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log(`🎯 Close button clicked in ${modal.id}`);
+          console.log(` Close button clicked in ${modal.id}`);
           this.close(modal.id);
         });
       });
@@ -230,7 +230,7 @@
 
       if (window.loadCategoriesForModal) {
         setTimeout(() => {
-          console.log("  📂 Triggering category load...");
+          console.log("   Triggering category load...");
           window.loadCategoriesForModal();
         }, 300);
       }

@@ -11,8 +11,6 @@ try {
   const { GoogleGenerativeAI } = require("@google/generative-ai");
 
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "") {
-    console.log("Initializing Gemini AI...");
-
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     geminiModel = genAI.getGenerativeModel({
@@ -26,13 +24,9 @@ try {
     });
 
     geminiAvailable = true;
-  } else {
-    console.warn("GEMINI_API_KEY is missing or empty in .env file");
-    console.log("AI will run in simulation mode");
   }
 } catch (error) {
-  console.error("Error initializing Gemini AI:", error.message);
-  console.log("AI will run in simulation mode");
+  // AI initialization error - use simulation mode
 }
 
 function analyzeRecurringPatterns(additionalInstructions) {
@@ -1166,7 +1160,6 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
 router.get("/ai-events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    console.log(`\n📡 GET /ai-events - User ${userId} đang yêu cầu AI events`);
     const pool = await dbPoolPromise;
 
     const result = await pool.request().input("userId", sql.Int, userId).query(`
@@ -1194,9 +1187,6 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
       ORDER BY lt.GioBatDau DESC
     `);
 
-    const totalRecords = result.recordset.length;
-    console.log(`   📦 Total: ${totalRecords}`);
-
     const eventMap = new Map();
     result.recordset.forEach((r) => {
       const key = `${r.MaCongViec}_${r.GioBatDau.getTime()}`;
@@ -1206,11 +1196,6 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
     });
 
     const uniqueRecords = Array.from(eventMap.values());
-    console.log(
-      `   ✅ Unique: ${uniqueRecords.length} (removed ${
-        totalRecords - uniqueRecords.length
-      })`
-    );
 
     const events = uniqueRecords.map((ev) => ({
       MaLichTrinh: ev.MaLichTrinh,
@@ -1223,8 +1208,6 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
       priority: ev.MucDoUuTien,
       AI_DeXuat: ev.AI_DeXuat,
     }));
-
-    console.log(`✅ Returned ${events.length} unique AI events`);
 
     res.json({
       success: true,

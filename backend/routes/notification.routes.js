@@ -41,45 +41,90 @@ const authenticateToken = (req, res, next) => {
 
 /**
  * POST /api/notifications/connect-telegram
- * Kết nối Telegram
+ * Xác thực kết nối Telegram từ code
+ * Flow: User click kết nối -> Mở Telegram bot -> Gõ /start CODE -> Bot gửi confirm -> Frontend gọi API này
  */
 router.post("/connect-telegram", authenticateToken, async (req, res) => {
   try {
-    const { telegramToken } = req.body;
+    const { telegramCode } = req.body;
     const userId = req.userId;
 
     console.log(
-      `📥 Connect request from user ${userId}, token: ${telegramToken}`
+      `📥 Connect telegram request from user ${userId}, code: ${telegramCode}`
     );
 
-    if (!telegramToken) {
+    if (!telegramCode) {
       return res.status(400).json({
         success: false,
         message: "Vui lòng cung cấp mã kết nối",
       });
     }
 
-    // Validate token format
-    if (!/^[A-Z0-9]{6}$/.test(telegramToken)) {
+    // Validate code format (8 chars alphanumeric)
+    if (!/^[A-Z0-9]{8}$/.test(telegramCode)) {
       return res.status(400).json({
         success: false,
         message: "Mã kết nối không đúng định dạng",
       });
     }
 
-    // Xác thực token
-    const result = await verifyToken(telegramToken, userId);
+    // Xác thực code - kiểm tra xem code này đã được user kích hoạt từ Telegram bot chưa
+    const result = await verifyToken(telegramCode, userId);
 
     if (!result.success) {
       return res.status(400).json(result);
     }
 
+    // Lấy thêm thông tin từ database
+    const sql = require("mssql");
+    const dbConfig = require("../config/database");
+    const pool = await sql.connect(dbConfig);
+
+    const connectionResult = await pool
+      .request()
+      .input("UserID", sql.Int, userId).query(`
+        SELECT 
+          UserID,
+          TelegramChatId,
+          TelegramUsername,
+          TelegramFirstName,
+          TrangThaiKetNoi,
+          GioLichNgay,
+          GioNhacNhiemVu,
+          GioTongKetNgay
+        FROM TelegramConnections 
+        WHERE UserID = @UserID
+      `);
+
+    if (connectionResult.recordset.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Lỗi: Kết nối không được lưu",
+      });
+    }
+
+    const connection = connectionResult.recordset[0];
+
+    // Gửi lịch trình hôm nay cho user
+    const { sendTodaySchedule } = require("../telegram/bot");
+    await sendTodaySchedule(userId, connection.TelegramChatId);
+
+    console.log(`✅ User ${userId} connected successfully to Telegram`);
+
     res.json({
       success: true,
       message: "Kết nối Telegram thành công!",
       data: {
-        chatId: result.chatId,
-        username: result.username,
+        userId: userId,
+        chatId: connection.TelegramChatId,
+        username: connection.TelegramUsername,
+        firstName: connection.TelegramFirstName,
+        isConnected: connection.TrangThaiKetNoi === 1,
+        scheduleSettings: {
+          morningScheduleTime: connection.GioLichNgay,
+          taskReminderTime: connection.GioNhacNhiemVu,
+          eveningSummaryTime: connection.GioTongKetNgay,
+        },
       },
     });
   } catch (error) {
@@ -407,44 +452,52 @@ router.post("/update-settings", authenticateToken, async (req, res) => {
 
     const pool = await sql.connect(dbConfig);
 
-    // Update only the toggle settings that exist in database
-    // First try with existing columns, if they fail we log and continue
+    // Cập nhật cài đặt thông báo trong bảng TelegramConnections
     try {
       const updateQuery = `
-        UPDATE Users
+        UPDATE TelegramConnections
         SET
           ThongBaoNhiemVu = @taskNotifications,
           ThongBaoSuKien = @eventReminders,
-          ThongBaoGoiY = @aiSuggestions
+          ThongBaoGoiY = @aiSuggestions,
+          GioNhacNhiemVu = @taskReminderTime,
+          GioLichNgay = @dailyScheduleTime,
+          GioTongKetNgay = @dailySummaryTime
         WHERE UserID = @userId
       `;
 
-      await pool
+      const result = await pool
         .request()
         .input("userId", sql.Int, userId)
         .input("taskNotifications", sql.Bit, taskNotifications ? 1 : 0)
         .input("eventReminders", sql.Bit, eventReminders ? 1 : 0)
         .input("aiSuggestions", sql.Bit, aiSuggestions ? 1 : 0)
+        .input("taskReminderTime", sql.NVarChar, taskReminderTime)
+        .input("dailyScheduleTime", sql.NVarChar, dailyScheduleTime)
+        .input("dailySummaryTime", sql.NVarChar, dailySummaryTime)
         .query(updateQuery);
 
       console.log(
         `✅ Updated notification settings for user ${userId}: Task=${taskNotifications}, Event=${eventReminders}, AI=${aiSuggestions}`
       );
-    } catch (dbErr) {
-      console.warn(
-        `⚠️ Could not update database columns (they may not exist yet): ${dbErr.message}`
+      console.log(
+        `   Time settings: TaskReminder=${taskReminderTime}, DailySchedule=${dailyScheduleTime}, DailySummary=${dailySummaryTime}`
       );
-      console.log(`   Saving notification preferences to localStorage instead`);
-    }
 
-    // Time preferences are stored in localStorage on client side for now
-    console.log(
-      `   Time settings: Task=${taskReminderTime}, Schedule=${dailyScheduleTime}, Summary=${dailySummaryTime}`
-    );
+      // Cập nhật cron jobs
+      const scheduleUpdater = require("../telegram/schedule-updater");
+      await scheduleUpdater.updateUserSchedule(userId);
+    } catch (dbErr) {
+      console.warn(`⚠️ Error updating settings: ${dbErr.message}`);
+      return res.status(400).json({
+        success: false,
+        message: "Lỗi cập nhật cài đặt: " + dbErr.message,
+      });
+    }
 
     res.json({
       success: true,
-      message: "Cài đặt thông báo đã được cập nhật",
+      message: "Cài đặt thông báo đã được cập nhật thành công",
       settings: {
         taskNotifications,
         eventReminders,

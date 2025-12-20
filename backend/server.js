@@ -1,5 +1,9 @@
 // server.js
-require("dotenv").config();
+require("dotenv").config({
+  path: require("path").join(__dirname, "..", ".env"),
+});
+require("dotenv").config(); // Fallback if not found
+
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -22,21 +26,6 @@ const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-require("dotenv").config({
-  path: require("path").join(__dirname, "..", ".env"),
-});
-
-// DEBUG: Kiểm tra biến môi trường
-console.log("🔍 Current directory:", __dirname);
-console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
-console.log("🔍 TELEGRAM_BOT_TOKEN exists:", !!process.env.TELEGRAM_BOT_TOKEN);
-console.log(
-  "🔍 Token preview:",
-  process.env.TELEGRAM_BOT_TOKEN
-    ? process.env.TELEGRAM_BOT_TOKEN.substring(0, 10) + "..."
-    : "MISSING"
-);
 
 // ===========================
 // CẤU HÌNH CƠ BẢN
@@ -124,8 +113,8 @@ app.get("*", (req, res) => {
 // Khởi động server - CHỈ MỘT LẦN
 initializeDatabase().then(() => {
   const server = app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📡 API available at http://localhost:${PORT}/api`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`API available at http://localhost:${PORT}/api`);
 
     // Khởi động lịch trình SAU KHI SERVER READY
     initializeSchedules();

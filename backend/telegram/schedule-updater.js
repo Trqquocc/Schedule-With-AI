@@ -1,8 +1,7 @@
 // 📁 /telegram/schedule-updater.js
 
 const cron = require("node-cron");
-const sql = require("mssql");
-const dbConfig = require("../config/database");
+const { sql, dbPoolPromise } = require("../config/database");
 const scheduleSender = require("./scheduleSender");
 // Tránh circular dependency - import bot khi cần
 let bot = null;
@@ -16,7 +15,6 @@ const getBotInstance = () => {
 class ScheduleUpdater {
   constructor() {
     this.jobs = new Map();
-    console.log("🕒 ScheduleUpdater initialized");
   }
 
   /**
@@ -28,7 +26,7 @@ class ScheduleUpdater {
       this.stopAllJobs();
 
       // Lấy cài đặt thời gian của tất cả người dùng
-      const pool = await sql.connect(dbConfig);
+      const pool = await dbPoolPromise;
       const result = await pool.request().query(`
         SELECT 
           tc.UserID,
@@ -42,12 +40,8 @@ class ScheduleUpdater {
         ORDER BY tc.UserID
       `);
 
-      console.log(`📊 Found ${result.recordset.length} connected users`);
-
       // Tạo jobs theo nhóm giờ để tối ưu
       this.groupAndScheduleJobs(result.recordset);
-
-      console.log("✅ All schedules restarted from database");
     } catch (error) {
       console.error("❌ Error restarting schedules:", error);
     }
@@ -102,7 +96,6 @@ class ScheduleUpdater {
     schedulesByTime.morning.forEach((users, cronTime) => {
       const jobId = `morning-${cronTime}`;
       this.createJob(jobId, cronTime, async () => {
-        console.log(`🌅 Running morning schedule at ${cronTime}`);
         await this.sendSchedulesForUsers(users, "morning");
       });
     });
@@ -111,7 +104,6 @@ class ScheduleUpdater {
     schedulesByTime.afternoon.forEach((users, cronTime) => {
       const jobId = `afternoon-${cronTime}`;
       this.createJob(jobId, cronTime, async () => {
-        console.log(`☀️ Running afternoon reminders at ${cronTime}`);
         await this.sendRemindersForUsers(users);
       });
     });
@@ -120,12 +112,9 @@ class ScheduleUpdater {
     schedulesByTime.evening.forEach((users, cronTime) => {
       const jobId = `evening-${cronTime}`;
       this.createJob(jobId, cronTime, async () => {
-        console.log(`🌆 Running evening summaries at ${cronTime}`);
         await this.sendSummariesForUsers(users);
       });
     });
-
-    console.log(`✅ Created ${this.jobs.size} schedule jobs`);
   }
 
   /**
@@ -144,9 +133,8 @@ class ScheduleUpdater {
       });
 
       this.jobs.set(jobId, job);
-      console.log(`🕒 Created job ${jobId} at ${cronTime}`);
     } catch (error) {
-      console.error(`❌ Error creating job ${jobId}:`, error);
+      console.error(`Error creating job ${jobId}:`, error);
     }
   }
 
@@ -155,7 +143,7 @@ class ScheduleUpdater {
    */
   async updateUserSchedule(userId) {
     try {
-      const pool = await sql.connect(dbConfig);
+      const pool = await dbPoolPromise;
       const result = await pool.request().input("UserID", sql.Int, userId)
         .query(`
           SELECT 
@@ -263,7 +251,7 @@ class ScheduleUpdater {
    */
   async sendScheduleToUser(userId, timeOfDay = "morning") {
     try {
-      const pool = await sql.connect(dbConfig);
+      const pool = await dbPoolPromise;
 
       const today = new Date();
       const startOfDay = new Date(today.setHours(0, 0, 0, 0));
@@ -349,7 +337,7 @@ class ScheduleUpdater {
    */
   async sendReminderToUser(userId) {
     try {
-      const pool = await sql.connect(dbConfig);
+      const pool = await dbPoolPromise;
 
       const now = new Date();
       const endOfDay = new Date(now);
@@ -422,7 +410,7 @@ class ScheduleUpdater {
    */
   async sendSummaryToUser(userId) {
     try {
-      const pool = await sql.connect(dbConfig);
+      const pool = await dbPoolPromise;
 
       const today = new Date();
       const startOfDay = new Date(today.setHours(0, 0, 0, 0));
@@ -503,7 +491,7 @@ class ScheduleUpdater {
    */
   async sendNoTasksMessage(userId, timeOfDay) {
     try {
-      const pool = await sql.connect(dbConfig);
+      const pool = await dbPoolPromise;
       const result = await pool.request().input("userId", sql.Int, userId)
         .query(`
           SELECT TelegramChatId FROM TelegramConnections 
@@ -557,10 +545,8 @@ class ScheduleUpdater {
   stopAllJobs() {
     this.jobs.forEach((job, jobId) => {
       job.stop();
-      console.log(`🛑 Stopped job: ${jobId}`);
     });
     this.jobs.clear();
-    console.log(" All jobs stopped");
   }
 
   /**

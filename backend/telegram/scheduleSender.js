@@ -10,7 +10,6 @@ class ScheduleSender {
   }
 
   start() {
-
     this.jobs.set(
       "morning-schedule",
       cron.schedule("0 8 * * *", async () => {
@@ -61,7 +60,6 @@ class ScheduleSender {
 
       for (const user of usersResult.recordset) {
         try {
-
           const tasksResult = await pool
             .request()
             .input("userId", sql.Int, user.UserID)
@@ -134,7 +132,6 @@ class ScheduleSender {
 
       for (const user of usersResult.recordset) {
         try {
-
           const tasksResult = await pool
             .request()
             .input("userId", sql.Int, user.UserID)
@@ -203,7 +200,6 @@ class ScheduleSender {
 
       for (const user of usersResult.recordset) {
         try {
-
           const statsResult = await pool
             .request()
             .input("userId", sql.Int, user.UserID)
@@ -227,12 +223,8 @@ class ScheduleSender {
           }
 
           let message = "🌆 <b>Tổng kết ngày hôm nay</b>\n\n";
-          message += ` Hoàn thành: <b>${
-            stats.completed || 0
-          }</b> công việc\n`;
-          message += ` Đang làm: <b>${
-            stats.in_progress || 0
-          }</b> công việc\n`;
+          message += ` Hoàn thành: <b>${stats.completed || 0}</b> công việc\n`;
+          message += ` Đang làm: <b>${stats.in_progress || 0}</b> công việc\n`;
           message += ` Chưa làm: <b>${
             stats.not_started || 0
           }</b> công việc\n\n`;
@@ -291,10 +283,8 @@ class ScheduleSender {
   stop() {
     for (const [name, job] of this.jobs.entries()) {
       job.stop();
-      console.log(`🛑 Stopped job: ${name}`);
     }
     this.jobs.clear();
-    console.log(" All jobs stopped");
   }
 
   formatDate(date) {

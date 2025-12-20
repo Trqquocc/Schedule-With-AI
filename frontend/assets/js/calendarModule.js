@@ -305,11 +305,24 @@
               ev.extendedProps?.completed === true ||
               false;
 
+            // Tính toán start và end time
+            const startTime = new Date(
+              ev.start || ev.GioBatDau || new Date().toISOString()
+            );
+            let endTime = null;
+
+            if (ev.end || ev.GioKetThuc) {
+              endTime = new Date(ev.end || ev.GioKetThuc);
+            } else {
+              // Nếu không có end time, mặc định là start + 1 giờ
+              endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+            }
+
             return {
               id: ev.id || ev.MaLichTrinh || 0,
               title: ev.title || ev.TieuDe || "Không tiêu đề",
-              start: ev.start || ev.GioBatDau || new Date().toISOString(),
-              end: ev.end || ev.GioKetThuc || null,
+              start: startTime,
+              end: endTime,
               backgroundColor: color,
               borderColor: color,
               allDay: ev.allDay || false,
@@ -534,14 +547,21 @@
       try {
         console.log("🎯 FullCalendar eventReceive triggered:", info);
         const draggedEl = info.draggedEl;
-        let taskId, title, color, priority;
+        let taskId, title, color, priority, duration;
 
         if (draggedEl) {
           taskId = draggedEl.dataset.taskId;
           title = draggedEl.dataset.taskTitle || "Công việc";
           color = draggedEl.dataset.taskColor || "#3B82F6";
           priority = parseInt(draggedEl.dataset.taskPriority) || 2;
+          duration = parseInt(draggedEl.dataset.taskDuration) || 60;
+          console.log(
+            ` draggedEl found - taskId: ${taskId}, duration: ${duration}, attr: ${draggedEl.dataset.taskDuration}`
+          );
         } else {
+          console.log(
+            " No draggedEl - trying to get data from jsEvent.dataTransfer"
+          );
           taskId = info.jsEvent?.dataTransfer?.getData("text/plain");
           const jsonData =
             info.jsEvent?.dataTransfer?.getData("application/json");
@@ -550,12 +570,17 @@
             title = data.title || "Công việc";
             color = data.color || "#3B82F6";
             priority = data.priority || 2;
+            duration = data.duration || 60;
+            console.log(` JSON data parsed - duration: ${duration}`);
+          } else {
+            console.warn(" No JSON data in dataTransfer");
+            duration = 60;
           }
         }
 
         if (!color || color === "#3B82F6") {
           color = this.getPriorityColor(priority);
-          console.log(`🎨 Priority ${priority} → Color: ${color}`);
+          console.log(` Priority ${priority} → Color: ${color}`);
         }
 
         if (!taskId) {
@@ -565,11 +590,24 @@
           return;
         }
 
-        console.log(" Task dropped from sidebar:", { taskId, title, color });
+        console.log(" Task dropped from sidebar:", {
+          taskId,
+          title,
+          color,
+          duration,
+        });
 
         const start = info.event.start;
-        const end =
-          info.event.end || new Date(start.getTime() + 60 * 60 * 1000);
+        const end = new Date(start.getTime() + duration * 60 * 1000);
+
+        // ✅ CẬP NHẬT END TIME NGAY LẬP TỨC
+        info.event.setEnd(end);
+
+        console.log(` Updated event times:`, {
+          start: start.toLocaleString("vi-VN"),
+          end: end.toLocaleString("vi-VN"),
+          durationMinutes: (end - start) / 60000,
+        });
 
         const existingEvents = this.calendar.getEvents();
         const hasConflict = existingEvents.some((existingEvent) => {
@@ -580,18 +618,26 @@
           const e1 = end;
           const s2 = existingEvent.start;
           const e2 =
-            existingEvent.end || new Date(s2.getTime() + 60 * 60 * 1000);
+            existingEvent.end || new Date(s2.getTime() + duration * 60 * 1000);
 
           return s1 < e2 && e1 > s2;
         });
 
         if (hasConflict) {
-          Utils.showToast?.("⛔ Thời gian này đã có sự kiện khác!", "error");
+          Utils.showToast?.(" Thời gian này đã có sự kiện khác!", "error");
           info.event.remove();
           return;
         }
 
-        await this.saveDroppedEvent(taskId, title, color, start, end, priority);
+        await this.saveDroppedEvent(
+          taskId,
+          title,
+          color,
+          start,
+          end,
+          priority,
+          duration
+        );
       } catch (err) {
         console.error(" Event receive error:", err);
         info.event.remove();
@@ -601,7 +647,7 @@
 
     async _handleEventUpdate(info) {
       try {
-        console.log("🔄 Event updated:", info.event);
+        console.log(" Event updated:", info.event);
 
         const eventId = info.event.id;
         if (!eventId) {
@@ -629,7 +675,7 @@
         const newEnd =
           info.event.end || new Date(newStart.getTime() + 60 * 60 * 1000);
         if (this.hasTimeConflict(info.event)) {
-          Utils.showToast?.("⛔ Thời gian này đã có sự kiện khác!", "error");
+          Utils.showToast?.(" Thời gian này đã có sự kiện khác!", "error");
           info.revert();
           return;
         }
@@ -640,7 +686,7 @@
           end: newEnd.toISOString(),
         };
 
-        console.log(`📤 Updating event ${eventIdNum}:`, updateData);
+        console.log(` Updating event ${eventIdNum}:`, updateData);
 
         const result = await Utils.makeRequest(
           `/api/calendar/events/${eventIdNum}`,
@@ -673,8 +719,7 @@
           error.message.includes("conflict") ||
           error.message.includes("trùng")
         ) {
-          errorMessage =
-            "⛔ Không thể di chuyển: Thời gian đã có sự kiện khác!";
+          errorMessage = "Không thể di chuyển: Thời gian đã có sự kiện khác!";
         } else if (error.message.includes("validation")) {
           errorMessage = " Thời gian không hợp lệ!";
         } else {
@@ -687,7 +732,7 @@
     },
 
     setupDropZone() {
-      console.log("🎯 Setting up calendar drop zone...");
+      console.log(" Setting up calendar drop zone...");
 
       const calendarEl = document.getElementById("calendar");
       if (!calendarEl) {
@@ -784,7 +829,7 @@
 
     async handleDrop(e) {
       if (this._handlingDrop) {
-        console.log(" Drop already being handled, ignoring duplicate");
+        console.log("⚠️ Drop already being handled, ignoring duplicate");
         return;
       }
       this._handlingDrop = true;
@@ -798,7 +843,7 @@
         }
 
         console.log(
-          " handleDrop called, dataTransfer types:",
+          "📥 handleDrop called, dataTransfer types:",
           e.dataTransfer?.types
         );
 
@@ -819,15 +864,19 @@
         }
 
         if (!taskId) {
-          console.error(" No task ID found in drop data");
+          console.error("❌ No task ID found in drop data");
           console.log("Available dataTransfer types:", e.dataTransfer.types);
           return;
         }
 
         const title = taskData.title || "Công việc mới";
         const color = taskData.color || "#3B82F6";
+        const durationMinutes = taskData.duration || 60;
+        const priority = taskData.priority || 2;
 
-        console.log(`🎯 Dropping task ${taskId}: ${title}`);
+        console.log(
+          `🎯 Dropping task ${taskId}: ${title} (Duration: ${durationMinutes}min, Priority: ${priority})`
+        );
 
         const calendar = this.calendar;
 
@@ -860,11 +909,17 @@
           );
         }
 
+        // ✅ TẠO endDate NGAY TỪ ĐẦU
+        const startDate = dropDate;
+        const endDate = new Date(
+          startDate.getTime() + durationMinutes * 60 * 1000
+        );
+
         const newEvent = {
           id: `temp-${Date.now()}`,
           title: title,
-          start: dropDate,
-          end: new Date(dropDate.getTime() + 60 * 60 * 1000),
+          start: startDate,
+          end: endDate, // ✅ SỬ DỤNG endDate ĐÃ TÍNH
           backgroundColor: color,
           borderColor: color,
           editable: true,
@@ -874,8 +929,15 @@
             taskId: taskId,
             isFromDrag: true,
             color: color,
+            priority: priority,
           },
         };
+
+        console.log(`⏰ New event times:`, {
+          start: startDate.toLocaleString("vi-VN"),
+          end: endDate.toLocaleString("vi-VN"),
+          durationMinutes: (endDate - startDate) / 60000,
+        });
 
         const existingEvents = calendar.getEvents();
         const hasConflict = existingEvents.some((existingEvent) => {
@@ -897,24 +959,42 @@
 
         calendar.addEvent(newEvent);
 
+        // ✅ TRUYỀN ĐẦY ĐỦ THAM SỐ
         await this.saveDroppedEvent(
           taskId,
           title,
           color,
-          newEvent.start,
-          newEvent.end
+          startDate,
+          endDate,
+          priority,
+          durationMinutes
         );
       } catch (error) {
-        console.error(" Drop error:", error);
+        console.error("❌ Drop error:", error);
         Utils.showToast?.("Lỗi khi kéo thả công việc", "error");
       } finally {
         this._handlingDrop = false;
       }
     },
 
-    async saveDroppedEvent(taskId, title, color, start, end, priority = 2) {
+    async saveDroppedEvent(
+      taskId,
+      title,
+      color,
+      start,
+      end,
+      priority = 2,
+      duration = 60
+    ) {
       try {
         console.log("💾 Saving dropped event to server...");
+        console.log(`   Start: ${start.toLocaleString("vi-VN")}`);
+        console.log(`   End: ${end.toLocaleString("vi-VN")}`);
+        console.log(
+          `   Duration: ${duration} minutes (${
+            (end.getTime() - start.getTime()) / 60000
+          } actual)`
+        );
 
         const eventData = {
           MaCongViec: parseInt(taskId),
@@ -925,6 +1005,8 @@
           MucDoUuTien: priority,
           AI_DeXuat: 0,
         };
+
+        console.log("📤 Sending to API:", eventData);
 
         const res = await Utils.makeRequest(
           "/api/calendar/events",
@@ -952,7 +1034,10 @@
               `🔄 Updating event ${tempEvent.id} with real ID ${newEventId}...`
             );
 
+            // ✅ SỬ DỤNG setStart/setEnd THAY VÌ setProp
             tempEvent.setProp("id", newEventId);
+            tempEvent.setStart(start);
+            tempEvent.setEnd(end);
             tempEvent.setProp("backgroundColor", color);
             tempEvent.setProp("borderColor", color);
             tempEvent.setExtendedProp("taskId", taskId);
@@ -964,12 +1049,15 @@
             tempEvent.setProp("durationEditable", true);
             tempEvent.setProp("startEditable", true);
 
-            console.log(
-              ` Event ${newEventId} now has real ID and is draggable (Priority: ${priority}, Color: ${color})`
-            );
+            const actualDuration = (tempEvent.end - tempEvent.start) / 60000;
+            console.log(`✅ Event ${newEventId} updated successfully:`, {
+              start: tempEvent.start.toLocaleString("vi-VN"),
+              end: tempEvent.end.toLocaleString("vi-VN"),
+              durationMinutes: actualDuration,
+            });
           } else {
             console.warn(
-              ` Could not find event with ID drag-${taskId}. Available events:`,
+              `⚠️ Could not find event with ID drag-${taskId}. Available events:`,
               events.map((e) => e.id)
             );
           }
@@ -978,7 +1066,7 @@
             TrangThaiThucHien: 1,
           });
 
-          Utils.showToast?.(" Đã lên lịch thành công!", "success");
+          Utils.showToast?.("Đã lên lịch thành công!", "success");
 
           if (window.loadUserTasks) {
             window.loadUserTasks(true);
@@ -989,7 +1077,7 @@
           throw new Error(res.message || "Lỗi thêm vào lịch");
         }
       } catch (error) {
-        console.error(" Error saving dropped event:", error);
+        console.error("❌ Error saving dropped event:", error);
 
         const events = this.calendar.getEvents();
         const tempEvent = events.find((e) => e.id?.startsWith(`temp-`));

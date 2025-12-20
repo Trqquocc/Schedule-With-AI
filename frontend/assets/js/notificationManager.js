@@ -284,6 +284,7 @@
         '<i class="fas fa-spinner fa-spin"></i> Đang mở Telegram...';
 
       try {
+        // Bước 1: Lấy URL và code kết nối từ backend
         const response = await fetch(
           "/api/notifications/telegram-connect-url",
           {
@@ -303,26 +304,29 @@
         }
 
         const result = await response.json();
-        const { telegramUrl } = result;
+        const { telegramUrl, code } = result;
 
+        console.log("🔗 Connection code:", code);
         console.log(" Opening Telegram bot...");
+
         this.showStatus(
-          " Đang mở Telegram... Hãy nhấn /start hoặc click link",
+          " Đang mở Telegram... Hãy nhấn /start để kết nối",
           "info"
         );
 
+        // Bước 2: Mở Telegram bot
         window.open(telegramUrl, "_blank", "width=500,height=600");
 
-        setTimeout(() => {
-          if (connectBtn) {
-            connectBtn.disabled = false;
-            connectBtn.innerHTML = originalText;
-          }
-        }, 2000);
-
+        // Bước 3: Polling để kiểm tra xem user đã kết nối chưa
         let checkCount = 0;
+        const maxChecks = 30; // 30 lần × 2 giây = 60 giây
+
         const connectionCheckInterval = setInterval(async () => {
           checkCount++;
+          console.log(
+            ` Checking connection status... (${checkCount}/${maxChecks})`
+          );
+
           try {
             const token = localStorage.getItem("auth_token");
             if (!token) {
@@ -330,6 +334,7 @@
               return;
             }
 
+            // Kiểm tra xem user đã kết nối chưa từ Telegram bot
             const statusResponse = await fetch(
               "/api/notifications/telegram-status",
               {
@@ -342,28 +347,98 @@
 
             if (statusResponse.ok) {
               const statusData = await statusResponse.json();
+
               if (statusData.connected) {
-                console.log(" Connection confirmed!");
-                this.telegramConnected = true;
-                this.updateConnectionStatus(true);
-                this.toggleConnectionSection(false);
-                this.showStatus(" Kết nối Telegram thành công!", "success");
+                console.log("✅ Telegram connected!");
                 clearInterval(connectionCheckInterval);
 
-                setTimeout(() => {
-                  this.closeModal();
-                }, 1500);
+                // Bước 4: Gọi connect-telegram để xác thực với backend
+                const verifyResponse = await fetch(
+                  "/api/notifications/connect-telegram",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      telegramCode: code,
+                    }),
+                  }
+                );
+
+                if (verifyResponse.ok) {
+                  const verifyData = await verifyResponse.json();
+                  console.log("✅ Connection verified:", verifyData);
+
+                  this.telegramConnected = true;
+                  this.updateConnectionStatus(true);
+                  this.toggleConnectionSection(false);
+                  this.showStatus(
+                    " ✅ Kết nối Telegram thành công! Lịch trình đã được gửi.",
+                    "success"
+                  );
+
+                  // Cập nhật setting nếu có
+                  if (verifyData.data?.scheduleSettings) {
+                    const scheduleSettings = verifyData.data.scheduleSettings;
+                    if (scheduleSettings.morningScheduleTime) {
+                      const timeEl =
+                        document.getElementById("dailyScheduleTime");
+                      if (timeEl)
+                        timeEl.value = scheduleSettings.morningScheduleTime;
+                    }
+                    if (scheduleSettings.taskReminderTime) {
+                      const timeEl =
+                        document.getElementById("taskReminderTime");
+                      if (timeEl)
+                        timeEl.value = scheduleSettings.taskReminderTime;
+                    }
+                    if (scheduleSettings.eveningSummaryTime) {
+                      const timeEl =
+                        document.getElementById("dailySummaryTime");
+                      if (timeEl)
+                        timeEl.value = scheduleSettings.eveningSummaryTime;
+                    }
+                  }
+
+                  // Refresh UI - cập nhật trạng thái kết nối và ẩn phần kết nối
+                  this.checkTelegramStatusInModal();
+
+                  setTimeout(() => {
+                    this.closeModal();
+                  }, 2000);
+                } else {
+                  const error = await verifyResponse.json();
+                  console.error(" Verification error:", error);
+                  this.showStatus(` Lỗi xác thực: ${error.message}`, "error");
+                }
               }
             }
           } catch (err) {
             console.warn(" Error checking connection status:", err);
           }
 
-          if (checkCount >= 15) {
+          // Hết timeout
+          if (checkCount >= maxChecks) {
             clearInterval(connectionCheckInterval);
-            console.log(" Connection check timeout - user may need to refresh");
+            connectBtn.disabled = false;
+            connectBtn.innerHTML = originalText;
+            console.log(" Connection check timeout");
+            this.showStatus(
+              " Timeout: Vui lòng kiểm tra Telegram và thử lại",
+              "error"
+            );
           }
         }, 2000);
+
+        // Reset button state after a reasonable time
+        setTimeout(() => {
+          if (connectBtn && !this.telegramConnected) {
+            connectBtn.disabled = false;
+            connectBtn.innerHTML = originalText;
+          }
+        }, 3000);
       } catch (error) {
         console.error(" Error starting connection:", error);
         this.showStatus(` Lỗi: ${error.message}`, "error");
@@ -411,18 +486,25 @@
           });
 
           if (response.ok) {
-            this.showStatus(" Cài đặt đã được lưu thành công", "success");
+            const result = await response.json();
+            console.log(" Settings saved successfully:", result);
+            this.showStatus(" ✅ Cài đặt đã được lưu thành công", "success");
+          } else {
+            const error = await response.json();
+            console.error(" Server error:", error);
+            this.showStatus(` ❌ Lỗi: ${error.message}`, "error");
+            return;
           }
         } else {
-          this.showStatus(" Cài đặt đã được lưu", "success");
+          this.showStatus(" ⚠️ Cài đặt đã được lưu cuc bộ", "success");
         }
 
         setTimeout(() => {
           this.closeModal();
-        }, 1000);
+        }, 1500);
       } catch (error) {
         console.error(" Error saving settings:", error);
-        this.showStatus(` Lỗi: ${error.message}`, "error");
+        this.showStatus(` ❌ Lỗi: ${error.message}`, "error");
       }
     },
 
