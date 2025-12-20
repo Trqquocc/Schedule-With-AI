@@ -16,10 +16,9 @@ const categoriesRoutes = require("./routes/categories");
 const salaryRoutes = require("./routes/salary");
 const statisticsRoutes = require("./routes/statistics");
 const usersRoutes = require("./routes/users");
-require("./telegram/bot"); // Khởi tạo bot
+const { initializeSchedules } = require("./telegram/bot");
 const scheduleSender = require("./telegram/scheduleSender");
 const notificationRoutes = require("./routes/notification.routes");
-const { initializeSchedules } = require("./telegram/bot");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -112,25 +111,7 @@ app.get(
   sendFile("index.html")
 );
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
-
-  // Khởi động lịch trình
-  initializeSchedules();
-});
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received");
-  scheduleSender.stop();
-  process.exit(0);
-});
-
-process.on("SIGINT", () => {
-  console.log(" SIGINT received");
-  scheduleSender.stop();
-  process.exit(0);
-});
-// Catch-all
+// Catch-all - PHẢI ĐẶT TRƯỚC app.listen()
 app.get("*", (req, res) => {
   if (req.path.startsWith("/api/")) {
     return res
@@ -140,8 +121,31 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
+// Khởi động server - CHỈ MỘT LẦN
 initializeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server đang chạy tại http://localhost:${PORT}`);
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📡 API available at http://localhost:${PORT}/api`);
+
+    // Khởi động lịch trình SAU KHI SERVER READY
+    initializeSchedules();
+  });
+
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM received");
+    if (scheduleSender && scheduleSender.stop) {
+      scheduleSender.stop();
+    }
+    server.close();
+    process.exit(0);
+  });
+
+  process.on("SIGINT", () => {
+    console.log(" SIGINT received");
+    if (scheduleSender && scheduleSender.stop) {
+      scheduleSender.stop();
+    }
+    server.close();
+    process.exit(0);
   });
 });

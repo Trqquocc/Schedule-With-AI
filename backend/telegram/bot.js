@@ -540,8 +540,7 @@ bot.on("webhook_error", (error) => {
   console.error("❌ Webhook error:", error);
 });
 
-// Khởi động lịch trình
-initializeSchedules();
+// Khởi động lịch trình được gọi từ server.js
 
 module.exports = {
   bot,
@@ -810,4 +809,5 @@ module.exports = {
   sendSchedule,
   broadcastMessage,
   isUserConnected,
+  initializeSchedules,
 };

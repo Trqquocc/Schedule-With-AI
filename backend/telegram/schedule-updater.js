@@ -3,8 +3,15 @@
 const cron = require("node-cron");
 const sql = require("mssql");
 const dbConfig = require("../config/database");
-const scheduleSender = require("./schedule-sender");
-const { bot } = require("./bot");
+const scheduleSender = require("./scheduleSender");
+// Tránh circular dependency - import bot khi cần
+let bot = null;
+const getBotInstance = () => {
+  if (!bot) {
+    bot = require("./bot").bot;
+  }
+  return bot;
+};
 
 class ScheduleUpdater {
   constructor() {
@@ -328,7 +335,9 @@ class ScheduleUpdater {
 
       message += "Chúc bạn một ngày làm việc hiệu quả! 💪";
 
-      await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
+      await getBotInstance().sendMessage(chatId, message, {
+        parse_mode: "HTML",
+      });
       console.log(`✅ Sent schedule to user ${userId}`);
     } catch (error) {
       console.error(`❌ Error sending schedule to user ${userId}:`, error);
@@ -376,7 +385,9 @@ class ScheduleUpdater {
       if (tasksResult.recordset.length === 0) {
         const message =
           "🎉 <b>Nhắc nhở buổi chiều</b>\n\nTất cả công việc hôm nay đã hoàn thành! Xuất sắc! 🎯";
-        await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
+        await getBotInstance().sendMessage(chatId, message, {
+          parse_mode: "HTML",
+        });
         return;
       }
 
@@ -397,7 +408,9 @@ class ScheduleUpdater {
 
       message += "\nHãy cố gắng hoàn thành nhé! 💪";
 
-      await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
+      await getBotInstance().sendMessage(chatId, message, {
+        parse_mode: "HTML",
+      });
       console.log(`✅ Sent reminder to user ${userId}`);
     } catch (error) {
       console.error(`❌ Error sending reminder to user ${userId}:`, error);
@@ -448,7 +461,9 @@ class ScheduleUpdater {
       if (stats.total === 0) {
         const message =
           "📊 <b>Tổng kết ngày hôm nay</b>\n\nHôm nay bạn không có công việc nào. Hãy tận hưởng ngày nghỉ nhé! 😊";
-        await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
+        await getBotInstance().sendMessage(chatId, message, {
+          parse_mode: "HTML",
+        });
         return;
       }
 
@@ -474,7 +489,9 @@ class ScheduleUpdater {
           "📌 Bạn chưa hoàn thành công việc nào. Hãy bắt đầu từ sớm vào ngày mai nhé!";
       }
 
-      await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
+      await getBotInstance().sendMessage(chatId, message, {
+        parse_mode: "HTML",
+      });
       console.log(`✅ Sent summary to user ${userId}`);
     } catch (error) {
       console.error(`❌ Error sending summary to user ${userId}:`, error);
@@ -507,7 +524,9 @@ class ScheduleUpdater {
       }
 
       if (message) {
-        await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
+        await getBotInstance().sendMessage(chatId, message, {
+          parse_mode: "HTML",
+        });
       }
     } catch (error) {
       console.error(`❌ Error sending no tasks message:`, error);
