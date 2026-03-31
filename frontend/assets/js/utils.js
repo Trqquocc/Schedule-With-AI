@@ -1,7 +1,9 @@
 // frontend/assets/js/utils.js
 if (typeof window.Utils === "undefined") {
   window.Utils = {
-    API_BASE: "http://localhost:3000",
+    API_BASE: window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "http://localhost:3000"
+      : window.API_BASE_URL || "",
 
     /**
      * Lưu trữ token trong localStorage

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 require("dotenv").config();
 
 // GEMINI AI INITIALIZATION
@@ -41,22 +41,14 @@ try {
 
 // HELPER FUNCTIONS
 
-/**
- * Phân tích additionalInstructions để trích xuất các yêu cầu lặp lại
- * Ví dụ:
- * - "công việc ABCD được làm vào 6h sáng hằng ngày trong tuần" → Mỗi ngày T2-CN lúc 6h
- * - "tập gym 6h sáng mỗi ngày" → Mỗi ngày lúc 6h
- * - "môn A 6h-9h tối từ T2 và T7 hàng tuần" → T2,T7 từ 18h-21h
- */
 function analyzeRecurringPatterns(additionalInstructions) {
   if (!additionalInstructions?.trim()) return [];
 
   const patterns = [];
   const text = additionalInstructions.toLowerCase().trim();
 
-  console.log(`🔍 Analyzing text: "${text}"`);
+  console.log(`Analyzing text: "${text}"`);
 
-  // Bước 1: Phát hiện tần suất
   const isDailyPattern =
     /mỗi ngày|hàng ngày|every day|daily|từ.*đến|t2.*cn|thứ 2.*chủ nhật|monday.*sunday|trong tuần|weekday/.test(
       text
@@ -68,19 +60,13 @@ function analyzeRecurringPatterns(additionalInstructions) {
       text
     );
 
-  console.log(`  isDailyPattern: ${isDailyPattern}`);
-  console.log(`  isWeeklyPattern: ${isWeeklyPattern}`);
-  console.log(`  hasSpecificDays: ${hasSpecificDays}`);
-
-  // Bước 2: Trích xuất thời gian
-  // Regex chặt chẽ: chỉ tìm số kèm "h" hoặc "giờ" liền sau
   const timeRegex =
     /(\d{1,2})(?::(\d{2}))?\s*(?:h|giờ|am|pm)(?:\s*(?:sáng|chiều|tối|đêm))?\s*(?:(?:đến|-)\s*)?(\d{1,2})?(?::(\d{2}))?\s*(?:h|giờ|am|pm)?/gi;
 
   const times = [];
   let timeMatch;
   const textLower = additionalInstructions.toLowerCase();
-  const seenTimes = new Set(); // Để tránh duplicate times
+  const seenTimes = new Set();
 
   while ((timeMatch = timeRegex.exec(textLower)) !== null) {
     let startHour = parseInt(timeMatch[1]);
@@ -88,7 +74,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
     let endHour = timeMatch[3] ? parseInt(timeMatch[3]) : null;
     const endMin = timeMatch[4] ? parseInt(timeMatch[4]) : 0;
 
-    // Kiểm tra "sáng" hay "tối" trước/sau thời gian
     const beforeText = textLower.substring(
       Math.max(0, timeMatch.index - 30),
       timeMatch.index
@@ -99,7 +84,6 @@ function analyzeRecurringPatterns(additionalInstructions) {
     );
     const context = beforeText + afterText;
 
-    // Điều chỉnh giờ nếu là tối (18h+)
     if (
       (context.includes("tối") ||
         context.includes("chiều") ||
@@ -110,31 +94,13 @@ function analyzeRecurringPatterns(additionalInstructions) {
       if (endHour && endHour < 12) endHour += 12;
     }
 
-    // Kiểm tra duplicates
     const timeKey = `${startHour}:${startMin}-${endHour || "end"}:${endMin}`;
-    if (seenTimes.has(timeKey)) {
-      console.log(`  ⏭️ Skipping duplicate time: ${timeKey}`);
-      continue;
-    }
+    if (seenTimes.has(timeKey)) continue;
     seenTimes.add(timeKey);
 
-    times.push({
-      startHour,
-      startMin,
-      endHour,
-      endMin,
-    });
-
-    console.log(
-      `  ✅ Found time: ${startHour.toString().padStart(2, "0")}:${startMin
-        .toString()
-        .padStart(2, "0")}${
-        endHour ? ` - ${endHour.toString().padStart(2, "0")}:${endMin}` : ""
-      }`
-    );
+    times.push({ startHour, startMin, endHour, endMin });
   }
 
-  // Bước 3: Trích xuất ngày trong tuần
   const dayMap = {
     "\\bt2\\b|thứ\\s*2|thứ\\s*hai|monday": 2,
     "\\bt3\\b|thứ\\s*3|thứ\\s*ba|tuesday": 3,
@@ -148,36 +114,25 @@ function analyzeRecurringPatterns(additionalInstructions) {
   const days = [];
 
   if (isDailyPattern && !hasSpecificDays) {
-    // "mỗi ngày trong tuần" = T2-CN (theo quy tắc làm việc)
     days.push(1, 2, 3, 4, 5, 6, 7);
-    console.log(`  Daily pattern detected: all days (1-7)`);
   } else if (isDailyPattern && hasSpecificDays) {
-    // Nếu nói "mỗi ngày" mà vẫn chỉ ngày cụ thể
     Object.entries(dayMap).forEach(([pattern, dayNum]) => {
       if (new RegExp(pattern, "i").test(text)) {
         if (!days.includes(dayNum)) days.push(dayNum);
       }
     });
     if (days.length === 0) days.push(1, 2, 3, 4, 5, 6, 7);
-    console.log(`  Daily + specific days: ${days}`);
   } else {
-    // Tìm các ngày được chỉ định
     Object.entries(dayMap).forEach(([pattern, dayNum]) => {
       if (new RegExp(pattern, "i").test(text)) {
         if (!days.includes(dayNum)) days.push(dayNum);
       }
     });
-
-    // Nếu là "hàng tuần" nhưng không có ngày cụ thể, mặc định T2-CN
     if (isWeeklyPattern && days.length === 0) {
       days.push(1, 2, 3, 4, 5, 6, 7);
-      console.log(`  Weekly pattern, no specific days: defaulting to all days`);
     }
-
-    console.log(`  Extracted days: ${days}`);
   }
 
-  // Bước 4: Tạo pattern nếu có thời gian
   if (times.length > 0 && days.length > 0) {
     const pattern = {
       frequency: isDailyPattern ? "daily" : "weekly",
@@ -186,47 +141,26 @@ function analyzeRecurringPatterns(additionalInstructions) {
       rawText: additionalInstructions,
     };
     patterns.push(pattern);
-    console.log(`✅ Pattern created:`, pattern);
-  } else {
-    console.log(
-      `⚠️ Not enough data for pattern - times: ${times.length}, days: ${days.length}`
-    );
   }
 
-  console.log(`📋 Total patterns found: ${patterns.length}`);
   return patterns;
 }
 
 async function getTaskDetailsFromDatabase(taskIds, userId) {
   try {
-    if (!taskIds || taskIds.length === 0) {
+    if (!taskIds || taskIds.length === 0) return [];
+
+    const { data: tasks, error } = await supabase
+      .from("CongViec")
+      .select("MaCongViec, TieuDe, ThoiGianUocTinh, MucDoUuTien, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop, MauSac")
+      .in("MaCongViec", taskIds)
+      .eq("UserID", userId)
+      .eq("TrangThaiThucHien", 0);
+
+    if (error) {
+      console.error("Error fetching task details:", error);
       return [];
     }
-
-    const pool = await dbPoolPromise;
-    const taskIdList = taskIds.join(",");
-
-    // SỬA QUERY NÀY - LẤY MauSac TỪ CongViec
-    const query = `
-      SELECT 
-        cv.MaCongViec as id,
-        cv.TieuDe as title,
-        cv.ThoiGianUocTinh as estimatedMinutes,
-        cv.MucDoUuTien as priority,
-        cv.MucDoPhucTap as complexity,
-        cv.MucDoTapTrung as focusLevel,
-        cv.ThoiDiemThichHop as suitableTimeCode,
-        cv.MauSac as color  -- LẤY TỪ CongViec
-      FROM CongViec cv
-      WHERE cv.MaCongViec IN (${taskIdList}) 
-        AND cv.UserID = @userId
-        AND cv.TrangThaiThucHien = 0
-    `;
-
-    const result = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(query);
 
     const timeMap = {
       1: "morning",
@@ -236,18 +170,16 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
       5: "anytime",
     };
 
-    const taskDetails = result.recordset.map((task) => {
-      return {
-        id: task.id,
-        title: task.title,
-        estimatedMinutes: task.estimatedMinutes || 60,
-        priority: task.priority || 2,
-        complexity: task.complexity || 2,
-        focusLevel: task.focusLevel || 2,
-        suitableTime: timeMap[task.suitableTimeCode] || "anytime",
-        color: task.color || getColorByPriority(task.priority || 2), // Dùng màu từ database hoặc fallback
-      };
-    });
+    const taskDetails = (tasks || []).map((task) => ({
+      id: task.MaCongViec,
+      title: task.TieuDe,
+      estimatedMinutes: task.ThoiGianUocTinh || 60,
+      priority: task.MucDoUuTien || 2,
+      complexity: task.MucDoPhucTap || 2,
+      focusLevel: task.MucDoTapTrung || 2,
+      suitableTime: timeMap[task.ThoiDiemThichHop] || "anytime",
+      color: task.MauSac || getColorByPriority(task.MucDoUuTien || 2),
+    }));
 
     console.log(`Loaded ${taskDetails.length} task details from database`);
     return taskDetails;
@@ -257,55 +189,39 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
   }
 }
 
-// Thêm hàm helper để tạo màu từ priority (fallback)
 function getColorByPriority(priority) {
   switch (priority) {
-    case 1:
-      return "#10B981"; // Xanh lá
-    case 2:
-      return "#3B82F6"; // Xanh dương
-    case 3:
-      return "#F59E0B"; // Vàng cam
-    case 4:
-      return "#EF4444"; // Đỏ
-    default:
-      return "#8B5CF6"; // Tím
+    case 1: return "#10B981";
+    case 2: return "#3B82F6";
+    case 3: return "#F59E0B";
+    case 4: return "#EF4444";
+    default: return "#8B5CF6";
   }
 }
 
 async function getExistingEvents(userId, startDate, endDate) {
   try {
-    const pool = await dbPoolPromise;
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh, GioBatDau, GioKetThuc, AI_DeXuat, CongViec(TieuDe, MucDoUuTien)")
+      .eq("UserID", userId)
+      .gte("GioBatDau", new Date(startDate).toISOString())
+      .lte("GioBatDau", new Date(endDate).toISOString())
+      .order("GioBatDau", { ascending: true });
 
-    const query = `
-      SELECT 
-        lt.MaLichTrinh as id,
-        lt.GioBatDau as start_time,
-        lt.GioKetThuc as end_time,
-        cv.TieuDe as title,
-        cv.MucDoUuTien as priority,
-        lt.AI_DeXuat as ai_suggested
-      FROM LichTrinh lt
-      INNER JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-      WHERE cv.UserID = @userId
-        AND lt.GioBatDau >= @startDate
-        AND lt.GioBatDau <= @endDate
-      ORDER BY lt.GioBatDau
-    `;
+    if (error) {
+      console.error("Error fetching existing events:", error.message);
+      return [];
+    }
 
-    const result = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .input("startDate", sql.DateTime, new Date(startDate))
-      .input("endDate", sql.DateTime, new Date(endDate))
-      .query(query);
-
-    console.log(`Found ${result.recordset.length} existing events`);
-    return result.recordset.map((event) => ({
-      ...event,
-      start: event.start_time,
-      end: event.end_time,
-      AI_DeXuat: event.ai_suggested,
+    console.log(`Found ${(records || []).length} existing events`);
+    return (records || []).map((event) => ({
+      id: event.MaLichTrinh,
+      start: event.GioBatDau,
+      end: event.GioKetThuc,
+      title: event.CongViec?.TieuDe,
+      priority: event.CongViec?.MucDoUuTien,
+      AI_DeXuat: event.AI_DeXuat,
     }));
   } catch (error) {
     console.error("Error fetching existing events:", error.message);
@@ -342,12 +258,11 @@ function buildGeminiPrompt(
     )
     .join("\n");
 
-  // Phân tích recurring patterns từ additionalInstructions
   const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
 
   const recurringPatternsText =
     recurringPatterns.length > 0
-      ? `\n📅 CÁC YÊU CẦU LẶP LẠI ĐÃ PHÁT HIỆN:
+      ? `\nCÁC YÊU CẦU LẶP LẠI ĐÃ PHÁT HIỆN:
 ${recurringPatterns
   .map(
     (p, idx) => `
@@ -385,84 +300,36 @@ ${recurringPatterns
     7: "Thứ bảy",
   };
 
-  const additionalInstructionsText = additionalInstructions.trim()
-    ? `\n📝 HƯỚNG DẪN THÊM CỦA NGƯỜI DÙNG:\n${additionalInstructions}\n`
-    : "";
-
   return `Bạn là trợ lý lập lịch thông minh chuyên biệt. NHIỆM VỤ: Sắp xếp TẤT CẢ ${
     taskDetails.length
   } công việc dưới đây vào lịch.
 
-⚠️ QUAN TRỌNG: BẠN PHẢI TẠO SUGGESTIONS CHO TẤT CẢ CÁC CÔNG VIỆC SAU, KHÔNG ĐƯỢC BỎ SÓT CÔNG VIỆC NÀO:
+QUAN TRỌNG: BẠN PHẢI TẠO SUGGESTIONS CHO TẤT CẢ CÁC CÔNG VIỆC SAU, KHÔNG ĐƯỢC BỎ SÓT CÔNG VIỆC NÀO:
 
-═══════════════════════════════════════════════════════════════
 CÁC CÔNG VIỆC BẮT BUỘC PHẢI SẮP XẾP (${taskDetails.length} cái):
-═══════════════════════════════════════════════════════════════
 ${taskList}
 
-═══════════════════════════════════════════════════════════════
-KHOẢNG THỜI GIAN:
-═══════════════════════════════════════════════════════════════
-Từ ${startDate} đến ${endDate}
+KHOẢNG THỜI GIAN: Từ ${startDate} đến ${endDate}
 
-═══════════════════════════════════════════════════════════════
 LỊCH HIỆN CÓ (TRÁNH TRÙNG):
-═══════════════════════════════════════════════════════════════
 ${existingEvents.length > 0 ? existingSchedule : "Không có lịch hiện tại"}
 
-═══════════════════════════════════════════════════════════════
 YÊU CẦU CẤU HÌNH CHUNG:
-═══════════════════════════════════════════════════════════════
-1. ${
-    options.considerPriority
-      ? "✓ Ưu tiên việc quan trọng (priority cao) trước"
-      : "○ Không cần ưu tiên"
-  }
-2. ${
-    options.avoidConflict
-      ? "✓ Tránh trùng với lịch hiện tại"
-      : "○ Không cần tránh trùng"
-  }
-3. ${
-    options.balanceWorkload
-      ? "✓ Cân bằng công việc giữa các ngày"
-      : "○ Không cần cân bằng"
-  }
+1. ${options.considerPriority ? "Ưu tiên việc quan trọng trước" : "Không cần ưu tiên"}
+2. ${options.avoidConflict ? "Tránh trùng với lịch hiện tại" : "Không cần tránh trùng"}
+3. ${options.balanceWorkload ? "Cân bằng công việc giữa các ngày" : "Không cần cân bằng"}
 4. Mỗi ngày không quá 8 tiếng làm việc
 5. Làm việc trong khung giờ 08:00 đến 22:00
 
-═══════════════════════════════════════════════════════════════
 YÊU CẦU TỪ NGƯỜI DÙNG:
-═══════════════════════════════════════════════════════════════
-${
-  additionalInstructions.trim()
-    ? additionalInstructions
-    : "(Không có yêu cầu đặc biệt)"
-}
+${additionalInstructions.trim() ? additionalInstructions : "(Không có yêu cầu đặc biệt)"}
 
-═══════════════════════════════════════════════════════════════
 HƯỚNG DẪN XỬ LÝ CHI TIẾT:
-═══════════════════════════════════════════════════════════════
 
-🔴 QUAN TRỌNG: NẾU YÊU CẦU CÓ "LẶP LẠI", "HÀNG NGÀY", "HÀNG TUẦN", v.v:
+QUAN TRỌNG: NẾU YÊU CẦU CÓ "LẶP LẠI", "HÀNG NGÀY", "HÀNG TUẦN", v.v:
    → TẠO NHIỀU ENTRIES (một cho mỗi ngày/lần lặp)
-   
-   Ví dụ yêu cầu: "công việc ABCD được làm vào 6h sáng hằng ngày trong tuần"
-   → Phải tạo 7 events (một T2, T3, T4, T5, T6, T7, CN) tất cả lúc 06:00
-   
-   Ví dụ yêu cầu: "lịch dạy môn A từ 6h-9h tối T2 và T7 hàng tuần"
-   → Phải tạo 2 events mỗi tuần (T2 18:00-21:00 và T7 18:00-21:00) cho mỗi tuần
-   
-   Ví dụ yêu cầu: "tập gym 6h sáng mỗi ngày (từ T2-CN)"
-   → Phải tạo 6 events lúc 06:00 cho mỗi ngày làm việc
 
-👉 PHÂN TÍCH THỜI GIAN TRONG YÊU CẦU:
-   - "6h sáng" → 06:00
-   - "6h tối" / "6h chiều muộn" / "18h" → 18:00
-   - "6h-9h" → từ 06:00 đến 09:00 (duration = 180 phút)
-   - "10h30" / "10:30" → 10:30
-
-👉 PHÂN TÍCH NGÀY TRONG YÊU CẦU (đây là điều QUAN TRỌNG):
+PHÂN TÍCH NGÀY TRONG YÊU CẦU:
    - "T2" = Thứ 2 (${dayNames[2]})
    - "T3" = Thứ 3 (${dayNames[3]})
    - "T4" = Thứ 4 (${dayNames[4]})
@@ -471,19 +338,13 @@ HƯỚNG DẪN XỬ LÝ CHI TIẾT:
    - "T7" = Thứ 7 (${dayNames[7]})
    - "CN" = Chủ nhật (${dayNames[1]})
    - "hằng ngày" / "mỗi ngày" / "trong tuần" = T2-CN (7 ngày)
-   - "hàng tuần" = lặp lại hàng tuần theo ngày chỉ định
-   - "từ T2 đến T6" = T2, T3, T4, T5, T6 (5 ngày)
-   - "T2 và T7" / "T2,T7" = chỉ T2 và T7
 
-👉 THỰC HIỆN LẶP LẠI TRONG KHOẢNG NGÀY:
+THỰC HIỆN LẶP LẠI TRONG KHOẢNG NGÀY:
    - Khoảng ngày: ${startDate} đến ${endDate}
    - Nếu yêu cầu "hàng ngày", tạo 1 event cho mỗi ngày trong khoảng
-   - Nếu yêu cầu "hàng tuần", tạo 1 event cho mỗi lần ngày đó xuất hiện trong khoảng
    - KHÔNG chỉ tạo 1 event duy nhất!
 
-═══════════════════════════════════════════════════════════════
-ĐỊNH DẠNG RESPONSE (CHỈ TRẢ VỀ JSON HỢPLỆ, KHÔNG GIẢI THÍCH):
-═══════════════════════════════════════════════════════════════
+ĐỊNH DẠNG RESPONSE (CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG GIẢI THÍCH):
 
 {
   "suggestions": [
@@ -493,16 +354,9 @@ HƯỚNG DẪN XỬ LÝ CHI TIẾT:
       "durationMinutes": 60,
       "reason": "Công việc ABCD 6h sáng T2",
       "isRecurring": true
-    },
-    {
-      "taskId": 3013,
-      "scheduledTime": "2025-12-16T06:00:00",
-      "durationMinutes": 60,
-      "reason": "Công việc ABCD 6h sáng T3",
-      "isRecurring": true
     }
   ],
-  "summary": "Đã tạo 7 events lặp lại mỗi ngày cho công việc ABCD lúc 06:00 từ T2-CN",
+  "summary": "Đã tạo X events",
   "statistics": {
     "totalTasks": 1,
     "totalHours": 7,
@@ -511,14 +365,12 @@ HƯỚNG DẪN XỬ LÝ CHI TIẾT:
   }
 }
 
-═══════════════════════════════════════════════════════════════
 LUẬT BẮT BUỘC:
-═══════════════════════════════════════════════════════════════
 1. LUÔN trả JSON hợp lệ, không kèm giải thích
 2. scheduledTime PHẢI nằm trong khoảng: ${startDate} - ${endDate}
-3. Nếu là lặp lại, PHẢI có nhiều entries (đừng chỉ 1)
+3. Nếu là lặp lại, PHẢI có nhiều entries
 4. Mỗi entry = 1 event cụ thể tại 1 ngày/giờ
-5. "reason" bằng Tiếng Việt, giải thích tại sao chọn thời gian này
+5. "reason" bằng Tiếng Việt
 6. Nếu không hiểu yêu cầu, dùng "suitableTime" từ danh sách công việc`;
 }
 
@@ -537,10 +389,8 @@ async function callGeminiAI(prompt) {
       try {
         console.log(`Attempt ${attempt}/${maxRetries}`);
 
-        // Exponential backoff: 2s, 4s, 8s
         if (attempt > 1) {
           const delayMs = Math.pow(2, attempt) * 1000;
-          console.log(`⏳ Waiting ${delayMs}ms before retry...`);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
         }
 
@@ -549,14 +399,9 @@ async function callGeminiAI(prompt) {
         const text = response.text();
 
         console.log("Gemini AI response received");
-        console.log(`Response length: ${text.length} chars`);
-        console.log(`First 200 chars: ${text.substring(0, 200)}`);
-        console.log(`Gemini response: ${text.substring(0, 300)}`);
 
-        // Cách 1: Tìm JSON trong response (greedy)
         let jsonMatch = text.match(/{[\s\S]*}/);
 
-        // Cách 2: Nếu không tìm thấy, thử tìm trong backticks
         if (!jsonMatch) {
           const backtickMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
           if (backtickMatch) {
@@ -565,27 +410,15 @@ async function callGeminiAI(prompt) {
           }
         }
 
-        // Cách 3: Thử parse toàn bộ text nếu nó là JSON
         if (!jsonMatch && text.trim().startsWith("{")) {
           jsonMatch = [text.trim()];
         }
 
         if (!jsonMatch) {
-          console.error("❌ Gemini response:", text.substring(0, 500));
           throw new Error("No JSON found in response");
         }
 
-        const jsonStr = jsonMatch[0];
-        console.log(`✅ Extracted JSON (${jsonStr.length} chars)`);
-
-        let parsed;
-        try {
-          parsed = JSON.parse(jsonStr);
-        } catch (parseError) {
-          console.error("❌ JSON parse error:", parseError.message);
-          console.error("Attempted JSON:", jsonStr.substring(0, 300));
-          throw new Error(`Invalid JSON: ${parseError.message}`);
-        }
+        const parsed = JSON.parse(jsonMatch[0]);
 
         if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
           throw new Error("Invalid response format: missing suggestions array");
@@ -595,13 +428,11 @@ async function callGeminiAI(prompt) {
           throw new Error("AI returned empty suggestions array");
         }
 
-        console.log(
-          `✅ Parsed ${parsed.suggestions.length} suggestions successfully`
-        );
+        console.log(`Parsed ${parsed.suggestions.length} suggestions successfully`);
         return parsed;
       } catch (attemptError) {
         lastError = attemptError;
-        console.log(`❌ Attempt ${attempt} failed:`, attemptError.message);
+        console.log(`Attempt ${attempt} failed:`, attemptError.message);
       }
     }
 
@@ -619,8 +450,6 @@ async function generateSimulatedSchedule(
   options,
   existingEvents
 ) {
-  console.log("Generating simulated schedule...");
-
   const suggestions = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -646,31 +475,21 @@ async function generateSimulatedSchedule(
 
     let slotIndex = 0;
     switch (task.suitableTime) {
-      case "morning":
-        slotIndex = 0;
-        break;
-      case "noon":
-        slotIndex = 1;
-        break;
-      case "afternoon":
-        slotIndex = 2;
-        break;
-      case "evening":
-        slotIndex = 3;
-        break;
-      default:
-        slotIndex = i % dailySlots.length;
+      case "morning": slotIndex = 0; break;
+      case "noon": slotIndex = 1; break;
+      case "afternoon": slotIndex = 2; break;
+      case "evening": slotIndex = 3; break;
+      default: slotIndex = i % dailySlots.length;
     }
 
     const slot = dailySlots[slotIndex];
     scheduleDate.setHours(slot.hour, 0, 0, 0);
 
-    let hasConflict = false;
     if (options.avoidConflict && existingEvents.length > 0) {
       const taskEnd = new Date(
         scheduleDate.getTime() + task.estimatedMinutes * 60000
       );
-      hasConflict = existingEvents.some((event) => {
+      const hasConflict = existingEvents.some((event) => {
         const eventStart = new Date(event.start);
         const eventEnd = new Date(event.end);
         return scheduleDate < eventEnd && taskEnd > eventStart;
@@ -689,13 +508,11 @@ async function generateSimulatedSchedule(
       `Phân bố hợp lý trong kế hoạch tuần`,
     ];
 
-    const reason = reasons[Math.floor(Math.random() * reasons.length)];
-
     suggestions.push({
       taskId: task.id,
       scheduledTime: scheduleDate.toISOString(),
       durationMinutes: task.estimatedMinutes,
-      reason: reason,
+      reason: reasons[Math.floor(Math.random() * reasons.length)],
       color: task.color,
     });
   }
@@ -711,11 +528,7 @@ async function generateSimulatedSchedule(
 
   return {
     suggestions,
-    summary: `Đã tạo ${
-      suggestions.length
-    } khung giờ trong ${uniqueDays} ngày. Tổng thời lượng: ${Math.round(
-      totalMinutes / 60
-    )} giờ.`,
+    summary: `Đã tạo ${suggestions.length} khung giờ trong ${uniqueDays} ngày. Tổng thời lượng: ${Math.round(totalMinutes / 60)} giờ.`,
     statistics: {
       totalTasks: suggestions.length,
       totalHours: Math.round(totalMinutes / 60),
@@ -724,19 +537,112 @@ async function generateSimulatedSchedule(
   };
 }
 
+async function generateSimulatedScheduleWithInstructions(
+  taskDetails,
+  startDate,
+  endDate,
+  options,
+  existingEvents,
+  additionalInstructions = ""
+) {
+  const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
+
+  const suggestions = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+  if (recurringPatterns.length > 0) {
+    for (const pattern of recurringPatterns) {
+      let selectedTask = null;
+      const instructionLower = additionalInstructions.toLowerCase();
+
+      for (const task of taskDetails) {
+        if (instructionLower.includes(task.title.toLowerCase())) {
+          selectedTask = task;
+          break;
+        }
+      }
+
+      if (!selectedTask) selectedTask = taskDetails[0];
+
+      for (let i = 0; i <= daysDiff; i++) {
+        const currentDate = new Date(start);
+        currentDate.setDate(currentDate.getDate() + i);
+        const dayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay();
+
+        if (pattern.days.includes(dayOfWeek)) {
+          for (const time of pattern.times) {
+            const eventDate = new Date(currentDate);
+            eventDate.setHours(time.startHour, time.startMin, 0, 0);
+
+            let durationMinutes = selectedTask.estimatedMinutes || 60;
+            if (time.endHour !== null) {
+              const startTotalMin = time.startHour * 60 + time.startMin;
+              const endTotalMin = time.endHour * 60 + time.endMin;
+              durationMinutes = endTotalMin - startTotalMin;
+            }
+
+            suggestions.push({
+              taskId: selectedTask.id,
+              scheduledTime: eventDate.toISOString(),
+              durationMinutes: Math.max(durationMinutes, 30),
+              reason: `${selectedTask.title} - Lúc ${time.startHour
+                .toString()
+                .padStart(2, "0")}:${time.startMin
+                .toString()
+                .padStart(2, "0")}${
+                time.endHour
+                  ? ` - ${time.endHour.toString().padStart(2, "0")}:${time.endMin
+                      .toString()
+                      .padStart(2, "0")}`
+                  : ""
+              }`,
+              color: selectedTask.color,
+              isRecurring: true,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  if (suggestions.length === 0) {
+    const baseSchedule = await generateSimulatedSchedule(
+      taskDetails, startDate, endDate, options, existingEvents
+    );
+    return {
+      ...baseSchedule,
+      summary: baseSchedule.summary + " (Chế độ mặc định)",
+    };
+  }
+
+  const uniqueDays = new Set(
+    suggestions.map((s) => new Date(s.scheduledTime).toDateString())
+  ).size;
+
+  const totalMinutes = suggestions.reduce((sum, s) => sum + s.durationMinutes, 0);
+  const recurringCount = suggestions.filter((s) => s.isRecurring).length;
+
+  return {
+    suggestions: suggestions.map(({ isRecurring, ...rest }) => rest),
+    summary: `Đã tạo ${suggestions.length} khung giờ (bao gồm ${recurringCount} events lặp lại) trong ${uniqueDays} ngày. Tổng thời lượng: ${Math.round(totalMinutes / 60)} giờ.`,
+    statistics: {
+      totalTasks: suggestions.length,
+      totalHours: Math.round(totalMinutes / 60),
+      daysUsed: uniqueDays,
+      recurringEvents: recurringCount,
+    },
+  };
+}
+
 // API ENDPOINTS
 
 router.post("/suggest-schedule", authenticateToken, async (req, res) => {
-  console.log("\n" + "=".repeat(50));
-  console.log("AI SCHEDULE REQUEST RECEIVED");
-  console.log("=".repeat(50));
-
   try {
     const userId = req.userId;
     const { tasks: taskIds, startDate, endDate, options = {} } = req.body;
     const additionalInstructions = req.body.additionalInstructions || "";
-
-    console.log("Additional instructions:", additionalInstructions);
 
     if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
       return res.status(400).json({
@@ -752,10 +658,6 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
       });
     }
 
-    console.log(`User ID: ${userId}`);
-    console.log(`Tasks: ${taskIds.length} tasks`);
-    console.log(`Date range: ${startDate} to ${endDate}`);
-
     const taskDetails = await getTaskDetailsFromDatabase(taskIds, userId);
     if (taskDetails.length === 0) {
       return res.status(404).json({
@@ -764,15 +666,11 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
       });
     }
 
-    console.log(`Task details loaded: ${taskDetails.length} tasks`);
-
     let existingEvents = [];
     if (options.avoidConflict) {
       try {
         existingEvents = await getExistingEvents(userId, startDate, endDate);
-        console.log(`Existing events: ${existingEvents.length}`);
       } catch (eventError) {
-        console.log(`Could not load existing events: ${eventError.message}`);
         existingEvents = [];
       }
     }
@@ -782,56 +680,22 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
 
     if (geminiAvailable) {
       try {
-        console.log("Attempting to use Gemini AI...");
-
         const prompt = buildGeminiPrompt(
-          taskDetails,
-          startDate,
-          endDate,
-          options,
-          existingEvents,
-          additionalInstructions
+          taskDetails, startDate, endDate, options, existingEvents, additionalInstructions
         );
-
-        console.log(
-          "📋 Prompt length:",
-          prompt.length,
-          "chars | First 300 chars:"
-        );
-        console.log(prompt.substring(0, 300) + "...\n");
 
         aiResult = await callGeminiAI(prompt);
         mode = "gemini";
-        console.log(
-          "✅ Gemini AI processed successfully with",
-          aiResult.suggestions?.length || 0,
-          "suggestions"
-        );
       } catch (aiError) {
-        console.error(
-          "❌ Gemini AI failed:",
-          aiError.message,
-          "| Falling back to simulation..."
-        );
+        console.error("Gemini AI failed:", aiError.message);
         aiResult = await generateSimulatedScheduleWithInstructions(
-          taskDetails,
-          startDate,
-          endDate,
-          options,
-          existingEvents,
-          additionalInstructions
+          taskDetails, startDate, endDate, options, existingEvents, additionalInstructions
         );
         mode = "simulation_fallback";
       }
     } else {
-      console.log("⚠️ Gemini not available, using simulation mode...");
       aiResult = await generateSimulatedScheduleWithInstructions(
-        taskDetails,
-        startDate,
-        endDate,
-        options,
-        existingEvents,
-        additionalInstructions
+        taskDetails, startDate, endDate, options, existingEvents, additionalInstructions
       );
       mode = "simulation";
     }
@@ -850,43 +714,27 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
           reason: suggestion.reason || "Được xếp tự động",
           color: suggestion.color || "#8B5CF6",
         })),
-        summary:
-          aiResult.summary || `Đã tạo ${aiResult.suggestions.length} khung giờ`,
+        summary: aiResult.summary || `Đã tạo ${aiResult.suggestions.length} khung giờ`,
         statistics: aiResult.statistics || {
           totalTasks: aiResult.suggestions.length,
           totalHours: Math.round(
-            aiResult.suggestions.reduce(
-              (sum, s) => sum + s.durationMinutes,
-              0
-            ) / 60
+            aiResult.suggestions.reduce((sum, s) => sum + s.durationMinutes, 0) / 60
           ),
-          daysUsed: Math.min(
-            new Set(
-              aiResult.suggestions.map((s) =>
-                new Date(s.scheduledTime).toDateString()
-              )
-            ).size,
-            7
-          ),
+          daysUsed: new Set(
+            aiResult.suggestions.map((s) => new Date(s.scheduledTime).toDateString())
+          ).size,
         },
         mode: mode,
       },
       message:
         mode === "gemini"
-          ? "AI đã tạo lịch trình thành công" +
-            (additionalInstructions ? " với hướng dẫn bổ sung" : "")
+          ? "AI đã tạo lịch trình thành công"
           : "Đã tạo lịch trình (chế độ mô phỏng)",
     };
-
-    console.log(`Generated ${response.data.suggestions.length} suggestions`);
-    console.log(`Mode: ${mode}`);
-    console.log("AI request completed successfully");
-    console.log("=".repeat(50) + "\n");
 
     res.json(response);
   } catch (error) {
     console.error("AI processing failed:", error);
-
     res.status(500).json({
       success: false,
       message: "Lỗi xử lý AI",
@@ -896,313 +744,96 @@ router.post("/suggest-schedule", authenticateToken, async (req, res) => {
   }
 });
 
-async function generateSimulatedScheduleWithInstructions(
-  taskDetails,
-  startDate,
-  endDate,
-  options,
-  existingEvents,
-  additionalInstructions = ""
-) {
-  console.log("🎯 Generating simulated schedule WITH instruction analysis...");
-  console.log("Additional instructions:", additionalInstructions);
-
-  // Phân tích recurring patterns
-  const recurringPatterns = analyzeRecurringPatterns(additionalInstructions);
-  console.log(`📋 Found ${recurringPatterns.length} recurring pattern(s)`);
-
-  const suggestions = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-
-  // Nếu có recurring patterns, xử lý cho từng pattern
-  if (recurringPatterns.length > 0) {
-    console.log(
-      `\n🔄 Processing ${recurringPatterns.length} recurring pattern(s)...`
-    );
-
-    for (const pattern of recurringPatterns) {
-      console.log(
-        `\n  Pattern: ${pattern.frequency} on days [${pattern.days.join(
-          ", "
-        )}] at times:`,
-        pattern.times.map(
-          (t) =>
-            `${t.startHour.toString().padStart(2, "0")}:${t.startMin
-              .toString()
-              .padStart(2, "0")}`
-        )
-      );
-
-      // Tìm task phù hợp - ưu tiên task được nhắc trong instructions
-      let selectedTask = null;
-      const instructionLower = additionalInstructions.toLowerCase();
-
-      for (const task of taskDetails) {
-        const taskTitle = task.title.toLowerCase();
-        // Kiểm tra xem task có được nhắc đến trong instructions không
-        if (instructionLower.includes(taskTitle)) {
-          selectedTask = task;
-          console.log(`    ✓ Found task in instructions: "${task.title}"`);
-          break;
-        }
-      }
-
-      // Nếu không tìm thấy task cụ thể, dùng task đầu tiên
-      if (!selectedTask) {
-        selectedTask = taskDetails[0];
-        console.log(
-          `    ⚠️ No specific task found, using first task: "${selectedTask.title}"`
-        );
-      }
-
-      // Tạo events cho TẤT CẢ ngày khớp trong khoảng ngày
-      for (let i = 0; i <= daysDiff; i++) {
-        const currentDate = new Date(start);
-        currentDate.setDate(currentDate.getDate() + i);
-        const dayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay(); // Sunday=7, Monday=1
-
-        // Kiểm tra xem ngày này có trong danh sách không
-        if (pattern.days.includes(dayOfWeek)) {
-          for (const time of pattern.times) {
-            const eventDate = new Date(currentDate);
-            eventDate.setHours(time.startHour, time.startMin, 0, 0);
-
-            // Tính thời lượng
-            let durationMinutes = selectedTask.estimatedMinutes || 60;
-            if (time.endHour !== null) {
-              const startTotalMin = time.startHour * 60 + time.startMin;
-              const endTotalMin = time.endHour * 60 + time.endMin;
-              durationMinutes = endTotalMin - startTotalMin;
-            }
-
-            suggestions.push({
-              taskId: selectedTask.id,
-              scheduledTime: eventDate.toISOString(),
-              durationMinutes: Math.max(durationMinutes, 30), // Tối thiểu 30 phút
-              reason: `${selectedTask.title} - Lúc ${time.startHour
-                .toString()
-                .padStart(2, "0")}:${time.startMin
-                .toString()
-                .padStart(2, "0")}${
-                time.endHour
-                  ? ` - ${time.endHour
-                      .toString()
-                      .padStart(2, "0")}:${time.endMin
-                      .toString()
-                      .padStart(2, "0")}`
-                  : ""
-              }`,
-              color: selectedTask.color,
-              isRecurring: true,
-            });
-
-            const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-            console.log(
-              `    ✅ ${dayNames[dayOfWeek]} ${eventDate.toLocaleDateString(
-                "vi-VN"
-              )} ${time.startHour.toString().padStart(2, "0")}:${time.startMin
-                .toString()
-                .padStart(2, "0")} → "${selectedTask.title}"`
-            );
-          }
-        }
-      }
-    }
-
-    console.log(`\n📊 Total recurring events created: ${suggestions.length}`);
-  }
-
-  // Nếu vẫn chưa có suggestions (không có pattern), dùng cách cũ
-  if (suggestions.length === 0) {
-    console.log("⚠️ No recurring patterns found, using default scheduling...");
-    const baseSchedule = await generateSimulatedSchedule(
-      taskDetails,
-      startDate,
-      endDate,
-      options,
-      existingEvents
-    );
-    return {
-      ...baseSchedule,
-      summary:
-        baseSchedule.summary + " (Chế độ mặc định, không có yêu cầu cụ thể)",
-    };
-  }
-
-  const uniqueDays = new Set(
-    suggestions.map((s) => new Date(s.scheduledTime).toDateString())
-  ).size;
-
-  const totalMinutes = suggestions.reduce(
-    (sum, s) => sum + s.durationMinutes,
-    0
-  );
-
-  const recurringCount = suggestions.filter((s) => s.isRecurring).length;
-
-  return {
-    suggestions: suggestions.map(({ isRecurring, recurringDay, ...rest }) => ({
-      ...rest,
-    })),
-    summary: `Đã tạo ${
-      suggestions.length
-    } khung giờ (bao gồm ${recurringCount} events lặp lại) từ các yêu cầu cụ thể trong ${uniqueDays} ngày. Tổng thời lượng: ${Math.round(
-      totalMinutes / 60
-    )} giờ.`,
-    statistics: {
-      totalTasks: suggestions.length,
-      totalHours: Math.round(totalMinutes / 60),
-      daysUsed: uniqueDays,
-      recurringEvents: recurringCount,
-    },
-  };
-}
-
 router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
   const { suggestions } = req.body;
   const userId = req.userId;
-
-  console.log(`\n📝 SAVE AI SUGGESTIONS REQUEST`);
-  console.log(`   User: ${userId}`);
-  console.log(`   Suggestions: ${suggestions?.length || 0}`);
-  if (suggestions?.length > 0) {
-    console.log(
-      `   First suggestion:`,
-      JSON.stringify(suggestions[0], null, 2)
-    );
-  }
 
   if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) {
     return res.status(400).json({ success: false, message: "Danh sách rỗng" });
   }
 
-  // ❌ PREVENT DUPLICATE SAVES - Check if suggestions already exist
-  const uniqueKey = `${userId}_${suggestions
-    .map((s) => s.taskId)
-    .sort()
-    .join("_")}`;
+  // Prevent duplicate saves
+  const uniqueKey = `${userId}_${suggestions.map((s) => s.taskId).sort().join("_")}`;
   if (
     global.lastAISaveKey === uniqueKey &&
     Date.now() - global.lastAISaveTime < 5000
   ) {
-    console.log("⚠️ Duplicate save attempt detected - skipping");
-    return res.json({
-      success: true,
-      saved: 0,
-      message: "Đã lưu rồi, không lưu lại",
-    });
+    return res.json({ success: true, saved: 0, message: "Đã lưu rồi, không lưu lại" });
   }
   global.lastAISaveKey = uniqueKey;
   global.lastAISaveTime = Date.now();
 
   try {
-    const pool = await dbPoolPromise;
+    // 1. Xóa AI suggestions cũ
+    const { data: deletedData } = await supabase
+      .from("LichTrinh")
+      .delete()
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true)
+      .select("MaLichTrinh");
 
-    // ✅ 1. XÓA TẤT CẢ AI SUGGESTIONS CŨ (chỉ AI events, không xoá normal tasks)
-    const deleteResult = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-        DELETE FROM LichTrinh 
-        WHERE UserID = @userId AND AI_DeXuat = 1
-      `);
+    const deletedCount = deletedData?.length || 0;
+    console.log(`Deleted ${deletedCount} old AI events`);
 
-    const deletedCount = deleteResult.rowsAffected?.[0] || 0;
-    console.log(`🗑️ Deleted ${deletedCount} old AI events (kept normal tasks)`);
-
-    // ✅ 2. LƯU AI SUGGESTIONS MỚI (với dedupication logic)
+    // 2. Lưu AI suggestions mới
     const savedIds = [];
-    const saveStartTime = Date.now();
 
     for (const s of suggestions) {
       const start = new Date(s.scheduledTime);
       const end = new Date(start.getTime() + s.durationMinutes * 60000);
 
-      console.log(
-        `\n   Saving: "${s.title || "AI Schedule"}" (Task ${s.taskId})`
-      );
-      console.log(
-        `   Time: ${start.toLocaleString("vi-VN")} → ${end.toLocaleString(
-          "vi-VN"
-        )}`
-      );
-      console.log(`   Duration: ${s.durationMinutes} min`);
+      // Check duplicate
+      const { data: existing } = await supabase
+        .from("LichTrinh")
+        .select("MaLichTrinh")
+        .eq("MaCongViec", s.taskId)
+        .eq("GioBatDau", start.toISOString())
+        .eq("UserID", userId)
+        .eq("AI_DeXuat", true)
+        .limit(1);
 
-      // ✅ Check if this exact event already exists (prevent duplicates)
-      const checkDuplicate = await pool
-        .request()
-        .input("taskId", sql.Int, s.taskId)
-        .input("startTime", sql.DateTime, start)
-        .input("userId", sql.Int, userId).query(`
-          SELECT TOP 1 MaLichTrinh 
-          FROM LichTrinh 
-          WHERE MaCongViec = @taskId 
-            AND GioBatDau = @startTime 
-            AND UserID = @userId
-            AND AI_DeXuat = 1
-        `);
-
-      if (checkDuplicate.recordset.length > 0) {
-        console.log(`   ⚠️ Event already exists - skipping`);
-        savedIds.push(checkDuplicate.recordset[0].MaLichTrinh);
+      if (existing && existing.length > 0) {
+        savedIds.push(existing[0].MaLichTrinh);
         continue;
       }
 
-      const result = await pool
-        .request()
-        .input("taskId", sql.Int, s.taskId)
-        .input("startTime", sql.DateTime, start)
-        .input("endTime", sql.DateTime, end)
-        .input("note", sql.NVarChar, s.reason || "Được đề xuất bởi AI")
-        .input("color", sql.NVarChar, s.color || "#8B5CF6")
-        .input("userId", sql.Int, userId).query(`
-          INSERT INTO LichTrinh 
-            (MaCongViec, GioBatDau, GioKetThuc, GhiChu, AI_DeXuat, UserID)
-          OUTPUT INSERTED.MaLichTrinh
-          VALUES 
-            (@taskId, @startTime, @endTime, @note, 1, @userId)
-        `);
+      const { data: result, error } = await supabase
+        .from("LichTrinh")
+        .insert({
+          MaCongViec: s.taskId,
+          GioBatDau: start.toISOString(),
+          GioKetThuc: end.toISOString(),
+          GhiChu: s.reason || "Được đề xuất bởi AI",
+          AI_DeXuat: true,
+          UserID: userId,
+        })
+        .select("MaLichTrinh")
+        .single();
 
-      if (result.recordset[0]) {
-        const newId = result.recordset[0].MaLichTrinh;
-        savedIds.push(newId);
-        console.log(`   ✅ Saved with ID: ${newId}`);
+      if (result) {
+        savedIds.push(result.MaLichTrinh);
       }
     }
 
-    const saveTime = Date.now() - saveStartTime;
-    console.log(
-      `\n✅ Đã lưu ${savedIds.length}/${suggestions.length} lịch AI mới (${saveTime}ms)`
-    );
-    console.log(`   IDs: ${savedIds.join(", ")}`);
+    console.log(`Saved ${savedIds.length}/${suggestions.length} AI suggestions`);
 
-    // ✅ 3. TRACK AI PROPOSAL VÀO PhienAIDeXuat TABLE (NẾU TỒN TẠI)
+    // 3. Track AI proposal (optional table)
     try {
       const summaryContent = suggestions
-        .map(
-          (s, i) =>
-            `${i + 1}. ${s.title || "Công việc"} - ${
-              s.durationMinutes || 60
-            } phút`
-        )
+        .map((s, i) => `${i + 1}. ${s.title || "Công việc"} - ${s.durationMinutes || 60} phút`)
         .join("\n");
 
-      await pool
-        .request()
-        .input("userId", sql.Int, userId)
-        .input("content", sql.NVarChar, `AI Proposal:\n${summaryContent}`)
-        .input("applyTime", sql.DateTime, new Date()).query(`
-          IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
-                     WHERE TABLE_NAME='PhienAIDeXuat')
-          BEGIN
-            INSERT INTO PhienAIDeXuat (UserID, NgayDeXuat, NoiDungYeuCau, DaApDung, ThoiGianApDung)
-            VALUES (@userId, GETDATE(), @content, 1, @applyTime)
-          END
-        `);
-
-      console.log("✅ Tracked AI proposal");
+      await supabase
+        .from("PhienAIDeXuat")
+        .insert({
+          UserID: userId,
+          NgayDeXuat: new Date().toISOString(),
+          NoiDungYeuCau: `AI Proposal:\n${summaryContent}`,
+          DaApDung: true,
+          ThoiGianApDung: new Date().toISOString(),
+        });
     } catch (trackError) {
-      console.warn("⚠️ Could not track:", trackError.message);
+      console.warn("Could not track AI proposal:", trackError.message);
     }
 
     res.json({
@@ -1212,86 +843,53 @@ router.post("/save-ai-suggestions", authenticateToken, async (req, res) => {
       deletedOld: deletedCount,
     });
   } catch (err) {
-    console.error("❌ Lỗi lưu AI suggestions:", err);
+    console.error("Lỗi lưu AI suggestions:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// SỬA ENDPOINT GET /ai-events
+// GET /api/ai/ai-events
 router.get("/ai-events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    console.log(`\n📡 GET /ai-events - User ${userId} đang yêu cầu AI events`);
-    const pool = await dbPoolPromise;
 
-    const result = await pool.request().input("userId", sql.Int, userId).query(`
-      SELECT 
-        lt.MaLichTrinh,
-        lt.MaCongViec,
-        lt.GioBatDau,
-        lt.GioKetThuc,
-        lt.GhiChu,
-        lt.AI_DeXuat,
-        cv.TieuDe,
-        cv.MucDoUuTien,
-        ISNULL(cv.MauSac, 
-          CASE cv.MucDoUuTien
-            WHEN 1 THEN '#34D399'
-            WHEN 2 THEN '#60A5FA'
-            WHEN 3 THEN '#FBBF24'
-            WHEN 4 THEN '#F87171'
-            ELSE '#8B5CF6'
-          END) AS Color
-      FROM LichTrinh lt
-      LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-      WHERE lt.UserID = @userId
-        AND lt.AI_DeXuat = 1
-      ORDER BY lt.GioBatDau DESC
-    `);
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, GhiChu, AI_DeXuat, CongViec(TieuDe, MucDoUuTien, MauSac)")
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true)
+      .order("GioBatDau", { ascending: false });
 
-    const totalRecords = result.recordset.length;
-    console.log(`   📦 Total: ${totalRecords}`);
+    if (error) {
+      console.error("Error fetching AI events:", error);
+      return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    }
 
+    // Deduplicate
     const eventMap = new Map();
-    result.recordset.forEach((r) => {
-      const key = `${r.MaCongViec}_${r.GioBatDau.getTime()}`;
+    (records || []).forEach((r) => {
+      const key = `${r.MaCongViec}_${new Date(r.GioBatDau).getTime()}`;
       if (!eventMap.has(key)) {
         eventMap.set(key, r);
       }
     });
 
-    const uniqueRecords = Array.from(eventMap.values());
-    console.log(
-      `   ✅ Unique: ${uniqueRecords.length} (removed ${
-        totalRecords - uniqueRecords.length
-      })`
-    );
-
-    const events = uniqueRecords.map((ev) => ({
+    const events = Array.from(eventMap.values()).map((ev) => ({
       MaLichTrinh: ev.MaLichTrinh,
       MaCongViec: ev.MaCongViec,
-      TieuDe: ev.TieuDe || "Lịch trình AI",
+      TieuDe: ev.CongViec?.TieuDe || "Lịch trình AI",
       GioBatDau: ev.GioBatDau,
       GioKetThuc: ev.GioKetThuc,
-      GhiChu: ev.GhiChu || "✨ Được AI tối ưu",
-      Color: ev.Color,
-      priority: ev.MucDoUuTien,
+      GhiChu: ev.GhiChu || "Được AI tối ưu",
+      Color: ev.CongViec?.MauSac || getColorByPriority(ev.CongViec?.MucDoUuTien || 2),
+      priority: ev.CongViec?.MucDoUuTien,
       AI_DeXuat: ev.AI_DeXuat,
     }));
 
-    console.log(`✅ Returned ${events.length} unique AI events`);
-
-    res.json({
-      success: true,
-      data: events,
-    });
+    res.json({ success: true, data: events });
   } catch (error) {
-    console.error("❌ Error fetching AI events:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    });
+    console.error("Error fetching AI events:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -1310,26 +908,20 @@ router.get("/test", authenticateToken, (req, res) => {
 router.delete("/clear-old-suggestions", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    const pool = await dbPoolPromise;
 
-    // 1. Đếm số lượng AI suggestions cũ
-    const countResult = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-        SELECT COUNT(*) as count 
-        FROM LichTrinh 
-        WHERE UserID = @userId AND AI_DeXuat = 1
-      `);
+    const { data: countData } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh", { count: "exact" })
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true);
 
-    const oldCount = countResult.recordset[0]?.count || 0;
+    const oldCount = countData?.length || 0;
 
-    // 2. Xóa tất cả AI suggestions cũ
-    const deleteResult = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-        DELETE FROM LichTrinh 
-        WHERE UserID = @userId AND AI_DeXuat = 1
-      `);
-
-    console.log(`🗑️ Cleared ${oldCount} old AI suggestions for user ${userId}`);
+    await supabase
+      .from("LichTrinh")
+      .delete()
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true);
 
     res.json({
       success: true,
@@ -1337,7 +929,7 @@ router.delete("/clear-old-suggestions", authenticateToken, async (req, res) => {
       message: `Đã xóa ${oldCount} lịch trình AI cũ`,
     });
   } catch (error) {
-    console.error("❌ Error clearing old AI suggestions:", error);
+    console.error("Error clearing old AI suggestions:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi xóa lịch trình AI cũ",
@@ -1347,334 +939,216 @@ router.delete("/clear-old-suggestions", authenticateToken, async (req, res) => {
 });
 
 router.get("/events/ai", authenticateToken, async (req, res) => {
-  const userId = req.userId;
-
   try {
-    const pool = await dbPoolPromise;
-    const result = await pool.request().input("userId", sql.Int, userId).query(`
-        SELECT 
-          lt.MaLichTrinh,
-          lt.MaCongViec,
-          lt.GioBatDau,
-          lt.GioKetThuc,
-          lt.GhiChu,
-          cv.TieuDe,
-          cv.MucDoUuTien,
-          cv.MauSac AS Color  -- ĐÚNG: Lấy từ CongViec
-        FROM LichTrinh lt
-        INNER JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @userId  -- SỬA: Dùng lt.UserID thay vì cv.UserID
-          AND lt.AI_DeXuat = 1
-        ORDER BY lt.GioBatDau DESC
-      `);
+    const userId = req.userId;
 
-    const events = result.recordset.map((ev) => ({
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, GhiChu, CongViec!inner(TieuDe, MucDoUuTien, MauSac)")
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true)
+      .order("GioBatDau", { ascending: false });
+
+    if (error) {
+      console.error("Lỗi lấy lịch AI:", error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
+
+    const events = (records || []).map((ev) => ({
       MaLichTrinh: ev.MaLichTrinh,
       MaCongViec: ev.MaCongViec,
-      TieuDe: ev.TieuDe,
+      TieuDe: ev.CongViec?.TieuDe,
       GioBatDau: ev.GioBatDau,
       GioKetThuc: ev.GioKetThuc,
       GhiChu: ev.GhiChu || "AI đề xuất",
-      Color: ev.Color || getColorByPriority(ev.MucDoUuTien || 2),
-      priority: ev.MucDoUuTien,
+      Color: ev.CongViec?.MauSac || getColorByPriority(ev.CongViec?.MucDoUuTien || 2),
+      priority: ev.CongViec?.MucDoUuTien,
       AI_DeXuat: 1,
     }));
-
-    console.log(`✅ Trả về ${events.length} AI events cho user ${userId}`);
 
     res.json({ success: true, data: events });
   } catch (err) {
     console.error("Lỗi lấy lịch AI:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
 router.get("/debug-ai-events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    const pool = await dbPoolPromise;
 
-    // Debug 1: Kiểm tra có AI events không
-    const countResult = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-      SELECT COUNT(*) as count 
-      FROM LichTrinh 
-      WHERE UserID = @userId AND AI_DeXuat = 1
-    `);
+    const { data: countData } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh", { count: "exact" })
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true);
 
-    // Debug 2: Lấy danh sách chi tiết
-    const detailResult = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-      SELECT 
-        lt.MaLichTrinh,
-        lt.MaCongViec,
-        lt.GioBatDau,
-        lt.GioKetThuc,
-        lt.AI_DeXuat,
-        cv.TieuDe,
-        cv.UserID as TaskUserID
-      FROM LichTrinh lt
-      LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-      WHERE lt.UserID = @userId
-        AND lt.AI_DeXuat = 1
-      ORDER BY lt.GioBatDau DESC
-    `);
+    const { data: detailData } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat, CongViec(TieuDe, UserID)")
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true)
+      .order("GioBatDau", { ascending: false });
 
     res.json({
       success: true,
       debug: {
-        totalAIEvents: countResult.recordset[0]?.count || 0,
-        events: detailResult.recordset,
-        queryConditions: {
-          userId: userId,
-          AI_DeXuat: 1,
-        },
+        totalAIEvents: countData?.length || 0,
+        events: detailData || [],
+        queryConditions: { userId, AI_DeXuat: true },
       },
     });
   } catch (error) {
     console.error("Debug error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 router.get("/test-database-ai", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    const pool = await dbPoolPromise;
 
-    // 1. Kiểm tra tất cả events của user
-    const allEvents = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-      SELECT 
-        MaLichTrinh,
-        MaCongViec,
-        GioBatDau,
-        GioKetThuc,
-        AI_DeXuat,
-        UserID
-      FROM LichTrinh
-      WHERE UserID = @userId
-      ORDER BY GioBatDau DESC
-    `);
+    const { data: allEvents } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat, UserID")
+      .eq("UserID", userId)
+      .order("GioBatDau", { ascending: false });
 
-    // 2. Kiểm tra events vừa được tạo (last 10)
-    const recentEvents = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-      SELECT TOP 10 
-        MaLichTrinh,
-        MaCongViec,
-        GioBatDau,
-        GioKetThuc,
-        AI_DeXuat
-      FROM LichTrinh
-      WHERE UserID = @userId
-      ORDER BY MaLichTrinh DESC
-    `);
+    const { data: recentEvents } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat")
+      .eq("UserID", userId)
+      .order("MaLichTrinh", { ascending: false })
+      .limit(10);
 
     res.json({
       success: true,
       data: {
-        totalEvents: allEvents.recordset.length,
-        allEvents: allEvents.recordset,
-        recentEvents: recentEvents.recordset,
+        totalEvents: (allEvents || []).length,
+        allEvents: allEvents || [],
+        recentEvents: recentEvents || [],
         userInfo: {
-          userId: userId,
-          hasAIEvents: allEvents.recordset.some((e) => e.AI_DeXuat === 1),
+          userId,
+          hasAIEvents: (allEvents || []).some((e) => e.AI_DeXuat === true),
         },
       },
     });
   } catch (error) {
     console.error("Test database error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ====================================================
-// GET /api/ai/history - Lấy lịch sử AI proposals
-// ====================================================
-// Mục đích: Xem tất cả các lần AI đã đề xuất cho user
-// Response: Danh sách proposals với trạng thái apply
+// GET /api/ai/history
 router.get("/history", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const { limit = 20, offset = 0 } = req.query;
 
-    const pool = await dbPoolPromise;
+    // Try to get from PhienAIDeXuat table
+    const { data: records, error } = await supabase
+      .from("PhienAIDeXuat")
+      .select("*")
+      .eq("UserID", userId)
+      .order("NgayDeXuat", { ascending: false })
+      .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
-    // Kiểm tra table có tồn tại không
-    const tableCheckResult = await pool.request().query(`
-      SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
-      WHERE TABLE_NAME='PhienAIDeXuat'
-    `);
-
-    if (tableCheckResult.recordset.length === 0) {
-      console.warn("⚠️ PhienAIDeXuat table không tồn tại");
+    if (error) {
+      console.warn("PhienAIDeXuat table may not exist:", error.message);
       return res.json({
         success: true,
         data: [],
-        message: "PhienAIDeXuat table chưa được tạo",
+        stats: { total: 0, totalProposals: 0, appliedCount: 0, pendingCount: 0, appliedPercentage: 0 },
+        pagination: { limit: parseInt(limit), offset: parseInt(offset), total: 0 },
       });
     }
 
-    // Lấy lịch sử proposals
-    const result = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .input("limit", sql.Int, parseInt(limit))
-      .input("offset", sql.Int, parseInt(offset)).query(`
-        SELECT TOP (@limit)
-          MaPhienDeXuat,
-          UserID,
-          NgayDeXuat,
-          NoiDungYeuCau,
-          DaApDung,
-          ThoiGianApDung,
-          GhiChu
-        FROM PhienAIDeXuat
-        WHERE UserID = @userId
-        ORDER BY NgayDeXuat DESC
-        OFFSET @offset ROWS
-      `);
+    const { count } = await supabase
+      .from("PhienAIDeXuat")
+      .select("*", { count: "exact", head: true })
+      .eq("UserID", userId);
 
-    // Đếm tổng số proposals
-    const countResult = await pool.request().input("userId", sql.Int, userId)
-      .query(`
-        SELECT COUNT(*) as total FROM PhienAIDeXuat WHERE UserID = @userId
-      `);
+    const total = count || 0;
 
-    const total = countResult.recordset[0]?.total || 0;
+    const { data: allRecords } = await supabase
+      .from("PhienAIDeXuat")
+      .select("DaApDung")
+      .eq("UserID", userId);
 
-    // Thống kê
-    const stats = await pool.request().input("userId", sql.Int, userId).query(`
-        SELECT 
-          COUNT(*) as totalProposals,
-          SUM(CASE WHEN DaApDung = 1 THEN 1 ELSE 0 END) as appliedCount,
-          SUM(CASE WHEN DaApDung = 0 THEN 1 ELSE 0 END) as pendingCount
-        FROM PhienAIDeXuat
-        WHERE UserID = @userId
-      `);
-
-    const statsData = stats.recordset[0] || {
-      totalProposals: 0,
-      appliedCount: 0,
-      pendingCount: 0,
-    };
-
-    console.log(
-      `📊 Got AI proposal history for user ${userId}: ${result.recordset.length} records`
-    );
+    const appliedCount = (allRecords || []).filter((r) => r.DaApDung).length;
+    const pendingCount = (allRecords || []).length - appliedCount;
 
     res.json({
       success: true,
-      data: result.recordset,
+      data: records || [],
       stats: {
-        total: total,
-        totalProposals: statsData.totalProposals || 0,
-        appliedCount: statsData.appliedCount || 0,
-        pendingCount: statsData.pendingCount || 0,
-        appliedPercentage: statsData.totalProposals
-          ? Math.round(
-              ((statsData.appliedCount || 0) / statsData.totalProposals) * 100
-            )
+        total,
+        totalProposals: (allRecords || []).length,
+        appliedCount,
+        pendingCount,
+        appliedPercentage: (allRecords || []).length
+          ? Math.round((appliedCount / (allRecords || []).length) * 100)
           : 0,
       },
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: total,
-      },
+      pagination: { limit: parseInt(limit), offset: parseInt(offset), total },
     });
   } catch (error) {
-    console.error("❌ Error getting AI history:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Error getting AI history:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ====================================================
-// PUT /api/ai/history/:id - Cập nhật trạng thái apply
-// ====================================================
-// Mục đích: Đánh dấu proposal đã được apply
+// PUT /api/ai/history/:id
 router.put("/history/:id", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const proposalId = req.params.id;
     const { DaApDung } = req.body;
 
-    const pool = await dbPoolPromise;
+    const { data: existing } = await supabase
+      .from("PhienAIDeXuat")
+      .select("MaPhienDeXuat")
+      .eq("MaPhienDeXuat", proposalId)
+      .eq("UserID", userId)
+      .single();
 
-    // Kiểm tra quyền sở hữu
-    const checkResult = await pool
-      .request()
-      .input("id", sql.Int, proposalId)
-      .input("userId", sql.Int, userId).query(`
-        SELECT 1 FROM PhienAIDeXuat 
-        WHERE MaPhienDeXuat = @id AND UserID = @userId
-      `);
-
-    if (checkResult.recordset.length === 0) {
+    if (!existing) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền truy cập proposal này",
       });
     }
 
-    // Cập nhật
-    const updateResult = await pool
-      .request()
-      .input("id", sql.Int, proposalId)
-      .input("DaApDung", sql.Bit, DaApDung ? 1 : 0)
-      .input("ThoiGianApDung", sql.DateTime2, new Date()).query(`
-        UPDATE PhienAIDeXuat
-        SET DaApDung = @DaApDung,
-            ThoiGianApDung = CASE WHEN @DaApDung = 1 THEN @ThoiGianApDung ELSE NULL END
-        WHERE MaPhienDeXuat = @id
-      `);
+    const updateData = { DaApDung: DaApDung ? true : false };
+    if (DaApDung) {
+      updateData.ThoiGianApDung = new Date().toISOString();
+    } else {
+      updateData.ThoiGianApDung = null;
+    }
 
-    console.log(
-      `✅ Updated proposal ${proposalId}: DaApDung=${DaApDung ? 1 : 0}`
-    );
+    await supabase
+      .from("PhienAIDeXuat")
+      .update(updateData)
+      .eq("MaPhienDeXuat", proposalId);
 
-    res.json({
-      success: true,
-      message: `Đã cập nhật proposal #${proposalId}`,
-    });
+    res.json({ success: true, message: `Đã cập nhật proposal #${proposalId}` });
   } catch (error) {
-    console.error("❌ Error updating proposal:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Error updating proposal:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ====================================================
-// GET /api/ai/stats - Thống kê AI usage
-// ====================================================
-// Mục đích: Hiển thị dashboard về AI usage của user
+// GET /api/ai/stats
 router.get("/stats", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    const pool = await dbPoolPromise;
 
-    // Kiểm tra table
-    const tableCheckResult = await pool.request().query(`
-      SELECT 1 FROM INFORMATION_SCHEMA.TABLES 
-      WHERE TABLE_NAME='PhienAIDeXuat'
-    `);
+    const { data: records, error } = await supabase
+      .from("PhienAIDeXuat")
+      .select("DaApDung, ThoiGianApDung, NgayDeXuat")
+      .eq("UserID", userId);
 
-    if (tableCheckResult.recordset.length === 0) {
+    if (error) {
       return res.json({
         success: true,
         data: {
@@ -1684,54 +1158,37 @@ router.get("/stats", authenticateToken, async (req, res) => {
           appliedPercentage: 0,
           lastUsed: null,
         },
-        message: "PhienAIDeXuat table chưa được tạo",
       });
     }
 
-    // Lấy thống kê
-    const result = await pool.request().input("userId", sql.Int, userId).query(`
-        SELECT 
-          COUNT(*) as totalRequests,
-          SUM(CASE WHEN DaApDung = 1 THEN 1 ELSE 0 END) as appliedRequests,
-          SUM(CASE WHEN DaApDung = 0 THEN 1 ELSE 0 END) as pendingRequests,
-          MAX(CASE WHEN DaApDung = 1 THEN ThoiGianApDung END) as lastApplied,
-          MAX(NgayDeXuat) as lastRequested
-        FROM PhienAIDeXuat
-        WHERE UserID = @userId
-      `);
-
-    const stats = result.recordset[0] || {
-      totalRequests: 0,
-      appliedRequests: 0,
-      pendingRequests: 0,
-    };
-
-    const appliedPercentage = stats.totalRequests
-      ? Math.round((stats.appliedRequests / stats.totalRequests) * 100)
+    const allRecords = records || [];
+    const totalRequests = allRecords.length;
+    const appliedRequests = allRecords.filter((r) => r.DaApDung).length;
+    const pendingRequests = totalRequests - appliedRequests;
+    const appliedPercentage = totalRequests
+      ? Math.round((appliedRequests / totalRequests) * 100)
       : 0;
 
-    console.log(`📈 AI stats for user ${userId}:`, {
-      total: stats.totalRequests,
-      applied: stats.appliedRequests,
-      appliedPercent: appliedPercentage,
-    });
+    const lastApplied = allRecords
+      .filter((r) => r.DaApDung && r.ThoiGianApDung)
+      .sort((a, b) => new Date(b.ThoiGianApDung) - new Date(a.ThoiGianApDung))[0];
+
+    const lastRequested = allRecords
+      .sort((a, b) => new Date(b.NgayDeXuat) - new Date(a.NgayDeXuat))[0];
 
     res.json({
       success: true,
       data: {
-        totalRequests: stats.totalRequests || 0,
-        appliedRequests: stats.appliedRequests || 0,
-        pendingRequests: stats.pendingRequests || 0,
-        appliedPercentage: appliedPercentage,
-        lastUsed: stats.lastApplied || stats.lastRequested || null,
+        totalRequests,
+        appliedRequests,
+        pendingRequests,
+        appliedPercentage,
+        lastUsed: lastApplied?.ThoiGianApDung || lastRequested?.NgayDeXuat || null,
       },
     });
   } catch (error) {
-    console.error("❌ Error getting AI stats:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Error getting AI stats:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

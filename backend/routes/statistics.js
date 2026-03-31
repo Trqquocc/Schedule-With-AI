@@ -1,73 +1,56 @@
 const express = require("express");
 const router = express.Router();
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 
 // GET /api/statistics?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/", async (req, res) => {
   try {
-    const userId = req.userId; // authenticateToken middleware should set this
+    const userId = req.userId;
     const { from, to } = req.query;
 
-    // Defaults: last 30 days
     const endDate = to ? new Date(to) : new Date();
-    const startDate = from ? new Date(from) : new Date(endDate.getTime() - 30 * 24 * 3600 * 1000);
+    const startDate = from
+      ? new Date(from)
+      : new Date(endDate.getTime() - 30 * 24 * 3600 * 1000);
 
-    const pool = await dbPoolPromise;
+    // Lấy tất cả lịch trình trong khoảng
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("GioBatDau, DaHoanThanh")
+      .eq("UserID", userId)
+      .gte("GioBatDau", startDate.toISOString())
+      .lte("GioBatDau", endDate.toISOString());
 
-    // Tổng số lịch trong khoảng
-    const totalRes = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("StartDate", sql.DateTime, startDate)
-      .input("EndDate", sql.DateTime, endDate)
-      .query(`
-        SELECT
-          COUNT(*) AS Total,
-          SUM(CASE WHEN DaHoanThanh = 1 THEN 1 ELSE 0 END) AS Completed
-        FROM LichTrinh
-        WHERE UserID = @UserID
-          AND GioBatDau >= @StartDate
-          AND GioBatDau <= @EndDate
-      `);
+    if (error) {
+      console.error("Lỗi statistics:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
 
-    const total = totalRes.recordset[0].Total || 0;
-    const completed = totalRes.recordset[0].Completed || 0;
+    const allRecords = records || [];
+    const total = allRecords.length;
+    const completed = allRecords.filter((r) => r.DaHoanThanh).length;
     const pending = total - completed;
     const percent = total === 0 ? 0 : Math.round((completed / total) * 10000) / 100;
 
     // Dữ liệu theo ngày cho biểu đồ
-    const dailyRes = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("StartDate", sql.DateTime, startDate)
-      .input("EndDate", sql.DateTime, endDate)
-      .query(`
-        SELECT CONVERT(date, GioBatDau) AS Day,
-          COUNT(*) AS Total,
-          SUM(CASE WHEN DaHoanThanh = 1 THEN 1 ELSE 0 END) AS Completed
-        FROM LichTrinh
-        WHERE UserID = @UserID
-          AND GioBatDau >= @StartDate
-          AND GioBatDau <= @EndDate
-        GROUP BY CONVERT(date, GioBatDau)
-        ORDER BY Day ASC
-      `);
+    const dailyMap = {};
+    allRecords.forEach((r) => {
+      const day = r.GioBatDau ? r.GioBatDau.split("T")[0] : null;
+      if (!day) return;
+      if (!dailyMap[day]) {
+        dailyMap[day] = { date: day, total: 0, completed: 0 };
+      }
+      dailyMap[day].total++;
+      if (r.DaHoanThanh) dailyMap[day].completed++;
+    });
 
-    const daily = dailyRes.recordset.map((r) => ({
-      date: r.Day,
-      total: r.Total,
-      completed: r.Completed,
-    }));
+    const daily = Object.values(dailyMap).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
 
     res.json({
       success: true,
-      data: {
-        total,
-        completed,
-        pending,
-        percent,
-        daily,
-      },
+      data: { total, completed, pending, percent, daily },
     });
   } catch (error) {
     console.error("Lỗi statistics:", error);

@@ -1,13 +1,16 @@
-// backend/routes/calendar.js - BACKEND VERSION
-// Quản lý lịch trình người dùng
-
 const express = require("express");
 const router = express.Router();
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Middleware xác thực
+const PRIORITY_COLORS = {
+  1: "#34D399",
+  2: "#60A5FA",
+  3: "#FBBF24",
+  4: "#F87171",
+};
+
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(" ")[1];
@@ -25,61 +28,46 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Mapping màu theo độ ưu tiên - phải trùng với tasks.js
-const PRIORITY_COLORS = {
-  1: "#34D399", // Xanh lá - Thấp
-  2: "#60A5FA", // Xanh lam - Trung bình (mặc định)
-  3: "#FBBF24", // Vàng - Cao
-  4: "#F87171", // Đỏ - Rất cao
-};
-
+// GET /api/calendar/events
 router.get("/events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    const pool = await dbPoolPromise;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
 
-    // ✅ LẤY CẢ NORMAL EVENTS VÀ AI EVENTS (Frontend sẽ filter)
-    const result = await pool.request().input("userId", sql.Int, userId).query(`
-      SELECT 
-        lt.MaLichTrinh,
-        lt.MaCongViec,
-        lt.GioBatDau,
-        lt.GioKetThuc,
-        lt.GhiChu,
-        lt.AI_DeXuat,
-        lt.DaHoanThanh,
-        cv.TieuDe,
-        cv.MucDoUuTien,
-        ISNULL(cv.MauSac, 
-          CASE cv.MucDoUuTien
-            WHEN 1 THEN '#34D399'
-            WHEN 2 THEN '#60A5FA'
-            WHEN 3 THEN '#FBBF24'
-            WHEN 4 THEN '#F87171'
-            ELSE '#3788d8'
-          END) AS MauSac
-      FROM LichTrinh lt
-      LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-      WHERE (cv.UserID = @userId OR lt.UserID = @userId)
-        AND lt.GioBatDau >= DATEADD(day, -30, GETDATE())
-      ORDER BY lt.GioBatDau DESC
-    `);
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("*, CongViec(TieuDe, MucDoUuTien, MauSac)")
+      .or(`UserID.eq.${userId}`)
+      .gte("GioBatDau", thirtyDaysAgo)
+      .order("GioBatDau", { ascending: false });
 
-    const events = result.recordset.map((ev) => ({
-      MaLichTrinh: ev.MaLichTrinh,
-      MaCongViec: ev.MaCongViec,
-      TieuDe: ev.TieuDe,
-      GioBatDau: ev.GioBatDau,
-      GioKetThuc: ev.GioKetThuc,
-      GhiChu: ev.GhiChu,
-      MauSac: ev.MauSac || "#3788d8", // ĐẢM BẢO LUÔN CÓ MÀU
-      DaHoanThanh: ev.DaHoanThanh,
-      MucDoUuTien: ev.MucDoUuTien,
-      AI_DeXuat: ev.AI_DeXuat || 0, // ✅ LUÔN CÓ FIELD NÀY
-    }));
+    if (error) {
+      console.error("Lỗi lấy events:", error);
+      return res.status(500).json({ success: false, message: error.message });
+    }
 
-    console.log(`✅ Trả về ${events.length} events với màu sắc`);
+    const events = (records || [])
+      .filter((ev) => ev.UserID === userId || ev.CongViec?.UserID === userId)
+      .map((ev) => {
+        const priorityColor = ev.CongViec?.MucDoUuTien
+          ? PRIORITY_COLORS[ev.CongViec.MucDoUuTien] || "#3788d8"
+          : "#3788d8";
 
+        return {
+          MaLichTrinh: ev.MaLichTrinh,
+          MaCongViec: ev.MaCongViec,
+          TieuDe: ev.CongViec?.TieuDe || ev.TieuDe,
+          GioBatDau: ev.GioBatDau,
+          GioKetThuc: ev.GioKetThuc,
+          GhiChu: ev.GhiChu,
+          MauSac: ev.CongViec?.MauSac || priorityColor,
+          DaHoanThanh: ev.DaHoanThanh,
+          MucDoUuTien: ev.CongViec?.MucDoUuTien,
+          AI_DeXuat: ev.AI_DeXuat || 0,
+        };
+      });
+
+    console.log(`Trả về ${events.length} events`);
     res.json({ success: true, data: events });
   } catch (error) {
     console.error("Lỗi lấy events:", error);
@@ -87,7 +75,7 @@ router.get("/events", authenticateToken, async (req, res) => {
   }
 });
 
-// GET lịch trình trong khoảng thời gian (cho FullCalendar)
+// GET /api/calendar/range
 router.get("/range", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -100,46 +88,23 @@ router.get("/range", authenticateToken, async (req, res) => {
       });
     }
 
-    const pool = await dbPoolPromise;
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("*, CongViec(TieuDe, MoTa, MucDoUuTien)")
+      .eq("UserID", userId)
+      .gte("GioBatDau", start)
+      .lte("GioBatDau", end)
+      .order("GioBatDau", { ascending: true });
 
-    const result = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("StartDate", sql.DateTime, start)
-      .input("EndDate", sql.DateTime, end).query(`
-        SELECT 
-          lt.MaLichTrinh,
-          lt.MaCongViec,
-          lt.UserID,
-          lt.TieuDe AS LichTrinhTieuDe,
-          lt.GioBatDau,
-          lt.GioKetThuc,
-          lt.DaHoanThanh,
-          lt.GhiChu,
-          lt.AI_DeXuat,
-          lt.NgayTao AS LichTrinhNgayTao,
-          cv.TieuDe AS CongViecTieuDe,
-          cv.MoTa,
-          cv.MucDoUuTien,
-          -- Lấy màu theo độ ưu tiên
-          CASE cv.MucDoUuTien
-            WHEN 1 THEN '#34D399'
-            WHEN 2 THEN '#60A5FA'
-            WHEN 3 THEN '#FBBF24'
-            WHEN 4 THEN '#F87171'
-            ELSE '#60A5FA'
-          END AS MaMau
-        FROM LichTrinh lt
-        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @UserID
-          AND lt.GioBatDau >= @StartDate
-          AND lt.GioBatDau <= @EndDate
-        ORDER BY lt.GioBatDau ASC
-      `);
+    if (error) {
+      console.error("Lỗi load lịch theo range:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
 
-    const events = result.recordset.map((event) => {
+    const events = (records || []).map((event) => {
       const title =
-        event.CongViecTieuDe || event.LichTrinhTieuDe || "Không có tiêu đề";
+        event.CongViec?.TieuDe || event.TieuDe || "Không có tiêu đề";
+      const priorityColor = PRIORITY_COLORS[event.CongViec?.MucDoUuTien] || "#60A5FA";
 
       return {
         id: event.MaLichTrinh,
@@ -153,72 +118,49 @@ router.get("/range", authenticateToken, async (req, res) => {
         DaHoanThanh: event.DaHoanThanh || false,
         GhiChu: event.GhiChu || "",
         AI_DeXuat: event.AI_DeXuat || false,
-        backgroundColor: event.MauSac || "#60A5FA",
-        borderColor: event.MauSac || "#60A5FA",
+        backgroundColor: priorityColor,
+        borderColor: priorityColor,
         textColor: "#FFFFFF",
         extendedProps: {
           note: event.GhiChu || "",
           completed: event.DaHoanThanh || false,
           aiSuggested: event.AI_DeXuat || false,
           taskId: event.MaCongViec || null,
-          description: event.MoTa || "",
-          priority: event.MucDoUuTien || 2,
+          description: event.CongViec?.MoTa || "",
+          priority: event.CongViec?.MucDoUuTien || 2,
         },
       };
     });
 
-    res.json({
-      success: true,
-      data: events,
-    });
+    res.json({ success: true, data: events });
   } catch (error) {
     console.error("Lỗi load lịch theo range:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-    });
+    res.status(500).json({ success: false, message: "Lỗi server" });
   }
 });
 
-// GET events do AI đề xuất
+// GET /api/calendar/ai-events
 router.get("/ai-events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
-    const pool = await dbPoolPromise;
 
-    const result = await pool.request().input("UserID", sql.Int, userId).query(`
-        SELECT 
-          lt.MaLichTrinh,
-          lt.MaCongViec,
-          lt.UserID,
-          lt.TieuDe AS LichTrinhTieuDe,
-          lt.GioBatDau,
-          lt.GioKetThuc,
-          lt.DaHoanThanh,
-          lt.GhiChu,
-          lt.AI_DeXuat,
-          lt.NgayTao AS LichTrinhNgayTao,
-          cv.TieuDe AS CongViecTieuDe,
-          cv.MoTa,
-          cv.MucDoUuTien,
-          -- Lấy màu theo độ ưu tiên (AI events cũng theo độ ưu tiên)
-          CASE cv.MucDoUuTien
-            WHEN 1 THEN '#34D399'
-            WHEN 2 THEN '#60A5FA'
-            WHEN 3 THEN '#FBBF24'
-            WHEN 4 THEN '#F87171'
-            ELSE '#8B5CF6'  -- Màu tím cho AI events không có priority
-          END AS MauSac
-        FROM LichTrinh lt
-        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @UserID
-          AND lt.AI_DeXuat = 1
-        ORDER BY lt.GioBatDau ASC
-      `);
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("*, CongViec(TieuDe, MoTa, MucDoUuTien)")
+      .eq("UserID", userId)
+      .eq("AI_DeXuat", true)
+      .order("GioBatDau", { ascending: true });
 
-    const events = result.recordset.map((event) => {
-      const title =
-        event.CongViecTieuDe || event.LichTrinhTieuDe || "AI Đề xuất";
+    if (error) {
+      console.error("Lỗi load AI events:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+
+    const events = (records || []).map((event) => {
+      const title = event.CongViec?.TieuDe || event.TieuDe || "AI Đề xuất";
+      const priorityColor = event.CongViec?.MucDoUuTien
+        ? PRIORITY_COLORS[event.CongViec.MucDoUuTien] || "#8B5CF6"
+        : "#8B5CF6";
 
       return {
         id: event.MaLichTrinh,
@@ -231,41 +173,34 @@ router.get("/ai-events", authenticateToken, async (req, res) => {
         GioKetThuc: event.GioKetThuc,
         DaHoanThanh: event.DaHoanThanh || false,
         GhiChu: event.GhiChu || "",
-        AI_DeXuat: event.AI_DeXuat || true,
-        backgroundColor: event.MauSac || "#8B5CF6", // Màu tím cho AI
-        borderColor: event.MauSac || "#8B5CF6",
+        AI_DeXuat: true,
+        backgroundColor: priorityColor,
+        borderColor: priorityColor,
         textColor: "#FFFFFF",
         extendedProps: {
           note: event.GhiChu || "",
           completed: event.DaHoanThanh || false,
           aiSuggested: true,
           taskId: event.MaCongViec || null,
-          description: event.MoTa || "",
-          priority: event.MucDoUuTien || null,
+          description: event.CongViec?.MoTa || "",
+          priority: event.CongViec?.MucDoUuTien || null,
         },
       };
     });
 
-    res.json({
-      success: true,
-      data: events,
-    });
+    res.json({ success: true, data: events });
   } catch (error) {
     console.error("Lỗi load AI events:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server khi tải AI events",
-    });
+    res.status(500).json({ success: false, message: "Lỗi server khi tải AI events" });
   }
 });
 
-// POST – tạo sự kiện
+// POST /api/calendar/events
 router.post("/events", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const d = req.body;
 
-    // Validate
     if (!d.TieuDe || !d.GioBatDau) {
       return res.status(400).json({
         success: false,
@@ -273,51 +208,43 @@ router.post("/events", authenticateToken, async (req, res) => {
       });
     }
 
-    const pool = await dbPoolPromise;
+    const { data: result, error } = await supabase
+      .from("LichTrinh")
+      .insert({
+        UserID: userId,
+        MaCongViec: d.MaCongViec || null,
+        TieuDe: d.TieuDe,
+        GioBatDau: new Date(d.GioBatDau).toISOString(),
+        GioKetThuc: d.GioKetThuc ? new Date(d.GioKetThuc).toISOString() : null,
+        DaHoanThanh: d.DaHoanThanh || false,
+        GhiChu: d.GhiChu || null,
+        AI_DeXuat: d.AI_DeXuat || false,
+        NgayTao: new Date().toISOString(),
+      })
+      .select("MaLichTrinh")
+      .single();
 
-    const result = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("MaCongViec", sql.Int, d.MaCongViec || null)
-      .input("TieuDe", sql.NVarChar, d.TieuDe)
-      .input("GioBatDau", sql.DateTime, new Date(d.GioBatDau))
-      .input(
-        "GioKetThuc",
-        sql.DateTime,
-        d.GioKetThuc ? new Date(d.GioKetThuc) : null
-      )
-      .input("DaHoanThanh", sql.Bit, d.DaHoanThanh || 0)
-      .input("GhiChu", sql.NVarChar, d.GhiChu || null)
-      .input("AI_DeXuat", sql.Bit, d.AI_DeXuat || 0)
-      .input("NgayTao", sql.DateTime, new Date()).query(`
-        INSERT INTO LichTrinh (
-          UserID, MaCongViec, TieuDe,
-          GioBatDau, GioKetThuc,
-          DaHoanThanh, GhiChu, AI_DeXuat, NgayTao
-        )
-        OUTPUT INSERTED.MaLichTrinh
-        VALUES (
-          @UserID, @MaCongViec, @TieuDe,
-          @GioBatDau, @GioKetThuc,
-          @DaHoanThanh, @GhiChu, @AI_DeXuat, @NgayTao
-        )
-      `);
+    if (error) {
+      console.error("Lỗi tạo lịch:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi tạo sự kiện",
+        error: error.message,
+      });
+    }
 
-    // Nếu có MaCongViec, cập nhật trạng thái công việc
+    // Cập nhật trạng thái công việc nếu có MaCongViec
     if (d.MaCongViec) {
-      await pool
-        .request()
-        .input("MaCongViec", sql.Int, d.MaCongViec)
-        .input("UserID", sql.Int, userId).query(`
-          UPDATE CongViec 
-          SET TrangThaiThucHien = 1 
-          WHERE MaCongViec = @MaCongViec AND UserID = @UserID
-        `);
+      await supabase
+        .from("CongViec")
+        .update({ TrangThaiThucHien: 1 })
+        .eq("MaCongViec", d.MaCongViec)
+        .eq("UserID", userId);
     }
 
     res.json({
       success: true,
-      eventId: result.recordset[0].MaLichTrinh,
+      eventId: result.MaLichTrinh,
       message: "Tạo sự kiện thành công",
     });
   } catch (error) {
@@ -330,92 +257,50 @@ router.post("/events", authenticateToken, async (req, res) => {
   }
 });
 
-// PUT – cập nhật sự kiện
+// PUT /api/calendar/events/:id
 router.put("/events/:id", authenticateToken, async (req, res) => {
   try {
-    const pool = await dbPoolPromise;
     const d = req.body;
+    const updateData = {};
 
-    const request = pool
-      .request()
-      .input("MaLichTrinh", sql.Int, req.params.id)
-      .input("UserID", sql.Int, req.userId);
+    if (d.title !== undefined) updateData.TieuDe = d.title;
+    if (d.note !== undefined) updateData.GhiChu = d.note;
+    if (d.start !== undefined) updateData.GioBatDau = new Date(d.start).toISOString();
+    if (d.end !== undefined) updateData.GioKetThuc = d.end ? new Date(d.end).toISOString() : null;
+    if (d.completed !== undefined) updateData.DaHoanThanh = d.completed ? true : false;
 
-    const updates = [];
-
-    if (d.title !== undefined) {
-      updates.push("TieuDe = @TieuDe");
-      request.input("TieuDe", sql.NVarChar, d.title);
-    }
-
-    if (d.note !== undefined) {
-      updates.push("GhiChu = @GhiChu");
-      request.input("GhiChu", sql.NVarChar, d.note);
-    }
-
-    if (d.start !== undefined) {
-      updates.push("GioBatDau = @GioBatDau");
-      request.input("GioBatDau", sql.DateTime, new Date(d.start));
-    }
-
-    if (d.end !== undefined) {
-      updates.push("GioKetThuc = @GioKetThuc");
-      request.input("GioKetThuc", sql.DateTime, d.end ? new Date(d.end) : null);
-    }
-
-    if (d.completed !== undefined) {
-      updates.push("DaHoanThanh = @DaHoanThanh");
-      request.input("DaHoanThanh", sql.Bit, d.completed ? 1 : 0);
-    }
-
-    if (updates.length === 0)
+    if (Object.keys(updateData).length === 0) {
       return res
         .status(400)
         .json({ success: false, message: "Không có gì để cập nhật" });
+    }
 
-    const query = `
-      UPDATE LichTrinh SET ${updates.join(", ")}
-      WHERE MaLichTrinh = @MaLichTrinh AND UserID = @UserID
-    `;
+    await supabase
+      .from("LichTrinh")
+      .update(updateData)
+      .eq("MaLichTrinh", req.params.id)
+      .eq("UserID", req.userId);
 
-    await request.query(query);
-
-    res.json({
-      success: true,
-      message: "Cập nhật sự kiện thành công",
-    });
+    res.json({ success: true, message: "Cập nhật sự kiện thành công" });
   } catch (error) {
     console.error("Lỗi cập nhật:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server khi cập nhật sự kiện",
-    });
+    res.status(500).json({ success: false, message: "Lỗi server khi cập nhật sự kiện" });
   }
 });
 
-// DELETE – xoá event
+// DELETE /api/calendar/events/:id
 router.delete("/events/:id", authenticateToken, async (req, res) => {
   try {
-    const pool = await dbPoolPromise;
+    await supabase
+      .from("LichTrinh")
+      .delete()
+      .eq("MaLichTrinh", req.params.id)
+      .eq("UserID", req.userId);
 
-    await pool
-      .request()
-      .input("MaLichTrinh", sql.Int, req.params.id)
-      .input("UserID", sql.Int, req.userId).query(`
-        DELETE FROM LichTrinh
-        WHERE MaLichTrinh = @MaLichTrinh AND UserID = @UserID
-      `);
-
-    res.json({
-      success: true,
-      message: "Xóa sự kiện thành công",
-    });
+    res.json({ success: true, message: "Xóa sự kiện thành công" });
   } catch (error) {
     console.error("Lỗi xóa:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server khi xóa sự kiện",
-    });
+    res.status(500).json({ success: false, message: "Lỗi server khi xóa sự kiện" });
   }
 });
 

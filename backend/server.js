@@ -5,7 +5,6 @@ const path = require("path");
 const cors = require("cors");
 
 const { authenticateToken } = require("./middleware/auth");
-const { dbPoolPromise } = require("./config/database");
 
 // Routes
 const authRoutes = require("./routes/auth");
@@ -23,38 +22,45 @@ const PORT = process.env.PORT || 3000;
 // ===========================
 // CẤU HÌNH CƠ BẢN
 // ===========================
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5500",
+];
+
+// Thêm frontend URL từ env (cho Vercel deploy)
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5500",
-    ],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        // In production, be more permissive for Vercel preview URLs
+        if (process.env.NODE_ENV === "production" && origin.endsWith(".vercel.app")) {
+          callback(null, true);
+        } else {
+          callback(null, true); // Allow all origins for now during migration
+        }
+      }
+    },
     credentials: true,
   })
 );
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "../frontend"))); // phục vụ file tĩnh
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // ===========================
-// KẾT NỐI DATABASE
+// ROUTES
 // ===========================
-const initializeDatabase = async () => {
-  try {
-    await dbPoolPromise;
-    console.log("Database connected successfully!");
-  } catch (err) {
-    console.error("Database connection failed:", err);
-    process.exit(1);
-  }
-};
-
-// ===========================
-// ROUTES – CHỈ DÙNG JWT (authenticateToken)
-// ===========================
-app.use("/api/auth", authRoutes); // không cần bảo vệ
+app.use("/api/auth", authRoutes);
 app.use("/api/tasks", authenticateToken, tasksRoutes);
 app.use("/api/calendar", authenticateToken, calendarRoutes);
 app.use("/api/ai", authenticateToken, aiRoutes);
@@ -103,8 +109,7 @@ app.get("*", (req, res) => {
 // ===========================
 // KHỞI ĐỘNG
 // ===========================
-initializeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server đang chạy tại http://localhost:${PORT}`);
-  });
+app.listen(PORT, () => {
+  console.log(`Server đang chạy tại http://localhost:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });

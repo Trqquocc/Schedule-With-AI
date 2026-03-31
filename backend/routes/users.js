@@ -1,38 +1,35 @@
-/**
- * Users Routes
- * Xử lý các yêu cầu liên quan đến thông tin người dùng
- */
-
 const express = require("express");
 const router = express.Router();
-
-// Middleware
 const { authenticateToken } = require("../middleware/auth");
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 
-/**
- * GET /api/users/profile
- * Lấy thông tin hồ sơ của người dùng hiện tại
- */
+// GET /api/users/profile
 router.get("/profile", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.UserID;
 
-    const pool = await dbPoolPromise;
-    const result = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(
-        "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, Phone as phone, NgaySinh as ngaysinh, GioiTinh as gioitinh, Bio as bio FROM Users WHERE UserID = @userId"
-      );
+    const { data: user, error } = await supabase
+      .from("Users")
+      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio")
+      .eq("UserID", userId)
+      .single();
 
-    if (!result.recordset || result.recordset.length === 0) {
+    if (error || !user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
       success: true,
-      data: result.recordset[0],
+      data: {
+        id: user.UserID,
+        username: user.Username,
+        email: user.Email,
+        hoten: user.HoTen,
+        phone: user.Phone,
+        ngaysinh: user.NgaySinh,
+        gioitinh: user.GioiTinh,
+        bio: user.Bio,
+      },
     });
   } catch (error) {
     console.error("Error fetching user profile:", error);
@@ -42,18 +39,13 @@ router.get("/profile", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * PUT /api/users/:id
- * Cập nhật thông tin người dùng
- */
+// PUT /api/users/:id
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const currentUserId = req.user.UserID;
 
-    // Người dùng chỉ có thể cập nhật thông tin của chính họ
     if (userId !== currentUserId && currentUserId !== 1) {
-      // 1 = admin
       return res
         .status(403)
         .json({ message: "Không có quyền cập nhật thông tin này" });
@@ -61,46 +53,44 @@ router.put("/:id", authenticateToken, async (req, res) => {
 
     const { hoten, email, phone, ngaysinh, gioitinh, bio } = req.body;
 
-    // Validate input
     if (!hoten || !email) {
       return res.status(400).json({ message: "Họ tên và email là bắt buộc" });
     }
 
-    const pool = await dbPoolPromise;
+    const { data: updated, error } = await supabase
+      .from("Users")
+      .update({
+        HoTen: hoten || "",
+        Email: email || "",
+        Phone: phone || null,
+        NgaySinh: ngaysinh || null,
+        GioiTinh: gioitinh || null,
+        Bio: bio || null,
+      })
+      .eq("UserID", userId)
+      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio");
 
-    // Update user
-    const updateResult = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .input("hoten", sql.NVarChar, hoten || "")
-      .input("email", sql.NVarChar, email || "")
-      .input("phone", sql.NVarChar, phone || null)
-      .input("ngaysinh", sql.DateTime, ngaysinh || null)
-      .input("gioitinh", sql.NVarChar, gioitinh || null)
-      .input("bio", sql.NVarChar, bio || null)
-      .query(
-        "UPDATE Users SET HoTen = @hoten, Email = @email, Phone = @phone, NgaySinh = @ngaysinh, GioiTinh = @gioitinh, Bio = @bio WHERE UserID = @userId"
-      );
-
-    if (updateResult.rowsAffected[0] === 0) {
+    if (error || !updated || updated.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get updated user data
-    const selectResult = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(
-        "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, Phone as phone, NgaySinh as ngaysinh, GioiTinh as gioitinh, Bio as bio FROM Users WHERE UserID = @userId"
-      );
-
+    const u = updated[0];
     res.json({
       success: true,
       message: "Thông tin cá nhân được cập nhật thành công",
-      data: selectResult.recordset[0],
+      data: {
+        id: u.UserID,
+        username: u.Username,
+        email: u.Email,
+        hoten: u.HoTen,
+        phone: u.Phone,
+        ngaysinh: u.NgaySinh,
+        gioitinh: u.GioiTinh,
+        bio: u.Bio,
+      },
     });
 
-    console.log(`✅ User ${userId} profile updated`);
+    console.log(`User ${userId} profile updated`);
   } catch (error) {
     console.error("Error updating user profile:", error);
     res
@@ -109,35 +99,38 @@ router.put("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * GET /api/users/:id
- * Lấy thông tin người dùng theo ID
- */
+// GET /api/users/:id
 router.get("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const currentUserId = req.user.UserID;
 
-    // Người dùng chỉ có thể xem thông tin của chính họ (hoặc admin)
     if (userId !== currentUserId && currentUserId !== 1) {
       return res.status(403).json({ message: "Không có quyền truy cập" });
     }
 
-    const pool = await dbPoolPromise;
-    const result = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(
-        "SELECT UserID as id, Username as username, Email as email, HoTen as hoten, Phone as phone, NgaySinh as ngaysinh, GioiTinh as gioitinh, Bio as bio FROM Users WHERE UserID = @userId"
-      );
+    const { data: user, error } = await supabase
+      .from("Users")
+      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio")
+      .eq("UserID", userId)
+      .single();
 
-    if (!result.recordset || result.recordset.length === 0) {
+    if (error || !user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.json({
       success: true,
-      data: result.recordset[0],
+      data: {
+        id: user.UserID,
+        username: user.Username,
+        email: user.Email,
+        hoten: user.HoTen,
+        phone: user.Phone,
+        ngaysinh: user.NgaySinh,
+        gioitinh: user.GioiTinh,
+        bio: user.Bio,
+      },
     });
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -147,31 +140,24 @@ router.get("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/users/:id
- * Xóa tài khoản người dùng (chỉ chính user hoặc admin)
- */
+// DELETE /api/users/:id
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = parseInt(req.params.id);
     const currentUserId = req.user.UserID;
 
-    // Chỉ có thể xóa tài khoản của chính mình hoặc là admin
     if (userId !== currentUserId && currentUserId !== 1) {
       return res
         .status(403)
         .json({ message: "Không có quyền xóa tài khoản này" });
     }
 
-    const pool = await dbPoolPromise;
+    const { error } = await supabase
+      .from("Users")
+      .delete()
+      .eq("UserID", userId);
 
-    // Delete user
-    const result = await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .query("DELETE FROM Users WHERE UserID = @userId");
-
-    if (result.rowsAffected[0] === 0) {
+    if (error) {
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -180,7 +166,7 @@ router.delete("/:id", authenticateToken, async (req, res) => {
       message: "Tài khoản được xóa thành công",
     });
 
-    console.log(`✅ User ${userId} account deleted`);
+    console.log(`User ${userId} account deleted`);
   } catch (error) {
     console.error("Error deleting user:", error);
     res

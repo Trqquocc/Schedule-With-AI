@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -16,10 +16,10 @@ const STATUS_MAP = {
 
 // Mapping màu theo độ ưu tiên
 const PRIORITY_COLORS = {
-  1: "#34D399", // Xanh lá - Thấp
-  2: "#60A5FA", // Xanh lam - Trung bình (mặc định)
-  3: "#FBBF24", // Vàng - Cao
-  4: "#F87171", // Đỏ - Rất cao
+  1: "#34D399",
+  2: "#60A5FA",
+  3: "#FBBF24",
+  4: "#F87171",
 };
 
 // Middleware xác thực JWT
@@ -40,82 +40,64 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// GET /api/tasks - Lấy danh sách công việc
+// GET /api/tasks
 router.get("/", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const { status } = req.query;
 
-    const pool = await dbPoolPromise;
-    let query = `
-      SELECT 
-        cv.MaCongViec AS ID,
-        cv.UserID,
-        cv.MaLoai,
-        cv.TieuDe,
-        cv.MoTa,
-        cv.Tag,
-        cv.CoThoiGianCoDinh,
-        cv.GioBatDauCoDinh,
-        cv.GioKetThucCoDinh,
-        cv.LapLai,
-        cv.TrangThaiThucHien,
-        cv.NgayTao,
-        cv.ThoiGianUocTinh,
-        cv.MucDoUuTien,
-        cv.MucDoPhucTap,
-        cv.MucDoTapTrung,
-        cv.ThoiDiemThichHop,
-        cv.LuongTheoGio,
-        -- Thay vì lấy màu từ LoaiCongViec, chúng ta sẽ lấy theo độ ưu tiên
-        CASE cv.MucDoUuTien
-          WHEN 1 THEN '#34D399'  -- Thấp: Xanh lá
-          WHEN 2 THEN '#60A5FA'  -- Trung bình: Xanh lam
-          WHEN 3 THEN '#FBBF24'  -- Cao: Vàng
-          WHEN 4 THEN '#F87171'  -- Rất cao: Đỏ
-          ELSE '#60A5FA'         -- Mặc định: Xanh lam
-        END AS MauSac,
-        lc.TenLoai  -- Vẫn lấy tên danh mục nếu cần
-      FROM CongViec cv
-      LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
-      WHERE cv.UserID = @userId
-    `;
-
-    const request = pool.request().input("userId", sql.Int, userId);
+    let query = supabase
+      .from("CongViec")
+      .select("*, LoaiCongViec(TenLoai)")
+      .eq("UserID", userId);
 
     if (status) {
       const statusNumber = STATUS_MAP[status.toLowerCase()];
       if (statusNumber !== undefined) {
-        query += ` AND cv.TrangThaiThucHien = @status`;
-        request.input("status", sql.TinyInt, statusNumber);
+        query = query.eq("TrangThaiThucHien", statusNumber);
       }
     }
 
-    query += ` ORDER BY cv.NgayTao DESC`;
-    const result = await request.query(query);
+    query = query.order("NgayTao", { ascending: false });
 
-    // Thêm màu theo độ ưu tiên vào kết quả (đảm bảo có cả ở backend)
-    const tasks = result.recordset.map((task) => {
-      return {
-        ...task,
-        MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#60A5FA",
-      };
-    });
+    const { data: tasks, error } = await query;
 
-    res.json({
-      success: true,
-      data: tasks,
-    });
+    if (error) {
+      console.error("Lỗi lấy công việc:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+
+    const result = (tasks || []).map((task) => ({
+      ID: task.MaCongViec,
+      UserID: task.UserID,
+      MaLoai: task.MaLoai,
+      TieuDe: task.TieuDe,
+      MoTa: task.MoTa,
+      Tag: task.Tag,
+      CoThoiGianCoDinh: task.CoThoiGianCoDinh,
+      GioBatDauCoDinh: task.GioBatDauCoDinh,
+      GioKetThucCoDinh: task.GioKetThucCoDinh,
+      LapLai: task.LapLai,
+      TrangThaiThucHien: task.TrangThaiThucHien,
+      NgayTao: task.NgayTao,
+      ThoiGianUocTinh: task.ThoiGianUocTinh,
+      MucDoUuTien: task.MucDoUuTien,
+      MucDoPhucTap: task.MucDoPhucTap,
+      MucDoTapTrung: task.MucDoTapTrung,
+      ThoiDiemThichHop: task.ThoiDiemThichHop,
+      LuongTheoGio: task.LuongTheoGio,
+      MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#60A5FA",
+      TenLoai: task.LoaiCongViec?.TenLoai || null,
+    }));
+
+    res.json({ success: true, data: result });
   } catch (error) {
     console.error("Lỗi lấy công việc:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-    });
+    res.status(500).json({ success: false, message: "Lỗi server" });
   }
 });
 
-// POST /api/tasks - Tạo công việc mới (ĐÃ BỔ SUNG THỜI GIAN CỐ ĐỊNH + LẶP LẠI)
+// POST /api/tasks
 router.post("/", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
@@ -128,7 +110,6 @@ router.post("/", authenticateToken, async (req, res) => {
       });
     }
 
-    // Xử lý thời gian cố định
     let gioBatDauCoDinh = null;
     let gioKetThucCoDinh = null;
     let thoiGianUocTinh = parseInt(d.ThoiGianUocTinh) || 60;
@@ -143,7 +124,6 @@ router.post("/", authenticateToken, async (req, res) => {
         });
       }
 
-      // Ưu tiên giờ kết thúc nếu có gửi lên
       if (d.GioKetThucCoDinh) {
         gioKetThucCoDinh = new Date(d.GioKetThucCoDinh);
         if (isNaN(gioKetThucCoDinh.getTime())) {
@@ -153,7 +133,6 @@ router.post("/", authenticateToken, async (req, res) => {
           });
         }
       } else {
-        // Tự động tính giờ kết thúc từ thời lượng
         const durationMinutes = d.ThoiGianUocTinh
           ? parseInt(d.ThoiGianUocTinh)
           : 60;
@@ -162,51 +141,44 @@ router.post("/", authenticateToken, async (req, res) => {
         );
         thoiGianUocTinh = durationMinutes;
       }
+
+      gioBatDauCoDinh = gioBatDauCoDinh.toISOString();
+      gioKetThucCoDinh = gioKetThucCoDinh.toISOString();
     }
 
-    const pool = await dbPoolPromise;
-    const result = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("MaLoai", sql.Int, d.MaLoai || null)
-      .input("TieuDe", sql.NVarChar, d.TieuDe.trim())
-      .input("MoTa", sql.NVarChar, d.MoTa || "")
-      .input("Tag", sql.NVarChar, d.Tag || "")
-      .input("CoThoiGianCoDinh", sql.Bit, d.CoThoiGianCoDinh ? 1 : 0)
-      .input("GioBatDauCoDinh", sql.DateTime, gioBatDauCoDinh)
-      .input("GioKetThucCoDinh", sql.DateTime, gioKetThucCoDinh)
-      .input("LapLai", sql.NVarChar(50), d.LapLai || null)
-      .input("TrangThaiThucHien", sql.TinyInt, 0)
-      .input("NgayTao", sql.DateTime, new Date())
-      .input("ThoiGianUocTinh", sql.Int, thoiGianUocTinh)
-      .input("MucDoUuTien", sql.TinyInt, parseInt(d.MucDoUuTien) || 2)
-      .input("MucDoPhucTap", sql.TinyInt, parseInt(d.MucDoPhucTap) || null)
-      .input("MucDoTapTrung", sql.TinyInt, parseInt(d.MucDoTapTrung) || null)
-      .input("ThoiDiemThichHop", sql.NVarChar, d.ThoiDiemThichHop || null)
-      .input(
-        "LuongTheoGio",
-        sql.Decimal(18, 2),
-        parseFloat(d.LuongTheoGio) || 0
-      ).query(`
-        INSERT INTO CongViec (
-          UserID, MaLoai, TieuDe, MoTa, Tag,
-          CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LapLai,
-          TrangThaiThucHien, NgayTao, ThoiGianUocTinh,
-          MucDoUuTien, MucDoPhucTap, MucDoTapTrung,
-          ThoiDiemThichHop, LuongTheoGio
-        )
-        OUTPUT INSERTED.*
-        VALUES (
-          @UserID, @MaLoai, @TieuDe, @MoTa, @Tag,
-          @CoThoiGianCoDinh, @GioBatDauCoDinh, @GioKetThucCoDinh, @LapLai,
-          @TrangThaiThucHien, @NgayTao, @ThoiGianUocTinh,
-          @MucDoUuTien, @MucDoPhucTap, @MucDoTapTrung,
-          @ThoiDiemThichHop, @LuongTheoGio
-        )
-      `);
+    const { data: createdTask, error } = await supabase
+      .from("CongViec")
+      .insert({
+        UserID: userId,
+        MaLoai: d.MaLoai || null,
+        TieuDe: d.TieuDe.trim(),
+        MoTa: d.MoTa || "",
+        Tag: d.Tag || "",
+        CoThoiGianCoDinh: d.CoThoiGianCoDinh ? true : false,
+        GioBatDauCoDinh: gioBatDauCoDinh,
+        GioKetThucCoDinh: gioKetThucCoDinh,
+        LapLai: d.LapLai || null,
+        TrangThaiThucHien: 0,
+        NgayTao: new Date().toISOString(),
+        ThoiGianUocTinh: thoiGianUocTinh,
+        MucDoUuTien: parseInt(d.MucDoUuTien) || 2,
+        MucDoPhucTap: parseInt(d.MucDoPhucTap) || null,
+        MucDoTapTrung: parseInt(d.MucDoTapTrung) || null,
+        ThoiDiemThichHop: d.ThoiDiemThichHop || null,
+        LuongTheoGio: parseFloat(d.LuongTheoGio) || 0,
+      })
+      .select()
+      .single();
 
-    // Thêm màu theo độ ưu tiên vào response
-    const createdTask = result.recordset[0];
+    if (error) {
+      console.error("Lỗi tạo công việc:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi tạo công việc",
+        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+
     const responseTask = {
       ...createdTask,
       MauSac: PRIORITY_COLORS[createdTask.MucDoUuTien] || "#60A5FA",
@@ -227,93 +199,55 @@ router.post("/", authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/tasks/:id
 router.get("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const taskId = parseInt(req.params.id);
 
     if (isNaN(taskId)) {
-      return res.status(400).json({
-        success: false,
-        message: "ID không hợp lệ",
-      });
+      return res.status(400).json({ success: false, message: "ID không hợp lệ" });
     }
 
-    const pool = await dbPoolPromise;
-    const result = await pool
-      .request()
-      .input("MaCongViec", sql.Int, taskId)
-      .input("UserID", sql.Int, userId).query(`
-        SELECT 
-          cv.MaCongViec AS ID,
-          cv.UserID,
-          cv.MaLoai,
-          cv.TieuDe,
-          cv.MoTa,
-          cv.Tag,
-          cv.CoThoiGianCoDinh,
-          cv.GioBatDauCoDinh,
-          cv.GioKetThucCoDinh,
-          cv.LapLai,
-          cv.TrangThaiThucHien,
-          cv.NgayTao,
-          cv.ThoiGianUocTinh,
-          cv.MucDoUuTien,
-          cv.MucDoPhucTap,
-          cv.MucDoTapTrung,
-          cv.ThoiDiemThichHop,
-          cv.LuongTheoGio,
-          CASE cv.MucDoUuTien
-            WHEN 1 THEN '#34D399'
-            WHEN 2 THEN '#60A5FA'
-            WHEN 3 THEN '#FBBF24'
-            WHEN 4 THEN '#F87171'
-            ELSE '#60A5FA'
-          END AS MauSac
-        FROM CongViec cv
-        WHERE cv.MaCongViec = @MaCongViec 
-          AND cv.UserID = @UserID
-      `);
+    const { data: task, error } = await supabase
+      .from("CongViec")
+      .select("*")
+      .eq("MaCongViec", taskId)
+      .eq("UserID", userId)
+      .single();
 
-    if (result.recordset.length === 0) {
+    if (error || !task) {
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy công việc",
       });
     }
 
-    const task = result.recordset[0];
     res.json({
       success: true,
-      data: task,
+      data: {
+        ID: task.MaCongViec,
+        ...task,
+        MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#60A5FA",
+      },
     });
   } catch (error) {
     console.error("Lỗi lấy chi tiết công việc:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi server",
-    });
+    res.status(500).json({ success: false, message: "Lỗi server" });
   }
 });
 
-// PUT /api/tasks/:id - Cập nhật công việc (cũng hỗ trợ các trường mới)
+// PUT /api/tasks/:id
 router.put("/:id", authenticateToken, async (req, res) => {
   try {
     const userId = req.userId;
     const taskId = req.params.id;
     const d = req.body;
 
-    const pool = await dbPoolPromise;
-    const fields = [];
-    const request = pool
-      .request()
-      .input("MaCongViec", sql.Int, taskId)
-      .input("UserID", sql.Int, userId);
+    const updateData = {};
 
-    // Xử lý thời gian cố định khi cập nhật
     if (d.CoThoiGianCoDinh !== undefined) {
-      fields.push("CoThoiGianCoDinh = @CoThoiGianCoDinh");
-      request.input("CoThoiGianCoDinh", sql.Bit, d.CoThoiGianCoDinh ? 1 : 0);
+      updateData.CoThoiGianCoDinh = d.CoThoiGianCoDinh ? true : false;
 
       if (d.GioBatDauCoDinh) {
         const start = new Date(d.GioBatDauCoDinh);
@@ -322,81 +256,61 @@ router.put("/:id", authenticateToken, async (req, res) => {
             .status(400)
             .json({ success: false, message: "Giờ bắt đầu không hợp lệ" });
         }
-        fields.push("GioBatDauCoDinh = @GioBatDauCoDinh");
-        request.input("GioBatDauCoDinh", sql.DateTime, start);
+        updateData.GioBatDauCoDinh = start.toISOString();
 
-        // Tính giờ kết thúc nếu không có
         if (!d.GioKetThucCoDinh && d.ThoiGianUocTinh) {
           const end = new Date(
             start.getTime() + (parseInt(d.ThoiGianUocTinh) || 60) * 60000
           );
-          fields.push("GioKetThucCoDinh = @GioKetThucCoDinh_Auto");
-          request.input("GioKetThucCoDinh_Auto", sql.DateTime, end);
+          updateData.GioKetThucCoDinh = end.toISOString();
         }
       }
 
       if (d.GioKetThucCoDinh) {
         const end = new Date(d.GioKetThucCoDinh);
         if (!isNaN(end.getTime())) {
-          fields.push("GioKetThucCoDinh = @GioKetThucCoDinh");
-          request.input("GioKetThucCoDinh", sql.DateTime, end);
+          updateData.GioKetThucCoDinh = end.toISOString();
         }
       }
 
       if (d.LapLai !== undefined) {
-        fields.push("LapLai = @LapLai");
-        request.input("LapLai", sql.NVarChar(50), d.LapLai || null);
+        updateData.LapLai = d.LapLai || null;
       }
     }
 
-    // Các trường khác (giữ nguyên như cũ)
-    if (d.TieuDe) {
-      fields.push("TieuDe = @TieuDe");
-      request.input("TieuDe", sql.NVarChar, d.TieuDe);
-    }
-    if (d.MoTa !== undefined) {
-      fields.push("MoTa = @MoTa");
-      request.input("MoTa", sql.NVarChar, d.MoTa);
-    }
-    if (d.MaLoai !== undefined) {
-      fields.push("MaLoai = @MaLoai");
-      request.input("MaLoai", sql.Int, d.MaLoai);
-    }
-    if (d.Tag !== undefined) {
-      fields.push("Tag = @Tag");
-      request.input("Tag", sql.NVarChar, d.Tag);
-    }
-    if (d.ThoiGianUocTinh !== undefined) {
-      fields.push("ThoiGianUocTinh = @ThoiGianUocTinh");
-      request.input("ThoiGianUocTinh", sql.Int, d.ThoiGianUocTinh);
-    }
-    if (d.MucDoUuTien !== undefined) {
-      fields.push("MucDoUuTien = @MucDoUuTien");
-      request.input("MucDoUuTien", sql.TinyInt, d.MucDoUuTien);
-    }
+    if (d.TieuDe) updateData.TieuDe = d.TieuDe;
+    if (d.MoTa !== undefined) updateData.MoTa = d.MoTa;
+    if (d.MaLoai !== undefined) updateData.MaLoai = d.MaLoai;
+    if (d.Tag !== undefined) updateData.Tag = d.Tag;
+    if (d.ThoiGianUocTinh !== undefined) updateData.ThoiGianUocTinh = d.ThoiGianUocTinh;
+    if (d.MucDoUuTien !== undefined) updateData.MucDoUuTien = d.MucDoUuTien;
     if (d.TrangThaiThucHien !== undefined) {
       let status =
         typeof d.TrangThaiThucHien === "string"
           ? STATUS_MAP[d.TrangThaiThucHien.toLowerCase()] ?? 0
           : d.TrangThaiThucHien;
-      fields.push("TrangThaiThucHien = @TrangThaiThucHien");
-      request.input("TrangThaiThucHien", sql.TinyInt, status);
+      updateData.TrangThaiThucHien = status;
     }
 
-    if (fields.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return res
         .status(400)
         .json({ success: false, message: "Không có dữ liệu để cập nhật" });
     }
 
-    const query = `
-      UPDATE CongViec SET ${fields.join(", ")}
-      WHERE MaCongViec = @MaCongViec AND UserID = @UserID
-    `;
+    const { data, error, count } = await supabase
+      .from("CongViec")
+      .update(updateData)
+      .eq("MaCongViec", taskId)
+      .eq("UserID", userId)
+      .select();
 
-    const result = await request.query(query);
+    if (error) {
+      console.error("Lỗi cập nhật công việc:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
 
-    if (result.rowsAffected[0] === 0) {
+    if (!data || data.length === 0) {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy công việc" });
@@ -409,7 +323,7 @@ router.put("/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /api/tasks/:id - Xóa công việc (giữ nguyên như cũ)
+// DELETE /api/tasks/:id
 router.delete("/:id", authenticateToken, async (req, res) => {
   const userId = req.userId;
   const taskId = parseInt(req.params.id);
@@ -418,85 +332,68 @@ router.delete("/:id", authenticateToken, async (req, res) => {
     return res.status(400).json({ success: false, message: "ID không hợp lệ" });
   }
 
-  const pool = await dbPoolPromise;
-  const transaction = new sql.Transaction(pool);
-
   try {
-    await transaction.begin();
-
     // Kiểm tra công việc
-    const taskCheck = await pool
-      .request()
-      .input("MaCongViec", sql.Int, taskId)
-      .input("UserID", sql.Int, userId)
-      .query(
-        `SELECT TieuDe FROM CongViec WHERE MaCongViec = @MaCongViec AND UserID = @UserID`
-      );
+    const { data: task } = await supabase
+      .from("CongViec")
+      .select("TieuDe")
+      .eq("MaCongViec", taskId)
+      .eq("UserID", userId)
+      .single();
 
-    if (taskCheck.recordset.length === 0) {
-      await transaction.rollback();
+    if (!task) {
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy công việc hoặc không có quyền",
       });
     }
-    const taskTitle = taskCheck.recordset[0].TieuDe;
 
     // Đếm lịch trình
-    const countRes = await pool
-      .request()
-      .input("MaCongViec", sql.Int, taskId)
-      .query(
-        `SELECT COUNT(*) AS Count FROM LichTrinh WHERE MaCongViec = @MaCongViec`
-      );
-    const scheduleCount = countRes.recordset[0].Count;
+    const { count: scheduleCount } = await supabase
+      .from("LichTrinh")
+      .select("*", { count: "exact", head: true })
+      .eq("MaCongViec", taskId);
 
-    if (scheduleCount === 0) {
-      await pool
-        .request()
-        .input("MaCongViec", sql.Int, taskId)
-        .input("UserID", sql.Int, userId)
-        .query(
-          `DELETE FROM CongViec WHERE MaCongViec = @MaCongViec AND UserID = @UserID`
-        );
-      await transaction.commit();
+    if (!scheduleCount || scheduleCount === 0) {
+      await supabase
+        .from("CongViec")
+        .delete()
+        .eq("MaCongViec", taskId)
+        .eq("UserID", userId);
+
       return res.json({ success: true, message: "Xóa thành công" });
     }
 
-    const force = req.query.force === "true" || req.body.force === true;
+    const force = req.query.force === "true" || req.body?.force === true;
     if (!force) {
       return res.status(200).json({
         success: false,
         requireConfirmation: true,
-        message: `Công việc "${taskTitle}" có ${scheduleCount} lịch trình`,
+        message: `Công việc "${task.TieuDe}" có ${scheduleCount} lịch trình`,
         details: "Xóa công việc sẽ xóa luôn toàn bộ lịch trình liên quan",
         scheduleCount,
-        taskTitle,
+        taskTitle: task.TieuDe,
       });
     }
 
-    // Xóa cascade thủ công
-    await transaction
-      .request()
-      .input("MaCongViec", sql.Int, taskId)
-      .query(`DELETE FROM LichTrinh WHERE MaCongViec = @MaCongViec`);
+    // Xóa cascade: lịch trình trước, rồi công việc
+    await supabase
+      .from("LichTrinh")
+      .delete()
+      .eq("MaCongViec", taskId);
 
-    await transaction
-      .request()
-      .input("MaCongViec", sql.Int, taskId)
-      .input("UserID", sql.Int, userId)
-      .query(
-        `DELETE FROM CongViec WHERE MaCongViec = @MaCongViec AND UserID = @UserID`
-      );
+    await supabase
+      .from("CongViec")
+      .delete()
+      .eq("MaCongViec", taskId)
+      .eq("UserID", userId);
 
-    await transaction.commit();
     return res.json({
       success: true,
       message: `Đã xóa công việc và ${scheduleCount} lịch trình`,
       deletedSchedules: scheduleCount,
     });
   } catch (error) {
-    await transaction.rollback();
     console.error("Lỗi xóa công việc:", error);
     res.status(500).json({
       success: false,

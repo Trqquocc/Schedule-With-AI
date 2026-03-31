@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 
 // GET /api/salary?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/", async (req, res) => {
@@ -12,50 +12,36 @@ router.get("/", async (req, res) => {
       ? new Date(from)
       : new Date(endDate.getTime() - 30 * 24 * 3600 * 1000);
 
-    const pool = await dbPoolPromise;
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh, GioBatDau, GioKetThuc, GhiChu, DaHoanThanh, MaCongViec, CongViec(MaCongViec, TieuDe, LuongTheoGio, ThoiGianUocTinh)")
+      .eq("UserID", userId)
+      .eq("DaHoanThanh", true)
+      .gte("GioKetThuc", startDate.toISOString())
+      .lte("GioKetThuc", endDate.toISOString())
+      .order("GioKetThuc", { ascending: false });
 
-    // Lấy các lịch đã hoàn thành trong khoảng, kèm thông tin công việc (LuongTheoGio)
-    const result = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("StartDate", sql.DateTime, startDate)
-      .input("EndDate", sql.DateTime, endDate).query(`
-        SELECT
-          lt.MaLichTrinh,
-          lt.GioBatDau,
-          lt.GioKetThuc,
-          lt.GhiChu,
-          lt.DaHoanThanh,
-          cv.MaCongViec,
-          cv.TieuDe AS CongViecTieuDe,
-          cv.LuongTheoGio,
-          cv.ThoiGianUocTinh
-        FROM LichTrinh lt
-        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @UserID
-          AND lt.DaHoanThanh = 1
-          AND lt.GioKetThuc >= @StartDate
-          AND lt.GioKetThuc <= @EndDate
-        ORDER BY lt.GioKetThuc DESC
-      `);
+    if (error) {
+      console.error("Lỗi salary:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
 
-    const entries = result.recordset.map((r) => {
-      // Tính số giờ: nếu có GioBatDau và GioKetThuc thì dùng diff, ngược lại dùng ThoiGianUocTinh (phút)
+    const entries = (records || []).map((r) => {
       let hours = 0;
       if (r.GioBatDau && r.GioKetThuc) {
         const start = new Date(r.GioBatDau);
         const end = new Date(r.GioKetThuc);
-        hours = Math.round(((end - start) / (1000 * 60) / 60) * 100) / 100; // giờ, 2 chữ số
-      } else if (r.ThoiGianUocTinh) {
-        hours = Math.round((r.ThoiGianUocTinh / 60) * 100) / 100;
+        hours = Math.round(((end - start) / (1000 * 60) / 60) * 100) / 100;
+      } else if (r.CongViec?.ThoiGianUocTinh) {
+        hours = Math.round((r.CongViec.ThoiGianUocTinh / 60) * 100) / 100;
       }
 
-      const rate = r.LuongTheoGio ? parseFloat(r.LuongTheoGio) : 0;
+      const rate = r.CongViec?.LuongTheoGio ? parseFloat(r.CongViec.LuongTheoGio) : 0;
       const amount = Math.round(hours * rate * 100) / 100;
 
       return {
         id: r.MaLichTrinh,
-        title: r.CongViecTieuDe || "(Không có tiêu đề)",
+        title: r.CongViec?.TieuDe || "(Không có tiêu đề)",
         date: r.GioKetThuc || r.GioBatDau,
         rate,
         hours,
