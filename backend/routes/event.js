@@ -8,7 +8,7 @@ router.use(authenticateToken);
 router.get("/events", async (req, res) => {
   try {
     const userId = req.user.UserID;
-    console.log(`📅 Fetching events for user: ${userId}`);
+    console.log(`Fetching events for user: ${userId}`);
 
     const pool = await dbPoolPromise;
 
