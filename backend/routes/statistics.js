@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { dbPoolPromise, sql } = require("../config/database");
-const { authenticateToken } = require("../middleware/auth");
+const { supabase } = require("../config/database");
 
+// GET /api/statistics?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get("/", async (req, res) => {
   try {
     const userId = req.userId;
@@ -13,109 +13,44 @@ router.get("/", async (req, res) => {
       ? new Date(from)
       : new Date(endDate.getTime() - 30 * 24 * 3600 * 1000);
 
-    const pool = await dbPoolPromise;
+    // Lấy tất cả lịch trình trong khoảng
+    const { data: records, error } = await supabase
+      .from("LichTrinh")
+      .select("GioBatDau, DaHoanThanh")
+      .eq("UserID", userId)
+      .gte("GioBatDau", startDate.toISOString())
+      .lte("GioBatDau", endDate.toISOString());
 
-    const totalRes = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("StartDate", sql.DateTime, startDate)
-      .input("EndDate", sql.DateTime, endDate).query(`
-        SELECT
-          COUNT(*) AS Total,
-          SUM(CASE WHEN DaHoanThanh = 1 THEN 1 ELSE 0 END) AS Completed
-        FROM LichTrinh
-        WHERE UserID = @UserID
-          AND GioBatDau >= @StartDate
-          AND GioBatDau <= @EndDate
-      `);
+    if (error) {
+      console.error("Lỗi statistics:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
 
-    const total = totalRes.recordset[0].Total || 0;
-    const completed = totalRes.recordset[0].Completed || 0;
+    const allRecords = records || [];
+    const total = allRecords.length;
+    const completed = allRecords.filter((r) => r.DaHoanThanh).length;
     const pending = total - completed;
-    const percent =
-      total === 0 ? 0 : Math.round((completed / total) * 10000) / 100;
+    const percent = total === 0 ? 0 : Math.round((completed / total) * 10000) / 100;
 
-    const dailyRes = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("StartDate", sql.DateTime, startDate)
-      .input("EndDate", sql.DateTime, endDate).query(`
-        SELECT CONVERT(date, GioBatDau) AS Day,
-          COUNT(*) AS Total,
-          SUM(CASE WHEN DaHoanThanh = 1 THEN 1 ELSE 0 END) AS Completed
-        FROM LichTrinh
-        WHERE UserID = @UserID
-          AND GioBatDau >= @StartDate
-          AND GioBatDau <= @EndDate
-        GROUP BY CONVERT(date, GioBatDau)
-        ORDER BY Day ASC
-      `);
-
-    const daily = dailyRes.recordset.map((r) => ({
-      date: r.Day,
-      total: r.Total,
-      completed: r.Completed,
-    }));
-
-    // Lấy danh sách chi tiết tất cả công việc
-    const entriesRes = await pool
-      .request()
-      .input("UserID", sql.Int, userId)
-      .input("StartDate", sql.DateTime, startDate)
-      .input("EndDate", sql.DateTime, endDate).query(`
-        SELECT
-          lt.MaLichTrinh,
-          lt.GioBatDau,
-          lt.GioKetThuc,
-          lt.GhiChu,
-          lt.DaHoanThanh,
-          cv.MaCongViec,
-          cv.TieuDe AS CongViecTieuDe,
-          cv.LuongTheoGio,
-          cv.ThoiGianUocTinh
-        FROM LichTrinh lt
-        LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @UserID
-          AND lt.GioBatDau >= @StartDate
-          AND lt.GioBatDau <= @EndDate
-        ORDER BY lt.GioBatDau DESC
-      `);
-
-    const entries = entriesRes.recordset.map((r) => {
-      let hours = 0;
-      if (r.GioBatDau && r.GioKetThuc) {
-        const start = new Date(r.GioBatDau);
-        const end = new Date(r.GioKetThuc);
-        hours = Math.round(((end - start) / (1000 * 60) / 60) * 100) / 100;
-      } else if (r.ThoiGianUocTinh) {
-        hours = Math.round((r.ThoiGianUocTinh / 60) * 100) / 100;
+    // Dữ liệu theo ngày cho biểu đồ
+    const dailyMap = {};
+    allRecords.forEach((r) => {
+      const day = r.GioBatDau ? r.GioBatDau.split("T")[0] : null;
+      if (!day) return;
+      if (!dailyMap[day]) {
+        dailyMap[day] = { date: day, total: 0, completed: 0 };
       }
-
-      const rate = r.LuongTheoGio ? parseFloat(r.LuongTheoGio) : 0;
-      const amount = Math.round(hours * rate * 100) / 100;
-
-      return {
-        id: r.MaLichTrinh,
-        title: r.CongViecTieuDe || "(Không có tiêu đề)",
-        date: r.GioKetThuc || r.GioBatDau,
-        rate,
-        hours,
-        note: r.GhiChu || "",
-        amount,
-        completed: Number(r.DaHoanThanh) === 1,
-      };
+      dailyMap[day].total++;
+      if (r.DaHoanThanh) dailyMap[day].completed++;
     });
+
+    const daily = Object.values(dailyMap).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
 
     res.json({
       success: true,
-      data: {
-        total,
-        completed,
-        pending,
-        percent,
-        daily,
-        entries,
-      },
+      data: { total, completed, pending, percent, daily },
     });
   } catch (error) {
     console.error("Lỗi statistics:", error);

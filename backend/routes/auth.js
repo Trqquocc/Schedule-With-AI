@@ -3,7 +3,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -20,60 +20,56 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const pool = await dbPoolPromise;
+    // Kiểm tra trùng
+    const { data: existing } = await supabase
+      .from("Users")
+      .select("UserID")
+      .or(`Username.eq.${username},Email.eq.${email}`);
 
-    const check = await pool
-      .request()
-      .input("username", sql.NVarChar, username)
-      .input("email", sql.NVarChar, email)
-      .query(
-        "SELECT UserID FROM Users WHERE Username = @username OR Email = @email"
-      );
-
-    if (check.recordset.length > 0) {
+    if (existing && existing.length > 0) {
       return res.status(400).json({
         success: false,
         message: "Tên đăng nhập hoặc email đã tồn tại",
       });
     }
 
+    // Tạo user
     const hashed = await bcrypt.hash(password, 12);
-    const result = await pool
-      .request()
-      .input("username", sql.NVarChar, username)
-      .input("password", sql.NVarChar, hashed)
-      .input("email", sql.NVarChar, email)
-      .input("hoten", sql.NVarChar, hoten || username).query(`
-        INSERT INTO Users (Username, Password, Email, HOTen, CreatedDate, NgayTao, LuongTheoGio, IsActive)
-        OUTPUT INSERTED.UserID, INSERTED.Username, INSERTED.Email, INSERTED.HOTen
-        VALUES (@username, @password, @email, @hoten, GETDATE(), GETDATE(), 29000, 1)
-      `);
+    const { data: newUser, error: insertError } = await supabase
+      .from("Users")
+      .insert({
+        Username: username,
+        Password: hashed,
+        Email: email,
+        HOTen: hoten || username,
+        CreatedDate: new Date().toISOString(),
+        NgayTao: new Date().toISOString(),
+        LuongTheoGio: 29000,
+        IsActive: true,
+      })
+      .select("UserID, Username, Email, HOTen")
+      .single();
 
-    const newUser = result.recordset[0];
-
-    const defaultCats = [
-      { TenLoai: "Công việc", MoTa: "Công việc hàng ngày" },
-      { TenLoai: "Cá nhân", MoTa: "Việc cá nhân" },
-      { TenLoai: "Học tập", MoTa: "Học tập và phát triển" },
-      { TenLoai: "Sức khỏe", MoTa: "Chăm sóc sức khỏe" },
-    ];
-
-    for (const c of defaultCats) {
-      await pool
-        .request()
-        .input("UserID", sql.Int, newUser.UserID)
-        .input("TenLoai", sql.NVarChar(100), c.TenLoai)
-        .input("MoTa", sql.NVarChar(255), c.MoTa)
-        .query(
-          `INSERT INTO LoaiCongViec (UserID, TenLoai, MoTa) VALUES (@UserID, @TenLoai, @MoTa)`
-        );
+    if (insertError) {
+      console.error("Insert user error:", insertError);
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi khi tạo tài khoản: " + insertError.message,
+      });
     }
 
+    // Tạo 4 danh mục mặc định
+    const defaultCats = [
+      { UserID: newUser.UserID, TenLoai: "Công việc", MoTa: "Công việc hàng ngày" },
+      { UserID: newUser.UserID, TenLoai: "Cá nhân", MoTa: "Việc cá nhân" },
+      { UserID: newUser.UserID, TenLoai: "Học tập", MoTa: "Học tập và phát triển" },
+      { UserID: newUser.UserID, TenLoai: "Sức khỏe", MoTa: "Chăm sóc sức khỏe" },
+    ];
+
+    await supabase.from("LoaiCongViec").insert(defaultCats);
+
     const token = jwt.sign(
-      {
-        userId: newUser.UserID,
-        username: newUser.Username,
-      },
+      { userId: newUser.UserID, username: newUser.Username },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
@@ -103,28 +99,33 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const pool = await dbPoolPromise;
 
-    const result = await pool
-      .request()
-      .input("username", sql.NVarChar, username)
-      .query(
-        "SELECT * FROM Users WHERE Username = @username OR Email = @username"
-      );
+    const { data: users, error } = await supabase
+      .from("Users")
+      .select("*")
+      .or(`Username.eq.${username},Email.eq.${username}`);
 
-    const user = result.recordset[0];
-
-    if (!user || !(await bcrypt.compare(password, user.Password))) {
+    if (error || !users || users.length === 0) {
       return res.status(401).json({
         success: false,
         message: "Tên đăng nhập hoặc mật khẩu không đúng",
       });
     }
 
-    await pool
-      .request()
-      .input("UserID", sql.Int, user.UserID)
-      .query("UPDATE Users SET LastLogin = GETDATE() WHERE UserID = @UserID");
+    const user = users[0];
+
+    if (!(await bcrypt.compare(password, user.Password))) {
+      return res.status(401).json({
+        success: false,
+        message: "Tên đăng nhập hoặc mật khẩu không đúng",
+      });
+    }
+
+    // Cập nhật LastLogin
+    await supabase
+      .from("Users")
+      .update({ LastLogin: new Date().toISOString() })
+      .eq("UserID", user.UserID);
 
     const token = jwt.sign(
       { userId: user.UserID, username: user.Username },
@@ -162,22 +163,20 @@ router.get("/verify", async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const pool = await dbPoolPromise;
 
-    const result = await pool
-      .request()
-      .input("UserID", sql.Int, decoded.userId)
-      .query(
-        "SELECT UserID, Username, Email, HOTen, LuongTheoGio FROM Users WHERE UserID = @UserID"
-      );
+    const { data: user, error } = await supabase
+      .from("Users")
+      .select("UserID, Username, Email, HOTen, LuongTheoGio")
+      .eq("UserID", decoded.userId)
+      .single();
 
-    if (result.recordset.length === 0) {
+    if (error || !user) {
       throw new Error("User not found");
     }
 
     res.json({
       success: true,
-      data: { user: result.recordset[0] },
+      data: { user },
     });
   } catch (error) {
     res

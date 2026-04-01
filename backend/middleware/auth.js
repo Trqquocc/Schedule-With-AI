@@ -1,6 +1,5 @@
-
 const jwt = require("jsonwebtoken");
-const { dbPoolPromise, sql } = require("../config/database");
+const { supabase } = require("../config/database");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -18,13 +17,13 @@ const authenticateToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const pool = await dbPoolPromise;
-    const userCheck = await pool
-      .request()
-      .input("userId", sql.Int, decoded.userId)
-      .query("SELECT UserID, Username FROM Users WHERE UserID = @userId");
+    const { data: user, error } = await supabase
+      .from("Users")
+      .select("UserID, Username")
+      .eq("UserID", decoded.userId)
+      .single();
 
-    if (userCheck.recordset.length === 0) {
+    if (error || !user) {
       return res.status(401).json({
         success: false,
         message: "User không tồn tại",

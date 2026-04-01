@@ -19,13 +19,12 @@
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.49.4",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
-    "express-session": "^1.18.2",
     "jsonwebtoken": "^9.0.3",
-    "mssql": "^10.0.4",
     "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.67.0",
     "openai": "^6.9.1"
