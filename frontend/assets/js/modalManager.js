@@ -226,14 +226,19 @@
         return false;
       }
 
+      // Clear any lingering inline display styles that closeMainModal may have set
+      const content = document.getElementById("createTaskModalContent");
+      if (content) { content.style.display = ""; content.style.visibility = ""; }
+      const overlay = modal.querySelector(".modal-overlay");
+      if (overlay) { overlay.style.display = ""; }
+
       const success = this.showModalById("createTaskModal");
 
-      if (window.loadCategoriesForModal) {
-        setTimeout(() => {
-          console.log("   Triggering category load...");
-          window.loadCategoriesForModal();
-        }, 300);
-      }
+      // Re-initialize form handlers (function guards itself against duplicate init)
+      setTimeout(() => {
+        if (window.initCreateTaskModal) window.initCreateTaskModal();
+        if (window.loadCategoriesForModal) window.loadCategoriesForModal();
+      }, 150);
 
       if (taskData && window.loadTaskDataIntoForm) {
         setTimeout(() => {

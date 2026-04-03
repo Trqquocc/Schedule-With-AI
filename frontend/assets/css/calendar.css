@@ -5,6 +5,87 @@
   background: #f9fafb;
 }
 
+/* ==============================
+   MINI CALENDAR SIDEBAR
+   ============================== */
+#calendar-sidebar {
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+#calendar-sidebar .mini-cal-day {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: none;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+}
+
+#calendar-sidebar .mini-cal-day:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+  transform: scale(1.1);
+}
+
+#calendar-sidebar .mini-cal-day.today-day {
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+}
+
+#calendar-sidebar .mini-cal-day.today-day:hover {
+  background: #1d4ed8;
+  transform: scale(1.05);
+}
+
+#calendar-sidebar #mini-prev,
+#calendar-sidebar #mini-next {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#calendar-sidebar #mini-prev:hover,
+#calendar-sidebar #mini-next:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+#calendar-sidebar #mini-today {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  width: 100%;
+  padding: 6px 0;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+#calendar-sidebar #mini-today:hover {
+  background: #eff6ff;
+}
+
 .fc {
   font-family: inherit;
   font-size: 14px;
@@ -915,4 +996,175 @@
 
 .toast-notification {
   animation: toastSlide 0.3s ease-out;
+}
+
+/* ===== CALENDAR TOOLBAR ===== */
+.cal-toolbar {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* Prevent all toolbar buttons from having transform on hover */
+.cal-toolbar button,
+.ai-toolbar button {
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+}
+.cal-toolbar button:hover,
+.ai-toolbar button:hover {
+  transform: none !important;
+}
+
+.cal-view-btn:hover {
+  background: white !important;
+  color: #1e293b !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ===== DARK MODE – CALENDAR ===== */
+body.dark #calendar {
+  background: var(--bg-card);
+}
+
+body.dark .cal-toolbar,
+body.dark .ai-toolbar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+body.dark .cal-toolbar h2,
+body.dark .ai-toolbar h2 {
+  color: var(--text-primary) !important;
+}
+
+body.dark #cal-today-btn { color: var(--accent) !important; }
+body.dark #ai-cal-today-btn { color: #a78bfa !important; }
+
+body.dark #cal-prev-btn,
+body.dark #cal-next-btn,
+body.dark #ai-cal-prev-btn,
+body.dark #ai-cal-next-btn {
+  color: var(--text-muted) !important;
+}
+
+/* Override inline onmouseover bg in dark mode for nav buttons */
+body.dark #cal-prev-btn:hover,
+body.dark #cal-next-btn:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
+}
+body.dark #cal-today-btn:hover {
+  background: rgba(96,165,250,0.12) !important;
+}
+body.dark #ai-cal-prev-btn:hover,
+body.dark #ai-cal-next-btn:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
+}
+body.dark #ai-cal-today-btn:hover {
+  background: rgba(167,139,250,0.12) !important;
+}
+/* View switcher pill active button in dark mode */
+body.dark .cal-toolbar .rounded-xl .bg-white,
+body.dark .ai-toolbar .rounded-xl .bg-white {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+/* Calendar title in dark mode */
+body.dark #calendar-title,
+body.dark #ai-calendar-title {
+  color: var(--text-primary) !important;
+}
+
+body.dark .cal-view-btn,
+body.dark .ai-view-btn {
+  color: var(--text-secondary) !important;
+}
+
+body.dark .cal-view-btn:hover,
+body.dark .ai-view-btn:hover {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+/* View switcher pill container */
+body.dark .cal-toolbar .rounded-xl,
+body.dark .ai-toolbar .rounded-xl {
+  background: var(--bg-card-alt) !important;
+}
+
+/* Active view button */
+body.dark .cal-view-btn.bg-white,
+body.dark .ai-view-btn.bg-white {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+/* FullCalendar dark overrides */
+body.dark .fc-theme-standard td,
+body.dark .fc-theme-standard th {
+  border-color: var(--border) !important;
+}
+
+body.dark .fc-theme-standard .fc-scrollgrid {
+  border-color: var(--border) !important;
+}
+
+body.dark .fc .fc-daygrid-day-number {
+  color: var(--text-primary) !important;
+}
+
+body.dark .fc .fc-col-header-cell-cushion {
+  color: var(--text-secondary) !important;
+}
+
+body.dark .fc-day-today,
+body.dark .fc .fc-daygrid-day.fc-day-today {
+  background-color: rgba(96,165,250,0.08) !important;
+}
+
+body.dark .fc .fc-timegrid-col.fc-day-today {
+  background-color: rgba(96,165,250,0.08) !important;
+}
+
+body.dark .fc .fc-timegrid-slot-label {
+  color: var(--text-muted) !important;
+}
+
+body.dark .fc .fc-daygrid-more-link {
+  color: var(--accent) !important;
+}
+
+body.dark .fc .fc-day-sat,
+body.dark .fc .fc-day-sun {
+  background-color: rgba(15,23,42,0.4) !important;
+}
+
+body.dark .fc-daygrid-day:hover {
+  background-color: var(--bg-card-hover) !important;
+}
+
+body.dark .fc .fc-popover {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+body.dark .fc .fc-popover-body {
+  background: var(--bg-card) !important;
+}
+
+body.dark #calendar-sidebar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+body.dark #calendar-sidebar .mini-cal-day {
+  color: var(--text-primary) !important;
+}
+
+body.dark #calendar-sidebar #mini-today {
+  color: var(--accent) !important;
+}
+
+body.dark #ai-calendar {
+  background: var(--bg-card) !important;
 }

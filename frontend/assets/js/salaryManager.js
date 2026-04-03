@@ -61,7 +61,7 @@
     }
 
     let tableHTML = `
-      <table>
+      <table class="salary-table">
         <thead>
           <tr>
             <th>Công việc</th>
@@ -168,6 +168,43 @@
     }
   }
 
+  function setupQuickTabs() {
+    // Quick tabs in salary-view (Tuần/Tháng/Năm) for quick stats panel
+    const quickTabs = document.querySelectorAll("#salary-view .quick-tab");
+    quickTabs.forEach((tab) => {
+      tab.addEventListener("click", async function () {
+        quickTabs.forEach((t) => t.classList.remove("active"));
+        this.classList.add("active");
+
+        const period = this.dataset.period;
+        const today = new Date();
+        const fmt = (d) => d.toISOString().split("T")[0];
+        let from;
+        if (period === "week") {
+          from = new Date(today.getTime() - 7 * 24 * 3600 * 1000);
+        } else if (period === "month") {
+          from = new Date(today.getFullYear(), today.getMonth(), 1);
+        } else {
+          from = new Date(today.getFullYear(), 0, 1);
+        }
+
+        try {
+          const result = await loadSalaryData(fmt(from), fmt(today));
+          if (result.success) {
+            const entries = result.data.entries || [];
+            updateQuickStats({
+              total: entries.length,
+              completed: entries.length,
+              percent: 100,
+            });
+          }
+        } catch (e) {
+          console.error("Quick tab error:", e);
+        }
+      });
+    });
+  }
+
   async function handleLoadSalary() {
     const fromInput = document.getElementById("salary-from");
     const toInput = document.getElementById("salary-to");
@@ -212,6 +249,7 @@
     initializeDateInputs();
     setupTabSwitching();
     setupDateFilters();
+    setupQuickTabs();
 
     await handleLoadSalary();
 

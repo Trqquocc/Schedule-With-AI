@@ -8,7 +8,7 @@
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
-    background: white !important;
+    background: #1e293b !important;
     width: 256px !important;
     position: relative !important;
     left: 0 !important;
@@ -210,8 +210,8 @@
     width: 256px !important;
     height: 100vh !important;
     z-index: 999 !important;
-    background: white !important;
-    border-right: 1px solid #e5e7eb !important;
+    background: #1e293b !important;
+    border-right: 1px solid #334155 !important;
     margin: 0 !important;
     padding: 0 !important;
     visibility: visible !important;
@@ -225,6 +225,19 @@
     right: 0 !important;
     top: 0 !important;
   }
+
+  /* Dark sidebar overrides */
+  #sidebar-container .text-gray-900 { color: #f1f5f9 !important; }
+  #sidebar-container .text-gray-700 { color: #cbd5e1 !important; }
+  #sidebar-container .text-gray-600 { color: #94a3b8 !important; }
+  #sidebar-container .text-gray-500 { color: #64748b !important; }
+  #sidebar-container .border-t { border-top: 1px solid #334155 !important; }
+  #sidebar-container .border-gray-200 { border-color: #334155 !important; }
+  #sidebar-container .bg-gray-200 { background: #334155 !important; }
+  #sidebar-container .hover\:bg-gray-100:hover { background: #334155 !important; }
+  #sidebar-container .hover\:bg-gray-50:hover { background: #273548 !important; }
+  #sidebar-container .hover\:text-gray-700:hover { color: #f1f5f9 !important; }
+  #sidebar-container .hover\:text-red-600:hover { color: #f87171 !important; }
 
   #settingsModal {
     position: fixed !important;
@@ -547,38 +560,51 @@
 </style>
 
 <aside
-  class="flex flex-col justify-between bg-white w-64 border-r border-gray-200 py-4 px-3 select-none min-h-screen"
+  class="flex flex-col justify-between w-64 py-4 px-3 select-none min-h-screen"
+  style="background:#1e293b;border-right:1px solid #334155;"
 >
+  <!-- Logo/Brand -->
   <div>
+    <div class="px-4 mb-5 flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+        <i class="fas fa-calendar-check text-white text-sm"></i>
+      </div>
+      <span style="color:#f1f5f9;font-weight:700;font-size:15px;">Schedule AI</span>
+    </div>
+
     <nav class="space-y-1">
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm font-medium text-gray-900 rounded-lg px-4 py-3 bg-gray-200"
+        class="nav-btn w-full flex items-center gap-3 text-sm font-medium rounded-lg px-4 py-3 bg-gray-200"
         data-section="schedule"
+        style="color:#f1f5f9;"
       >
-        <i class="far fa-calendar-alt"></i>
+        <i class="far fa-calendar-alt" style="color:#60a5fa;"></i>
         <span>Lịch trình</span>
       </button>
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm text-gray-600 rounded-lg px-4 py-3 hover:bg-gray-100"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3 hover:bg-gray-100"
         data-section="work"
+        style="color:#94a3b8;"
       >
         <i class="far fa-clipboard"></i>
         <span>Công việc</span>
       </button>
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm text-gray-600 rounded-lg px-4 py-3 hover:bg-gray-100"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3 hover:bg-gray-100"
         data-section="ai"
+        style="color:#94a3b8;"
       >
         <i class="fas fa-magic"></i>
         <span>Tham Khảo AI</span>
       </button>
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm text-gray-600 rounded-lg px-4 py-3 hover:bg-gray-100"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3 hover:bg-gray-100"
         data-section="salary"
+        style="color:#94a3b8;"
       >
         <i class="fas fa-calculator"></i>
         <span>Tính lương</span>
@@ -586,33 +612,34 @@
     </nav>
   </div>
 
-  <div class="border-t border-gray-200 pt-4 mt-4">
-    <div class="flex items-center gap-3 px-4">
-      <div
-        class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold"
-      >
+  <!-- User Info Bottom -->
+  <div style="border-top:1px solid #334155;padding-top:16px;margin-top:16px;">
+    <div class="flex items-center gap-3 px-3 py-2 rounded-xl" style="background:#0f172a;">
+      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
         <span class="avatar-letter">?</span>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold text-gray-900 truncate user-name">
-          Người dùng
-        </p>
-        <p class="text-xs text-gray-500 truncate user-email">
-          email@example.com
-        </p>
+        <p class="text-sm font-semibold truncate user-name" style="color:#f1f5f9;">Người dùng</p>
+        <p class="text-xs truncate user-email" style="color:#64748b;">email@example.com</p>
       </div>
     </div>
-    <div class="mt-3 px-4 space-y-2">
+    <div class="mt-2 space-y-1">
       <button
         id="settingsBtn"
-        class="w-full text-left text-xs text-gray-500 hover:text-gray-700 flex items-center gap-2"
+        class="w-full text-left text-xs flex items-center gap-2 px-3 py-2 rounded-lg transition-all"
+        style="color:#64748b;"
+        onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='#cbd5e1';"
+        onmouseout="this.style.background='transparent';this.style.color='#64748b';"
       >
         <i class="fas fa-cog"></i>
         <span>Cài đặt</span>
       </button>
       <button
         data-logout
-        class="w-full text-left text-xs text-gray-500 hover:text-red-600 flex items-center gap-2"
+        class="w-full text-left text-xs flex items-center gap-2 px-3 py-2 rounded-lg transition-all"
+        style="color:#64748b;"
+        onmouseover="this.style.background='rgba(248,113,113,0.08)';this.style.color='#f87171';"
+        onmouseout="this.style.background='transparent';this.style.color='#64748b';"
       >
         <i class="fas fa-sign-out-alt"></i>
         <span>Đăng xuất</span>
@@ -621,116 +648,321 @@
   </div>
 </aside>
 
-<div id="settingsModal" class="modal hidden">
-  <div
-    class="modal-content bg-white rounded-xl shadow-2xl w-96 max-w-full mx-4"
-  >
-    <div class="flex justify-between items-center p-6 border-b border-gray-200">
-      <h3 class="text-xl font-semibold text-gray-800">Cài đặt</h3>
-      <button
-        id="closeSettingsModal"
-        class="text-gray-500 hover:text-gray-700 text-2xl"
-      >
-        <i class="fas fa-times"></i>
+<div id="settingsModal" class="modal hidden" style="align-items:center;justify-content:center">
+  <div id="settingsModalPanel" class="settings-modal-panel" style="
+    width:480px;max-width:calc(100vw - 2rem);
+    background:var(--sm-bg,#fff);
+    border-radius:20px;
+    box-shadow:0 25px 60px rgba(0,0,0,0.18),0 8px 24px rgba(0,0,0,0.1);
+    overflow:hidden;
+    display:flex;flex-direction:column;
+    max-height:calc(100vh - 3rem);
+  ">
+
+    <!-- ── HERO HEADER ── -->
+    <div style="
+      background:linear-gradient(135deg,#1d4ed8 0%,#4f46e5 50%,#7c3aed 100%);
+      padding:24px 24px 20px;
+      position:relative;overflow:hidden;flex-shrink:0
+    ">
+      <!-- decorative circles -->
+      <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
+      <div style="position:absolute;bottom:-20px;left:60px;width:80px;height:80px;background:rgba(255,255,255,0.04);border-radius:50%"></div>
+
+      <!-- close btn -->
+      <button id="closeSettingsModal" style="
+        position:absolute;top:16px;right:16px;
+        width:32px;height:32px;border-radius:8px;
+        background:rgba(255,255,255,0.15);border:none;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
+        color:rgba(255,255,255,0.8);transition:all .2s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+         onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+        <i class="fas fa-times" style="font-size:13px"></i>
+      </button>
+
+      <!-- Avatar + Info -->
+      <div style="display:flex;align-items:center;gap:16px;position:relative">
+        <div style="
+          width:60px;height:60px;border-radius:16px;flex-shrink:0;
+          background:rgba(255,255,255,0.2);
+          border:2px solid rgba(255,255,255,0.35);
+          display:flex;align-items:center;justify-content:center;
+          font-size:22px;font-weight:700;color:#fff;
+          box-shadow:0 4px 16px rgba(0,0,0,0.2)
+        ">
+          <span class="settings-avatar-letter">?</span>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="color:#fff;font-size:17px;font-weight:700;line-height:1.2" class="settings-user-name">Người dùng</div>
+          <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:3px" class="settings-user-email">email@example.com</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:6px">
+            <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block;box-shadow:0 0 0 2px rgba(74,222,128,0.3)"></span>
+            <span style="color:rgba(255,255,255,0.6);font-size:11px">Đang hoạt động</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCROLLABLE BODY ── -->
+    <div style="overflow-y:auto;flex:1;padding:20px 20px 8px">
+
+      <!-- ── SECTION: TÀI KHOẢN ── -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
+          Tài khoản
+        </div>
+
+        <!-- Update Profile -->
+        <button id="openProfileBtn" class="sm-menu-item" style="
+          width:100%;display:flex;align-items:center;justify-content:space-between;
+          padding:11px 12px;border-radius:12px;background:transparent;border:none;cursor:pointer;
+          transition:background .15s;text-align:left;margin-bottom:2px
+        " onmouseover="this.style.background='var(--sm-hover,#eff6ff)'"
+           onmouseout="this.style.background='transparent'">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:10px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-user-circle" style="color:#2563eb;font-size:15px"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Cập nhật hồ sơ</div>
+              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Tên, ảnh đại diện, thông tin</div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right" style="font-size:11px;color:var(--sm-muted,#94a3b8)"></i>
+        </button>
+
+        <!-- Notifications -->
+        <button id="openNotificationBtn" class="sm-menu-item" style="
+          width:100%;display:flex;align-items:center;justify-content:space-between;
+          padding:11px 12px;border-radius:12px;background:transparent;border:none;cursor:pointer;
+          transition:background .15s;text-align:left
+        " onmouseover="this.style.background='var(--sm-hover-cyan,#ecfeff)'"
+           onmouseout="this.style.background='transparent'">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:10px;background:#cffafe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-bell" style="color:#0891b2;font-size:15px"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Thông báo</div>
+              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Nhắc nhở, cảnh báo sự kiện</div>
+            </div>
+          </div>
+          <i class="fas fa-chevron-right" style="font-size:11px;color:var(--sm-muted,#94a3b8)"></i>
+        </button>
+      </div>
+
+      <!-- ── SECTION: GIAO DIỆN ── -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
+          Giao diện
+        </div>
+
+        <!-- Theme card row -->
+        <div style="background:var(--sm-section-bg,#f8fafc);border-radius:14px;padding:14px;border:1px solid var(--sm-border,#e2e8f0)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:32px;height:32px;border-radius:8px;background:#f3e8ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-adjust" style="color:#7c3aed;font-size:13px"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Chế độ màu</div>
+              <div style="font-size:11px;color:var(--sm-muted,#94a3b8)">Chọn giao diện sáng hoặc tối</div>
+            </div>
+          </div>
+
+          <!-- Light / Dark preview cards -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <!-- Light Mode -->
+            <button id="smLightBtn" onclick="if(window.ThemeManager&&document.body.classList.contains('dark')){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}" style="
+              border-radius:10px;padding:10px;border:2px solid #e2e8f0;
+              background:#fff;cursor:pointer;transition:all .2s;text-align:center
+            " onmouseover="this.style.borderColor='#2563eb'" onmouseout="if(!document.body.classList.contains('dark')){this.style.borderColor='#2563eb'}else{this.style.borderColor='#e2e8f0'}">
+              <!-- mini UI mockup - light -->
+              <div style="background:#f1f5f9;border-radius:6px;height:36px;margin-bottom:6px;padding:4px;display:flex;gap:3px;align-items:flex-start">
+                <div style="width:8px;background:#e2e8f0;border-radius:2px;height:100%"></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                  <div style="height:6px;background:#e2e8f0;border-radius:2px;width:70%"></div>
+                  <div style="height:6px;background:#e2e8f0;border-radius:2px;width:90%"></div>
+                  <div style="height:6px;background:#dbeafe;border-radius:2px;width:50%"></div>
+                </div>
+              </div>
+              <div style="font-size:11px;font-weight:600;color:#475569;display:flex;align-items:center;justify-content:center;gap:4px">
+                <i class="fas fa-sun" style="color:#f59e0b;font-size:10px"></i> Sáng
+              </div>
+            </button>
+
+            <!-- Dark Mode -->
+            <button id="smDarkBtn" onclick="if(window.ThemeManager&&!document.body.classList.contains('dark')){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}" style="
+              border-radius:10px;padding:10px;border:2px solid #e2e8f0;
+              background:#1e293b;cursor:pointer;transition:all .2s;text-align:center
+            " onmouseover="this.style.borderColor='#818cf8'" onmouseout="if(document.body.classList.contains('dark')){this.style.borderColor='#818cf8'}else{this.style.borderColor='#e2e8f0'}">
+              <!-- mini UI mockup - dark -->
+              <div style="background:#0f172a;border-radius:6px;height:36px;margin-bottom:6px;padding:4px;display:flex;gap:3px;align-items:flex-start">
+                <div style="width:8px;background:#334155;border-radius:2px;height:100%"></div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                  <div style="height:6px;background:#334155;border-radius:2px;width:70%"></div>
+                  <div style="height:6px;background:#334155;border-radius:2px;width:90%"></div>
+                  <div style="height:6px;background:#1e3a5f;border-radius:2px;width:50%"></div>
+                </div>
+              </div>
+              <div style="font-size:11px;font-weight:600;color:#94a3b8;display:flex;align-items:center;justify-content:center;gap:4px">
+                <i class="fas fa-moon" style="color:#818cf8;font-size:10px"></i> Tối
+              </div>
+            </button>
+          </div>
+
+          <!-- Toggle switch alternative -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--sm-border,#e2e8f0)">
+            <span style="font-size:12px;color:var(--sm-muted,#94a3b8)">
+              <i class="fas fa-magic" style="margin-right:5px;color:#a78bfa"></i>Chuyển đổi nhanh
+            </span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <i class="fas fa-sun" style="color:#f59e0b;font-size:11px"></i>
+              <button id="sidebarThemeToggle"
+                      onclick="if(window.ThemeManager){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}"
+                      style="
+                        position:relative;width:44px;height:24px;border-radius:12px;
+                        background:#cbd5e1;border:none;cursor:pointer;
+                        transition:background .3s;flex-shrink:0
+                      ">
+                <span id="sidebarThemeThumb" style="
+                  position:absolute;top:2px;left:2px;
+                  width:20px;height:20px;border-radius:50%;
+                  background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);
+                  transition:transform .3s
+                "></span>
+              </button>
+              <i class="fas fa-moon" style="color:#818cf8;font-size:11px"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: HỆ THỐNG ── -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
+          Hệ thống
+        </div>
+
+        <!-- Language -->
+        <div style="
+          display:flex;align-items:center;justify-content:space-between;
+          padding:11px 12px;border-radius:12px;
+          background:var(--sm-section-bg,#f8fafc);border:1px solid var(--sm-border,#e2e8f0)
+        ">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:10px;background:#fef9c3;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-globe" style="color:#d97706;font-size:15px"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Ngôn ngữ</div>
+              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Language / Ngôn ngữ</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;font-weight:600;color:#7c3aed;background:#f3e8ff;padding:3px 10px;border-radius:20px">🇻🇳 Tiếng Việt</span>
+          </div>
+        </div>
+
+        <!-- App info row -->
+        <div style="
+          display:flex;align-items:center;justify-content:space-between;
+          padding:11px 12px;border-radius:12px;margin-top:6px
+        ">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:36px;height:36px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-info-circle" style="color:#16a34a;font-size:15px"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Schedule With AI</div>
+              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Phiên bản 1.0.0</div>
+            </div>
+          </div>
+          <span style="font-size:10px;font-weight:600;color:#16a34a;background:#dcfce7;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px">Stable</span>
+        </div>
+      </div>
+
+    </div><!-- end scrollable body -->
+
+    <!-- ── LOGOUT FOOTER ── -->
+    <div style="padding:12px 20px 16px;border-top:1px solid var(--sm-border,#e2e8f0);flex-shrink:0">
+      <button id="modalLogoutBtn" style="
+        width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+        padding:11px 16px;border-radius:12px;border:1.5px solid #fecaca;
+        background:#fff5f5;cursor:pointer;transition:all .2s;
+        color:#dc2626;font-size:13px;font-weight:600
+      " onmouseover="this.style.background='#fee2e2';this.style.borderColor='#f87171'"
+         onmouseout="this.style.background='#fff5f5';this.style.borderColor='#fecaca'">
+        <i class="fas fa-sign-out-alt" style="font-size:14px"></i>
+        Đăng xuất
       </button>
     </div>
 
-    <div class="p-6 space-y-6">
-      <div
-        class="flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100"
-      >
-        <div
-          class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md"
-        >
-          <span class="settings-avatar-letter">?</span>
-        </div>
-        <div>
-          <p class="font-semibold text-gray-900 settings-user-name">
-            Người dùng
-          </p>
-          <p class="text-xs text-gray-600 settings-user-email">
-            email@example.com
-          </p>
-        </div>
-      </div>
-
-      <div class="space-y-2 border-b border-gray-200 pb-4">
-        <button
-          id="openProfileBtn"
-          class="w-full text-left p-4 rounded-lg hover:bg-blue-50 transition-all flex items-center justify-between text-gray-700 hover:text-blue-600 group"
-        >
-          <div class="flex items-center gap-3">
-            <i
-              class="fas fa-user-edit text-blue-500 group-hover:scale-110 transition-transform"
-            ></i>
-            <span class="font-medium">Cập nhật hồ sơ</span>
-          </div>
-          <i
-            class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500 transition-colors"
-          ></i>
-        </button>
-        <button
-          id="openNotificationBtn"
-          class="w-full text-left p-4 rounded-lg hover:bg-cyan-50 transition-all flex items-center justify-between text-gray-700 hover:text-cyan-600 group"
-        >
-          <div class="flex items-center gap-3">
-            <i
-              class="fas fa-bell text-cyan-500 group-hover:scale-110 transition-transform"
-            ></i>
-            <span class="font-medium">Thông báo</span>
-          </div>
-          <i
-            class="fas fa-chevron-right text-gray-400 group-hover:text-cyan-500 transition-colors"
-          ></i>
-        </button>
-        <button
-          class="w-full text-left p-4 rounded-lg hover:bg-purple-50 transition-all flex items-center justify-between text-gray-700 hover:text-purple-600 group"
-        >
-          <div class="flex items-center gap-3">
-            <i
-              class="fas fa-palette text-purple-500 group-hover:scale-110 transition-transform"
-            ></i>
-            <span class="font-medium">Giao diện</span>
-          </div>
-          <i
-            class="fas fa-chevron-right text-gray-400 group-hover:text-purple-500 transition-colors"
-          ></i>
-        </button>
-        <button
-          class="w-full text-left p-4 rounded-lg hover:bg-amber-50 transition-all flex items-center justify-between text-gray-700 hover:text-amber-600 group"
-        >
-          <div class="flex items-center gap-3">
-            <i
-              class="fas fa-globe text-amber-500 group-hover:scale-110 transition-transform"
-            ></i>
-            <span class="font-medium">Ngôn ngữ</span>
-          </div>
-          <span class="text-sm text-gray-500">Tiếng Việt</span>
-        </button>
-      </div>
-
-      <div class="pt-2">
-        <button
-          id="modalLogoutBtn"
-          class="w-full text-left p-4 rounded-lg hover:bg-red-50 transition-all flex items-center gap-3 text-red-600 font-medium hover:text-red-700 group"
-        >
-          <i
-            class="fas fa-sign-out-alt group-hover:scale-110 transition-transform"
-          ></i>
-          <span>Đăng xuất</span>
-        </button>
-      </div>
-
-      <div
-        class="text-center text-xs text-gray-400 pt-2 border-t border-gray-200"
-      >
-        <span>Schedule With AI v1.0.0</span>
-      </div>
-    </div>
   </div>
 </div>
 
+<style>
+/* Settings modal dark mode via CSS vars */
+body.dark #settingsModalPanel {
+  --sm-bg: #1e293b;
+  --sm-text: #f1f5f9;
+  --sm-muted: #64748b;
+  --sm-label: #475569;
+  --sm-border: #334155;
+  --sm-hover: rgba(96,165,250,0.08);
+  --sm-hover-cyan: rgba(34,211,238,0.06);
+  --sm-section-bg: #162032;
+}
+body.dark #settingsModalPanel .sm-menu-item:hover {
+  background: rgba(96,165,250,0.08) !important;
+}
+body.dark #settingsModalPanel #smLightBtn {
+  background: #0f172a;
+  border-color: #334155;
+}
+body.dark #settingsModalPanel #smDarkBtn {
+  background: #1e293b;
+  border-color: #818cf8;
+}
+body.dark #settingsModalPanel #modalLogoutBtn {
+  background: rgba(220,38,38,0.08) !important;
+  border-color: rgba(248,113,113,0.3) !important;
+}
+body.dark #settingsModalPanel #modalLogoutBtn:hover {
+  background: rgba(220,38,38,0.15) !important;
+  border-color: #f87171 !important;
+}
+</style>
+
 <script>
+  // Theme toggle helper — global so onclick can call it
+  function updateSidebarThemeToggle() {
+    const isDark = document.body.classList.contains('dark');
+    const btn   = document.getElementById('sidebarThemeToggle');
+    const thumb = document.getElementById('sidebarThemeThumb');
+    if (btn)   btn.style.background   = isDark ? '#4f46e5' : '#cbd5e1';
+    if (thumb) thumb.style.transform  = isDark ? 'translateX(22px)' : 'translateX(2px)';
+  }
+
+  // Update the light/dark preview card borders in the settings modal
+  function updateSettingsThemeUI() {
+    const isDark = document.body.classList.contains('dark');
+    const lightBtn = document.getElementById('smLightBtn');
+    const darkBtn  = document.getElementById('smDarkBtn');
+    if (lightBtn) lightBtn.style.borderColor = isDark ? '#334155' : '#2563eb';
+    if (darkBtn)  darkBtn.style.borderColor  = isDark ? '#818cf8' : '#334155';
+    updateSidebarThemeToggle();
+  }
+
+  // Sync on theme change event
+  document.addEventListener('theme-changed', () => {
+    updateSidebarThemeToggle();
+    updateSettingsThemeUI();
+  });
+  // Initial sync (theme.js runs before sidebar loads)
+  updateSidebarThemeToggle();
+  updateSettingsThemeUI();
+
   (function () {
     console.log("Sidebar + Settings Modal loaded");
 

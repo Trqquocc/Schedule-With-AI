@@ -100,12 +100,16 @@
 
                         <div class="chart-container">
                             <div class="chart-title">Biểu đồ công việc theo ngày</div>
-                            <canvas id="bar-chart" height="80"></canvas>
+                            <div style="position:relative;height:200px">
+                              <canvas id="bar-chart"></canvas>
+                            </div>
                         </div>
 
                         <div class="chart-container">
                             <div class="chart-title">Tỷ lệ hoàn thành</div>
-                            <canvas id="donut-chart" height="60"></canvas>
+                            <div style="position:relative;height:180px;display:flex;align-items:center;justify-content:center">
+                              <canvas id="donut-chart" style="max-width:260px"></canvas>
+                            </div>
                         </div>
                     </div>
 

@@ -41,13 +41,13 @@ router.post("/register", async (req, res) => {
         Username: username,
         Password: hashed,
         Email: email,
-        HOTen: hoten || username,
+        HoTen: hoten || username,
         CreatedDate: new Date().toISOString(),
         NgayTao: new Date().toISOString(),
         LuongTheoGio: 29000,
         IsActive: true,
       })
-      .select("UserID, Username, Email, HOTen")
+      .select("UserID, Username, Email, HoTen")
       .single();
 
     if (insertError) {
@@ -83,7 +83,7 @@ router.post("/register", async (req, res) => {
           id: newUser.UserID,
           username: newUser.Username,
           email: newUser.Email,
-          hoten: newUser.HOTen || newUser.Username,
+          hoten: newUser.HoTen || newUser.Username,
         },
       },
     });
@@ -142,7 +142,7 @@ router.post("/login", async (req, res) => {
           id: user.UserID,
           username: user.Username,
           email: user.Email,
-          hoten: user.HOTen,
+          hoten: user.HoTen,
           luongTheoGio: user.LuongTheoGio || 0,
         },
       },
@@ -166,7 +166,7 @@ router.get("/verify", async (req, res) => {
 
     const { data: user, error } = await supabase
       .from("Users")
-      .select("UserID, Username, Email, HOTen, LuongTheoGio")
+      .select("UserID, Username, Email, HoTen, LuongTheoGio")
       .eq("UserID", decoded.userId)
       .single();
 

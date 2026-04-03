@@ -51,9 +51,8 @@
 
       const cleanupMap = {
         schedule: () => {
-          if (window.CalendarModule && CalendarModule.destroy) {
-            CalendarModule.destroy();
-          }
+          // Don't destroy - keep calendar alive for instant re-entry
+          console.log(' Schedule: keeping calendar alive');
         },
         work: () => {
           if (window.WorkManager && WorkManager.cleanup) {
@@ -229,6 +228,30 @@
         console.error(` Container not found: ${containerId}`);
         return;
       }
+
+      // If section content already loaded, just update size
+      if (container._sectionLoaded && container.children.length > 0) {
+        console.log(` Section ${sectionName} already loaded, skipping re-render`);
+        if (sectionName === 'schedule' && window.CalendarModule?.calendar) {
+          requestAnimationFrame(() => {
+            window.CalendarModule.calendar.updateSize();
+          });
+        }
+        if (sectionName === 'ai' && window.AIModule?.calendar) {
+          const aiCal = document.getElementById('ai-calendar');
+          if (aiCal) {
+            aiCal.style.position = '';
+            aiCal.style.left = '';
+            aiCal.style.opacity = '1';
+            aiCal.style.pointerEvents = '';
+          }
+          requestAnimationFrame(() => {
+            window.AIModule.calendar.updateSize();
+          });
+        }
+        return;
+      }
+      container._sectionLoaded = true;
 
       console.log(` Loading content for: ${sectionName}`);
 

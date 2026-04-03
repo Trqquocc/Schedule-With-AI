@@ -295,17 +295,17 @@
             <input type="checkbox" class="task-checkbox pending-checkbox rounded">
           </td>
           <td class="px-6 py-4">
-            <div class="flex items-center">
-              <div class="flex-shrink-0 w-3 h-10 rounded-sm mr-3" style="background-color: ${categoryColor}"></div>
-              <div>
-                <div class="font-medium text-gray-900">${
-                  task.TieuDe || ""
-                }</div>
-                ${
-                  task.MoTa
-                    ? `<div class="text-sm text-gray-600 mt-1">${task.MoTa}</div>`
-                    : ""
-                }
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0 w-1 h-10 rounded-full" style="background-color: ${categoryColor}"></div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-medium text-gray-900">${task.TieuDe || ""}</span>
+                  <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold" style="background:${categoryColor}22;color:${categoryColor}">
+                    <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:${categoryColor}"></span>
+                    ${priorityText}
+                  </span>
+                </div>
+                ${task.MoTa ? `<div class="text-sm text-gray-500 mt-0.5 truncate max-w-xs">${task.MoTa}</div>` : ""}
               </div>
             </div>
           </td>

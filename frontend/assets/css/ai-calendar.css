@@ -149,11 +149,11 @@
 }
 
 #ai-section nav button {
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 #ai-section nav button:hover {
-  transform: translateY(-1px);
+  /* no transform — prevents unwanted movement on icon-only btns */
 }
 
 #ai-section .bg-gray-100 button.bg-white {
@@ -462,4 +462,121 @@
   text-align: center;
   padding: 40px;
   color: #ef4444;
+}
+
+/* ===== DARK MODE – AI SECTION ===== */
+body.dark #ai-section {
+  background: var(--bg-app) !important;
+}
+
+body.dark #ai-calendar {
+  background: var(--bg-card) !important;
+}
+
+/* AI toolbar nav controls in dark mode */
+body.dark .ai-toolbar {
+  background: var(--bg-card) !important;
+  border-bottom-color: var(--border) !important;
+}
+
+body.dark #ai-calendar-title {
+  color: var(--text-primary) !important;
+}
+
+body.dark #ai-cal-prev-btn,
+body.dark #ai-cal-next-btn {
+  color: var(--text-muted) !important;
+}
+
+body.dark #ai-cal-today-btn {
+  color: #a78bfa !important;
+}
+
+/* View switcher pill */
+body.dark .ai-toolbar .flex.items-center.gap-1.rounded-xl {
+  background: var(--bg-card-alt) !important;
+}
+
+body.dark .ai-view-btn {
+  color: var(--text-secondary) !important;
+}
+
+body.dark .ai-view-btn.bg-white {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+
+/* AI suggestion modal dark mode */
+body.dark #aiSuggestionModal .bg-white,
+body.dark #aiEventDetailModal .bg-white {
+  background: var(--bg-card) !important;
+}
+
+body.dark #aiSuggestionModal .border-gray-200,
+body.dark #aiEventDetailModal .border-gray-200 {
+  border-color: var(--border) !important;
+}
+
+body.dark #aiSuggestionModal .text-gray-900,
+body.dark #aiSuggestionModal .text-gray-800,
+body.dark #aiEventDetailModal .text-gray-900,
+body.dark #aiEventDetailModal .text-gray-800 {
+  color: var(--text-primary) !important;
+}
+
+body.dark #aiSuggestionModal .text-gray-600,
+body.dark #aiSuggestionModal .text-gray-500,
+body.dark #aiEventDetailModal .text-gray-600,
+body.dark #aiEventDetailModal .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+body.dark #aiSuggestionModal .bg-gray-50,
+body.dark #aiSuggestionModal .bg-gray-100 {
+  background: var(--bg-card-alt) !important;
+}
+
+/* Priority badges dark mode in AI modal */
+body.dark .priority-1 { background: rgba(20,83,45,0.4) !important; color: #4ade80 !important; }
+body.dark .priority-2 { background: rgba(30,58,138,0.4) !important; color: #60a5fa !important; }
+body.dark .priority-3 { background: rgba(120,53,15,0.4) !important; color: #fbbf24 !important; }
+body.dark .priority-4 { background: rgba(127,29,29,0.4) !important; color: #f87171 !important; }
+
+body.dark .task-item {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+body.dark .task-item:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--border-hover) !important;
+}
+
+body.dark .task-item.selected {
+  background: rgba(96,165,250,0.1) !important;
+  border-color: var(--accent) !important;
+}
+
+body.dark .task-title {
+  color: var(--text-primary) !important;
+}
+
+body.dark .task-details,
+body.dark .task-time-preference {
+  color: var(--text-muted) !important;
+}
+
+body.dark #aiSuggestionModal .task-item {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+body.dark #aiSuggestionModal .task-item:hover {
+  background: var(--bg-card-hover) !important;
+}
+
+body.dark #aiSuggestionModal .task-list-container {
+  border-color: var(--border) !important;
 }

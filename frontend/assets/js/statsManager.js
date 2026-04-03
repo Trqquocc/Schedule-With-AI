@@ -95,55 +95,109 @@
     renderDonutChart(completed, pending);
   }
 
+  function isDarkMode() {
+    return document.body.classList.contains("dark");
+  }
+
+  function chartColors() {
+    const dark = isDarkMode();
+    return {
+      gridColor: dark ? "rgba(51,65,85,0.6)" : "rgba(226,232,240,0.6)",
+      tickColor: dark ? "#64748b" : "#94a3b8",
+      legendColor: dark ? "#cbd5e1" : "#475569",
+      tooltipBg: "rgba(15,23,42,0.92)",
+      completed: dark ? "rgba(96,165,250,0.9)" : "rgba(37,99,235,0.85)",
+      completedHover: dark ? "#60a5fa" : "#2563eb",
+      pending: dark ? "rgba(51,65,85,0.7)" : "rgba(226,232,240,0.9)",
+      pendingHover: dark ? "#334155" : "#cbd5e1",
+      donutCompleted: dark ? ["#60a5fa", "#34d399"] : ["#2563eb", "#10b981"],
+      donutPending: dark ? "rgba(51,65,85,0.5)" : "rgba(226,232,240,0.8)",
+      centerText: dark ? "#f1f5f9" : "#1e293b",
+      centerSub: dark ? "#64748b" : "#94a3b8",
+    };
+  }
+
   function renderBarChart(dailyData) {
     const barCtx = document.getElementById("bar-chart");
     if (!barCtx) return;
 
-    if (barChart) {
-      barChart.destroy();
-    }
+    if (barChart) barChart.destroy();
 
-    // Chuyển đổi dữ liệu daily
-    const labels = dailyData.map((item) =>
-      new Date(item.date).toLocaleDateString("vi-VN", {
-        month: "short",
-        day: "numeric",
-      })
+    // limit to last 14 days for readability
+    const slice = dailyData.slice(-14);
+    const labels = slice.map((item) =>
+      new Date(item.date).toLocaleDateString("vi-VN", { month: "numeric", day: "numeric" })
     );
-    const completedData = dailyData.map((item) => item.completed || 0);
-    const pendingData = dailyData.map((item) => (item.total || 0) - (item.completed || 0));
+    const completedData = slice.map((item) => item.completed || 0);
+    const pendingData   = slice.map((item) => (item.total || 0) - (item.completed || 0));
+    const c = chartColors();
 
     barChart = new Chart(barCtx, {
       type: "bar",
       data: {
-        labels: labels,
+        labels,
         datasets: [
           {
             label: "Hoàn thành",
             data: completedData,
-            backgroundColor: "#1971c2",
-            borderRadius: 6,
+            backgroundColor: c.completed,
+            hoverBackgroundColor: c.completedHover,
+            borderRadius: { topLeft: 6, topRight: 6 },
+            borderSkipped: false,
+            maxBarThickness: 22,
           },
           {
-            label: "Chưa hoàn thành",
+            label: "Chờ xử lý",
             data: pendingData,
-            backgroundColor: "#e9ecef",
-            borderRadius: 6,
+            backgroundColor: c.pending,
+            hoverBackgroundColor: c.pendingHover,
+            borderRadius: { topLeft: 6, topRight: 6 },
+            borderSkipped: false,
+            maxBarThickness: 22,
           },
         ],
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
         plugins: {
-          legend: { position: "bottom" },
+          legend: {
+            position: "bottom",
+            labels: {
+              usePointStyle: true,
+              pointStyle: "circle",
+              padding: 16,
+              font: { size: 11, weight: "600" },
+              color: c.legendColor,
+              boxWidth: 8,
+            },
+          },
+          tooltip: {
+            backgroundColor: c.tooltipBg,
+            titleColor: "#f1f5f9",
+            bodyColor: "#cbd5e1",
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              title: (items) => `Ngày ${items[0].label}`,
+              label: (ctx) => `  ${ctx.dataset.label}: ${ctx.parsed.y}`,
+            },
+          },
         },
         scales: {
-          y: { 
+          x: {
+            stacked: false,
+            grid: { display: false },
+            ticks: { color: c.tickColor, font: { size: 10 }, maxRotation: 45 },
+            border: { display: false },
+          },
+          y: {
             beginAtZero: true,
-            ticks: {
-              stepSize: 1
-            }
+            stacked: false,
+            grid: { color: c.gridColor, drawTicks: false },
+            ticks: { stepSize: 1, color: c.tickColor, font: { size: 10 }, padding: 6 },
+            border: { display: false },
           },
         },
       },
@@ -154,40 +208,86 @@
     const donutCtx = document.getElementById("donut-chart");
     if (!donutCtx) return;
 
-    if (donutChart) {
-      donutChart.destroy();
-    }
+    if (donutChart) donutChart.destroy();
+
+    const total = completed + pending;
+    const pct   = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const c = chartColors();
+    const isEmpty = total === 0;
 
     donutChart = new Chart(donutCtx, {
       type: "doughnut",
       data: {
-        labels: ["Hoàn thành", "Chưa hoàn thành"],
-        datasets: [
-          {
-            data: [completed, pending],
-            backgroundColor: ["#1971c2", "#e7f5ff"],
-            borderWidth: 0,
-          },
-        ],
+        labels: isEmpty ? ["Không có dữ liệu"] : ["Hoàn thành", "Chờ xử lý"],
+        datasets: [{
+          data: isEmpty ? [1] : [completed, pending || 0.01],
+          backgroundColor: isEmpty ? ["rgba(226,232,240,0.4)"] : [c.donutCompleted[0], c.donutPending],
+          hoverBackgroundColor: isEmpty ? ["rgba(226,232,240,0.6)"] : [c.donutCompleted[1], c.pendingHover],
+          borderWidth: 0,
+          hoverOffset: isEmpty ? 0 : 5,
+        }],
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
+        cutout: "72%",
         plugins: {
-          legend: { position: "bottom" },
+          legend: {
+            display: !isEmpty,
+            position: "bottom",
+            labels: {
+              usePointStyle: true,
+              pointStyle: "circle",
+              padding: 14,
+              font: { size: 11, weight: "600" },
+              color: c.legendColor,
+              boxWidth: 8,
+            },
+          },
           tooltip: {
+            enabled: !isEmpty,
+            backgroundColor: c.tooltipBg,
+            titleColor: "#f1f5f9",
+            bodyColor: "#cbd5e1",
+            padding: 10,
+            cornerRadius: 8,
             callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.parsed || 0;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                return `${label}: ${value} (${percentage}%)`;
-              }
-            }
-          }
+              label: (ctx) => {
+                const val = ctx.parsed;
+                const t   = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const p   = t > 0 ? Math.round((val / t) * 100) : 0;
+                return `  ${ctx.label}: ${val} (${p}%)`;
+              },
+            },
+          },
         },
       },
+      plugins: [{
+        id: "centerText",
+        afterDraw(chart) {
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return;
+          const cx = (chartArea.left + chartArea.right) / 2;
+          const cy = (chartArea.top + chartArea.bottom) / 2;
+          const col = chartColors();
+          ctx.save();
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          if (isEmpty) {
+            ctx.font = "12px -apple-system,sans-serif";
+            ctx.fillStyle = col.centerSub;
+            ctx.fillText("Chưa có dữ liệu", cx, cy);
+          } else {
+            ctx.font = `bold ${Math.min(26, chartArea.width * 0.15)}px -apple-system,sans-serif`;
+            ctx.fillStyle = col.centerText;
+            ctx.fillText(pct + "%", cx, cy - 9);
+            ctx.font = `${Math.min(11, chartArea.width * 0.065)}px -apple-system,sans-serif`;
+            ctx.fillStyle = col.centerSub;
+            ctx.fillText("hoàn thành", cx, cy + 13);
+          }
+          ctx.restore();
+        },
+      }],
     });
   }
 
@@ -196,6 +296,37 @@
     if (applyStatsBtn) {
       applyStatsBtn.addEventListener("click", handleLoadStats);
     }
+  }
+
+  function setupQuickTabs() {
+    const quickTabs = document.querySelectorAll("#stats-view .quick-tab");
+    quickTabs.forEach((tab) => {
+      tab.addEventListener("click", async function () {
+        quickTabs.forEach((t) => t.classList.remove("active"));
+        this.classList.add("active");
+
+        const period = this.dataset.period;
+        const today = new Date();
+        const fmt = (d) => d.toISOString().split("T")[0];
+        let from;
+        if (period === "week") {
+          from = new Date(today.getTime() - 7 * 24 * 3600 * 1000);
+        } else if (period === "month") {
+          from = new Date(today.getFullYear(), today.getMonth(), 1);
+        } else {
+          from = new Date(today.getFullYear(), 0, 1);
+        }
+
+        try {
+          const result = await loadStatsData(fmt(from), fmt(today));
+          if (result.success) {
+            updateSidebarStats(result.data);
+          }
+        } catch (e) {
+          console.error("Stats quick tab error:", e);
+        }
+      });
+    });
   }
 
   async function handleLoadStats() {
@@ -233,6 +364,7 @@
 
     initializeDateInputs();
     setupDateFilter();
+    setupQuickTabs();
 
     // Tự động load dữ liệu khi tab stats được active
     const statsView = document.getElementById("stats-view");

@@ -1,80 +1,90 @@
 <div class="flex h-full">
+  <!-- Sidebar -->
   <div
     id="calendar-sidebar"
-    class="calendar-sidebar w-80 bg-white border-r border-gray-200"
+    class="calendar-sidebar w-56 bg-white border-r"
+    style="border-color:#e2e8f0;flex-shrink:0"
   ></div>
 
-  <div class="flex-1 flex flex-col bg-white">
-    <nav class="bg-white border-b border-gray-200 px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <button
-              id="cal-prev-btn"
-              class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Tháng trước"
-            >
-              <i class="fas fa-chevron-left"></i>
+  <!-- Main calendar area -->
+  <div class="flex-1 flex flex-col min-w-0" style="background:var(--bg-app,#f1f5f9)">
+
+    <!-- Navbar -->
+    <nav class="cal-toolbar bg-white border-b px-5 py-3" style="border-color:#e2e8f0;flex-shrink:0">
+      <div class="flex items-center justify-between gap-4">
+
+        <!-- Left: icon + nav + title -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+               style="background:linear-gradient(135deg,#2563eb,#4f46e5)">
+            <i class="fas fa-calendar-alt text-white text-sm"></i>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button id="cal-prev-btn"
+              class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+              style="color:#6b7280"
+              onmouseover="this.style.background='#f3f4f6'"
+              onmouseout="this.style.background='transparent'"
+              title="Tháng trước">
+              <i class="fas fa-chevron-left text-xs"></i>
             </button>
-            <button
-              id="cal-today-btn"
-              class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
-            >
+            <button id="cal-today-btn"
+              class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors"
+              style="color:#2563eb"
+              onmouseover="this.style.background='#eff6ff'"
+              onmouseout="this.style.background='transparent'">
               Hôm nay
             </button>
-            <button
-              id="cal-next-btn"
-              class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Tháng sau"
-            >
-              <i class="fas fa-chevron-right"></i>
+            <button id="cal-next-btn"
+              class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+              style="color:#6b7280"
+              onmouseover="this.style.background='#f3f4f6'"
+              onmouseout="this.style.background='transparent'"
+              title="Tháng sau">
+              <i class="fas fa-chevron-right text-xs"></i>
             </button>
           </div>
 
-          <div
-            id="calendar-title"
-            class="text-xl font-semibold text-gray-800 min-w-[200px]"
-          >
+          <h2 id="calendar-title"
+            class="text-lg font-bold"
+            style="color:#1e293b;min-width:180px">
             Tháng 12 năm 2025
-          </div>
+          </h2>
         </div>
 
-        <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-          <button
-            id="cal-day-view"
-            class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
-            data-view="timeGridDay"
-          >
+        <!-- Right: view switcher -->
+        <div class="flex items-center gap-1 rounded-xl p-1" style="background:#f1f5f9">
+          <button id="cal-day-view" data-view="timeGridDay"
+            class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+            style="color:#64748b">
             Ngày
           </button>
-          <button
-            id="cal-week-view"
-            class="px-4 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-white transition-colors"
-            data-view="timeGridWeek"
-          >
+          <button id="cal-week-view" data-view="timeGridWeek"
+            class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+            style="color:#64748b">
             Tuần
           </button>
-          <button
-            id="cal-month-view"
-            class="px-4 py-2 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm transition-colors"
-            data-view="dayGridMonth"
-          >
+          <button id="cal-month-view" data-view="dayGridMonth"
+            class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-white transition-all"
+            style="color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
             Tháng
           </button>
         </div>
+
       </div>
     </nav>
 
-    <div id="calendar" class="flex-1 overflow-hidden">
+    <!-- Calendar container -->
+    <div id="calendar" class="flex-1 overflow-hidden" style="min-height:0">
       <div class="flex items-center justify-center h-full">
-        <div class="text-center text-gray-500">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
-          ></div>
-          <p>Đang tải lịch trình...</p>
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p class="text-gray-500 font-medium">Đang tải lịch trình...</p>
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -83,34 +93,22 @@
     console.log("📅 Calendar content loaded");
 
     function initCalendar() {
-      console.log("🔧 Initializing calendar...");
-
       if (typeof CalendarModule === "undefined") {
-        console.warn("⚠️ CalendarModule not loaded yet, waiting...");
         setTimeout(initCalendar, 200);
         return;
       }
-
       if (typeof FullCalendar === "undefined") {
-        console.warn("⚠️ FullCalendar not loaded yet, waiting...");
         setTimeout(initCalendar, 200);
         return;
       }
-
       if (typeof Utils === "undefined") {
-        console.warn("⚠️ Utils not loaded yet, waiting...");
         setTimeout(initCalendar, 200);
         return;
       }
 
-      console.log("✅ All dependencies ready, initializing CalendarModule...");
       CalendarModule.init()
-        .then(() => {
-          console.log("✅ Calendar initialized successfully!");
-        })
-        .catch((err) => {
-          console.error("❌ Calendar initialization failed:", err);
-        });
+        .then(() => console.log("✅ Calendar initialized"))
+        .catch((err) => console.error("❌ Calendar init failed:", err));
     }
 
     setTimeout(initCalendar, 100);
