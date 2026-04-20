@@ -68,7 +68,6 @@ router.get("/events", authenticateToken, async (req, res) => {
         };
       });
 
-    console.log(`Trả về ${events.length} events`);
     res.json({ success: true, data: events });
   } catch (error) {
     console.error("Lỗi lấy events:", error);
