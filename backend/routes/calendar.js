@@ -36,7 +36,7 @@ router.get("/events", authenticateToken, async (req, res) => {
 
     const { data: records, error } = await supabase
       .from("LichTrinh")
-      .select("*, CongViec(TieuDe, MucDoUuTien, MauSac)")
+      .select("*, CongViec(TieuDe, MucDoUuTien, MauSac, LoaiCongViec(TenLoai))")
       .or(`UserID.eq.${userId}`)
       .gte("GioBatDau", thirtyDaysAgo)
       .order("GioBatDau", { ascending: false });
@@ -63,6 +63,7 @@ router.get("/events", authenticateToken, async (req, res) => {
           MauSac: ev.CongViec?.MauSac || priorityColor,
           DaHoanThanh: ev.DaHoanThanh,
           MucDoUuTien: ev.CongViec?.MucDoUuTien,
+          TenLoai: ev.CongViec?.LoaiCongViec?.TenLoai || null,
           AI_DeXuat: ev.AI_DeXuat || 0,
         };
       });

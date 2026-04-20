@@ -67,13 +67,15 @@
           return {
             id: `drag-${taskId}`,
             title,
-            backgroundColor: color,
-            borderColor: color,
+            backgroundColor: "#ffffff",
+            borderColor: "#111827",
+            textColor: "#0f172a",
             extendedProps: {
               taskId,
               priority,
               description,
               isFromDrag: true,
+              accent: color,
             },
           };
         },
@@ -235,8 +237,11 @@
               title: ev.title || ev.TieuDe || "Không tiêu đề",
               start: startTime,
               end: endTime,
-              backgroundColor: color,
-              borderColor: color,
+              // White body + dark border so the priority color can live
+              // outside the card as a halo (driven by --ev-accent in CSS).
+              backgroundColor: "#ffffff",
+              borderColor: "#111827",
+              textColor: "#0f172a",
               allDay: ev.allDay || false,
               extendedProps: {
                 note: ev.GhiChu || ev.extendedProps?.note || "",
@@ -245,6 +250,8 @@
                 isFromDrag: ev.isFromDrag || false,
                 isAIEvent: false,
                 priority: ev.MucDoUuTien || 2,
+                category: ev.TenLoai || ev.extendedProps?.category || null,
+                accent: color,
                 originalColor: color,
               },
             };
@@ -447,12 +454,61 @@
 
         datesSet: () => this.updateCalendarTitle(),
 
+        /**
+         * Custom event body — replaces FC's default inner markup with a
+         * framed title (priority dot + text), a meta chip row (time +
+         * category), and a dashed note block when a note exists.
+         * The outer .fc-event keeps FC's drag/drop/resize behaviour.
+         */
+        eventContent: (arg) => {
+          const ev = arg.event;
+          const timeText = arg.timeText || "";
+          const note = ev.extendedProps?.note || "";
+          const category = ev.extendedProps?.category || "";
+          const title = ev.title || "";
+          const esc = (s) =>
+            String(s ?? "")
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
+          const metaParts = [];
+          if (timeText) metaParts.push(`<span><i class="far fa-clock"></i>${esc(timeText)}</span>`);
+          if (category) metaParts.push(`<span><i class="fas fa-folder"></i>${esc(category)}</span>`);
+          const metaHtml = metaParts.length
+            ? `<div class="sched-evt-meta">${metaParts.join("")}</div>`
+            : "";
+          const noteHtml = note
+            ? `<div class="sched-evt-note">
+                 <span class="sched-evt-note-label">Note</span>
+                 <div class="sched-evt-note-body">${esc(note)}</div>
+               </div>`
+            : "";
+          return {
+            html: `
+              <div class="sched-evt-title">
+                <span class="sched-evt-dot" aria-hidden="true"></span>
+                <span class="sched-evt-title-text">${esc(title)}</span>
+              </div>
+              ${metaHtml}
+              ${noteHtml}
+            `,
+          };
+        },
+
         eventDidMount: (info) => {
           const el = info.el;
           el.style.cursor = "pointer";
 
           el.setAttribute("data-event-id", info.event.id);
           el.setAttribute("data-eventid", info.event.id);
+
+          // Priority halo colour — consumed by .fc-event CSS (color-mix glow).
+          const accent =
+            info.event.extendedProps.accent ||
+            info.event.extendedProps.originalColor ||
+            "#3B82F6";
+          el.style.setProperty("--ev-accent", accent);
 
           const priority = info.event.extendedProps.priority || 2;
           if (priority === 1) {
@@ -466,10 +522,8 @@
             el.classList.add("event-ai-suggested");
           }
 
-          // Apply completed CSS class on mount. Let the stylesheet own the
-          // visual treatment — using inline `background` shorthand wipes the
-          // priority-color tint set by FullCalendar. See calendar.css
-          // `.fc-event.event-completed` (uses background-image overlay).
+          // Apply completed CSS class on mount — styling is owned by
+          // calendar.css `.fc-event.event-completed` (dark-stripe overlay).
           if (info.event.extendedProps.completed) {
             el.classList.add("event-completed");
           }
@@ -477,16 +531,6 @@
           // Re-apply bulk selection outline if this event was selected before re-render.
           if (window.CalendarBulkComplete?.refreshStyles) {
             queueMicrotask(() => window.CalendarBulkComplete.refreshStyles());
-          }
-
-          // Show note under title if exists
-          const noteText = info.event.extendedProps.note;
-          if (noteText) {
-            const noteEl = document.createElement("div");
-            noteEl.style.cssText = "font-size:9px;opacity:0.8;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;z-index:2;margin-top:1px;";
-            noteEl.textContent = noteText;
-            const titleEl = el.querySelector(".fc-event-title") || el.querySelector(".fc-event-main");
-            if (titleEl) titleEl.appendChild(noteEl);
           }
 
           // Subtask overlay — unified chip style, anchored to bottom of event.
@@ -924,8 +968,9 @@
           title: title,
           start: startDate,
           end: endDate, // ✅ SỬ DỤNG endDate ĐÃ TÍNH
-          backgroundColor: color,
-          borderColor: color,
+          backgroundColor: "#ffffff",
+          borderColor: "#111827",
+          textColor: "#0f172a",
           editable: true,
           durationEditable: true,
           startEditable: true,
@@ -933,6 +978,7 @@
             taskId: taskId,
             isFromDrag: true,
             color: color,
+            accent: color,
             priority: priority,
           },
         };
@@ -1019,8 +1065,10 @@
             tempEvent.setProp("id", newEventId);
             tempEvent.setStart(start);
             tempEvent.setEnd(end);
-            tempEvent.setProp("backgroundColor", color);
-            tempEvent.setProp("borderColor", color);
+            tempEvent.setProp("backgroundColor", "#ffffff");
+            tempEvent.setProp("borderColor", "#111827");
+            tempEvent.setProp("textColor", "#0f172a");
+            tempEvent.setExtendedProp("accent", color);
             tempEvent.setExtendedProp("taskId", taskId);
             tempEvent.setExtendedProp("isFromDrag", true);
             tempEvent.setExtendedProp("priority", priority);
@@ -1424,9 +1472,10 @@
             title,
             start: startDateForSave,
             end: endDateForSave,
-            backgroundColor: color,
-            borderColor: color,
-            extendedProps: { note, completed: false, taskId, priority },
+            backgroundColor: "#ffffff",
+            borderColor: "#111827",
+            textColor: "#0f172a",
+            extendedProps: { note, completed: false, taskId, priority, accent: color },
           });
 
           close();
