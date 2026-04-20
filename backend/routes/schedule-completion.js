@@ -1,0 +1,132 @@
+/**
+ * schedule-completion.js
+ * Bulk-completion endpoints for LichTrinh (calendar events).
+ *
+ * Mounted at /api/schedule by server.js (auth already applied).
+ *
+ *   POST /api/schedule/complete-batch   body: { ids: string[] }
+ *     → mark given LichTrinh rows as completed (only rows owned by req.userId)
+ *
+ *   POST /api/schedule/complete-day     body: { date: "YYYY-MM-DD" }
+ *     → mark every event that starts on `date` (Asia/Bangkok) for req.userId
+ *       as completed. Reusable by Telegram /dailycheck later.
+ */
+
+const express = require("express");
+const router = express.Router();
+const { supabase } = require("../config/database");
+
+// Project-wide timezone (same as shift-matcher.js).
+const TZ_OFFSET_HOURS = 7;
+
+/**
+ * Build UTC start/end ISO strings for a given local date (YYYY-MM-DD) in +07:00.
+ * Returns [startIso, endIso] where startIso is inclusive and endIso is exclusive
+ * (next day 00:00 in local TZ).
+ */
+function dayRangeUtc(dateStr) {
+  // Local 00:00 +07:00 = UTC (00:00 - 07:00) on the same calendar date.
+  // Simplest path: build ISO strings with explicit offset and let Date normalize.
+  const startLocal = new Date(`${dateStr}T00:00:00+07:00`);
+  if (Number.isNaN(startLocal.getTime())) return null;
+  const endLocal = new Date(startLocal.getTime() + 24 * 60 * 60 * 1000);
+  return [startLocal.toISOString(), endLocal.toISOString()];
+}
+
+function isValidDateStr(s) {
+  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
+// POST /api/schedule/complete-batch
+router.post("/complete-batch", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const raw = req.body?.ids;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu danh sách ids",
+      });
+    }
+    // Normalize + de-dup. MaLichTrinh is UUID text in current schema.
+    const ids = Array.from(new Set(raw.map((x) => String(x).trim()).filter(Boolean)));
+    if (ids.length === 0) {
+      return res.status(400).json({ success: false, message: "ids rỗng" });
+    }
+    if (ids.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Tối đa 500 id mỗi lần",
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("LichTrinh")
+      .update({ DaHoanThanh: true })
+      .in("MaLichTrinh", ids)
+      .eq("UserID", userId)
+      .select("MaLichTrinh");
+
+    if (error) {
+      console.error("complete-batch error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+
+    return res.json({
+      success: true,
+      updated: (data || []).length,
+      ids: (data || []).map((r) => r.MaLichTrinh),
+    });
+  } catch (err) {
+    console.error("complete-batch exception:", err);
+    return res.status(500).json({ success: false, message: "Lỗi server" });
+  }
+});
+
+// POST /api/schedule/complete-day
+router.post("/complete-day", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const date = req.body?.date;
+    if (!isValidDateStr(date)) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu hoặc sai định dạng date (YYYY-MM-DD)",
+      });
+    }
+    const range = dayRangeUtc(date);
+    if (!range) {
+      return res.status(400).json({ success: false, message: "Ngày không hợp lệ" });
+    }
+    const [startIso, endIso] = range;
+
+    // Only flip rows that are not already completed — avoids spurious writes + keeps count accurate.
+    const { data, error } = await supabase
+      .from("LichTrinh")
+      .update({ DaHoanThanh: true })
+      .eq("UserID", userId)
+      .gte("GioBatDau", startIso)
+      .lt("GioBatDau", endIso)
+      .or("DaHoanThanh.is.null,DaHoanThanh.eq.false")
+      .select("MaLichTrinh");
+
+    if (error) {
+      console.error("complete-day error:", error);
+      return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+
+    return res.json({
+      success: true,
+      date,
+      updated: (data || []).length,
+      ids: (data || []).map((r) => r.MaLichTrinh),
+    });
+  } catch (err) {
+    console.error("complete-day exception:", err);
+    return res.status(500).json({ success: false, message: "Lỗi server" });
+  }
+});
+
+module.exports = router;
+// Exposed for unit testing.
+module.exports.__test = { dayRangeUtc, isValidDateStr };

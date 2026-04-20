@@ -440,6 +440,8 @@
 
         eventClick: (info) => {
           info.jsEvent.preventDefault();
+          // Let bulk-complete intercept when in multi-select mode or modifier held.
+          if (window.CalendarBulkComplete?.handleEventClick(info)) return;
           this._showEventDetails(info.event);
         },
 
@@ -470,6 +472,11 @@
           // `.fc-event.event-completed` (uses background-image overlay).
           if (info.event.extendedProps.completed) {
             el.classList.add("event-completed");
+          }
+
+          // Re-apply bulk selection outline if this event was selected before re-render.
+          if (window.CalendarBulkComplete?.refreshStyles) {
+            queueMicrotask(() => window.CalendarBulkComplete.refreshStyles());
           }
 
           // Show note under title if exists

@@ -97,6 +97,30 @@
             </div>
           </div>
 
+          <!-- Bulk completion controls -->
+          <div class="flex items-center gap-1">
+            <button id="cal-multi-toggle"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all"
+              style="border-color:#e2e8f0;background:#fff;color:#374151"
+              title="Bật chế độ chọn nhiều">
+              <i class="fas fa-check-double text-xs"></i>
+              <span>Chọn nhiều</span>
+            </button>
+            <button id="cal-multi-help"
+              class="w-7 h-7 flex items-center justify-center rounded-full border text-xs"
+              style="border-color:#e2e8f0;background:#fff;color:#94a3b8"
+              title="Hướng dẫn chọn nhiều">
+              <i class="fas fa-question"></i>
+            </button>
+            <button id="cal-daily-check"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white transition-all ml-1"
+              style="background:linear-gradient(135deg,#10b981,#059669)"
+              title="Hoàn thành tất cả công việc hôm nay">
+              <i class="fas fa-calendar-check text-xs"></i>
+              <span>Hôm nay</span>
+            </button>
+          </div>
+
           <div class="flex items-center gap-1 rounded-xl p-1" style="background:#f1f5f9">
             <button id="cal-day-view" data-view="timeGridDay"
               class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all">
@@ -133,6 +157,26 @@
           <p class="text-gray-500 font-medium">Đang tải lịch trình...</p>
         </div>
       </div>
+    </div>
+
+    <!-- Bulk-complete action bar — shown when 1+ events are selected -->
+    <div id="cal-bulk-bar"
+      class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border"
+      style="border-color:#e2e8f0;background:#ffffff">
+      <span class="text-sm font-medium" style="color:#1e293b">
+        Đã chọn <strong id="cal-bulk-count">0</strong> công việc
+      </span>
+      <button id="cal-bulk-complete-btn"
+        class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+        style="background:#10b981">
+        <i class="fas fa-check text-xs"></i>
+        <span>Hoàn thành</span>
+      </button>
+      <button id="cal-bulk-cancel-btn"
+        class="px-3 py-2 rounded-lg text-sm font-semibold border"
+        style="border-color:#e2e8f0;color:#64748b;background:#fff">
+        Huỷ
+      </button>
     </div>
 
   </div>
