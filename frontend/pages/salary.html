@@ -10,15 +10,15 @@
     <div class="salary-page">
         <div class="container">
             <div class="header">
-                <h1>Quản lý lương</h1>
+                <h1>Thống kê</h1>
                 <div class="tabs">
-                    <button class="tab active" data-tab="salary">Tính lương</button>
-                    <button class="tab" data-tab="stats">Thống kê</button>
+                    <button class="tab active" data-tab="stats">Thống kê</button>
+                    <button class="tab" data-tab="salary">Tính lương</button>
                 </div>
             </div>
 
             <!-- View tính lương -->
-            <div id="salary-view">
+            <div id="salary-view" class="hidden">
                 <div class="date-filter">
                     <label>Chọn khoảng thời gian:</label>
                     <input type="date" id="salary-from">
@@ -76,7 +76,7 @@
             </div>
 
             <!-- View thống kê -->
-            <div id="stats-view" class="hidden">
+            <div id="stats-view">
                 <div class="date-filter">
                     <label>Chọn khoảng thời gian:</label>
                     <input type="date" id="stats-from">
