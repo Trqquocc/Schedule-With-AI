@@ -95,7 +95,13 @@ router.get("/telegram-connect-url", authenticateToken, async (req, res) => {
       if (global.pendingWebConnections?.has(code)) global.pendingWebConnections.delete(code);
     }, 10 * 60 * 1000);
 
-    const botUsername = process.env.TELEGRAM_BOT_USERNAME || "your_bot_username";
+    // Prefer the username fetched at bot startup via bot.getMe().
+    // Falls back to env var if someone set it, then a clearly-wrong default
+    // so the failure surface is obvious in dev.
+    const botUsername =
+      global.botUsername ||
+      process.env.TELEGRAM_BOT_USERNAME ||
+      "your_bot_username";
     const telegramUrl = `https://t.me/${botUsername}?start=${code}`;
 
     res.json({ success: true, telegramUrl, code });
