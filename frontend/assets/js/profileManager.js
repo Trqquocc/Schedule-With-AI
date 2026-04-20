@@ -48,56 +48,17 @@
     },
 
     bindEvents() {
-      // Save button
-      const saveBtn = document.getElementById("saveProfileBtn");
-      if (saveBtn) {
-        const newSaveBtn = saveBtn.cloneNode(true);
-        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-        newSaveBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          this.saveProfile();
-        });
-      }
-
-      // Close button (X)
-      const closeBtn = document.getElementById("closeProfileModal");
-      if (closeBtn) {
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-        newCloseBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          this.closeModal();
-        });
-      }
-
-      // Cancel button
-      const cancelBtn = document.getElementById("cancelProfileBtn");
-      if (cancelBtn) {
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        newCancelBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          this.closeModal();
-        });
-      }
-
-      // Avatar upload
+      // Save/close/cancel buttons are wired by the modal's inline script
+      // (profile-modal.html) which delegates to ProfileManager methods.
+      // We only wire the avatar input here — the modal script doesn't know
+      // about upload logic.
       const avatarInput = document.getElementById("avatarInput");
-      if (avatarInput) {
+      if (avatarInput && !avatarInput._pmBound) {
+        avatarInput._pmBound = true;
         avatarInput.addEventListener("change", (e) =>
           this.handleAvatarUpload(e)
         );
       }
-
-      // ESC key
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") {
-          const modal = document.getElementById("profileModal");
-          if (modal && !modal.classList.contains("hidden")) {
-            this.closeModal();
-          }
-        }
-      });
     },
 
     waitForModalThenBind() {
@@ -150,53 +111,37 @@
     },
 
     async loadUserData() {
-      try {
-        // Thử lấy từ localStorage trước
-        let userData = localStorage.getItem("user_data");
-
-        if (userData) {
-          try {
-            this.currentUser = JSON.parse(userData);
-            return;
-          } catch (parseError) {
-            // Failed to parse localStorage, fetch from API
+      // Try API first so fields added later (hocvan, avatarUrl) show up
+      // even when localStorage still has the old shape.
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        try {
+          const response = await fetch("/api/users/profile", {
+            method: "GET",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data?.success && data.data) {
+              this.currentUser = data.data;
+              localStorage.setItem("user_data", JSON.stringify(data.data));
+              if (data.data.avatarUrl) {
+                localStorage.setItem("user_avatar_url", data.data.avatarUrl);
+              }
+              return;
+            }
           }
+        } catch (err) {
+          console.warn("profile API fetch failed, falling back to localStorage:", err);
         }
+      }
 
-        // Nếu không có trong localStorage, fetch từ API
-        const token = localStorage.getItem("auth_token");
-
-        if (!token) {
-          return;
-        }
-
-        const response = await fetch("/api/users/profile", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.success || !data.data) {
-          throw new Error("Invalid API response structure");
-        }
-
-        // Lưu vào localStorage và currentUser
-        this.currentUser = data.data;
-        localStorage.setItem("user_data", JSON.stringify(data.data));
-      } catch (err) {
-        console.error("Error loading user data:", err);
-        this.showStatus(
-          `Không thể tải thông tin người dùng: ${err.message}`,
-          "error"
-        );
+      // Fallback to cached localStorage.
+      try {
+        const cached = localStorage.getItem("user_data");
+        if (cached) this.currentUser = JSON.parse(cached);
+      } catch (_) {
+        /* ignore */
       }
     },
 
@@ -225,220 +170,203 @@
     },
 
     fillFormWithUserData() {
-      if (!this.currentUser) {
-        return;
-      }
+      if (!this.currentUser) return;
+      const form = document.getElementById("profileInfoForm");
+      if (!form) return;
 
-      const form = document.getElementById("profileForm");
-      if (!form) {
-        return;
-      }
+      const getValue = (field) =>
+        this.currentUser[field] ||
+        this.currentUser[field.toLowerCase()] ||
+        this.currentUser[field.charAt(0).toUpperCase() + field.slice(1)] ||
+        "";
 
-      // Hỗ trợ nhiều naming conventions
-      const getValue = (field) => {
-        return (
-          this.currentUser[field] ||
-          this.currentUser[field.toLowerCase()] ||
-          this.currentUser[field.charAt(0).toUpperCase() + field.slice(1)] ||
-          ""
-        );
-      };
-
-      // Map các fields
       const fields = {
-        hoten:
-          getValue("hoten") || getValue("HoTen") || getValue("fullname") || "",
+        hoten: getValue("hoten") || getValue("HoTen") || getValue("fullname") || "",
         username: getValue("username") || getValue("Username") || "",
         email: getValue("email") || getValue("Email") || "",
         phone:
-          getValue("phone") ||
-          getValue("SoDienThoai") ||
-          getValue("sodienthoai") ||
-          "",
-        ngaysinh: getValue("ngaysinh") || getValue("NgaySinh") || "",
-        gioitinh: getValue("gioitinh") || getValue("GioiTinh") || "",
-        bio: getValue("bio") || getValue("Bio") || "",
+          getValue("phone") || getValue("SoDienThoai") || getValue("sodienthoai") || "",
+        hocvan: getValue("hocvan") || getValue("HocVan") || "",
       };
 
-      // Fill form
       Object.entries(fields).forEach(([fieldName, value]) => {
-        const element = form.elements[fieldName];
-        if (element) {
-          element.value = value || "";
-        }
+        const el = form.elements[fieldName];
+        if (el) el.value = value || "";
       });
 
-      // Update avatar
       const userName = fields.hoten || fields.username || "?";
       this.updateAvatarDisplay(userName);
     },
 
     updateAvatarDisplay(userName) {
-      const avatar = document.getElementById("profileAvatar");
-      const savedAvatar = localStorage.getItem("user_avatar");
-      if (avatar) {
-        if (savedAvatar) {
-          avatar.innerHTML = "";
-          avatar.style.backgroundImage = `url(${savedAvatar})`;
-          avatar.style.backgroundSize = "cover";
-          avatar.style.backgroundPosition = "center";
+      // Prefer the persisted server URL; fall back to local base64 preview;
+      // otherwise render an initial letter.
+      const serverUrl =
+        this.currentUser?.avatarUrl ||
+        this.currentUser?.AvatarUrl ||
+        localStorage.getItem("user_avatar_url");
+      const localB64 = localStorage.getItem("user_avatar");
+      const src = serverUrl || localB64 || null;
+
+      const paintInto = (el) => {
+        if (!el) return;
+        if (src) {
+          el.innerHTML = "";
+          el.style.backgroundImage = `url(${src})`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
+          el.style.backgroundRepeat = "no-repeat";
         } else {
-          const letter = (userName || "?").charAt(0).toUpperCase();
-          avatar.textContent = letter;
+          el.style.backgroundImage = "";
+          el.textContent = (userName || "?").charAt(0).toUpperCase();
         }
-      }
-      // Also update sidebar avatar
-      const sidebarAvatar = document.getElementById("sidebarAvatarContainer");
-      if (sidebarAvatar && savedAvatar) {
-        sidebarAvatar.innerHTML = "";
-        sidebarAvatar.style.backgroundImage = `url(${savedAvatar})`;
-        sidebarAvatar.style.backgroundSize = "cover";
-        sidebarAvatar.style.backgroundPosition = "center";
-      }
+      };
+      paintInto(document.getElementById("profileAvatar"));
+      paintInto(document.getElementById("sidebarAvatarContainer"));
     },
 
-    handleAvatarUpload(e) {
+    async handleAvatarUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        this.showStatus(" File quá lớn! Tối đa 5MB", "error");
+      if (file.size > 2 * 1024 * 1024) {
+        this.showStatus("File quá lớn! Tối đa 2MB", "error");
         return;
       }
-
       if (!file.type.startsWith("image/")) {
-        this.showStatus(" Vui lòng chọn tệp ảnh!", "error");
+        this.showStatus("Vui lòng chọn tệp ảnh", "error");
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        const img = new Image();
-        img.onload = () => {
-          const base64 = readerEvent.target.result;
-          if (this.currentUser) this.currentUser.avatar = base64;
-          localStorage.setItem("user_avatar", base64);
-
-          // Update profile modal avatar
-          const profileAvatar = document.getElementById("profileAvatar");
-          if (profileAvatar) {
-            profileAvatar.innerHTML = "";
-            profileAvatar.style.backgroundImage = `url(${base64})`;
-            profileAvatar.style.backgroundSize = "cover";
-            profileAvatar.style.backgroundPosition = "center";
-          }
-
-          // Update sidebar avatar
-          const sidebarAvatar = document.getElementById("sidebarAvatarContainer");
-          if (sidebarAvatar) {
-            sidebarAvatar.innerHTML = "";
-            sidebarAvatar.style.backgroundImage = `url(${base64})`;
-            sidebarAvatar.style.backgroundSize = "cover";
-            sidebarAvatar.style.backgroundPosition = "center";
-          }
-
-          Utils.showToast?.("Avatar đã được cập nhật", "success");
+      const status = document.getElementById("avatarUploadStatus");
+      const paintLocal = (dataUrl) => {
+        const paint = (el) => {
+          if (!el) return;
+          el.innerHTML = "";
+          el.style.backgroundImage = `url(${dataUrl})`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
         };
-        img.src = readerEvent.target.result;
+        paint(document.getElementById("profileAvatar"));
+        paint(document.getElementById("sidebarAvatarContainer"));
       };
-      reader.readAsDataURL(file);
+
+      // Step 1: instant preview via FileReader base64.
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      }).catch(() => null);
+      if (!dataUrl) {
+        this.showStatus("Không đọc được file", "error");
+        return;
+      }
+      paintLocal(dataUrl);
+      localStorage.setItem("user_avatar", dataUrl);
+      if (status) {
+        status.textContent = "Đang tải lên...";
+        status.style.color = "#64748b";
+      }
+
+      // Step 2: persist to backend (Supabase Storage via /api/users/avatar).
+      try {
+        const token = localStorage.getItem("auth_token");
+        const res = await fetch("/api/users/avatar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ dataUrl }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j?.success) {
+          throw new Error(j?.message || `HTTP ${res.status}`);
+        }
+        const url = j.data?.avatarUrl;
+        if (url) {
+          localStorage.setItem("user_avatar_url", url);
+          if (this.currentUser) {
+            this.currentUser.avatarUrl = url;
+            this.currentUser.AvatarUrl = url;
+            localStorage.setItem("user_data", JSON.stringify(this.currentUser));
+          }
+          // Repaint from URL so it sticks after reload (base64 in localStorage was a preview).
+          const repaint = (el) => {
+            if (!el) return;
+            el.innerHTML = "";
+            el.style.backgroundImage = `url(${url})`;
+            el.style.backgroundSize = "cover";
+            el.style.backgroundPosition = "center";
+          };
+          repaint(document.getElementById("profileAvatar"));
+          repaint(document.getElementById("sidebarAvatarContainer"));
+        }
+        if (status) {
+          status.textContent = "✓ Đã lưu avatar";
+          status.style.color = "#10b981";
+        }
+        Utils.showToast?.("Avatar đã được cập nhật", "success");
+      } catch (err) {
+        console.error("avatar upload error:", err);
+        if (status) {
+          status.textContent = "✗ " + (err.message || "Lưu thất bại");
+          status.style.color = "#ef4444";
+        }
+        Utils.showToast?.(err.message || "Upload avatar thất bại", "error");
+      }
     },
 
     async saveProfile() {
-      const form = document.getElementById("profileForm");
-      if (!form) {
-        return;
-      }
+      const form = document.getElementById("profileInfoForm");
+      if (!form) return;
+      if (!form.checkValidity()) { form.reportValidity(); return; }
 
-      // Validate
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-
-      // Lấy userId từ nhiều nguồn
-      let userId = null;
-
-      if (this.currentUser) {
-        userId =
-          this.currentUser.id ||
-          this.currentUser.UserID ||
-          this.currentUser.userid ||
-          this.currentUser.userId ||
-          this.currentUser._id;
-      }
-
+      const userId =
+        this.currentUser?.id ||
+        this.currentUser?.UserID ||
+        this.currentUser?.userid ||
+        this.currentUser?.userId;
       if (!userId) {
-        this.showStatus(
-          "Không tìm thấy ID người dùng. Vui lòng đăng nhập lại.",
-          "error"
-        );
+        this.showStatus("Không tìm thấy ID người dùng. Vui lòng đăng nhập lại.", "error");
         return;
       }
 
-      // Lấy data từ form
       const formData = new FormData(form);
-      const updatedUser = {
-        HoTen: formData.get("hoten")?.trim() || "",
-        Email: formData.get("email")?.trim() || "",
-        SoDienThoai: formData.get("phone")?.trim() || "",
+      // Backend /api/users/:id expects lowercase keys (hoten, email, phone, hocvan).
+      const payload = {
+        hoten: formData.get("hoten")?.trim() || "",
+        email: formData.get("email")?.trim() || "",
+        phone: formData.get("phone")?.trim() || "",
+        hocvan: formData.get("hocvan")?.trim() || "",
       };
 
-      // Chỉ thêm password nếu có nhập
-      const password = formData.get("password")?.trim();
-      if (password && password.length > 0) {
-        updatedUser.Password = password;
-      }
-
-      // Disable button
       const saveBtn = document.getElementById("saveProfileBtn");
       if (!saveBtn) return;
-
       const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
 
       try {
         const token = localStorage.getItem("auth_token");
-        if (!token) {
-          throw new Error("Không tìm thấy token xác thực");
-        }
+        if (!token) throw new Error("Không tìm thấy token xác thực");
 
         const response = await fetch(`/api/users/${userId}`, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updatedUser),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
         });
-
         const responseData = await response.json();
+        if (!response.ok) throw new Error(responseData.message || `HTTP ${response.status}`);
 
-        if (!response.ok) {
-          throw new Error(responseData.message || `HTTP ${response.status}`);
-        }
-
-        // Update local data
-        const newUserData = responseData.data || {
-          ...this.currentUser,
-          ...updatedUser,
-          hoten: updatedUser.HoTen,
-          email: updatedUser.Email,
-          phone: updatedUser.SoDienThoai,
-        };
-
+        const newUserData = responseData.data || { ...this.currentUser, ...payload };
         localStorage.setItem("user_data", JSON.stringify(newUserData));
         this.currentUser = newUserData;
 
-        // Update sidebar
-        if (window.updateSidebarUser) {
-          window.updateSidebarUser(newUserData);
-        }
+        if (window.updateSidebarUser) window.updateSidebarUser(newUserData);
 
         this.showStatus("✅ Cập nhật thông tin thành công!", "success");
-
-        // Close modal after 1.5s
         setTimeout(() => this.closeModal(), 1500);
       } catch (error) {
         console.error("Save profile error:", error);
@@ -446,6 +374,88 @@
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalText;
+      }
+    },
+
+    async savePassword() {
+      const form = document.getElementById("profilePasswordForm");
+      if (!form) return;
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+
+      const userId =
+        this.currentUser?.id ||
+        this.currentUser?.UserID ||
+        this.currentUser?.userid ||
+        this.currentUser?.userId;
+      if (!userId) {
+        this.showPasswordStatus("Không tìm thấy ID người dùng", "error");
+        return;
+      }
+
+      const oldPassword = document.getElementById("oldPassword")?.value || "";
+      const newPassword = document.getElementById("newPassword")?.value || "";
+      const confirmPassword = document.getElementById("confirmPassword")?.value || "";
+
+      if (newPassword.length < 6) {
+        this.showPasswordStatus("Mật khẩu mới tối thiểu 6 ký tự", "error");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        this.showPasswordStatus("Xác nhận không khớp với mật khẩu mới", "error");
+        return;
+      }
+      if (newPassword === oldPassword) {
+        this.showPasswordStatus("Mật khẩu mới trùng với mật khẩu cũ", "error");
+        return;
+      }
+
+      const saveBtn = document.getElementById("savePasswordBtn");
+      const originalText = saveBtn?.innerHTML;
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đổi...';
+      }
+
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) throw new Error("Không tìm thấy token xác thực");
+
+        const res = await fetch(`/api/users/${userId}/password`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ oldPassword, newPassword }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j.success) throw new Error(j.message || `HTTP ${res.status}`);
+
+        this.showPasswordStatus("✅ Đổi mật khẩu thành công!", "success");
+        form.reset();
+        setTimeout(() => this.closeModal(), 1500);
+      } catch (err) {
+        console.error("savePassword:", err);
+        this.showPasswordStatus(err.message || "Lỗi đổi mật khẩu", "error");
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalText;
+        }
+      }
+    },
+
+    showPasswordStatus(message, type = "info") {
+      const el = document.getElementById("passwordStatusMessage");
+      if (!el) return;
+      const palette = {
+        success: ["bg-green-50", "border-green-200", "text-green-700"],
+        error: ["bg-red-50", "border-red-200", "text-red-700"],
+        info: ["bg-blue-50", "border-blue-200", "text-blue-700"],
+      };
+      const [bg, border, text] = palette[type] || palette.info;
+      el.className = `p-4 rounded-lg text-sm ${bg} ${border} border ${text}`;
+      el.textContent = message;
+      el.classList.remove("hidden");
+      if (type === "success") {
+        setTimeout(() => el.classList.add("hidden"), 4000);
       }
     },
 

@@ -745,24 +745,9 @@
           Tài khoản
         </div>
 
-        <!-- Update Profile -->
-        <button id="openProfileBtn" class="sm-menu-item" style="
-          width:100%;display:flex;align-items:center;justify-content:space-between;
-          padding:11px 12px;border-radius:12px;background:transparent;border:none;cursor:pointer;
-          transition:background .15s;text-align:left;margin-bottom:2px
-        " onmouseover="this.style.background='var(--sm-hover,#fef2f2)'"
-           onmouseout="this.style.background='transparent'">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:36px;height:36px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="fas fa-user-circle" style="color:#dc2626;font-size:15px"></i>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Cập nhật hồ sơ</div>
-              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Tên, ảnh đại diện, thông tin</div>
-            </div>
-          </div>
-          <i class="fas fa-chevron-right" style="font-size:11px;color:var(--sm-muted,#94a3b8)"></i>
-        </button>
+        <!-- Profile button moved to sidebar user area (click name/email
+             in the left sidebar to edit profile). Kept the settings modal
+             focused on account-level actions. -->
 
         <!-- Notifications -->
         <button id="openNotificationBtn" class="sm-menu-item" style="

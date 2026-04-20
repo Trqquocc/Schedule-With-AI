@@ -1,7 +1,17 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
 const router = express.Router();
 const { authenticateToken } = require("../middleware/auth");
 const { supabase } = require("../config/database");
+
+// Education level enum mirrors CHECK constraint on Users.HocVan (migration 004).
+const ALLOWED_HOCVAN = new Set(["thcs", "thpt", "dai_hoc", "di_lam", "khac"]);
+
+// Supabase Storage bucket holding user avatars. Must exist and be PUBLIC.
+// Create it via Dashboard → Storage → New bucket → name "avatars" → public.
+const AVATAR_BUCKET = "avatars";
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MB
+const ALLOWED_AVATAR_MIME = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 // Default palette (mirrors frontend :root --prio-1..4 in main.css).
 const DEFAULT_PRIORITY_COLORS = {
@@ -97,7 +107,7 @@ router.get("/profile", authenticateToken, async (req, res) => {
 
     const { data: user, error } = await supabase
       .from("Users")
-      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio")
+      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio, HocVan, AvatarUrl")
       .eq("UserID", userId)
       .single();
 
@@ -116,6 +126,8 @@ router.get("/profile", authenticateToken, async (req, res) => {
         ngaysinh: user.NgaySinh,
         gioitinh: user.GioiTinh,
         bio: user.Bio,
+        hocvan: user.HocVan || null,
+        avatarUrl: user.AvatarUrl || null,
       },
     });
   } catch (error) {
@@ -138,10 +150,19 @@ router.put("/:id", authenticateToken, async (req, res) => {
         .json({ message: "Không có quyền cập nhật thông tin này" });
     }
 
-    const { hoten, email, phone, ngaysinh, gioitinh, bio } = req.body;
+    const { hoten, email, phone, ngaysinh, gioitinh, bio, hocvan } = req.body;
 
     if (!hoten || !email) {
       return res.status(400).json({ message: "Họ tên và email là bắt buộc" });
+    }
+
+    // Validate education enum (nullable → skip).
+    let hocvanClean = null;
+    if (hocvan !== undefined && hocvan !== null && hocvan !== "") {
+      if (!ALLOWED_HOCVAN.has(String(hocvan))) {
+        return res.status(400).json({ message: "Học vấn không hợp lệ" });
+      }
+      hocvanClean = String(hocvan);
     }
 
     const { data: updated, error } = await supabase
@@ -153,9 +174,10 @@ router.put("/:id", authenticateToken, async (req, res) => {
         NgaySinh: ngaysinh || null,
         GioiTinh: gioitinh || null,
         Bio: bio || null,
+        HocVan: hocvanClean,
       })
       .eq("UserID", userId)
-      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio");
+      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio, HocVan, AvatarUrl");
 
     if (error || !updated || updated.length === 0) {
       return res.status(404).json({ message: "User not found" });
@@ -174,6 +196,8 @@ router.put("/:id", authenticateToken, async (req, res) => {
         ngaysinh: u.NgaySinh,
         gioitinh: u.GioiTinh,
         bio: u.Bio,
+        hocvan: u.HocVan || null,
+        avatarUrl: u.AvatarUrl || null,
       },
     });
 
@@ -259,6 +283,122 @@ router.delete("/:id", authenticateToken, async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting user", error: error.message });
+  }
+});
+
+// PUT /api/users/:id/password
+// Body: { oldPassword, newPassword }. Verifies oldPassword via bcrypt,
+// hashes newPassword, updates Users.Password. Self-only.
+router.put("/:id/password", authenticateToken, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    const currentUserId = req.user.UserID;
+    if (userId !== currentUserId) {
+      return res.status(403).json({ message: "Không có quyền đổi mật khẩu người khác" });
+    }
+    const { oldPassword, newPassword } = req.body || {};
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: "Thiếu mật khẩu cũ hoặc mới" });
+    }
+    if (typeof newPassword !== "string" || newPassword.length < 6) {
+      return res.status(400).json({ message: "Mật khẩu mới tối thiểu 6 ký tự" });
+    }
+
+    const { data: user, error: loadErr } = await supabase
+      .from("Users")
+      .select("UserID, Password")
+      .eq("UserID", userId)
+      .single();
+    if (loadErr || !user) {
+      return res.status(404).json({ message: "Không tìm thấy user" });
+    }
+
+    const ok = await bcrypt.compare(String(oldPassword), user.Password || "");
+    if (!ok) {
+      return res.status(400).json({ message: "Mật khẩu cũ không đúng" });
+    }
+
+    const hashed = await bcrypt.hash(String(newPassword), 12);
+    const { error: updErr } = await supabase
+      .from("Users")
+      .update({ Password: hashed })
+      .eq("UserID", userId);
+    if (updErr) {
+      console.error("password update error:", updErr);
+      return res.status(500).json({ message: "Không đổi được mật khẩu" });
+    }
+
+    return res.json({ success: true, message: "Đổi mật khẩu thành công" });
+  } catch (err) {
+    console.error("PUT /users/:id/password:", err);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
+// POST /api/users/avatar
+// Body: { dataUrl: "data:image/png;base64,..." }
+// Decodes, uploads to Supabase Storage bucket "avatars" as
+// {userId}/{timestamp}.{ext}, then saves the public URL to Users.AvatarUrl.
+router.post("/avatar", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.UserID;
+    const dataUrl = req.body?.dataUrl;
+    if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) {
+      return res.status(400).json({ message: "Thiếu dataUrl hợp lệ" });
+    }
+    const m = dataUrl.match(/^data:([\w/+.-]+);base64,(.+)$/);
+    if (!m) {
+      return res.status(400).json({ message: "dataUrl sai định dạng" });
+    }
+    const mime = m[1].toLowerCase();
+    if (!ALLOWED_AVATAR_MIME.has(mime)) {
+      return res.status(400).json({ message: "Chỉ chấp nhận PNG / JPG / WebP" });
+    }
+    const buf = Buffer.from(m[2], "base64");
+    if (buf.length > MAX_AVATAR_BYTES) {
+      return res.status(413).json({ message: "Ảnh quá lớn (tối đa 2MB)" });
+    }
+
+    const ext = mime === "image/jpeg" ? "jpg" : mime === "image/webp" ? "webp" : "png";
+    const path = `${userId}/${Date.now()}.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .upload(path, buf, {
+        contentType: mime,
+        cacheControl: "3600",
+        upsert: true,
+      });
+    if (upErr) {
+      console.error("avatar upload:", upErr);
+      if (/bucket/i.test(upErr.message || "")) {
+        return res.status(503).json({
+          message:
+            'Chưa có bucket "avatars" trên Supabase Storage — tạo bucket public cùng tên.',
+        });
+      }
+      return res.status(500).json({ message: "Upload thất bại" });
+    }
+
+    const { data: pub } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+    const publicUrl = pub?.publicUrl || null;
+    if (!publicUrl) {
+      return res.status(500).json({ message: "Không lấy được URL công khai" });
+    }
+
+    const { error: saveErr } = await supabase
+      .from("Users")
+      .update({ AvatarUrl: publicUrl })
+      .eq("UserID", userId);
+    if (saveErr) {
+      console.error("avatar save:", saveErr);
+      return res.status(500).json({ message: "Không lưu được AvatarUrl" });
+    }
+
+    return res.json({ success: true, data: { avatarUrl: publicUrl } });
+  } catch (err) {
+    console.error("POST /users/avatar:", err);
+    return res.status(500).json({ message: "Lỗi server" });
   }
 });
 
