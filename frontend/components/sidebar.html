@@ -1041,68 +1041,6 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
       }
     });
 
-    function bindProfileButton() {
-      const btn = document.getElementById("openProfileBtn");
-      if (!btn) {
-        setTimeout(bindProfileButton, 100);
-        return;
-      }
-
-
-      btn.onclick = null;
-
-      btn.onclick = function (e) {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        handleOpenProfileModal();
-        return false;
-      };
-
-    }
-
-    function handleOpenProfileModal() {
-
-      closeModal();
-
-      setTimeout(() => {
-        const profileModal = document.getElementById("profileModal");
-
-        if (!profileModal) {
-          return;
-        }
-
-
-        profileModal.classList.remove("hidden");
-        profileModal.classList.add("active", "show");
-
-        profileModal.style.zIndex = "10100";
-        profileModal.style.display = "flex";
-        profileModal.style.position = "fixed";
-        profileModal.style.inset = "0";
-
-        document.body.style.overflow = "hidden";
-
-        if (
-          window.ProfileManager &&
-          window.ProfileManager.fillFormWithUserData
-        ) {
-          window.ProfileManager.fillFormWithUserData();
-        }
-
-      }, 100);
-    }
-
-    bindProfileButton();
-
-    setInterval(() => {
-      const btn = document.getElementById("openProfileBtn");
-      if (btn && !btn.onclick) {
-        bindProfileButton();
-      }
-    }, 500);
-
     const closeModal = () => {
       settingsModal.classList.add("hidden");
     };
@@ -1139,37 +1077,39 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
 
     window.updateSidebarUser = updateUserInfo;
 
-    //  NEW: Open Profile Modal - Work early, before manager init
-    const openProfileBtn = document.getElementById("openProfileBtn");
-    if (openProfileBtn) {
-      openProfileBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        // Wait for ProfileManager if not ready yet
-        const tryOpen = () => {
-          if (window.ProfileManager && ProfileManager.openProfileModal) {
-            ProfileManager.openProfileModal();
-          } else {
-            setTimeout(tryOpen, 100);
-          }
-        };
-        tryOpen();
-      });
-    }
-
     // Sidebar profile button - opens profile modal directly
     const sidebarProfileBtn = document.getElementById("sidebarProfileBtn");
     if (sidebarProfileBtn) {
       sidebarProfileBtn.addEventListener("click", (e) => {
         e.preventDefault();
-        const tryOpen = () => {
-          if (window.ProfileManager && ProfileManager.openProfileModal) {
-            ProfileManager.openProfileModal();
-          } else {
-            setTimeout(tryOpen, 100);
+        e.stopPropagation();
+        const tryOpen = (tries = 0) => {
+          if (window.ProfileManager?.openProfileModal) {
+            if (!window.ProfileManager.initialized) {
+              window.ProfileManager.init();
+            }
+            window.ProfileManager.openProfileModal();
+            return;
           }
+          // Fallback: open modal directly if manager never loaded
+          if (tries > 20) {
+            const modal = document.getElementById("profileModal");
+            if (modal) {
+              modal.classList.remove("hidden");
+              modal.classList.add("active", "show");
+              modal.style.display = "flex";
+              document.body.style.overflow = "hidden";
+            } else {
+              console.error("[sidebarProfileBtn] profileModal not in DOM");
+            }
+            return;
+          }
+          setTimeout(() => tryOpen(tries + 1), 100);
         };
         tryOpen();
       });
+    } else {
+      console.warn("[sidebar] #sidebarProfileBtn not found at bind time");
     }
 
     //  NEW: Open Notification Modal - Work early, before manager init

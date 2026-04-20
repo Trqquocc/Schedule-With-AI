@@ -1,6 +1,10 @@
-<div id="profileModal" class="modal hidden">
-  <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8">
-    <!-- Header -->
+<!--
+  NOTE: The outer "#profileModal" container is provided by index.html.
+  Do NOT wrap the content in another profileModal element — componentLoader
+  extracts only nested matches and drops sibling script/style tags.
+-->
+<div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8">
+  <!-- Header -->
     <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-red-50">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-red-500 flex items-center justify-center text-white">
@@ -168,7 +172,6 @@
         </button>
       </div>
     </div>
-  </div>
 </div>
 
 <style>

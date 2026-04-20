@@ -101,22 +101,43 @@ router.put("/priority-colors", authenticateToken, async (req, res) => {
 });
 
 // GET /api/users/profile
+// Falls back gracefully if HocVan/AvatarUrl columns not yet in PostgREST cache
+// (migration applied but cache not reloaded) — still returns core fields.
 router.get("/profile", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.UserID;
+    const FULL = "UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio, HocVan, AvatarUrl";
+    const CORE = "UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio";
 
-    const { data: user, error } = await supabase
+    let user = null;
+    let usedFallback = false;
+
+    let { data, error } = await supabase
       .from("Users")
-      .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio, HocVan, AvatarUrl")
+      .select(FULL)
       .eq("UserID", userId)
       .single();
 
-    if (error || !user) {
+    if (error && /HocVan|AvatarUrl|column|schema/i.test(error.message || "")) {
+      // Stale PostgREST cache — retry without the new columns.
+      usedFallback = true;
+      const retry = await supabase
+        .from("Users")
+        .select(CORE)
+        .eq("UserID", userId)
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error || !data) {
       return res.status(404).json({ message: "User not found" });
     }
+    user = data;
 
     res.json({
       success: true,
+      ...(usedFallback ? { _fallback: "missing-columns" } : {}),
       data: {
         id: user.UserID,
         username: user.Username,

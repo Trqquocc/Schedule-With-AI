@@ -25,81 +25,43 @@
     currentUser: null,
 
     init() {
-      if (this.initialized) {
-        return;
-      }
-
-      this.loadUserData();
-
+      if (this.initialized) return;
+      this.loadUserFromCache();
       this.bindEvents();
-
       this.initialized = true;
+      // Best-effort background refresh so cache is warm for next open.
+      this.refreshUserFromAPI().catch(() => {});
     },
 
-    loadUserData() {
+    loadUserFromCache() {
       try {
-        const userData = localStorage.getItem("user_data");
-        if (userData) {
-          this.currentUser = JSON.parse(userData);
-        }
-      } catch (err) {
-        console.error("Error loading user data:", err);
-      }
+        const cached = localStorage.getItem("user_data");
+        if (cached) this.currentUser = JSON.parse(cached);
+      } catch (_) {}
     },
 
     bindEvents() {
-      // Save/close/cancel buttons are wired by the modal's inline script
-      // (profile-modal.html) which delegates to ProfileManager methods.
-      // We only wire the avatar input here — the modal script doesn't know
-      // about upload logic.
+      // Save/close/cancel buttons are wired by the modal inline script.
+      // We only own the avatar upload flow here.
       const avatarInput = document.getElementById("avatarInput");
       if (avatarInput && !avatarInput._pmBound) {
         avatarInput._pmBound = true;
-        avatarInput.addEventListener("change", (e) =>
-          this.handleAvatarUpload(e)
-        );
+        avatarInput.addEventListener("change", (e) => this.handleAvatarUpload(e));
       }
     },
 
-    waitForModalThenBind() {
-      const checkModal = () => {
-        const modal = document.getElementById("profileModal");
-        if (modal) {
-          this.bindEvents();
-        } else {
-          setTimeout(checkModal, 100);
-        }
-      };
-      checkModal();
-    },
-
-    async init() {
-      if (this.initialized) {
-        return;
-      }
-
-      // Load user data từ localStorage hoặc API
-      await this.loadUserData();
-
-      // Đợi modal tồn tại rồi mới bind events
-      this.waitForModalThenBind();
-
-      this.initialized = true;
-    },
-
-    async openProfileModal() {
-      // ALWAYS reload data from API to ensure fresh data
-      await this.loadUserData();
+    // Open the modal instantly from cache, refresh from API in background.
+    // Previously awaited the API first, causing a 2–3s lag before the modal
+    // appeared when the network was slow or Postgres schema cache stale.
+    openProfileModal() {
+      if (!this.currentUser) this.loadUserFromCache();
 
       const modal = document.getElementById("profileModal");
-      if (!modal) {
-        return;
-      }
+      if (!modal) return;
 
-      // Fill form with loaded data
+      this.bindEvents(); // ensure avatar input is wired for this render
       this.fillFormWithUserData();
 
-      // Show modal
       if (window.ModalManager?.showModalById) {
         window.ModalManager.showModalById("profileModal");
       } else {
@@ -108,64 +70,35 @@
         modal.style.display = "flex";
         document.body.style.overflow = "hidden";
       }
+
+      // Background refresh: when API returns, repaint the form with fresh data.
+      this.refreshUserFromAPI()
+        .then((changed) => { if (changed) this.fillFormWithUserData(); })
+        .catch(() => {});
     },
 
-    async loadUserData() {
-      // Try API first so fields added later (hocvan, avatarUrl) show up
-      // even when localStorage still has the old shape.
+    // Fetches /api/users/profile and updates cache + currentUser.
+    // Returns true if data changed so caller can repaint UI.
+    async refreshUserFromAPI() {
       const token = localStorage.getItem("auth_token");
-      if (token) {
-        try {
-          const response = await fetch("/api/users/profile", {
-            method: "GET",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            if (data?.success && data.data) {
-              this.currentUser = data.data;
-              localStorage.setItem("user_data", JSON.stringify(data.data));
-              if (data.data.avatarUrl) {
-                localStorage.setItem("user_avatar_url", data.data.avatarUrl);
-              }
-              return;
-            }
-          }
-        } catch (err) {
-          console.warn("profile API fetch failed, falling back to localStorage:", err);
-        }
-      }
-
-      // Fallback to cached localStorage.
+      if (!token) return false;
       try {
-        const cached = localStorage.getItem("user_data");
-        if (cached) this.currentUser = JSON.parse(cached);
-      } catch (_) {
-        /* ignore */
-      }
-    },
-
-    async loadUserDataFromAPI() {
-      try {
-        const response = await fetch("/api/profile", {
+        const res = await fetch("/api/users/profile", {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!res.ok) return false;
+        const json = await res.json();
+        if (!json?.success || !json.data) return false;
+        this.currentUser = json.data;
+        localStorage.setItem("user_data", JSON.stringify(json.data));
+        if (json.data.avatarUrl) {
+          localStorage.setItem("user_avatar_url", json.data.avatarUrl);
         }
-
-        const data = await response.json();
-
-        if (data && data.data) {
-          this.currentUser = data.data;
-          localStorage.setItem("user_data", JSON.stringify(data.data));
-        }
-      } catch (error) {
-        console.error("Error fetching user profile from API:", error);
+        return true;
+      } catch (err) {
+        console.warn("refreshUserFromAPI failed:", err);
+        return false;
       }
     },
 
@@ -318,16 +251,32 @@
       }
     },
 
+    // Resolve current user id from currentUser, localStorage, or JWT payload.
+    // Used by saveProfile/savePassword so a missing localStorage blob
+    // (first open with slow API) doesn't break the action.
+    resolveUserId() {
+      const fromCurrent =
+        this.currentUser?.id ||
+        this.currentUser?.UserID ||
+        this.currentUser?.userid ||
+        this.currentUser?.userId;
+      if (fromCurrent) return fromCurrent;
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (token && token.split(".").length === 3) {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          return payload.UserID || payload.userId || payload.id || null;
+        }
+      } catch (_) {}
+      return null;
+    },
+
     async saveProfile() {
       const form = document.getElementById("profileInfoForm");
       if (!form) return;
       if (!form.checkValidity()) { form.reportValidity(); return; }
 
-      const userId =
-        this.currentUser?.id ||
-        this.currentUser?.UserID ||
-        this.currentUser?.userid ||
-        this.currentUser?.userId;
+      const userId = this.resolveUserId();
       if (!userId) {
         this.showStatus("Không tìm thấy ID người dùng. Vui lòng đăng nhập lại.", "error");
         return;
@@ -382,13 +331,9 @@
       if (!form) return;
       if (!form.checkValidity()) { form.reportValidity(); return; }
 
-      const userId =
-        this.currentUser?.id ||
-        this.currentUser?.UserID ||
-        this.currentUser?.userid ||
-        this.currentUser?.userId;
+      const userId = this.resolveUserId();
       if (!userId) {
-        this.showPasswordStatus("Không tìm thấy ID người dùng", "error");
+        this.showPasswordStatus("Không tìm thấy ID người dùng. Vui lòng đăng nhập lại.", "error");
         return;
       }
 
