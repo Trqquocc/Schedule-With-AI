@@ -81,71 +81,76 @@
       const getPriorityColor = (priority) =>
         window.PriorityTheme ? PriorityTheme.getColor(priority) : "#3B82F6";
 
+      // Minimal HTML escape — titles/notes are user-controlled free text.
+      const esc = (s) => String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
       const frag = document.createDocumentFragment();
       tasks.forEach((task, index) => {
-          const taskId = task.MaCongViec || task.ID || task.id;
-          const title = task.TieuDe || task.Title || `Công việc ${index + 1}`;
-          const description = task.MoTa || task.Description || "";
-          const priority = parseInt(task.MucDoUuTien || task.Priority || 2);
-          const color = getPriorityColor(priority);
-          const tag = task.Tag || task.Category || "";
+        const taskId = task.MaCongViec || task.ID || task.id;
+        const title = task.TieuDe || task.Title || `Công việc ${index + 1}`;
+        const description = task.MoTa || task.Description || "";
+        const priority = parseInt(task.MucDoUuTien || task.Priority || 2);
+        const color = getPriorityColor(priority);
+        const tag = task.Tag || task.Category || "";
 
-          const taskElement = document.createElement("div");
-          taskElement.className = "task-item";
-          taskElement.style.borderLeftColor = color;
+        const taskElement = document.createElement("div");
+        // keep .task-item for FC.Draggable selector compatibility; add new .sched-card for styling.
+        taskElement.className = "task-item sched-card";
+        taskElement.style.setProperty("--card-accent", color);
 
-          taskElement.dataset.taskId = taskId;
-          taskElement.dataset.taskTitle = title;
-          taskElement.dataset.taskDescription = description;
-          taskElement.dataset.taskColor = color;
-          taskElement.dataset.taskPriority = priority;
-          taskElement.dataset.taskDuration = task.ThoiGianUocTinh || 60;
-          if (task.CoThoiGianCoDinh) {
-            taskElement.dataset.hasFixedTime = "true";
-            taskElement.dataset.fixedStart = task.GioBatDauCoDinh || "";
-            taskElement.dataset.fixedEnd = task.GioKetThucCoDinh || "";
-          }
+        taskElement.dataset.taskId = taskId;
+        taskElement.dataset.taskTitle = title;
+        taskElement.dataset.taskDescription = description;
+        taskElement.dataset.taskColor = color;
+        taskElement.dataset.taskPriority = priority;
+        taskElement.dataset.taskDuration = task.ThoiGianUocTinh || 60;
+        if (task.CoThoiGianCoDinh) {
+          taskElement.dataset.hasFixedTime = "true";
+          taskElement.dataset.fixedStart = task.GioBatDauCoDinh || "";
+          taskElement.dataset.fixedEnd = task.GioKetThucCoDinh || "";
+        }
 
-          // Fixed-time badge
-          let fixedBadge = "";
-          const durMin = parseInt(task.ThoiGianUocTinh || 60, 10);
-          if (task.CoThoiGianCoDinh && task.GioBatDauCoDinh) {
-            const s = new Date(task.GioBatDauCoDinh);
-            const hh = String(s.getHours()).padStart(2, "0");
-            const mm = String(s.getMinutes()).padStart(2, "0");
-            const dd = String(s.getDate()).padStart(2, "0");
-            const mo = String(s.getMonth() + 1).padStart(2, "0");
-            fixedBadge = `<span class="task-item-tag task-item-tag-time">
-              <i class="far fa-clock"></i> ${hh}:${mm} · ${dd}/${mo} · ${durMin}'
-            </span>`;
-          }
+        // Time chip — prefer fixed time, else estimated duration.
+        const durMin = parseInt(task.ThoiGianUocTinh || 60, 10);
+        let timeChip;
+        if (task.CoThoiGianCoDinh && task.GioBatDauCoDinh) {
+          const s = new Date(task.GioBatDauCoDinh);
+          const hh = String(s.getHours()).padStart(2, "0");
+          const mm = String(s.getMinutes()).padStart(2, "0");
+          const dd = String(s.getDate()).padStart(2, "0");
+          const mo = String(s.getMonth() + 1).padStart(2, "0");
+          timeChip = `<span><i class="far fa-clock"></i>${hh}:${mm} · ${dd}/${mo} · ${durMin}'</span>`;
+        } else {
+          timeChip = `<span><i class="far fa-hourglass"></i>${durMin} phút</span>`;
+        }
 
-          // Category tag
-          const categoryTag = tag
-            ? `<span class="task-item-tag task-item-tag-cat">
-                <i class="fas fa-folder"></i> ${tag}
-              </span>`
-            : "";
+        const categoryChip = tag
+          ? `<span><i class="fas fa-folder"></i>${esc(tag)}</span>`
+          : "";
 
-          // Duration tag (shown when no fixed time)
-          const durationTag = !fixedBadge
-            ? `<span class="task-item-tag task-item-tag-dur">
-                <i class="far fa-hourglass"></i> ${durMin} phút
-              </span>`
-            : "";
+        const noteBlock = description
+          ? `<div class="sched-card-note">
+               <span class="sched-card-note-label">Note:</span>
+               <div class="sched-card-note-body">${esc(description)}</div>
+             </div>`
+          : "";
 
-          taskElement.innerHTML = `
-            <div class="task-item-grip"><i class="fas fa-grip-vertical"></i></div>
-            <div class="task-item-body">
-              <div class="task-item-title">${title}</div>
-              ${description ? `<div class="task-item-desc">${description}</div>` : ""}
-              <div class="task-item-tags">
-                ${fixedBadge}
-                ${durationTag}
-                ${categoryTag}
-              </div>
-            </div>
-          `;
+        taskElement.innerHTML = `
+          <div class="sched-card-title">
+            <span class="sched-card-dot" aria-hidden="true"></span>
+            <span class="sched-card-title-text">${esc(title)}</span>
+          </div>
+          <div class="sched-card-meta">${timeChip}${categoryChip}</div>
+          ${noteBlock}
+          <div class="sched-card-subtasks" aria-hidden="true">
+            <i class="far fa-square"></i>
+            <span>Subtask —</span>
+          </div>
+        `;
 
         frag.appendChild(taskElement);
       });
