@@ -38,6 +38,8 @@ function isValidDateStr(s) {
 }
 
 // POST /api/schedule/complete-batch
+// body: { ids: string[], completed?: boolean = true }
+// completed=false restores rows to not-done (used by multi-select on finished events).
 router.post("/complete-batch", async (req, res) => {
   try {
     const userId = req.userId;
@@ -48,7 +50,6 @@ router.post("/complete-batch", async (req, res) => {
         message: "Thiếu danh sách ids",
       });
     }
-    // Normalize + de-dup. MaLichTrinh is UUID text in current schema.
     const ids = Array.from(new Set(raw.map((x) => String(x).trim()).filter(Boolean)));
     if (ids.length === 0) {
       return res.status(400).json({ success: false, message: "ids rỗng" });
@@ -60,9 +61,11 @@ router.post("/complete-batch", async (req, res) => {
       });
     }
 
+    const completed = req.body?.completed === false ? false : true;
+
     const { data, error } = await supabase
       .from("LichTrinh")
-      .update({ DaHoanThanh: true })
+      .update({ DaHoanThanh: completed })
       .in("MaLichTrinh", ids)
       .eq("UserID", userId)
       .select("MaLichTrinh");
@@ -74,6 +77,7 @@ router.post("/complete-batch", async (req, res) => {
 
     return res.json({
       success: true,
+      completed,
       updated: (data || []).length,
       ids: (data || []).map((r) => r.MaLichTrinh),
     });

@@ -59,9 +59,25 @@
     });
   }
 
+  /**
+   * True if every currently-selected event is already completed in FullCalendar's
+   * event store. Used to flip the action button between "Hoàn thành" and "Khôi phục".
+   */
+  function allSelectedAreCompleted() {
+    const cal = window.CalendarModule?.calendar;
+    if (!cal || state.selected.size === 0) return false;
+    for (const id of state.selected) {
+      const ev = cal.getEventById(id);
+      if (!ev) return false;
+      if (!ev.extendedProps?.completed) return false;
+    }
+    return true;
+  }
+
   function updateBar() {
     const bar = $("cal-bulk-bar");
     const count = $("cal-bulk-count");
+    const btn = $("cal-bulk-complete-btn");
     if (!bar || !count) return;
     const n = state.selected.size;
     count.textContent = String(n);
@@ -69,6 +85,15 @@
       bar.classList.remove("hidden");
     } else {
       bar.classList.add("hidden");
+    }
+    // Swap action button into restore mode when every selected event is already done.
+    if (btn) {
+      const restore = n > 0 && allSelectedAreCompleted();
+      btn.dataset.mode = restore ? "restore" : "complete";
+      btn.style.background = restore ? "#f59e0b" : "#10b981";
+      btn.innerHTML = restore
+        ? '<i class="fas fa-rotate-left text-xs"></i><span>Khôi phục</span>'
+        : '<i class="fas fa-check text-xs"></i><span>Hoàn thành</span>';
     }
   }
 
@@ -120,26 +145,36 @@
     return true;
   }
 
+  async function refreshCalendar() {
+    const cal = window.CalendarModule;
+    if (cal?.refreshEventsInPlace) {
+      await cal.refreshEventsInPlace();
+    } else if (cal?.loadEvents) {
+      await cal.loadEvents();
+    }
+  }
+
   async function bulkComplete() {
     if (state.selected.size === 0) return;
     const ids = Array.from(state.selected);
+    const restore = allSelectedAreCompleted();
+    const completed = !restore;
     try {
       const result = await Utils.makeRequest(
         "/api/schedule/complete-batch",
         "POST",
-        { ids }
+        { ids, completed }
       );
       if (!result.success) throw new Error(result.message || "Lỗi server");
       const updated = result.data?.updated ?? result.updated ?? ids.length;
-      Utils.showToast?.(`Đã đánh dấu ${updated} việc là hoàn thành`, "success");
+      const verb = completed ? "hoàn thành" : "khôi phục về chưa hoàn thành";
+      Utils.showToast?.(`Đã ${verb} ${updated} việc`, "success");
       clearSelection();
       setSelectMode(false);
-      if (window.CalendarModule?.loadEvents) {
-        window.CalendarModule.loadEvents();
-      }
+      await refreshCalendar();
     } catch (err) {
       console.error("bulkComplete error:", err);
-      Utils.showToast?.(err.message || "Lỗi khi hoàn thành", "error");
+      Utils.showToast?.(err.message || "Lỗi khi xử lý", "error");
     }
   }
 
@@ -187,9 +222,7 @@
       } else {
         Utils.showToast?.(`Đã đánh dấu ${updated} việc`, "success");
       }
-      if (window.CalendarModule?.loadEvents) {
-        window.CalendarModule.loadEvents();
-      }
+      await refreshCalendar();
     } catch (err) {
       console.error("dailyCheck error:", err);
       Utils.showToast?.(err.message || "Lỗi khi daily check", "error");
