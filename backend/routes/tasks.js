@@ -2,7 +2,24 @@ const express = require("express");
 const router = express.Router();
 const { supabase } = require("../config/database");
 const jwt = require("jsonwebtoken");
+const {
+  validateSalaryFields,
+  findOverlappingFullTime,
+  findFullTimeCategory,
+} = require("../lib/salary-validators");
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Map the 6 salary-type columns from a DB row to the API response shape.
+function mapSalaryFields(task) {
+  return {
+    LoaiLuong: task.LoaiLuong || "none",
+    LuongThang: task.LuongThang ?? null,
+    CauHinhCa: task.CauHinhCa ?? null,
+    NgayLamViec: task.NgayLamViec ?? null,
+    NgayBatDauHopDong: task.NgayBatDauHopDong ?? null,
+    NgayKetThucHopDong: task.NgayKetThucHopDong ?? null,
+  };
+}
 
 // Mapping trạng thái
 const STATUS_MAP = {
@@ -123,6 +140,7 @@ router.get("/", authenticateToken, async (req, res) => {
       LuongTheoGio: task.LuongTheoGio,
       MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#3B82F6",
       TenLoai: task.LoaiCongViec?.TenLoai || null,
+      ...mapSalaryFields(task),
     }));
 
     res.json({ success: true, data: result });
@@ -181,6 +199,33 @@ router.post("/", authenticateToken, async (req, res) => {
       gioKetThucCoDinh = gioKetThucCoDinh.toISOString();
     }
 
+    // Validate salary-type fields (LoaiLuong + LuongThang + CauHinhCa + ...)
+    const salary = validateSalaryFields(d);
+    if (!salary.ok) {
+      return res.status(400).json({
+        success: false,
+        message: salary.errors.join("; "),
+      });
+    }
+
+    // Full-time contract-period overlap check (any existing full-time for this user)
+    if (salary.sanitized.LoaiLuong === "full_time") {
+      const conflict = await findOverlappingFullTime(
+        userId,
+        salary.sanitized.NgayBatDauHopDong,
+        salary.sanitized.NgayKetThucHopDong,
+        null
+      );
+      if (conflict) {
+        return res.status(409).json({
+          success: false,
+          code: "FULL_TIME_OVERLAP",
+          message: `Thời gian hợp đồng trùng với công việc full-time đang có: "${conflict.TieuDe}". Vui lòng xoá hoặc chỉnh công việc cũ trước.`,
+          existing_task: conflict,
+        });
+      }
+    }
+
     // Resolve category: explicit MaLoai, else fall back to user's default.
     let maLoai = d.MaLoai ? parseInt(d.MaLoai, 10) : null;
     if (!maLoai || Number.isNaN(maLoai)) {
@@ -215,6 +260,12 @@ router.post("/", authenticateToken, async (req, res) => {
         MucDoTapTrung: parseInt(d.MucDoTapTrung) || null,
         ThoiDiemThichHop: d.ThoiDiemThichHop || null,
         LuongTheoGio: parseFloat(d.LuongTheoGio) || 0,
+        LoaiLuong: salary.sanitized.LoaiLuong,
+        LuongThang: salary.sanitized.LuongThang,
+        CauHinhCa: salary.sanitized.CauHinhCa,
+        NgayLamViec: salary.sanitized.NgayLamViec,
+        NgayBatDauHopDong: salary.sanitized.NgayBatDauHopDong,
+        NgayKetThucHopDong: salary.sanitized.NgayKetThucHopDong,
       })
       .select()
       .single();
@@ -245,6 +296,20 @@ router.post("/", authenticateToken, async (req, res) => {
       message: "Lỗi server khi tạo công việc",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+});
+
+// GET /api/tasks/full-time-category
+// Fuzzy lookup of a "Full time work" category for the current user.
+// Used by the Create-task modal to pre-select a sensible category
+// when the user picks full_time; returns null if no matching category exists.
+router.get("/full-time-category", authenticateToken, async (req, res) => {
+  try {
+    const cat = await findFullTimeCategory(req.userId);
+    res.json({ success: true, data: cat || null });
+  } catch (err) {
+    console.error("Lỗi tìm danh mục full-time:", err);
+    res.status(500).json({ success: false, message: "Lỗi server" });
   }
 });
 
@@ -346,6 +411,42 @@ router.put("/:id", authenticateToken, async (req, res) => {
           ? STATUS_MAP[d.TrangThaiThucHien.toLowerCase()] ?? 0
           : d.TrangThaiThucHien;
       updateData.TrangThaiThucHien = status;
+    }
+
+    // Salary-type fields: run validator only if caller sent any
+    const touchesSalary = [
+      "LoaiLuong",
+      "LuongThang",
+      "CauHinhCa",
+      "NgayLamViec",
+      "NgayBatDauHopDong",
+      "NgayKetThucHopDong",
+    ].some((k) => d[k] !== undefined);
+
+    if (touchesSalary) {
+      const salary = validateSalaryFields(d);
+      if (!salary.ok) {
+        return res
+          .status(400)
+          .json({ success: false, message: salary.errors.join("; ") });
+      }
+      if (salary.sanitized.LoaiLuong === "full_time") {
+        const conflict = await findOverlappingFullTime(
+          userId,
+          salary.sanitized.NgayBatDauHopDong,
+          salary.sanitized.NgayKetThucHopDong,
+          parseInt(taskId, 10)
+        );
+        if (conflict) {
+          return res.status(409).json({
+            success: false,
+            code: "FULL_TIME_OVERLAP",
+            message: `Thời gian hợp đồng trùng với công việc full-time đang có: "${conflict.TieuDe}". Vui lòng xoá hoặc chỉnh công việc cũ trước.`,
+            existing_task: conflict,
+          });
+        }
+      }
+      Object.assign(updateData, salary.sanitized);
     }
 
     if (Object.keys(updateData).length === 0) {

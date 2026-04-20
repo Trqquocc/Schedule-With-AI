@@ -13,6 +13,7 @@
 const express = require("express");
 const router = express.Router();
 const { supabase } = require("../config/database");
+const { matchShift } = require("../lib/shift-matcher");
 
 // Priority → color mapping (mirrors tasks.js)
 const PRIORITY_COLORS = {
@@ -151,7 +152,7 @@ router.post("/", async (req, res) => {
 
       const { data: t, error: taskErr } = await supabase
         .from("CongViec")
-        .select("MaCongViec, TieuDe, MoTa, MucDoUuTien, MaLoai, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh")
+        .select("MaCongViec, TieuDe, MoTa, MucDoUuTien, MaLoai, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LoaiLuong, CauHinhCa")
         .eq("MaCongViec", parsedTaskId)
         .eq("UserID", numericUserId)
         .single();
@@ -170,7 +171,7 @@ router.post("/", async (req, res) => {
       taskRow = t;
     }
 
-    const { data: instance, error: insertErr } = await supabase
+    let { data: instance, error: insertErr } = await supabase
       .from("task_instances")
       .insert({
         task_id: parsedTaskId,    // integer or null — matches CongViec.MaCongViec FK
@@ -195,6 +196,21 @@ router.post("/", async (req, res) => {
       }
       console.error("Error creating task_instance:", insertErr);
       return res.status(500).json({ success: false, message: "Failed to create instance", error: insertErr.message });
+    }
+
+    // Shift auto-assign: part-time task with CauHinhCa → write meta.shift_name
+    if (taskRow?.LoaiLuong === "part_time" && Array.isArray(taskRow.CauHinhCa)) {
+      const shiftName = matchShift(parsedStart, taskRow.CauHinhCa);
+      if (shiftName) {
+        const meta = { ...(instance.meta || {}), shift_name: shiftName };
+        const { data: updated } = await supabase
+          .from("task_instances")
+          .update({ meta, updated_at: new Date().toISOString() })
+          .eq("id", instance.id)
+          .select()
+          .single();
+        if (updated) instance = updated;
+      }
     }
 
     res.status(201).json({
@@ -281,7 +297,7 @@ router.patch("/:id", async (req, res) => {
     // Confirm ownership
     const { data: existing, error: fetchErr } = await supabase
       .from("task_instances")
-      .select("id, start_at, end_at, status, task_id")
+      .select("id, start_at, end_at, status, task_id, meta")
       .eq("id", instanceId)
       .eq("user_id", userId)
       .single();
@@ -329,7 +345,7 @@ router.patch("/:id", async (req, res) => {
     if (note !== undefined) updateData.note = note;
     if (title !== undefined) updateData.title = title;
 
-    const { data: updated, error: updateErr } = await supabase
+    let { data: updated, error: updateErr } = await supabase
       .from("task_instances")
       .update(updateData)
       .eq("id", instanceId)
@@ -340,6 +356,34 @@ router.patch("/:id", async (req, res) => {
     if (updateErr) {
       console.error("Error updating task_instance:", updateErr);
       return res.status(500).json({ success: false, message: "Failed to update instance" });
+    }
+
+    // Shift re-match: only if start_at changed and parent task is part_time.
+    if (updateData.start_at && updated?.task_id) {
+      const { data: parent } = await supabase
+        .from("CongViec")
+        .select("LoaiLuong, CauHinhCa")
+        .eq("MaCongViec", updated.task_id)
+        .eq("UserID", userId)
+        .single();
+      if (parent?.LoaiLuong === "part_time" && Array.isArray(parent.CauHinhCa)) {
+        const shiftName = matchShift(updated.start_at, parent.CauHinhCa);
+        const baseMeta = updated.meta || {};
+        const nextMeta = shiftName
+          ? { ...baseMeta, shift_name: shiftName }
+          : (() => {
+              const { shift_name, ...rest } = baseMeta;
+              return rest;
+            })();
+        const { data: reupdated } = await supabase
+          .from("task_instances")
+          .update({ meta: nextMeta, updated_at: new Date().toISOString() })
+          .eq("id", instanceId)
+          .eq("user_id", userId)
+          .select()
+          .single();
+        if (reupdated) updated = reupdated;
+      }
     }
 
     res.json({ success: true, message: "Instance updated", data: updated });

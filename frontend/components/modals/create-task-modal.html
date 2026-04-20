@@ -140,7 +140,7 @@
         </div>
 
         <!-- Duration + Hourly Wage row -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-3" id="durationHourlyRow">
           <div>
             <label for="taskDuration" class="block text-xs font-semibold mb-1.5" style="color:#374151">
               THỜI GIAN ƯỚC TÍNH <span style="color:#94a3b8;font-weight:400">(phút)</span>
@@ -156,7 +156,7 @@
               style="border-color:#e2e8f0;background:#f8fafc"
             />
           </div>
-          <div>
+          <div id="taskHourlyWageWrap">
             <label for="taskHourlyWage" class="block text-xs font-semibold mb-1.5" style="color:#374151">
               LƯƠNG GIỜ <span style="color:#94a3b8;font-weight:400">(VND)</span>
             </label>
@@ -170,6 +170,70 @@
               class="w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               style="border-color:#e2e8f0;background:#f8fafc"
             />
+          </div>
+        </div>
+
+        <!-- Loại lương (salary type): none / part-time / full-time -->
+        <div class="rounded-xl border p-3.5" style="border-color:#e2e8f0;background:#f8fafc">
+          <label class="block text-xs font-semibold mb-1.5" style="color:#374151">LOẠI LƯƠNG</label>
+          <div class="grid grid-cols-3 gap-2" id="salaryTypeChips">
+            <label class="cursor-pointer">
+              <input type="radio" name="loaiLuong" value="none" checked class="sr-only peer">
+              <div class="px-2 py-1.5 rounded-lg text-xs text-center border peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 border-slate-200 text-slate-600">Không lương</div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="loaiLuong" value="part_time" class="sr-only peer">
+              <div class="px-2 py-1.5 rounded-lg text-xs text-center border peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 border-slate-200 text-slate-600">Part-time</div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="loaiLuong" value="full_time" class="sr-only peer">
+              <div class="px-2 py-1.5 rounded-lg text-xs text-center border peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 border-slate-200 text-slate-600">Full-time</div>
+            </label>
+          </div>
+
+          <!-- Part-time shifts builder -->
+          <div id="partTimeFields" class="hidden mt-3">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold" style="color:#374151">CA LÀM VIỆC</span>
+              <button type="button" id="addShiftBtn" class="text-xs font-semibold" style="color:#dc2626">+ Thêm ca</button>
+            </div>
+            <div id="shiftsContainer" class="space-y-1.5"></div>
+            <p class="text-[11px] mt-1.5" style="color:#94a3b8">Khi kéo thả task vào lịch, ca sẽ tự gán dựa theo giờ bắt đầu.</p>
+          </div>
+
+          <!-- Full-time fields -->
+          <div id="fullTimeFields" class="hidden mt-3 space-y-3">
+            <div>
+              <label class="block text-xs font-semibold mb-1" style="color:#374151">LƯƠNG THÁNG (VND)</label>
+              <input type="number" id="taskMonthlySalary" min="0" step="100000" value="0"
+                     class="w-full px-3 py-2 rounded-lg border text-sm" style="border-color:#e2e8f0;background:#fff">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold mb-1" style="color:#374151">NGÀY LÀM TRONG TUẦN</label>
+              <div class="grid grid-cols-7 gap-1" id="workingDaysChips">
+                <label class="cursor-pointer"><input type="checkbox" name="workDay" value="1" checked class="sr-only peer"><div class="px-1 py-1.5 rounded text-[11px] text-center border peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 border-slate-200 text-slate-600">T2</div></label>
+                <label class="cursor-pointer"><input type="checkbox" name="workDay" value="2" checked class="sr-only peer"><div class="px-1 py-1.5 rounded text-[11px] text-center border peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 border-slate-200 text-slate-600">T3</div></label>
+                <label class="cursor-pointer"><input type="checkbox" name="workDay" value="3" checked class="sr-only peer"><div class="px-1 py-1.5 rounded text-[11px] text-center border peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 border-slate-200 text-slate-600">T4</div></label>
+                <label class="cursor-pointer"><input type="checkbox" name="workDay" value="4" checked class="sr-only peer"><div class="px-1 py-1.5 rounded text-[11px] text-center border peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 border-slate-200 text-slate-600">T5</div></label>
+                <label class="cursor-pointer"><input type="checkbox" name="workDay" value="5" checked class="sr-only peer"><div class="px-1 py-1.5 rounded text-[11px] text-center border peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 border-slate-200 text-slate-600">T6</div></label>
+                <label class="cursor-pointer"><input type="checkbox" name="workDay" value="6" class="sr-only peer"><div class="px-1 py-1.5 rounded text-[11px] text-center border peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 border-slate-200 text-slate-600">T7</div></label>
+                <label class="cursor-pointer"><input type="checkbox" name="workDay" value="7" class="sr-only peer"><div class="px-1 py-1.5 rounded text-[11px] text-center border peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 border-slate-200 text-slate-600">CN</div></label>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-semibold mb-1" style="color:#374151">HỢP ĐỒNG TỪ</label>
+                <input type="date" id="taskHopDongStart" class="w-full px-3 py-2 rounded-lg border text-sm" style="border-color:#e2e8f0;background:#fff">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold mb-1" style="color:#374151">ĐẾN <span style="color:#94a3b8;font-weight:400">(bỏ trống = ongoing)</span></label>
+                <input type="date" id="taskHopDongEnd" class="w-full px-3 py-2 rounded-lg border text-sm" style="border-color:#e2e8f0;background:#fff">
+              </div>
+            </div>
+            <div id="fullTimeCategoryHint" class="hidden text-xs p-2 rounded-lg" style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412">
+              Chưa có danh mục "Full time work".
+              <button type="button" id="createFullTimeCategoryBtn" class="underline font-semibold ml-1" style="color:#dc2626">Tạo ngay</button>
+            </div>
           </div>
         </div>
 
@@ -732,6 +796,7 @@
       const submitBtn = document.querySelector("#createTaskForm button[type='submit'] .submit-text");
       if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus text-xs"></i> Tạo công việc';
       window.currentEditingTaskId = null;
+      window.__SalaryType?.reset();
     }
   }
 
@@ -793,6 +858,9 @@
           Tag: getTagsFromInput().join(","),
           MaLoai: getSelectedCategoryId(),
         };
+
+        // Append salary-type fields (LoaiLuong + branch-specific)
+        window.__SalaryType?.intoFormData(formData);
 
         if (!formData.TieuDe) { showNotification("Vui lòng nhập tiêu đề công việc", "error"); throw new Error("Title is required"); }
 
@@ -857,6 +925,17 @@
               }).then((r) => r.json()).catch(() => ({ success: false, message: "Lỗi mạng" }))
             )
           );
+          // Friendly 409 FULL_TIME_OVERLAP dialog
+          const conflict = results.find((r) => r && r.code === "FULL_TIME_OVERLAP");
+          if (conflict) {
+            const ex = conflict.existing_task || {};
+            const msg = `Thời gian hợp đồng trùng với công việc full-time đang có: <strong>${ex.TieuDe || "(không rõ)"}</strong><br>` +
+              `Kỳ hợp đồng cũ: ${ex.NgayBatDauHopDong || "?"} → ${ex.NgayKetThucHopDong || "ongoing"}<br><br>` +
+              `Vui lòng xoá hoặc chỉnh công việc cũ trước khi tạo mới.`;
+            if (window.showConfirmDialog) await window.showConfirmDialog("Trùng hợp đồng full-time", msg);
+            else showNotification("Trùng hợp đồng full-time với công việc khác", "error");
+            throw new Error("Full-time overlap");
+          }
 
           const succeeded = results.filter((r) => r.success);
           const failed = results.length - succeeded.length;
@@ -892,6 +971,164 @@
       }
     });
   }
+
+  // ===== Salary-type (LoaiLuong) controller =====
+  // State for part-time shifts + exposure of helpers used by submit/edit.
+  const SalaryType = (function () {
+    let shifts = [];
+    const Ctx = {};
+
+    function getSelected() {
+      const r = document.querySelector('input[name="loaiLuong"]:checked');
+      return r?.value || "none";
+    }
+
+    function toggleSections() {
+      const v = getSelected();
+      document.getElementById("partTimeFields")?.classList.toggle("hidden", v !== "part_time");
+      document.getElementById("fullTimeFields")?.classList.toggle("hidden", v !== "full_time");
+      // Hide hourly wage when full_time (uses monthly salary instead)
+      document.getElementById("taskHourlyWageWrap")?.classList.toggle("hidden", v === "full_time");
+      if (v === "full_time") checkFullTimeCategory();
+      if (v === "part_time" && shifts.length === 0) { shifts.push(blank()); renderShifts(); }
+    }
+
+    function blank() { return { name: "", start: "", end: "" }; }
+
+    function renderShifts() {
+      const box = document.getElementById("shiftsContainer");
+      if (!box) return;
+      box.innerHTML = shifts
+        .map((s, i) => `
+          <div class="flex items-center gap-1.5">
+            <input data-sf="name" data-i="${i}" placeholder="Tên ca (Ca 1...)"
+                   value="${escAttr(s.name)}" class="flex-1 px-2 py-1 border rounded text-xs" style="border-color:#e2e8f0;background:#fff">
+            <input data-sf="start" data-i="${i}" type="time" value="${escAttr(s.start)}"
+                   class="px-1 py-1 border rounded text-xs" style="border-color:#e2e8f0;background:#fff">
+            <span style="color:#94a3b8">→</span>
+            <input data-sf="end" data-i="${i}" type="time" value="${escAttr(s.end)}"
+                   class="px-1 py-1 border rounded text-xs" style="border-color:#e2e8f0;background:#fff">
+            <button type="button" data-si-del="${i}" class="text-xs px-1" style="color:#dc2626">×</button>
+          </div>`)
+        .join("");
+      box.querySelectorAll("input").forEach((el) =>
+        el.addEventListener("input", (e) => {
+          const i = parseInt(e.target.getAttribute("data-i"), 10);
+          const f = e.target.getAttribute("data-sf");
+          if (shifts[i]) shifts[i][f] = e.target.value;
+        })
+      );
+      box.querySelectorAll("[data-si-del]").forEach((b) =>
+        b.addEventListener("click", () => {
+          shifts.splice(parseInt(b.getAttribute("data-si-del"), 10), 1);
+          renderShifts();
+        })
+      );
+    }
+
+    function escAttr(s) { return String(s ?? "").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+
+    async function checkFullTimeCategory() {
+      const hint = document.getElementById("fullTimeCategoryHint");
+      if (!hint) return;
+      try {
+        const token = localStorage.getItem("auth_token");
+        const r = await fetch("/api/tasks/full-time-category", {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then((x) => x.json());
+        hint.classList.toggle("hidden", !!r?.data);
+      } catch (_) { /* non-blocking */ }
+    }
+
+    async function createFullTimeCategory() {
+      const token = localStorage.getItem("auth_token");
+      const r = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ TenLoai: "Full time work", MoTa: "Công việc toàn thời gian" }),
+      }).then((x) => x.json()).catch(() => null);
+      if (r?.success) {
+        document.getElementById("fullTimeCategoryHint")?.classList.add("hidden");
+        if (window.loadCategoriesForModal) await window.loadCategoriesForModal();
+        // Auto-select the new category if present
+        const newId = r.data?.MaLoai || r.data?.id;
+        if (newId) {
+          const radio = document.querySelector(`input[name="taskCategory"][value="${newId}"]`);
+          if (radio) radio.checked = true;
+        }
+      } else {
+        showNotification(r?.message || "Không tạo được danh mục", "error");
+      }
+    }
+
+    function getWorkingDays() {
+      return Array.from(document.querySelectorAll('input[name="workDay"]:checked'))
+        .map((c) => parseInt(c.value, 10))
+        .filter((n) => n >= 1 && n <= 7);
+    }
+
+    // Serialize the user's picks into the POST/PUT payload.
+    Ctx.intoFormData = function (formData) {
+      const v = getSelected();
+      formData.LoaiLuong = v;
+      if (v === "full_time") {
+        formData.LuongThang = parseInt(document.getElementById("taskMonthlySalary")?.value, 10) || 0;
+        formData.NgayLamViec = getWorkingDays();
+        formData.NgayBatDauHopDong = document.getElementById("taskHopDongStart")?.value || null;
+        formData.NgayKetThucHopDong = document.getElementById("taskHopDongEnd")?.value || null;
+        formData.LuongTheoGio = 0;
+      } else if (v === "part_time") {
+        formData.CauHinhCa = shifts.filter((s) => s.name && s.start && s.end);
+      }
+    };
+
+    Ctx.reset = function () {
+      shifts = [];
+      const noneRadio = document.querySelector('input[name="loaiLuong"][value="none"]');
+      if (noneRadio) noneRadio.checked = true;
+      document.getElementById("shiftsContainer") && (document.getElementById("shiftsContainer").innerHTML = "");
+      document.getElementById("taskMonthlySalary") && (document.getElementById("taskMonthlySalary").value = "0");
+      document.getElementById("taskHopDongStart") && (document.getElementById("taskHopDongStart").value = "");
+      document.getElementById("taskHopDongEnd") && (document.getElementById("taskHopDongEnd").value = "");
+      toggleSections();
+    };
+
+    Ctx.loadFromTask = function (t) {
+      const type = t.LoaiLuong || "none";
+      const radio = document.querySelector(`input[name="loaiLuong"][value="${type}"]`);
+      if (radio) radio.checked = true;
+      if (type === "part_time") {
+        shifts = Array.isArray(t.CauHinhCa) ? t.CauHinhCa.map((s) => ({ ...s })) : [];
+        if (shifts.length === 0) shifts.push(blank());
+        renderShifts();
+      } else if (type === "full_time") {
+        if (t.LuongThang) document.getElementById("taskMonthlySalary").value = t.LuongThang;
+        if (t.NgayBatDauHopDong) document.getElementById("taskHopDongStart").value = t.NgayBatDauHopDong;
+        if (t.NgayKetThucHopDong) document.getElementById("taskHopDongEnd").value = t.NgayKetThucHopDong;
+        const wd = Array.isArray(t.NgayLamViec) ? t.NgayLamViec : [1, 2, 3, 4, 5];
+        document.querySelectorAll('input[name="workDay"]').forEach((c) => {
+          c.checked = wd.includes(parseInt(c.value, 10));
+        });
+      }
+      toggleSections();
+    };
+
+    Ctx.bind = function () {
+      document.querySelectorAll('input[name="loaiLuong"]').forEach((r) =>
+        r.addEventListener("change", toggleSections)
+      );
+      document.getElementById("addShiftBtn")?.addEventListener("click", () => {
+        shifts.push(blank());
+        renderShifts();
+      });
+      document.getElementById("createFullTimeCategoryBtn")?.addEventListener("click", createFullTimeCategory);
+    };
+
+    return Ctx;
+  })();
+
+  // Expose for submit / edit flows (scoped here to keep the IIFE tidy)
+  window.__SalaryType = SalaryType;
 
   // ===== Fixed time toggle =====
   function handleFixedTimeToggle() {
@@ -949,6 +1186,9 @@
     if (taskData.LuongTheoGio) document.getElementById("taskHourlyWage").value = taskData.LuongTheoGio;
     if (taskData.Tag) document.getElementById("taskTag").value = taskData.Tag;
 
+    // Salary-type + shifts + working days
+    window.__SalaryType?.loadFromTask(taskData);
+
     if (taskData.MaLoai) {
       setTimeout(() => {
         const r = document.querySelector(`input[name="taskCategory"][value="${taskData.MaLoai}"]`);
@@ -987,6 +1227,7 @@
     loadCategoriesForModal();
     handleCreateTaskForm();
     handleFixedTimeToggle();
+    window.__SalaryType?.bind();
 
     const closeBtn = document.getElementById("closeCreateTaskBtn");
     const cancelBtn = document.getElementById("cancelCreateTaskBtn");

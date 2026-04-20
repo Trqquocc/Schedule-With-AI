@@ -1,76 +1,57 @@
 /**
  * salary-manager.js
- * Newspaper-style salary page — fetch, render, filter, export.
+ * Salary tab inside the "Thống kê" section.
+ * Fetches /api/salary (Phase 03 shape with `groups`) and renders
+ * one expandable card per job, grouped by LoaiLuong (part_time / full_time).
  *
  * Public API (window.SalaryManager):
  *   init()
- *   loadSalary(fromDate, toDate)
+ *   loadSalary(from, to)
+ *   loadAndRender(from, to)
  */
 (function () {
   "use strict";
 
-  // ---------------------------------------------------------------------------
-  // State
-  // ---------------------------------------------------------------------------
-  let _allEntries = [];      // raw entries from last API response
-  let _fullData = null;      // full response data object
-  let _chart = null;         // Chart.js instance
+  // --- State ------------------------------------------------------------
+  let _allGroups = [];
+  let _totalSalary = 0;
+  let _totalHours = 0;
+  let _chart = null;
+  const _expandedGroups = new Set();
 
-  // ---------------------------------------------------------------------------
-  // Utilities
-  // ---------------------------------------------------------------------------
-
-  function getAuthToken() {
-    return localStorage.getItem("auth_token") || "";
-  }
-
-  function fmt(n, decimals = 0) {
-    if (n == null || isNaN(n)) return "—";
-    return new Intl.NumberFormat("vi-VN", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(n);
-  }
-
-  function fmtCurrency(n) {
-    return fmt(n);
-  }
-
-  function fmtHours(n) {
-    return fmt(n, 2);
-  }
-
-  function fmtDate(iso) {
+  // --- Utils ------------------------------------------------------------
+  const getToken = () => localStorage.getItem("auth_token") || "";
+  const fmt = (n, d = 0) =>
+    n == null || isNaN(n)
+      ? "—"
+      : new Intl.NumberFormat("vi-VN", {
+          minimumFractionDigits: d,
+          maximumFractionDigits: d,
+        }).format(n);
+  const fmtVnd = (n) => fmt(n) + " ₫";
+  const fmtHours = (n) => fmt(n, 1) + "h";
+  const fmtDate = (iso) => {
     if (!iso) return "";
     const d = new Date(iso);
-    if (isNaN(d)) return iso;
-    return d.toLocaleDateString("vi-VN");
-  }
+    return isNaN(d) ? iso : d.toLocaleDateString("vi-VN");
+  };
+  const esc = (s) =>
+    s == null
+      ? ""
+      : String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+  const isoDate = (d) => d.toISOString().slice(0, 10);
 
-  function esc(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  /** Return YYYY-MM-DD string for a Date object. */
-  function isoDate(d) {
-    return d.toISOString().slice(0, 10);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Date preset helpers
-  // ---------------------------------------------------------------------------
-
+  // --- Date presets -----------------------------------------------------
   function getPresetRange(preset) {
     const today = new Date();
     let from;
     switch (preset) {
       case "week": {
-        const day = today.getDay(); // 0=Sun
+        const day = today.getDay();
         const diff = day === 0 ? -6 : 1 - day;
         from = new Date(today);
         from.setDate(today.getDate() + diff);
@@ -79,208 +60,206 @@
       case "month":
         from = new Date(today.getFullYear(), today.getMonth(), 1);
         break;
-      case "quarter": {
-        const q = Math.floor(today.getMonth() / 3);
-        from = new Date(today.getFullYear(), q * 3, 1);
-        break;
-      }
       case "year":
         from = new Date(today.getFullYear(), 0, 1);
         break;
       default:
-        from = new Date(today.getTime() - 30 * 86_400_000);
+        from = new Date(today.getTime() - 30 * 86400000);
     }
     return { from: isoDate(from), to: isoDate(today) };
   }
 
-  // ---------------------------------------------------------------------------
-  // API fetch
-  // ---------------------------------------------------------------------------
-
-  async function loadSalary(fromDate, toDate) {
-    const params = new URLSearchParams();
-    if (fromDate) params.set("from", fromDate);
-    if (toDate) params.set("to", toDate);
-
-    const resp = await fetch(`/api/salary?${params}`, {
-      headers: { Authorization: `Bearer ${getAuthToken()}` },
+  // --- API --------------------------------------------------------------
+  async function loadSalary(from, to) {
+    const p = new URLSearchParams();
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
+    const resp = await fetch(`/api/salary?${p}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
     });
-
-    if (!resp.ok) {
-      const txt = await resp.text().catch(() => "");
-      throw new Error(`HTTP ${resp.status}: ${txt}`);
-    }
-
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const json = await resp.json();
     if (!json.success) throw new Error(json.message || "API error");
     return json.data;
   }
 
-  // ---------------------------------------------------------------------------
-  // Category dropdown population
-  // ---------------------------------------------------------------------------
-
-  function populateCategoryFilter(entries) {
-    const sel = document.getElementById("filter-category");
-    if (!sel) return;
-
-    const seen = new Map();
-    entries.forEach((e) => {
-      if (e.categoryId && !seen.has(e.categoryId)) {
-        seen.set(e.categoryId, e.categoryName || e.categoryId);
-      }
-    });
-
-    // Remove old options except first ("Tất cả")
-    while (sel.options.length > 1) sel.remove(1);
-
-    seen.forEach((name, id) => {
-      const opt = document.createElement("option");
-      opt.value = id;
-      opt.textContent = name;
-      sel.appendChild(opt);
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Render — stat cards
-  // ---------------------------------------------------------------------------
-
-  function renderStats(data) {
-    const set = (id, val) => {
+  // --- Renderers --------------------------------------------------------
+  function renderStats() {
+    const set = (id, v) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = val;
+      if (el) el.textContent = v;
     };
-
-    set("stat-total-hours", fmtHours(data.totalHours));
-    set("stat-total-salary", fmtCurrency(data.totalSalary));
-    set("stat-avg-day", fmtCurrency(data.avgPerDay));
-
-    if (data.topTask) {
-      set("stat-top-task", data.topTask.title);
-      set("stat-top-task-hours", `${fmtHours(data.topTask.hours)} giờ`);
-    } else {
-      set("stat-top-task", "—");
-      set("stat-top-task-hours", "");
-    }
+    set("stat-total-hours", fmtHours(_totalHours));
+    set("stat-total-salary", fmtVnd(_totalSalary));
+    set("stat-job-count", _allGroups.length);
   }
 
-  // ---------------------------------------------------------------------------
-  // Render — masthead subtitle
-  // ---------------------------------------------------------------------------
-
-  function renderMasthead(fromDate, toDate) {
-    const el = document.getElementById("masthead-subtitle");
-    if (!el) return;
-    const f = fromDate
-      ? new Date(fromDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
-      : "";
-    const t = toDate
-      ? new Date(toDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
-      : "";
-    el.textContent = f && t ? `${f} — ${t}` : "";
+  function typeBadge(type) {
+    if (type === "full_time")
+      return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background:#dcfce7;color:#166534">FULL-TIME</span>`;
+    if (type === "part_time")
+      return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background:#dbeafe;color:#1e40af">PART-TIME</span>`;
+    return "";
   }
 
-  // ---------------------------------------------------------------------------
-  // Render — main table (from filtered entries)
-  // ---------------------------------------------------------------------------
-
-  function renderTable(entries) {
-    const wrap = document.getElementById("salary-table-wrap");
-    if (!wrap) return;
-
-    if (!entries || entries.length === 0) {
-      wrap.innerHTML = `<div class="np-empty">Không có dữ liệu công việc đã hoàn thành trong khoảng thời gian này.</div>`;
-      return;
-    }
-
-    const totalHours = entries.reduce((s, e) => s + (e.hours || 0), 0);
-    const totalSalary = entries.reduce((s, e) => s + (e.amount || 0), 0);
-
-    const rows = entries
+  function renderPartTimeBody(g) {
+    const rows = (g.entries || [])
       .map(
-        (e, i) => `
-      <tr class="${i % 2 === 0 ? "np-tr-even" : "np-tr-odd"}">
-        <td class="np-td np-td--title">${esc(e.title)}</td>
-        <td class="np-td np-td--cat">${esc(e.categoryName || "—")}</td>
-        <td class="np-td np-td--num">${fmtHours(e.hours)}</td>
-        <td class="np-td np-td--num">${fmtCurrency(e.rate)}</td>
-        <td class="np-td np-td--num np-td--amount">${fmtCurrency(e.amount)}</td>
-        <td class="np-td np-td--date">${fmtDate(e.date)}</td>
-      </tr>`
+        (e) => `
+        <tr class="border-t border-slate-100">
+          <td class="px-2 py-1">${esc(g.title)}</td>
+          <td class="px-2 py-1">${fmtDate(e.date)}</td>
+          <td class="px-2 py-1 text-right">${fmtVnd(e.rate)}</td>
+          <td class="px-2 py-1 text-right">${fmtHours(e.hours)}</td>
+          <td class="px-2 py-1">${esc([e.shift_name ? `Ca: ${e.shift_name}` : "", e.note].filter(Boolean).join(" — "))}</td>
+          <td class="px-2 py-1 text-right font-semibold">${fmtVnd(e.amount)}</td>
+        </tr>`
       )
       .join("");
-
-    wrap.innerHTML = `
-      <table class="np-table">
-        <thead>
-          <tr>
-            <th class="np-th">Công việc</th>
-            <th class="np-th">Danh mục</th>
-            <th class="np-th np-th--num">Số giờ</th>
-            <th class="np-th np-th--num">Lương / giờ</th>
-            <th class="np-th np-th--num">Tổng lương</th>
-            <th class="np-th">Ngày hoàn thành</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-        <tfoot>
-          <tr>
-            <td class="np-tf" colspan="2">Tổng cộng (${entries.length} công việc)</td>
-            <td class="np-tf np-tf--num">${fmtHours(totalHours)} giờ</td>
-            <td class="np-tf np-tf--num"></td>
-            <td class="np-tf np-tf--num np-tf--total">${fmtCurrency(totalSalary)}</td>
-            <td class="np-tf"></td>
-          </tr>
-        </tfoot>
-      </table>`;
+    return `
+      <div class="overflow-x-auto mt-3 border border-slate-200 rounded-lg">
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 text-slate-600">
+            <tr>
+              <th class="px-2 py-2 text-left">Công việc</th>
+              <th class="px-2 py-2 text-left">Ngày hoàn thành</th>
+              <th class="px-2 py-2 text-right">Đơn giá</th>
+              <th class="px-2 py-2 text-right">Số giờ</th>
+              <th class="px-2 py-2 text-left">Ghi chú</th>
+              <th class="px-2 py-2 text-right">Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
   }
 
-  // ---------------------------------------------------------------------------
-  // Render — Chart.js line chart (monochrome)
-  // ---------------------------------------------------------------------------
+  function renderFullTimeBody(g) {
+    const adjTotal = (g.adjustments || []).reduce((s, a) => s + (a.delta || 0), 0);
+    const adjRows = (g.adjustments || [])
+      .map(
+        (a) => `
+        <div class="flex justify-between text-xs py-1 border-t border-slate-100">
+          <span>${esc(a.month)} — ${esc(a.reason || "")}</span>
+          <span class="font-semibold" style="color:${a.delta < 0 ? "#dc2626" : "#16a34a"}">${a.delta >= 0 ? "+" : ""}${fmtVnd(a.delta)}</span>
+        </div>`
+      )
+      .join("");
+    return `
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+        <div class="p-3 rounded-lg" style="background:#f8fafc;border:1px solid #e2e8f0">
+          <div class="text-slate-500">Lương tháng</div>
+          <div class="font-bold text-lg">${fmtVnd(g.LuongThang)}</div>
+        </div>
+        <div class="p-3 rounded-lg" style="background:#f8fafc;border:1px solid #e2e8f0">
+          <div class="text-slate-500">Điều chỉnh</div>
+          <div class="font-bold text-lg" style="color:${adjTotal < 0 ? "#dc2626" : "#16a34a"}">${adjTotal >= 0 ? "+" : ""}${fmtVnd(adjTotal)}</div>
+        </div>
+        <div class="p-3 rounded-lg" style="background:#f0fdf4;border:1px solid #bbf7d0">
+          <div class="text-slate-500">Tổng</div>
+          <div class="font-bold text-lg" style="color:#166534">${fmtVnd(g.subtotal)}</div>
+        </div>
+      </div>
+      ${adjRows ? `<div class="mt-2 p-2 bg-slate-50 rounded-lg">${adjRows}</div>` : ""}
+      <div class="ft-cal-mount mt-3" data-task-id="${g.task_id}"></div>`;
+  }
 
+  function renderGroups(groups) {
+    const box = document.getElementById("salary-groups");
+    if (!box) return;
+    if (!groups || groups.length === 0) {
+      box.innerHTML = `<div class="text-center p-8 text-slate-400 text-sm">Không có công việc có lương trong khoảng thời gian này.</div>`;
+      return;
+    }
+    box.innerHTML = groups
+      .map((g) => {
+        const expanded = _expandedGroups.has(g.task_id);
+        const summaryRight =
+          g.type === "part_time"
+            ? `${g.shiftCount || 0} ca · ${fmtVnd(g.subtotal)}`
+            : fmtVnd(g.subtotal);
+        return `
+          <div class="border border-slate-200 rounded-xl mb-2 bg-white" data-group="${g.task_id}">
+            <div class="flex items-center justify-between p-3 cursor-pointer" data-toggle="${g.task_id}">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-chevron-${expanded ? "down" : "right"} text-xs text-slate-400"></i>
+                <span class="font-semibold text-sm">${esc(g.title)}</span>
+                ${typeBadge(g.type)}
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-semibold">${summaryRight}</span>
+                <button class="btn-export-txt px-2 py-1 rounded text-[11px] font-semibold border border-slate-200 bg-white"
+                        data-task-id="${g.task_id}" title="Xuất TXT">
+                  <i class="fas fa-file-export mr-1"></i>TXT
+                </button>
+              </div>
+            </div>
+            ${expanded ? `<div class="px-3 pb-3">${g.type === "part_time" ? renderPartTimeBody(g) : renderFullTimeBody(g)}</div>` : ""}
+          </div>`;
+      })
+      .join("");
+
+    // Bind expand/collapse
+    box.querySelectorAll("[data-toggle]").forEach((el) =>
+      el.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-export-txt")) return;
+        const id = parseInt(el.getAttribute("data-toggle"), 10);
+        if (_expandedGroups.has(id)) {
+          _expandedGroups.delete(id);
+          if (window.SalaryFullTimeCalendar?.destroyByTaskId)
+            window.SalaryFullTimeCalendar.destroyByTaskId(id);
+        } else {
+          _expandedGroups.add(id);
+        }
+        renderGroups(_allGroups);
+        // Mount full-time calendar lazily after DOM updates
+        if (_expandedGroups.has(id)) {
+          const g = _allGroups.find((x) => x.task_id === id);
+          if (g && g.type === "full_time" && window.SalaryFullTimeCalendar?.render) {
+            const mount = box.querySelector(`.ft-cal-mount[data-task-id="${id}"]`);
+            if (mount) window.SalaryFullTimeCalendar.render(mount, g);
+          }
+        }
+      })
+    );
+
+    // Bind TXT export (delegation)
+    box.querySelectorAll(".btn-export-txt").forEach((b) =>
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        exportTxt(parseInt(b.getAttribute("data-task-id"), 10));
+      })
+    );
+  }
+
+  // --- Chart ------------------------------------------------------------
   function renderChart(timeline) {
     const canvas = document.getElementById("salary-chart");
-    if (!canvas) return;
-
-    const labels = (timeline || []).map((d) =>
-      new Date(d.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
-    );
-    const salaryData = (timeline || []).map((d) => d.salary);
-
-    const isDark = document.body.classList.contains("dark");
-    const lineColor = isDark ? "#e5e5e5" : "#1a1a1a";
-    const bgColor = isDark ? "rgba(229,229,229,0.08)" : "rgba(26,26,26,0.06)";
-    const gridColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-    const textColor = isDark ? "#aaa" : "#555";
-    const fontFamily = "'Playfair Display', Georgia, serif";
-
+    if (!canvas || typeof Chart === "undefined") return;
     if (_chart) {
       _chart.destroy();
       _chart = null;
     }
-
-    if (!labels.length) {
-      canvas.parentElement.innerHTML = `<div class="np-empty">Không có dữ liệu biểu đồ.</div>`;
-      return;
-    }
-
+    if (!timeline || !timeline.length) return;
     _chart = new Chart(canvas, {
       type: "line",
       data: {
-        labels,
+        labels: timeline.map((d) =>
+          new Date(d.date).toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+          })
+        ),
         datasets: [
           {
-            label: "Thu nhập (VND)",
-            data: salaryData,
-            borderColor: lineColor,
-            backgroundColor: bgColor,
+            label: "Thu nhập",
+            data: timeline.map((d) => d.amount),
+            borderColor: "#dc2626",
+            backgroundColor: "rgba(220,38,38,0.08)",
             borderWidth: 1.5,
-            pointRadius: 3,
-            pointBackgroundColor: lineColor,
             fill: true,
             tension: 0.3,
+            pointRadius: 2,
           },
         ],
       },
@@ -289,126 +268,122 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => ` ${fmtCurrency(ctx.raw)} VND`,
-            },
-            bodyFont: { family: fontFamily },
-            titleFont: { family: fontFamily },
-          },
+          tooltip: { callbacks: { label: (ctx) => ` ${fmtVnd(ctx.raw)}` } },
         },
         scales: {
-          x: {
-            grid: { color: gridColor },
-            ticks: { color: textColor, font: { family: fontFamily, size: 11 } },
-          },
-          y: {
-            grid: { color: gridColor },
-            ticks: {
-              color: textColor,
-              font: { family: fontFamily, size: 11 },
-              callback: (v) => fmtCurrency(v),
-            },
-          },
+          y: { ticks: { callback: (v) => fmt(v) } },
         },
       },
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Filter — apply category + search to _allEntries
-  // ---------------------------------------------------------------------------
-
+  // --- Filters ----------------------------------------------------------
   function applyFilters() {
-    const catVal = (document.getElementById("filter-category")?.value || "").trim();
-    const searchVal = (document.getElementById("filter-search")?.value || "").trim().toLowerCase();
-
-    let filtered = _allEntries;
-
-    if (catVal) {
-      filtered = filtered.filter(
-        (e) => String(e.categoryId) === catVal
+    const q = (document.getElementById("filter-search")?.value || "")
+      .trim()
+      .toLowerCase();
+    if (!q) return renderGroups(_allGroups);
+    const filtered = _allGroups.filter((g) => {
+      if ((g.title || "").toLowerCase().includes(q)) return true;
+      return (g.entries || []).some((e) =>
+        (e.note || "").toLowerCase().includes(q)
       );
-    }
-
-    if (searchVal) {
-      filtered = filtered.filter((e) =>
-        (e.title || "").toLowerCase().includes(searchVal)
-      );
-    }
-
-    renderTable(filtered);
+    });
+    renderGroups(filtered);
   }
 
-  // ---------------------------------------------------------------------------
-  // CSV export
-  // ---------------------------------------------------------------------------
+  // --- Export TXT (Phase 09 spec) ---------------------------------------
+  function slugify(s) {
+    return String(s || "untitled")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "d")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
 
-  function exportCsv() {
-    if (!_allEntries.length) return;
+  function buildTxtContent(g) {
+    const lines = [g.title, "=".repeat(Math.min(40, g.title.length))];
+    if (g.type === "part_time") {
+      (g.entries || []).forEach((e) => {
+        const s = new Date(e.start_at || e.date);
+        const ed = e.end_at ? new Date(e.end_at) : null;
+        const date = s.toISOString().slice(0, 10);
+        const opts = { hour: "2-digit", minute: "2-digit", hour12: false };
+        const from = s.toLocaleTimeString("vi-VN", opts);
+        const to = ed ? ed.toLocaleTimeString("vi-VN", opts) : "";
+        const shift = e.shift_name ? ` [${e.shift_name}]` : "";
+        const note = e.note ? ` — ${e.note}` : "";
+        lines.push(`${date} ${from}${to ? "-" + to : ""}${shift}${note}`);
+      });
+    } else if (g.type === "full_time") {
+      (g.workedDates || []).forEach((d) => lines.push(`${d} (đã đi làm)`));
+    }
+    return lines.join("\n");
+  }
 
-    const catVal = (document.getElementById("filter-category")?.value || "").trim();
-    const searchVal = (document.getElementById("filter-search")?.value || "").trim().toLowerCase();
-    let rows = _allEntries;
-    if (catVal) rows = rows.filter((e) => String(e.categoryId) === catVal);
-    if (searchVal) rows = rows.filter((e) => (e.title || "").toLowerCase().includes(searchVal));
-
-    const cols = ["Công việc", "Danh mục", "Số giờ", "Lương/giờ", "Tổng lương", "Ngày hoàn thành"];
-    const lines = [
-      cols.join(","),
-      ...rows.map((e) =>
-        [
-          `"${(e.title || "").replace(/"/g, '""')}"`,
-          `"${(e.categoryName || "").replace(/"/g, '""')}"`,
-          e.hours,
-          e.rate,
-          e.amount,
-          fmtDate(e.date),
-        ].join(",")
-      ),
-    ];
-
-    const blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
-      type: "text/csv;charset=utf-8;",
+  function exportTxt(taskId) {
+    const g = _allGroups.find((x) => x.task_id === taskId);
+    if (!g) return;
+    const blob = new Blob(["\uFEFF" + buildTxtContent(g)], {
+      type: "text/plain;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `bang-luong-${isoDate(new Date())}.csv`;
+    a.download = `${slugify(g.title)}-${isoDate(new Date())}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  // ---------------------------------------------------------------------------
-  // Core load + render pipeline
-  // ---------------------------------------------------------------------------
-
-  async function loadAndRender(fromDate, toDate) {
-    const wrap = document.getElementById("salary-table-wrap");
-    if (wrap) wrap.innerHTML = `<div class="np-loading">Đang tải dữ liệu...</div>`;
-
+  // --- Load pipeline ----------------------------------------------------
+  async function loadAndRender(from, to) {
+    const box = document.getElementById("salary-groups");
+    if (box)
+      box.innerHTML = `<div class="text-center p-6 text-slate-400 text-sm">Đang tải...</div>`;
     try {
-      const data = await loadSalary(fromDate, toDate);
-      _fullData = data;
-      _allEntries = data.entries || [];
-
-      renderMasthead(fromDate, toDate);
-      renderStats(data);
-      populateCategoryFilter(_allEntries);
+      const data = await loadSalary(from, to);
+      _allGroups = data.groups || [];
+      _totalSalary = data.totalSalary || 0;
+      _totalHours = data.totalHours || 0;
+      renderStats();
       applyFilters();
       renderChart(data.timeline || []);
     } catch (err) {
-      console.error("Salary load error:", err);
-      if (wrap) {
-        wrap.innerHTML = `<div class="np-empty np-empty--error">Lỗi tải dữ liệu: ${esc(err.message)}</div>`;
-      }
+      console.error("[salary] load error:", err);
+      if (box)
+        box.innerHTML = `<div class="text-center p-6 text-red-500 text-sm">Lỗi: ${esc(err.message)}</div>`;
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Init
-  // ---------------------------------------------------------------------------
+  // --- Tab switcher (replaces old salaryManager.js responsibility) -----
+  function wireTabs() {
+    const tabs = document.querySelectorAll(".tab[data-tab]");
+    const salaryView = document.getElementById("salary-view");
+    const statsView = document.getElementById("stats-view");
+    tabs.forEach((tab) =>
+      tab.addEventListener("click", function () {
+        tabs.forEach((t) => t.classList.remove("active"));
+        this.classList.add("active");
+        const type = this.getAttribute("data-tab");
+        if (type === "salary") {
+          salaryView?.classList.remove("hidden");
+          statsView?.classList.add("hidden");
+          const from = document.getElementById("filter-from")?.value;
+          const to = document.getElementById("filter-to")?.value;
+          loadAndRender(from, to);
+        } else {
+          salaryView?.classList.add("hidden");
+          statsView?.classList.remove("hidden");
+          window.StatsManager?.handleLoadStats?.();
+        }
+      })
+    );
+  }
 
+  // --- Init -------------------------------------------------------------
   function initDateInputs() {
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -418,64 +393,44 @@
     if (toEl && !toEl.value) toEl.value = isoDate(today);
   }
 
-  function getDateRange() {
-    const from = document.getElementById("filter-from")?.value || "";
-    const to = document.getElementById("filter-to")?.value || "";
-    return { from, to };
-  }
-
   function init() {
     initDateInputs();
+    wireTabs();
 
-    // Apply button
     document.getElementById("btn-apply")?.addEventListener("click", () => {
-      const { from, to } = getDateRange();
+      const from = document.getElementById("filter-from")?.value;
+      const to = document.getElementById("filter-to")?.value;
       loadAndRender(from, to);
     });
 
-    // Preset buttons
-    document.querySelectorAll(".np-preset").forEach((btn) => {
+    document.querySelectorAll(".np-preset").forEach((btn) =>
       btn.addEventListener("click", function () {
         document.querySelectorAll(".np-preset").forEach((b) => b.classList.remove("active"));
         this.classList.add("active");
         const { from, to } = getPresetRange(this.dataset.preset);
-        const fromEl = document.getElementById("filter-from");
-        const toEl = document.getElementById("filter-to");
-        if (fromEl) fromEl.value = from;
-        if (toEl) toEl.value = to;
+        document.getElementById("filter-from").value = from;
+        document.getElementById("filter-to").value = to;
         loadAndRender(from, to);
-      });
-    });
+      })
+    );
 
-    // Category filter (client-side)
-    document.getElementById("filter-category")?.addEventListener("change", applyFilters);
-
-    // Search filter (client-side, debounced)
     let searchTimer = null;
     document.getElementById("filter-search")?.addEventListener("input", () => {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(applyFilters, 250);
+      searchTimer = setTimeout(applyFilters, 200);
     });
 
-    // CSV export
-    document.getElementById("btn-export-csv")?.addEventListener("click", exportCsv);
-
-    // Initial load — current month
-    const { from, to } = getDateRange();
-    loadAndRender(from, to);
+    // Initial load only if Salary tab is visible (default is Stats tab)
+    const salaryView = document.getElementById("salary-view");
+    if (salaryView && !salaryView.classList.contains("hidden")) {
+      const from = document.getElementById("filter-from")?.value;
+      const to = document.getElementById("filter-to")?.value;
+      loadAndRender(from, to);
+    }
   }
 
-  // ---------------------------------------------------------------------------
-  // Bootstrap
-  // ---------------------------------------------------------------------------
-
-  // Only auto-init when the salary page elements are present in the DOM
-  // (standalone load via salary.html). In SPA mode, componentLoader calls
-  // SalaryManager.init() after injecting the HTML.
   function maybeAutoInit() {
-    if (document.getElementById("salary-table-wrap")) {
-      init();
-    }
+    if (document.getElementById("salary-groups")) init();
   }
 
   if (document.readyState === "loading") {
