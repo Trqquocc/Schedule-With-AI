@@ -1169,12 +1169,12 @@ body.dark .priority-legend span {
    ============================================================== */
 .fc-event {
   --ev-accent: #3b82f6;
-  background: #ffffff !important;
+  background: #f1f5f9 !important;
   background-image: none !important;
   color: #0f172a !important;
   border: 1px solid #111827 !important;
   border-left-width: 1px !important;
-  border-radius: 10px !important;
+  border-radius: 6px !important;
   padding: 6px 8px !important;
   margin-bottom: 2px;
   box-shadow:
@@ -1209,30 +1209,30 @@ body.dark .priority-legend span {
   font-weight: 600 !important;
 }
 
-/* Framed title row */
+/* Framed title row — darker gray than the card body for contrast.
+   The top 3px strip is the priority indicator (replaces the old dot). */
 .sched-evt-title {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 7px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #fafafa;
+  padding: 8px 10px 6px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  background: #cbd5e1;
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.25;
   color: #0f172a;
   min-width: 0;
+  overflow: hidden;
 }
-.sched-evt-dot {
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+/* Priority color strip pinned to the top of the title frame. */
+.sched-evt-title::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
   background: var(--ev-accent);
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 3px color-mix(in srgb, var(--ev-accent) 40%, transparent);
 }
 .sched-evt-title-text {
   flex: 1 1 auto;
@@ -1297,10 +1297,9 @@ body.dark .priority-legend span {
 .fc-daygrid-event {
   padding: 3px 6px !important;
 }
+/* Month view: smaller title frame but keep the gray fill + top strip. */
 .fc-daygrid-event .sched-evt-title {
-  border: none;
-  background: transparent;
-  padding: 0;
+  padding: 4px 6px 3px;
   font-size: 11.5px;
 }
 .fc-daygrid-event .sched-evt-meta,
@@ -1354,7 +1353,7 @@ body.dark .fc-event {
     0 0 8px 0 color-mix(in srgb, var(--ev-accent) 30%, transparent) !important;
 }
 body.dark .sched-evt-title {
-  background: var(--bg-card-alt);
+  background: var(--bg-badge, #334155);
   border-color: var(--border);
   color: var(--text-primary);
 }

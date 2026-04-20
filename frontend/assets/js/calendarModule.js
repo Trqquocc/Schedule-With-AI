@@ -487,7 +487,6 @@
           return {
             html: `
               <div class="sched-evt-title">
-                <span class="sched-evt-dot" aria-hidden="true"></span>
                 <span class="sched-evt-title-text">${esc(title)}</span>
               </div>
               ${metaHtml}
