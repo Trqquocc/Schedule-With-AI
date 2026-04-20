@@ -26,26 +26,8 @@
     </div>
 
     <div class="space-y-2">
-      <button
-        id="updateProfileBtn"
-        class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-      >
-        <span class="flex items-center">
-          <i class="fas fa-user-edit text-gray-400 mr-3 text-xs"></i>
-          Cập nhật hồ sơ
-        </span>
-        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-      </button>
-
-      <button
-        class="w-full flex items-center justify-between p-3 text-left text-sm text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
-      >
-        <span class="flex items-center">
-          <i class="fas fa-bell text-gray-400 mr-3 text-xs"></i>
-          Thông báo
-        </span>
-        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-      </button>
+      <!-- "Cập nhật hồ sơ" moved to sidebar user area (click name/email). -->
+      <!-- "Thông báo" moved to its own sidebar nav section. -->
 
       <div class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
         <span class="flex items-center text-sm text-gray-700">
@@ -162,12 +144,6 @@
         this.classList.remove("settings-option");
       });
     });
-
-    const updateProfileBtn = document.getElementById("updateProfileBtn");
-    if (updateProfileBtn) {
-      updateProfileBtn.addEventListener("click", function () {
-      });
-    }
 
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {

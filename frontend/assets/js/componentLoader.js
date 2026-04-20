@@ -16,6 +16,7 @@
       salary: "pages/salary.html",
       profile: "pages/profile.html",
       ai: "pages/ai-content.html",
+      notifications: "pages/notifications.html",
     },
 
     async loadComponent(containerId, filePath, options = {}) {
@@ -278,7 +279,6 @@
 
         settings: () => {
           if (window.ProfileManager?.init) ProfileManager.init();
-          if (window.NotificationManager?.init) NotificationManager.init();
         },
       };
 
@@ -344,10 +344,6 @@
           path: "components/modals/profile-modal.html",
         },
         {
-          id: "notificationModal",
-          path: "components/modals/notification-modal.html",
-        },
-        {
           id: "priorityManagerModal",
           path: "components/modals/priority-manager-modal.html",
         },
@@ -375,7 +371,6 @@
             "eventDetailModal",
             "createCategoryModal",
             "profileModal",
-            "notificationModal",
           ];
 
       modalIds.forEach((id) => {

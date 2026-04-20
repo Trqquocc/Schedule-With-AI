@@ -641,6 +641,14 @@
         <i class="fas fa-chart-line"></i>
         <span>Thống kê</span>
       </button>
+      <button
+        type="button"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
+        data-section="notifications"
+      >
+        <i class="fas fa-bell"></i>
+        <span>Thông báo</span>
+      </button>
     </nav>
   </div>
 
@@ -749,24 +757,8 @@
              in the left sidebar to edit profile). Kept the settings modal
              focused on account-level actions. -->
 
-        <!-- Notifications -->
-        <button id="openNotificationBtn" class="sm-menu-item" style="
-          width:100%;display:flex;align-items:center;justify-content:space-between;
-          padding:11px 12px;border-radius:12px;background:transparent;border:none;cursor:pointer;
-          transition:background .15s;text-align:left
-        " onmouseover="this.style.background='var(--sm-hover-cyan,#ecfeff)'"
-           onmouseout="this.style.background='transparent'">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:36px;height:36px;border-radius:10px;background:#cffafe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="fas fa-bell" style="color:#0891b2;font-size:15px"></i>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Thông báo</div>
-              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Nhắc nhở, cảnh báo sự kiện</div>
-            </div>
-          </div>
-          <i class="fas fa-chevron-right" style="font-size:11px;color:var(--sm-muted,#94a3b8)"></i>
-        </button>
+        <!-- Notifications moved to its own sidebar nav section (see main nav
+             above with data-section="notifications"). -->
       </div>
 
       <!-- ── SECTION: GIAO DIỆN ── -->
@@ -1033,12 +1025,6 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
       if (window.ProfileManager && !window.ProfileManager.initialized) {
         window.ProfileManager.init();
       }
-      if (
-        window.NotificationManager &&
-        !window.NotificationManager.initialized
-      ) {
-        window.NotificationManager.init();
-      }
     });
 
     const closeModal = () => {
@@ -1110,26 +1096,6 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
       });
     } else {
       console.warn("[sidebar] #sidebarProfileBtn not found at bind time");
-    }
-
-    //  NEW: Open Notification Modal - Work early, before manager init
-    const openNotificationBtn = document.getElementById("openNotificationBtn");
-    if (openNotificationBtn) {
-      openNotificationBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        // Wait for NotificationManager if not ready yet
-        const tryOpen = () => {
-          if (
-            window.NotificationManager &&
-            NotificationManager.openNotificationModal
-          ) {
-            NotificationManager.openNotificationModal();
-          } else {
-            setTimeout(tryOpen, 100);
-          }
-        };
-        tryOpen();
-      });
     }
 
     // Navigation

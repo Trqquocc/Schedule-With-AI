@@ -21,6 +21,8 @@ const applyScheduleRoutes = require("./routes/apply-schedule");
 const scheduleCompletionRoutes = require("./routes/schedule-completion");
 const aiReferenceRoutes = require("./routes/ai-reference");
 const adjustmentsRoutes = require("./routes/adjustments");
+const notificationRoutes = require("./routes/notification.routes");
+const notificationPrefsRoutes = require("./routes/notification-prefs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -80,6 +82,8 @@ app.use("/api/schedule", authenticateToken, applyScheduleRoutes);
 app.use("/api/schedule", authenticateToken, scheduleCompletionRoutes);
 app.use("/api/ai-reference", authenticateToken, aiReferenceRoutes);
 app.use("/api/adjustments", authenticateToken, adjustmentsRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/notifications", authenticateToken, notificationPrefsRoutes);
 
 // API cũ vẫn dùng (nếu có)
 app.get("/api/work/tasks", authenticateToken, (req, res) =>
@@ -124,4 +128,26 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server đang chạy tại http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+
+  // Start Telegram bot polling + per-user cron jobs.
+  // Guarded: token missing → skip gracefully, don't crash the HTTP server.
+  if (process.env.TELEGRAM_BOT_TOKEN) {
+    try {
+      const telegramBot = require("./telegram/bot");
+      telegramBot.initializeSchedules?.();
+      console.log("Telegram bot polling started");
+
+      // Reminder engine (15-min-before, weekly, monthly salary, weekend AI)
+      try {
+        const reminderEngine = require("./telegram/reminder-engine");
+        reminderEngine.start?.();
+      } catch (e) {
+        console.warn("Reminder engine not available:", e.message);
+      }
+    } catch (err) {
+      console.error("Telegram bot failed to start:", err.message);
+    }
+  } else {
+    console.log("TELEGRAM_BOT_TOKEN not set — skipping Telegram bot startup");
+  }
 });

@@ -4,12 +4,28 @@ const { supabase } = require("../config/database");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
-  console.error("❌ TELEGRAM_BOT_TOKEN is missing in .env file!");
-  process.exit(1);
+  // Don't exit the whole process: app still works without Telegram.
+  // server.js guards the import with the same env check.
+  throw new Error("TELEGRAM_BOT_TOKEN is missing — bot.js should not be required.");
 }
 
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(token, { polling: true });
 const pendingConnections = new Map();
+
+// Cache the bot's @username so the web link-code flow can build
+// `https://t.me/<username>?start=<code>` without requiring an env var.
+// getMe() runs once at startup; result is written to `global.botUsername`
+// so notification.routes.js can read it synchronously.
+bot.getMe()
+  .then((me) => {
+    if (me?.username) {
+      global.botUsername = me.username;
+      console.log(`Telegram bot identity: @${me.username}`);
+    }
+  })
+  .catch((err) => {
+    console.error("Telegram bot.getMe failed:", err.message);
+  });
 
 // /start
 bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
@@ -52,7 +68,16 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
 // /help
 bot.onText(/\/help/, async (msg) => {
   await bot.sendMessage(msg.chat.id,
-    `📋 <b>Danh sách lệnh</b>\n\n/start - Lấy mã kết nối mới\n/help - Xem hướng dẫn\n/status - Kiểm tra kết nối\n/schedule - Lịch trình hôm nay\n/settings - Cài đặt thông báo\n/disconnect - Ngắt kết nối\n\n💡 Bạn có thể tùy chỉnh thông báo trên web hoặc dùng /settings`,
+    `📋 <b>Danh sách lệnh</b>\n\n` +
+    `/start - Lấy mã kết nối mới\n` +
+    `/help - Xem hướng dẫn\n` +
+    `/status - Kiểm tra kết nối\n` +
+    `/schedule - Lịch trình hôm nay\n` +
+    `/daily - Tick hoàn thành công việc hôm nay\n` +
+    `/taocongviec &lt;mô tả&gt; - Tạo công việc nhanh (AI)\n` +
+    `/settings - Cài đặt thông báo\n` +
+    `/disconnect - Ngắt kết nối\n\n` +
+    `💡 Bạn có thể tùy chỉnh thông báo trên web hoặc dùng /settings`,
     { parse_mode: "HTML" }
   );
 });
@@ -434,5 +459,10 @@ setInterval(() => {
 
 bot.on("polling_error", (error) => console.error("❌ Polling error:", error));
 bot.on("webhook_error", (error) => console.error("❌ Webhook error:", error));
+
+// Extra commands (kept in separate modules to keep bot.js focused on the
+// link/settings/schedule core).
+try { require("./commands/daily").register(bot); } catch (e) { console.error("[daily] register:", e.message); }
+try { require("./commands/tao-cong-viec").register(bot); } catch (e) { console.error("[taocongviec] register:", e.message); }
 
 module.exports = { bot, verifyToken, autoConnectUser, sendMessageToUser, sendSchedule, sendTodaySchedule, broadcastMessage, isUserConnected, initializeSchedules };
