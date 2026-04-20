@@ -88,6 +88,8 @@ router.post("/complete-batch", async (req, res) => {
 });
 
 // POST /api/schedule/complete-day
+// body: { date: "YYYY-MM-DD", completed?: boolean = true }
+// completed=false restores every event on that date to not-done.
 router.post("/complete-day", async (req, res) => {
   try {
     const userId = req.userId;
@@ -103,16 +105,24 @@ router.post("/complete-day", async (req, res) => {
       return res.status(400).json({ success: false, message: "Ngày không hợp lệ" });
     }
     const [startIso, endIso] = range;
+    const completed = req.body?.completed === false ? false : true;
 
-    // Only flip rows that are not already completed — avoids spurious writes + keeps count accurate.
-    const { data, error } = await supabase
+    let q = supabase
       .from("LichTrinh")
-      .update({ DaHoanThanh: true })
+      .update({ DaHoanThanh: completed })
       .eq("UserID", userId)
       .gte("GioBatDau", startIso)
-      .lt("GioBatDau", endIso)
-      .or("DaHoanThanh.is.null,DaHoanThanh.eq.false")
-      .select("MaLichTrinh");
+      .lt("GioBatDau", endIso);
+
+    // Skip rows that already match the target state so the updated count
+    // reflects real changes (and we avoid pointless writes).
+    if (completed) {
+      q = q.or("DaHoanThanh.is.null,DaHoanThanh.eq.false");
+    } else {
+      q = q.eq("DaHoanThanh", true);
+    }
+
+    const { data, error } = await q.select("MaLichTrinh");
 
     if (error) {
       console.error("complete-day error:", error);
@@ -122,6 +132,7 @@ router.post("/complete-day", async (req, res) => {
     return res.json({
       success: true,
       date,
+      completed,
       updated: (data || []).length,
       ids: (data || []).map((r) => r.MaLichTrinh),
     });

@@ -178,6 +178,32 @@
     }
   }
 
+  /**
+   * Scan FullCalendar's current event store for today and decide whether we're
+   * in "complete" or "restore" mode:
+   *   - totalToday  = events starting in today's local window
+   *   - doneToday   = of those, how many are completed
+   * If totalToday > 0 and doneToday === totalToday → every event is done,
+   * so the daily-check action flips to restore.
+   */
+  function inspectToday() {
+    const cal = window.CalendarModule?.calendar;
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+    let total = 0;
+    let done = 0;
+    if (cal) {
+      for (const ev of cal.getEvents()) {
+        const t = ev.start ? ev.start.getTime() : NaN;
+        if (!(t >= dayStart && t < dayEnd)) continue;
+        total++;
+        if (ev.extendedProps?.completed) done++;
+      }
+    }
+    return { total, done };
+  }
+
   async function dailyCheck() {
     const date = new Date();
     const y = date.getFullYear();
@@ -185,20 +211,31 @@
     const d = String(date.getDate()).padStart(2, "0");
     const dateStr = `${y}-${m}-${d}`;
 
+    const { total, done } = inspectToday();
+    const restore = total > 0 && done === total;
+    const completed = !restore;
+
+    const confirmTitle = restore
+      ? `Khôi phục ${total} công việc hôm nay?`
+      : `Đánh dấu tất cả công việc hôm nay là hoàn thành?`;
+    const confirmIcon = restore ? "warning" : "question";
+    const confirmBtnText = restore ? "Khôi phục" : "Đánh dấu";
+    const confirmBtnColor = restore ? "#f59e0b" : "#10b981";
+
     let confirmed = false;
     if (window.Swal) {
       const r = await Swal.fire({
         title: "Xác nhận",
-        html: `Đánh dấu <strong>tất cả công việc hôm nay</strong> (${dateStr}) là hoàn thành?`,
-        icon: "question",
+        html: `${confirmTitle} <br><span style="color:#64748b;font-size:13px">(${dateStr})</span>`,
+        icon: confirmIcon,
         showCancelButton: true,
-        confirmButtonText: "Đánh dấu",
+        confirmButtonText: confirmBtnText,
         cancelButtonText: "Huỷ",
-        confirmButtonColor: "#10b981",
+        confirmButtonColor: confirmBtnColor,
       });
       confirmed = !!r.isConfirmed;
     } else {
-      confirmed = window.confirm(`Đánh dấu tất cả công việc ngày ${dateStr} là hoàn thành?`);
+      confirmed = window.confirm(`${confirmTitle} (${dateStr})`);
     }
     if (!confirmed) return;
 
@@ -206,21 +243,22 @@
       const result = await Utils.makeRequest(
         "/api/schedule/complete-day",
         "POST",
-        { date: dateStr }
+        { date: dateStr, completed }
       );
       if (!result.success) throw new Error(result.message || "Lỗi server");
       const updated = result.data?.updated ?? result.updated ?? 0;
+      const verb = completed ? "hoàn thành" : "khôi phục";
       if (window.Swal) {
         Swal.fire({
           icon: "success",
-          title: "Hoàn thành",
+          title: completed ? "Hoàn thành" : "Đã khôi phục",
           text: updated > 0
-            ? `Đã đánh dấu ${updated} việc hôm nay là hoàn thành.`
-            : "Không có việc nào cần đánh dấu (đã hoàn thành trước đó hoặc không có lịch).",
-          confirmButtonColor: "#10b981",
+            ? `Đã ${verb} ${updated} việc hôm nay.`
+            : `Không có việc nào cần ${verb}.`,
+          confirmButtonColor: confirmBtnColor,
         });
       } else {
-        Utils.showToast?.(`Đã đánh dấu ${updated} việc`, "success");
+        Utils.showToast?.(`Đã ${verb} ${updated} việc`, "success");
       }
       await refreshCalendar();
     } catch (err) {
