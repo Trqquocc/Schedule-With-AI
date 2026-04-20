@@ -580,6 +580,7 @@
               hour: "2-digit",
               minute: "2-digit",
             }) || "";
+          const noteText = info.event.extendedProps?.note || "";
           el.title = `${info.event.title}${noteText ? "\n" + noteText : ""}\n${start} - ${end}`;
         },
         views: {
