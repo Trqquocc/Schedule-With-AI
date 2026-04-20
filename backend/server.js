@@ -16,6 +16,8 @@ const salaryRoutes = require("./routes/salary");
 const statisticsRoutes = require("./routes/statistics");
 const usersRoutes = require("./routes/users");
 const eventSubtasksRoutes = require("./routes/event-subtasks");
+const taskInstancesRoutes = require("./routes/task-instances");
+const applyScheduleRoutes = require("./routes/apply-schedule");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -70,6 +72,8 @@ app.use("/api/salary", authenticateToken, salaryRoutes);
 app.use("/api/statistics", authenticateToken, statisticsRoutes);
 app.use("/api/users", authenticateToken, usersRoutes);
 app.use("/api/event-subtasks", eventSubtasksRoutes);
+app.use("/api/task-instances", authenticateToken, taskInstancesRoutes);
+app.use("/api/schedule", authenticateToken, applyScheduleRoutes);
 
 // API cũ vẫn dùng (nếu có)
 app.get("/api/work/tasks", authenticateToken, (req, res) =>

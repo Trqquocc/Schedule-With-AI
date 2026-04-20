@@ -1192,4 +1192,222 @@ router.get("/stats", authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================================
+// SCHEDULE IMAGE IMPORT (Phase 02 — plan: 260420-0816-schedule-image-import-ocr)
+// POST /api/ai/parse-schedule-image
+//   body: { imageBase64, mimeType, type: 'study'|'work', windowStart, windowEnd, forceLevel? }
+// ============================================================
+const { checkRateLimit } = require("../utils/rate-limit");
+const { buildScheduleImagePrompt } = require("../utils/schedule-image-prompt");
+const { matchUserNameInItems } = require("../utils/name-matcher");
+
+const ALLOWED_IMAGE_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_TYPES = new Set(["study", "work"]);
+const ALLOWED_LEVELS = new Set(["thcs", "thpt", "dai_hoc", "di_lam", "khac"]);
+const MAX_BASE64_BYTES = Math.ceil(8 * 1024 * 1024 * 1.37); // ~8MB binary
+
+/**
+ * Call Gemini Vision with a prompt + inline image.
+ * Mirrors `callGeminiAI` retry behaviour but uses parts array and
+ * per-call JSON generationConfig so we don't mutate the module-level model.
+ */
+async function callGeminiVision(prompt, imageBase64, mimeType) {
+  if (!geminiAvailable || !geminiModel) {
+    throw new Error("Gemini AI is not available");
+  }
+
+  const parts = [
+    { text: prompt },
+    { inlineData: { mimeType, data: imageBase64 } },
+  ];
+
+  const maxRetries = 3;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 1) {
+        const delayMs = Math.pow(2, attempt) * 1000;
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+
+      const result = await geminiModel.generateContent({
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
+          maxOutputTokens: 4096,
+        },
+      });
+
+      const text = (await result.response).text();
+
+      // Primary path: responseMimeType=json → response should be clean JSON.
+      // Fallback path: strip markdown fences / extract first {...} block (same as callGeminiAI).
+      let jsonMatch = text.match(/{[\s\S]*}/);
+      if (!jsonMatch) {
+        const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (fenced) jsonMatch = fenced[1].match(/{[\s\S]*}/);
+      }
+      if (!jsonMatch) throw new Error("No JSON in vision response");
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (!Array.isArray(parsed.items)) {
+        throw new Error("Invalid response: missing items array");
+      }
+      return parsed;
+    } catch (err) {
+      lastError = err;
+      console.log(`[vision] attempt ${attempt} failed: ${err.message}`);
+    }
+  }
+  throw lastError;
+}
+
+router.post("/parse-schedule-image", authenticateToken, async (req, res) => {
+  try {
+    const { imageBase64, mimeType, type, windowStart, windowEnd, forceLevel } =
+      req.body || {};
+
+    // --- Input validation ---
+    if (!imageBase64 || typeof imageBase64 !== "string") {
+      return res
+        .status(400)
+        .json({ success: false, error: "INVALID_INPUT", message: "Thiếu imageBase64" });
+    }
+    if (!ALLOWED_IMAGE_MIME.has(mimeType)) {
+      return res.status(400).json({
+        success: false,
+        error: "INVALID_INPUT",
+        message: "Định dạng ảnh không hỗ trợ (chỉ jpeg/png/webp)",
+      });
+    }
+    if (!ALLOWED_TYPES.has(type)) {
+      return res.status(400).json({
+        success: false,
+        error: "INVALID_INPUT",
+        message: "type phải là 'study' hoặc 'work'",
+      });
+    }
+    if (!windowStart || !windowEnd) {
+      return res.status(400).json({
+        success: false,
+        error: "INVALID_INPUT",
+        message: "Thiếu windowStart/windowEnd",
+      });
+    }
+    if (imageBase64.length > MAX_BASE64_BYTES) {
+      return res.status(413).json({
+        success: false,
+        error: "IMAGE_TOO_LARGE",
+        message: "Ảnh quá lớn (tối đa 8MB). Vui lòng nén hoặc chụp lại.",
+      });
+    }
+
+    // --- Rate limit (10 / hour / user) ---
+    const rl = checkRateLimit(req.userId, 10);
+    if (!rl.allowed) {
+      const minutes = Math.ceil(rl.resetInMs / 60000);
+      return res.status(429).json({
+        success: false,
+        error: "RATE_LIMITED",
+        message: `Bạn đã đạt giới hạn 10 lần quét/giờ. Vui lòng thử lại sau ${minutes} phút.`,
+      });
+    }
+
+    // --- Load user (HoTen for name match, HocVan for prompt level) ---
+    const { data: user, error: userErr } = await supabase
+      .from("Users")
+      .select("HoTen, Username, HocVan")
+      .eq("UserID", req.userId)
+      .single();
+    if (userErr || !user) {
+      return res
+        .status(404)
+        .json({ success: false, error: "USER_NOT_FOUND", message: "Không tìm thấy user" });
+    }
+
+    const level =
+      (forceLevel && ALLOWED_LEVELS.has(forceLevel) && forceLevel) ||
+      user.HocVan ||
+      "dai_hoc";
+
+    // --- Build prompt + call Gemini Vision ---
+    const prompt = buildScheduleImagePrompt({
+      type,
+      level,
+      windowStart,
+      windowEnd,
+    });
+
+    let aiOutput;
+    try {
+      aiOutput = await callGeminiVision(prompt, imageBase64, mimeType);
+    } catch (err) {
+      console.error("[parse-schedule-image] vision failed:", err.message);
+      return res.status(503).json({
+        success: false,
+        error: "AI_UNAVAILABLE",
+        message: "AI đang bận hoặc không khả dụng. Vui lòng thử lại sau.",
+      });
+    }
+
+    // --- Normalize items: drop invalid rows, collect warnings ---
+    const warnings = Array.isArray(aiOutput.warnings) ? [...aiOutput.warnings] : [];
+    const items = [];
+    for (const raw of aiOutput.items || []) {
+      if (!raw || !raw.title || !raw.startAt || !raw.endAt) {
+        warnings.push(`Bỏ qua 1 dòng do thiếu dữ liệu: ${raw?.sourceRow || "?"}`);
+        continue;
+      }
+      items.push({
+        title: String(raw.title).trim(),
+        startAt: raw.startAt,
+        endAt: raw.endAt,
+        courseCode: raw.courseCode || null,
+        campus: raw.campus || null,
+        location: raw.location || null,
+        note: raw.note || null,
+        assignees: Array.isArray(raw.assignees) ? raw.assignees : undefined,
+        confidence: typeof raw.confidence === "number" ? raw.confidence : null,
+        sourceRow: raw.sourceRow || null,
+      });
+    }
+
+    // --- Work-type filter by user's HoTen ---
+    if (type === "work") {
+      const nameForMatch = user.HoTen || user.Username || "";
+      if (!nameForMatch) {
+        return res.status(422).json({
+          success: false,
+          error: "NO_NAME_MATCH",
+          message:
+            "Hồ sơ của bạn chưa có Họ tên. Vui lòng cập nhật trong Hồ sơ trước khi quét lịch làm.",
+        });
+      }
+      const { matched, unmatchedAssignees } = matchUserNameInItems(
+        items,
+        nameForMatch
+      );
+      if (matched.length === 0) {
+        return res.status(422).json({
+          success: false,
+          error: "NO_NAME_MATCH",
+          message: `Không tìm thấy "${nameForMatch}" trong lịch làm. Vui lòng chỉnh tên cá nhân trùng với tên trên lịch, hoặc bạn không có ca làm trong tuần này.`,
+          data: { unmatchedAssignees },
+        });
+      }
+      return res.json({
+        success: true,
+        data: { type, items: matched, warnings },
+      });
+    }
+
+    return res.json({ success: true, data: { type, items, warnings } });
+  } catch (error) {
+    console.error("[parse-schedule-image] unexpected:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
