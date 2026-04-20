@@ -2,7 +2,6 @@
   "use strict";
 
   if (window.WorkManager) {
-    console.log("⏭️ WorkManager already loaded");
     return;
   }
 
@@ -12,11 +11,9 @@
 
     async init() {
       if (this.initialized) {
-        console.log(" WorkManager already initialized");
         return;
       }
 
-      console.log(" Khởi tạo WorkManager...");
       this.initialized = true;
 
       if (!(await this.waitForContainer())) {
@@ -33,13 +30,11 @@
         const checkContainer = (attempt = 0) => {
           const container = document.getElementById("work-items-container");
           if (container) {
-            console.log(" Work container found");
             this.hideErrorState();
             resolve(true);
           } else if (attempt < retries) {
             setTimeout(() => checkContainer(attempt + 1), delay);
           } else {
-            console.error(" Work container not found");
             resolve(false);
           }
         };
@@ -65,8 +60,6 @@
 
     async loadTasks() {
       try {
-        console.log("📡 Loading tasks...");
-
         if (typeof Utils === "undefined") {
           throw new Error("Utils module not available");
         }
@@ -89,7 +82,6 @@
     },
 
     reload() {
-      console.log("🔄 Reloading tasks...");
       this.loadTasks();
     },
 
@@ -121,7 +113,7 @@
           </div>
           <h3 id="overlay-title" class="text-xl font-bold text-gray-800 mb-2">${message}</h3>
           <p id="overlay-description" class="text-gray-600 mb-6">Thao tác đã được thực hiện thành công!</p>
-          <button id="close-overlay-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+          <button id="close-overlay-btn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
             Đóng
           </button>
         </div>
@@ -186,19 +178,11 @@
     renderTasks(tasks) {
       const container = document.getElementById("work-items-container");
       if (!container) {
-        console.error(" No container for rendering tasks");
         return;
       }
 
-      const getPriorityColor = (priority) => {
-        const priorityColors = {
-          1: "#34D399",
-          2: "#60A5FA",
-          3: "#FBBF24",
-          4: "#F87171",
-        };
-        return priorityColors[priority] || "#60A5FA";
-      };
+      const getPriorityColor = (priority) =>
+        window.PriorityTheme ? PriorityTheme.getColor(priority) : "#3B82F6";
 
       const getPriorityClass = (priority) => {
         const priorityMap = {
@@ -274,6 +258,7 @@
               <input type="checkbox" id="select-all-pending" class="rounded">
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Danh mục</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Ưu tiên</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Thời gian</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Thao tác</th>
@@ -290,36 +275,27 @@
           const categoryColor = getPriorityColor(priority);
 
           html += `
-        <tr id="task-${taskId}" class="task-row" data-task-id="${taskId}">
+        <tr id="task-${taskId}" class="task-row" data-task-id="${taskId}" data-priority="${priority}" data-category-id="${task.MaLoai || ''}">
           <td class="px-6 py-4 whitespace-nowrap">
-            <input type="checkbox" class="task-checkbox pending-checkbox rounded">
+            <input type="checkbox" class="task-checkbox pending-checkbox rounded" data-task-id="${taskId}">
           </td>
           <td class="px-6 py-4">
             <div class="flex items-center gap-3">
               <div class="flex-shrink-0 w-1 h-10 rounded-full" style="background-color: ${categoryColor}"></div>
               <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="font-medium text-gray-900">${task.TieuDe || ""}</span>
-                  <span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold" style="background:${categoryColor}22;color:${categoryColor}">
-                    <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:${categoryColor}"></span>
-                    ${priorityText}
-                  </span>
-                </div>
+                <div class="font-medium text-gray-900">${task.TieuDe || ""}</div>
                 ${task.MoTa ? `<div class="text-sm text-gray-500 mt-0.5 truncate max-w-xs">${task.MoTa}</div>` : ""}
               </div>
             </div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
-              ${
-                priorityClass === "very-high"
-                  ? "bg-red-100 text-red-800"
-                  : priorityClass === "high"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : priorityClass === "medium"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-green-100 text-green-800"
-              }">
+            ${(task.TenLoai || task.LoaiCongViec?.TenLoai) ? `
+              <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium" style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0">
+                <i class="fas fa-folder text-[10px]" style="color:#94a3b8"></i>${task.TenLoai || task.LoaiCongViec?.TenLoai}
+              </span>` : `<span class="text-xs text-gray-400 italic">—</span>`}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full priority-badge" data-priority="${priority}" style="background:${categoryColor}22;color:${categoryColor}">
               ${priorityText}
             </span>
           </td>
@@ -332,7 +308,7 @@
                     title="Hoàn thành">
               <i class="fas fa-check"></i> Hoàn thành
             </button>
-            <button type="button" class="action-btn-edit text-blue-600 hover:text-blue-900 mr-3"
+            <button type="button" class="action-btn-edit text-red-600 hover:text-red-900 mr-3"
                     data-task-id="${taskId}"
                     title="Sửa">
               <i class="fas fa-edit"></i> Sửa
@@ -373,6 +349,7 @@
                 <input type="checkbox" id="select-all-completed" class="rounded">
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Danh mục</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Ưu tiên</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Thời gian</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Thao tác</th>
@@ -389,9 +366,9 @@
           const categoryColor = getPriorityColor(priority);
 
           html += `
-        <tr id="task-${taskId}" class="task-row completed-row" data-task-id="${taskId}">
+        <tr id="task-${taskId}" class="task-row completed-row" data-task-id="${taskId}" data-priority="${priority}" data-category-id="${task.MaLoai || ''}">
           <td class="px-6 py-4 whitespace-nowrap">
-            <input type="checkbox" class="task-checkbox completed-checkbox rounded">
+            <input type="checkbox" class="task-checkbox completed-checkbox rounded" data-task-id="${taskId}">
           </td>
           <td class="px-6 py-4">
             <div class="flex items-center">
@@ -409,16 +386,13 @@
             </div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
-              ${
-                priorityClass === "very-high"
-                  ? "bg-red-100 text-red-800"
-                  : priorityClass === "high"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : priorityClass === "medium"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-green-100 text-green-800"
-              }">
+            ${(task.TenLoai || task.LoaiCongViec?.TenLoai) ? `
+              <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium" style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0">
+                <i class="fas fa-folder text-[10px]" style="color:#94a3b8"></i>${task.TenLoai || task.LoaiCongViec?.TenLoai}
+              </span>` : `<span class="text-xs text-gray-400 italic">—</span>`}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full priority-badge" data-priority="${priority}" style="background:${categoryColor}22;color:${categoryColor}">
               ${priorityText}
             </span>
           </td>
@@ -431,7 +405,7 @@
                     title="Mở lại">
               <i class="fas fa-undo"></i> Mở lại
             </button>
-            <button type="button" class="action-btn-edit text-blue-600 hover:text-blue-900 mr-3"
+            <button type="button" class="action-btn-edit text-red-600 hover:text-red-900 mr-3"
                     data-task-id="${taskId}"
                     title="Sửa">
               <i class="fas fa-edit"></i> Sửa
@@ -460,12 +434,13 @@
         this.setupTableEvents();
         this.setupFilters();
         this.setupCreateTaskButton();
+        this.setupBulkActionBar();
+        this.loadCategoriesIntoFilter();
+        this.updateBulkBar();
       }, 50);
     },
 
     setupGlobalEvents() {
-      console.log("🔗 Setting up global events");
-
       this.removeEventListeners();
 
       const refreshBtn = document.getElementById("refresh-tasks-btn");
@@ -484,7 +459,6 @@
 
       this.setupCreateTaskButton();
 
-      console.log(" Global events setup complete");
     },
 
     setupCreateTaskButton() {
@@ -511,8 +485,6 @@
     },
 
     setupTableEvents() {
-      console.log("🔗 Setting up table events with event delegation");
-
       const container = document.getElementById("work-items-container");
       if (!container) return;
 
@@ -534,9 +506,6 @@
         if (!actionBtn || !actionBtn.dataset.taskId) return;
 
         const taskId = actionBtn.dataset.taskId;
-        console.log(
-          `🔘 Action clicked: ${actionBtn.className} for task ${taskId}`
-        );
 
         e.preventDefault();
         e.stopPropagation();
@@ -560,6 +529,7 @@
         const selectAllHandler = (e) => {
           const checkboxes = document.querySelectorAll(".pending-checkbox");
           checkboxes.forEach((cb) => (cb.checked = e.target.checked));
+          this.updateBulkBar();
         };
         selectAllPending._handler = selectAllHandler;
         selectAllPending.addEventListener("change", selectAllHandler);
@@ -570,13 +540,12 @@
         });
       }
 
-      const selectAllCompleted = document.getElementById(
-        "select-all-completed"
-      );
+      const selectAllCompleted = document.getElementById("select-all-completed");
       if (selectAllCompleted) {
         const selectAllHandler = (e) => {
           const checkboxes = document.querySelectorAll(".completed-checkbox");
           checkboxes.forEach((cb) => (cb.checked = e.target.checked));
+          this.updateBulkBar();
         };
         selectAllCompleted._handler = selectAllHandler;
         selectAllCompleted.addEventListener("change", selectAllHandler);
@@ -587,7 +556,22 @@
         });
       }
 
-      console.log(" Table events setup complete");
+      // Individual checkbox change → refresh bulk bar.
+      container.addEventListener("change", (e) => {
+        if (e.target.classList?.contains("task-checkbox")) {
+          this.updateBulkBar();
+        }
+      });
+    },
+
+    setupBulkActionBar() {
+      const bar = document.getElementById("bulk-action-bar");
+      if (!bar || bar._bound) return;
+      bar._bound = true;
+      document.getElementById("bulk-complete-btn")?.addEventListener("click", () => this.bulkComplete());
+      document.getElementById("bulk-restore-btn")?.addEventListener("click", () => this.bulkRestore());
+      document.getElementById("bulk-delete-btn")?.addEventListener("click", () => this.bulkDelete());
+      document.getElementById("bulk-clear-btn")?.addEventListener("click", () => this.clearBulkSelection());
     },
 
     setupFilters() {
@@ -640,98 +624,164 @@
           handler: inputHandler,
         });
       }
+
+      const categoryFilter = document.getElementById("category-filter");
+      if (categoryFilter) {
+        if (categoryFilter._changeHandler) {
+          categoryFilter.removeEventListener("change", categoryFilter._changeHandler);
+        }
+        const changeHandler = () => this.filterTasks();
+        categoryFilter._changeHandler = changeHandler;
+        categoryFilter.addEventListener("change", changeHandler);
+        this.eventListeners.push({
+          element: categoryFilter,
+          event: "change",
+          handler: changeHandler,
+        });
+      }
     },
 
     filterTasks() {
-      const statusFilter =
-        document.getElementById("status-filter")?.value || "all";
-      const priorityFilter =
-        document.getElementById("priority-filter")?.value || "all";
-      const searchText =
-        document.getElementById("task-search")?.value.toLowerCase() || "";
+      const statusFilter = document.getElementById("status-filter")?.value || "all";
+      const priorityFilter = document.getElementById("priority-filter")?.value || "all";
+      const categoryFilter = document.getElementById("category-filter")?.value || "all";
+      const searchText = document.getElementById("task-search")?.value.toLowerCase() || "";
 
-      const pendingRows = document.querySelectorAll(
-        ".task-row:not(.completed-row)"
-      );
-      const completedRows = document.querySelectorAll(
-        ".task-row.completed-row"
-      );
+      const rows = document.querySelectorAll(".task-row");
 
-      let visibleCount = 0;
-
-      const processRow = (row) => {
-        const taskId = row.dataset.taskId;
+      rows.forEach((row) => {
         const isCompleted = row.classList.contains("completed-row");
+        const priority = row.dataset.priority || "2";
+        const categoryId = row.dataset.categoryId || "";
+        const title = (row.querySelector(".font-medium")?.textContent || "").toLowerCase();
+        const description = (row.querySelector(".text-sm")?.textContent || "").toLowerCase();
 
-        const prioritySpan = row.querySelector("td:nth-child(3) span");
-        let priorityValue = "medium";
-        if (prioritySpan) {
-          if (prioritySpan.classList.contains("bg-red-100"))
-            priorityValue = "high";
-          else if (prioritySpan.classList.contains("bg-green-100"))
-            priorityValue = "low";
-        }
+        let ok = true;
+        if (statusFilter === "pending") ok = ok && !isCompleted;
+        if (statusFilter === "completed") ok = ok && isCompleted;
+        if (priorityFilter !== "all") ok = ok && priority === priorityFilter;
+        if (categoryFilter !== "all") ok = ok && categoryId === categoryFilter;
+        if (searchText) ok = ok && (title.includes(searchText) || description.includes(searchText));
 
-        const title =
-          row
-            .querySelector("td:nth-child(2) .font-medium")
-            ?.textContent.toLowerCase() || "";
-        const description =
-          row
-            .querySelector("td:nth-child(2) .text-sm")
-            ?.textContent.toLowerCase() || "";
+        row.style.display = ok ? "" : "none";
+      });
 
-        let statusMatch = true;
-        if (statusFilter === "pending") {
-          statusMatch = !isCompleted;
-        } else if (statusFilter === "completed") {
-          statusMatch = isCompleted;
-        }
-
-        let priorityMatch = true;
-        if (priorityFilter !== "all") {
-          priorityMatch = priorityValue === priorityFilter;
-        }
-
-        let searchMatch = true;
-        if (searchText) {
-          searchMatch =
-            title.includes(searchText) || description.includes(searchText);
-        }
-
-        const shouldShow = statusMatch && priorityMatch && searchMatch;
-        row.style.display = shouldShow ? "" : "none";
-
-        if (shouldShow) visibleCount++;
-      };
-
-      pendingRows.forEach(processRow);
-      completedRows.forEach(processRow);
-
+      // Hide section headings when their tables are fully filtered out.
+      const pendingRows = document.querySelectorAll(".task-row:not(.completed-row)");
+      const completedRows = document.querySelectorAll(".task-row.completed-row");
       const pendingSection = document.querySelector(".mb-10");
       const completedSection = document.querySelector("div:not(.mb-10)");
-
       if (pendingSection) {
-        const hasVisiblePending = Array.from(pendingRows).some(
-          (row) => row.style.display !== "none"
-        );
-        pendingSection.style.display = hasVisiblePending ? "" : "none";
+        const any = Array.from(pendingRows).some((r) => r.style.display !== "none");
+        pendingSection.style.display = any ? "" : "none";
+      }
+      if (completedSection) {
+        const any = Array.from(completedRows).some((r) => r.style.display !== "none");
+        completedSection.style.display = any ? "" : "none";
       }
 
-      if (completedSection) {
-        const hasVisibleCompleted = Array.from(completedRows).some(
-          (row) => row.style.display !== "none"
-        );
-        completedSection.style.display = hasVisibleCompleted ? "" : "none";
-      }
+      this.updateBulkBar();
     },
 
-    async updateTaskStatus(taskId, completed) {
+    async loadCategoriesIntoFilter() {
+      const sel = document.getElementById("category-filter");
+      if (!sel) return;
       try {
-        console.log(
-          ` Updating task ${taskId} to ${completed ? "completed" : "pending"}`
-        );
+        const token = localStorage.getItem("auth_token");
+        const r = await fetch("/api/categories", { headers: { Authorization: `Bearer ${token}` } });
+        const j = await r.json();
+        if (!j?.success) return;
+        const current = sel.value;
+        sel.innerHTML = `<option value="all">Tất cả danh mục</option>` +
+          (j.data || []).map((c) => `<option value="${c.MaLoai}">${c.TenLoai}</option>`).join("");
+        sel.value = current || "all";
+      } catch (_) {}
+    },
 
+    getSelectedTaskIds() {
+      return Array.from(document.querySelectorAll(".task-checkbox:checked"))
+        .map((cb) => cb.dataset.taskId)
+        .filter(Boolean);
+    },
+
+    /** Split the current selection into pending vs. completed task IDs based on row class. */
+    getSelectedByStatus() {
+      const pending = [], completed = [];
+      document.querySelectorAll(".task-checkbox:checked").forEach((cb) => {
+        const id = cb.dataset.taskId;
+        if (!id) return;
+        const row = cb.closest(".task-row");
+        if (row?.classList.contains("completed-row")) completed.push(id);
+        else pending.push(id);
+      });
+      return { pending, completed };
+    },
+
+    updateBulkBar() {
+      const bar = document.getElementById("bulk-action-bar");
+      if (!bar) return;
+      const ids = this.getSelectedTaskIds();
+      const countEl = document.getElementById("bulk-selected-count");
+      if (countEl) countEl.textContent = ids.length;
+      if (ids.length > 0) {
+        bar.classList.remove("hidden");
+        bar.style.display = "flex";
+      } else {
+        bar.classList.add("hidden");
+        bar.style.display = "none";
+      }
+
+      // Show "Hoàn thành" only when pending tasks are selected; "Khôi phục" only for
+      // completed ones. Both appear when the selection is mixed.
+      const { pending, completed } = this.getSelectedByStatus();
+      const completeBtn = document.getElementById("bulk-complete-btn");
+      const restoreBtn = document.getElementById("bulk-restore-btn");
+      if (completeBtn) completeBtn.classList.toggle("hidden", pending.length === 0);
+      if (restoreBtn) restoreBtn.classList.toggle("hidden", completed.length === 0);
+    },
+
+    async bulkComplete() {
+      const { pending } = this.getSelectedByStatus();
+      if (pending.length === 0) return;
+      if (!confirm(`Đánh dấu ${pending.length} công việc là đã hoàn thành?`)) return;
+      await Promise.all(pending.map((id) => this.updateTaskStatus(id, true, { silent: true })));
+      Utils?.showToast?.(`Đã hoàn thành ${pending.length} công việc`, "success");
+      await this.loadTasks();
+      this.updateBulkBar();
+    },
+
+    async bulkRestore() {
+      const { completed } = this.getSelectedByStatus();
+      if (completed.length === 0) return;
+      if (!confirm(`Khôi phục ${completed.length} công việc về danh sách đang làm?`)) return;
+      await Promise.all(completed.map((id) => this.updateTaskStatus(id, false, { silent: true })));
+      Utils?.showToast?.(`Đã khôi phục ${completed.length} công việc`, "success");
+      await this.loadTasks();
+      this.updateBulkBar();
+    },
+
+    async bulkDelete() {
+      const ids = this.getSelectedTaskIds();
+      if (ids.length === 0) return;
+      if (!confirm(`Xoá ${ids.length} công việc? Hành động không thể khôi phục.`)) return;
+      await Promise.all(ids.map((id) => this.deleteTask(id, { silent: true })));
+      Utils?.showToast?.(`Đã xoá ${ids.length} công việc`, "success");
+      await this.loadTasks();
+      this.updateBulkBar();
+    },
+
+    clearBulkSelection() {
+      document.querySelectorAll(".task-checkbox").forEach((cb) => (cb.checked = false));
+      const sa1 = document.getElementById("select-all-pending");
+      const sa2 = document.getElementById("select-all-completed");
+      if (sa1) sa1.checked = false;
+      if (sa2) sa2.checked = false;
+      this.updateBulkBar();
+    },
+
+    async updateTaskStatus(taskId, completed, opts = {}) {
+      const { silent = false } = opts;
+      try {
         if (typeof Utils === "undefined") {
           throw new Error("Utils module not available");
         }
@@ -746,21 +796,23 @@
 
         this.triggerSidebarRefresh();
 
-        const successMessage = completed
-          ? "Đã hoàn thành công việc"
-          : "Đã mở lại công việc";
-        this.showSuccessOverlay(successMessage);
-
-        await this.loadTasks();
+        if (!silent) {
+          const successMessage = completed
+            ? "Đã hoàn thành công việc"
+            : "Đã mở lại công việc";
+          this.showSuccessOverlay(successMessage);
+          await this.loadTasks();
+        }
       } catch (err) {
         console.error(" Error updating task:", err);
-        if (typeof Utils !== "undefined" && Utils.showToast) {
+        if (!silent && typeof Utils !== "undefined" && Utils.showToast) {
           Utils.showToast("Cập nhật trạng thái thất bại", "error");
         }
       }
     },
 
-    async deleteTask(taskId) {
+    async deleteTask(taskId, opts = {}) {
+      const { silent = false } = opts;
       try {
         if (typeof Utils === "undefined") {
           throw new Error("Utils module not available");
@@ -776,14 +828,17 @@
         }
 
         if (typeof Swal === "undefined") {
-          const confirmDelete = confirm(
-            `Bạn có chắc chắn muốn xóa công việc "${taskTitle}"?`
-          );
-          if (!confirmDelete) {
-            if (typeof Utils !== "undefined" && Utils.showToast) {
-              Utils.showToast("Đã hủy xóa", "info");
+          // Silent mode (bulk delete): skip per-task confirmation and toast — caller handles both.
+          if (!silent) {
+            const confirmDelete = confirm(
+              `Bạn có chắc chắn muốn xóa công việc "${taskTitle}"?`
+            );
+            if (!confirmDelete) {
+              if (typeof Utils !== "undefined" && Utils.showToast) {
+                Utils.showToast("Đã hủy xóa", "info");
+              }
+              return;
             }
-            return;
           }
 
           const result = await Utils.makeRequest(
@@ -792,10 +847,10 @@
           );
 
           if (result.success) {
-            if (typeof Utils !== "undefined" && Utils.showToast) {
+            if (!silent && typeof Utils !== "undefined" && Utils.showToast) {
               Utils.showToast("Đã xóa công việc thành công", "success");
             }
-            await this.loadTasks();
+            if (!silent) await this.loadTasks();
 
             document.dispatchEvent(
               new CustomEvent("taskDeleted", {
@@ -917,50 +972,34 @@
     },
 
     editTask(taskId) {
-      console.log(`✏️ Editing task ${taskId}`);
-
       Utils.makeRequest(`/api/tasks/${taskId}`, "GET")
         .then((result) => {
           if (result.success && result.data) {
-            console.log(" Task data loaded:", result.data);
-
             if (window.ModalManager && window.ModalManager.showModalById) {
               window.ModalManager.showModalById("createTaskModal");
 
               setTimeout(() => {
                 if (window.loadTaskDataIntoForm) {
                   window.loadTaskDataIntoForm(result.data);
-                  console.log(" Form loaded with task data");
                 } else {
-                  console.error(" loadTaskDataIntoForm function not found");
                   if (typeof Utils !== "undefined" && Utils.showToast) {
                     Utils.showToast("Không thể tải form chỉnh sửa", "error");
                   }
                 }
               }, 500);
             } else {
-              console.error(" ModalManager not found");
               if (typeof Utils !== "undefined" && Utils.showToast) {
                 Utils.showToast("Không thể mở chỉnh sửa", "error");
               }
             }
           } else {
-            console.error(" Task not found in response");
             if (typeof Utils !== "undefined" && Utils.showToast) {
               Utils.showToast("Không tìm thấy công việc", "error");
             }
           }
         })
         .catch((error) => {
-          console.error(" Error loading task:", error);
-
-          console.error("Error details:", {
-            taskId: taskId,
-            endpoint: `/api/tasks/${taskId}`,
-            error: error.message,
-            stack: error.stack,
-          });
-
+          console.error("Error loading task:", error);
           if (typeof Utils !== "undefined" && Utils.showToast) {
             Utils.showToast("Lỗi tải công việc: " + error.message, "error");
           }
@@ -968,7 +1007,6 @@
     },
 
     removeEventListeners() {
-      console.log(" Removing event listeners...");
 
       this.eventListeners.forEach(({ element, event, handler }) => {
         if (element && element.removeEventListener) {
@@ -1009,13 +1047,9 @@
         );
         selectAllCompleted._handler = null;
       }
-
-      console.log(" Event listeners removed");
     },
 
     triggerSidebarRefresh: function () {
-      console.log("📢 WorkManager: Triggering sidebar refresh");
-
       const event = new CustomEvent("task-changed", {
         detail: {
           action: "refresh",
@@ -1036,14 +1070,10 @@
         setTimeout(() => {
           localStorage.removeItem("__task_refresh_trigger");
         }, 100);
-      } catch (e) {
-        console.log("Cannot use localStorage:", e);
-      }
+      } catch (e) {}
     },
 
     cleanup() {
-      console.log(" Cleaning up WorkManager...");
-
       if (this.showSuccessOverlayTimeout) {
         clearTimeout(this.showSuccessOverlayTimeout);
         this.showSuccessOverlayTimeout = null;
@@ -1056,12 +1086,10 @@
 
       this.removeEventListeners();
       this.initialized = false;
-      console.log(" WorkManager cleaned up");
     },
   };
 
   document.addEventListener("work-tab-activated", () => {
-    console.log("📢 Work tab activated event received");
     if (window.WorkManager) {
       window.WorkManager.loadTasks();
     }
@@ -1069,7 +1097,6 @@
 
   document.addEventListener("section-changed", (e) => {
     if (e.detail && e.detail.section === "work") {
-      console.log("📢 Section changed to work - reloading tasks");
       setTimeout(() => {
         if (window.WorkManager) {
           window.WorkManager.loadTasks();
@@ -1079,7 +1106,6 @@
   });
 
   document.addEventListener("taskCreated", () => {
-    console.log("📢 Task created - refreshing work manager");
     setTimeout(() => {
       if (window.WorkManager) {
         window.WorkManager.loadTasks();
@@ -1088,7 +1114,6 @@
   });
 
   document.addEventListener("taskUpdated", () => {
-    console.log("📢 Task updated - refreshing work manager");
     setTimeout(() => {
       if (window.WorkManager) {
         window.WorkManager.loadTasks();
@@ -1097,7 +1122,6 @@
   });
 
   document.addEventListener("taskDeleted", () => {
-    console.log("📢 Task deleted - refreshing work manager");
     setTimeout(() => {
       if (window.WorkManager) {
         window.WorkManager.loadTasks();
@@ -1109,7 +1133,6 @@
     setTimeout(() => {
       const workSection = document.getElementById("work-section");
       if (workSection && workSection.classList.contains("active")) {
-        console.log(" Work section is active on page load");
         if (window.WorkManager && !window.WorkManager.initialized) {
           window.WorkManager.init();
         } else if (window.WorkManager) {
@@ -1120,17 +1143,13 @@
   });
 
   window.WorkManager.refresh = function () {
-    console.log("🔄 WorkManager.refresh() called");
     this.loadTasks();
   };
 
   window.WorkManager.checkAndReload = function () {
     const workSection = document.getElementById("work-section");
     if (workSection && workSection.classList.contains("active")) {
-      console.log(" Work section is active - reloading tasks");
       this.loadTasks();
     }
   };
-
-  console.log(" WorkManager loaded");
 })();

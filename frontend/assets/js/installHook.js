@@ -6,28 +6,17 @@ if (typeof InstallHook === "undefined") {
     },
 
     async init() {
-      console.log(" Running install hooks...");
-
       this.checkLibraries();
-
       this.addCalendarStyles();
-
-      console.log(" Install hooks complete");
     },
 
     checkLibraries() {
       if (typeof FullCalendar !== "undefined") {
         this.libraries.fullcalendar = true;
-        console.log(" FullCalendar loaded");
-      } else {
-        console.warn(" FullCalendar not loaded yet");
       }
 
       if (typeof Utils !== "undefined") {
         this.libraries.utils = true;
-        console.log(" Utils loaded");
-      } else {
-        console.warn(" Utils not loaded yet");
       }
     },
 
@@ -57,7 +46,6 @@ if (typeof InstallHook === "undefined") {
         }
       `;
       document.head.appendChild(style);
-      console.log(" Calendar styles added");
     },
 
     async waitForLibrary(name, timeout = 5000) {
@@ -71,8 +59,6 @@ if (typeof InstallHook === "undefined") {
         this.checkLibraries();
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-
-      console.log(` ${name} is ready`);
     },
   };
 

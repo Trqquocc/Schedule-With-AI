@@ -1,13 +1,22 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* ============================================================
+   Login / Register — Apple-inspired (per DESIGN.md)
+   Binary surface rhythm: #f5f5f7 form side, #000000 hero side.
+   Apple Blue accent, SF Pro typography, pill CTAs.
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 body {
-  font-family: "Inter", sans-serif;
-  background-color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: #f5f5f7;
   min-height: 100vh;
-  color: #111827;
+  color: #1d1d1f;
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .auth-container {
@@ -20,71 +29,75 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #ffffff;
+  background-color: #f5f5f7;
   padding: 2rem;
 }
+
 .form-wrapper {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
   padding: 0 2rem;
 }
+
 .form-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  color: #1f2937;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 56px;
+  font-weight: 600;
+  color: #1d1d1f;
   margin-bottom: 2.5rem;
-  letter-spacing: -0.02em;
+  line-height: 1.07;
+  letter-spacing: -0.28px;
 }
 
+/* ===== INPUTS — soft rounded fields on white surface ===== */
 .input-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   position: relative;
 }
+
 .input-group input {
   width: 100%;
-  padding: 1rem 0;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid #d1d5db;
-  font-size: 1rem;
-  color: #374151;
-  transition: border-color 0.2s ease;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 17px;
+  letter-spacing: -0.374px;
+  color: #1d1d1f;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   outline: none;
 }
 .input-group input::placeholder {
-  color: #9ca3af;
+  color: rgba(0, 0, 0, 0.48);
 }
 .input-group input:focus {
-  border-bottom-color: #1f2937;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.16);
 }
 
+/* ===== PASSWORD CHECKLIST ===== */
 .password-requirements {
   display: none;
   margin-top: 0.75rem;
-  padding-left: 1rem;
-  font-size: 0.875rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 14px 16px;
+  font-size: 14px;
+  letter-spacing: -0.224px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: rgba(0, 0, 0, 0.08) 0 2px 12px 0;
 }
-
-.password-requirements.visible {
-  display: block;
-}
-.password-requirements ul {
-  list-style: none;
-  padding: 0;
-}
+.password-requirements.visible { display: block; }
+.password-requirements ul { list-style: none; padding: 0; }
 .password-requirements li {
   margin-bottom: 0.4rem;
   transition: color 0.3s ease;
-}
-.password-requirements li.invalid {
-  color: #9ca3af;
+  color: rgba(0, 0, 0, 0.48);
 }
 .password-requirements li.valid {
-  color: #10b981;
+  color: #30d158;
   text-decoration: line-through;
 }
 .password-requirements li::before {
@@ -92,145 +105,139 @@ body {
   margin-right: 0.5rem;
   font-weight: bold;
 }
-.password-requirements li.valid::before {
-  content: "✓";
-}
+.password-requirements li.valid::before { content: "✓"; }
 
+/* ===== PRIMARY CTA — Apple Blue, 8px radius ===== */
 .submit-btn {
   width: 100%;
-  padding: 1rem;
-  background-color: #1f2937;
+  padding: 14px 16px;
+  background-color: #0071e3;
   color: #ffffff;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.374px;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  margin-top: 1.25rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  margin-top: 1.5rem;
 }
-.submit-btn:hover {
-  background-color: #374151;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-}
-.submit-btn:active {
-  transform: translateY(0);
+.submit-btn:hover { background-color: #0077ed; }
+.submit-btn:active { transform: scale(0.99); }
+.submit-btn:focus-visible {
+  outline: 2px solid #0071e3;
+  outline-offset: 2px;
 }
 
+/* ===== WELCOME PANEL — Apple cinematic black, pill CTA ===== */
 .welcome-panel {
   flex: 1;
   display: none;
   align-items: center;
   justify-content: center;
-  background-color: #3f3f46;
+  background-color: #000000;
   padding: 3rem;
 }
-.welcome-panel-left {
-  border-radius: 0 200px 200px 0;
-}
-.welcome-panel-right {
-  border-radius: 200px 0 0 200px;
-}
+.welcome-panel-left { border-radius: 0 200px 200px 0; }
+.welcome-panel-right { border-radius: 200px 0 0 200px; }
+
 .welcome-content {
   text-align: center;
   color: #fff;
 }
 .welcome-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  margin-bottom: 2.5rem;
-}
-.switch-btn {
-  display: inline-block;
-  padding: 0.75rem 2.5rem;
-  border: 2px solid #ffffff;
-  color: #ffffff;
-  text-decoration: none;
-  border-radius: 9999px;
-  font-size: 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 56px;
   font-weight: 600;
+  margin-bottom: 2.5rem;
+  line-height: 1.07;
+  letter-spacing: -0.28px;
 }
-.switch-btn:hover {
-  background-color: #ffffff;
-  color: #3f3f46;
+.welcome-content p {
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.19;
+  letter-spacing: 0.011em;
+  color: rgba(255, 255, 255, 0.88);
+  margin-bottom: 2rem;
 }
 
+/* Pill link — signature Apple CTA shape */
+.switch-btn {
+  display: inline-block;
+  padding: 10px 26px;
+  border: 1px solid #2997ff;
+  color: #2997ff;
+  text-decoration: none;
+  border-radius: 980px;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.374px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.switch-btn:hover {
+  background-color: #2997ff;
+  color: #000;
+}
+
+/* ===== MOBILE LINK ===== */
 .mobile-link {
   display: none;
   text-align: center;
   margin-top: 1.25rem;
 }
 .mobile-link p {
-  color: #6b7280;
-  font-size: 0.95rem;
+  color: rgba(0, 0, 0, 0.64);
+  font-size: 14px;
+  letter-spacing: -0.224px;
 }
 .mobile-link a {
-  color: #1f2937;
-  font-weight: 600;
+  color: #0066cc;
+  font-weight: 400;
   text-decoration: none;
   margin-left: 0.25rem;
 }
+.mobile-link a:hover { text-decoration: underline; }
 
+/* ===== LOADING ===== */
 .loading {
   text-align: center;
   margin-top: 1.25rem;
 }
-.loading.hidden {
-  display: none;
-}
+.loading.hidden { display: none; }
 .spinner {
   display: inline-block;
   width: 1.75rem;
   height: 1.75rem;
-  border: 3px solid #e5e7eb;
-  border-top-color: #1f2937;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-top-color: #0071e3;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 .loading p {
-  color: #6b7280;
+  color: rgba(0, 0, 0, 0.48);
   margin-top: 0.75rem;
-  font-size: 0.95rem;
+  font-size: 14px;
+  letter-spacing: -0.224px;
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
+/* ===== RESPONSIVE ===== */
 @media (min-width: 1024px) {
-  .welcome-panel {
-    display: flex;
-  }
+  .welcome-panel { display: flex; }
 }
 @media (max-width: 1023px) {
-  .auth-container {
-    flex-direction: column;
-  }
-  .form-panel {
-    min-height: 100vh;
-  }
-  .form-title {
-    font-size: 2.5rem;
-  }
-  .mobile-link {
-    display: block;
-  }
+  .auth-container { flex-direction: column; }
+  .form-panel { min-height: 100vh; }
+  .form-title { font-size: 40px; line-height: 1.10; }
+  .mobile-link { display: block; }
 }
 @media (max-width: 640px) {
-  .form-wrapper {
-    padding: 0 1rem;
-  }
-  .form-title {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
-  }
-  .welcome-title {
-    font-size: 2.25rem;
-  }
+  .form-wrapper { padding: 0 1rem; }
+  .form-title { font-size: 32px; margin-bottom: 1.5rem; }
+  .welcome-title { font-size: 32px; }
 }

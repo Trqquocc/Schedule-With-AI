@@ -95,11 +95,6 @@ if (typeof window.Utils === "undefined") {
       }
 
       try {
-        console.log(
-          `📤 ${method} ${url}`,
-          data ? `Data: ${JSON.stringify(data).slice(0, 200)}` : ""
-        );
-
         const response = await fetch(url, options);
 
         // Xử lý response không có nội dung
@@ -115,7 +110,6 @@ if (typeof window.Utils === "undefined") {
           try {
             result = JSON.parse(text);
           } catch (e) {
-            console.warn("Không parse được JSON:", text);
             return {
               success: false,
               message: "Server trả về dữ liệu không hợp lệ",
@@ -163,10 +157,8 @@ if (typeof window.Utils === "undefined") {
           result.status = response.status;
         }
 
-        console.log(`📥 Response ${response.status}:`, result);
         return result;
       } catch (err) {
-        console.error("❌ Request failed:", err.message, err);
 
         // Phân loại lỗi
         let userMessage = err.message;
@@ -242,7 +234,6 @@ if (typeof window.Utils === "undefined") {
         const response = await fetch(url, options);
         return await response.json();
       } catch (err) {
-        console.error("Upload failed:", err);
         this.showToast("Lỗi upload file", "error");
         throw err;
       }
@@ -261,40 +252,30 @@ if (typeof window.Utils === "undefined") {
         (() => {
           const container = document.createElement("div");
           container.id = "toast-container";
-          container.className = "fixed top-4 right-4 z-50 space-y-2";
+          container.className = "toast-container";
           document.body.appendChild(container);
           return container;
         })();
 
       const toastId = "toast-" + Date.now();
-      const icons = {
-        success: "✅",
-        error: "❌",
-        warning: "⚠️",
-        info: "ℹ️",
-        loading: "🔄",
-      };
 
       const colors = {
         success: "bg-green-50 border-green-200 text-green-800",
         error: "bg-red-50 border-red-200 text-red-800",
         warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
-        info: "bg-blue-50 border-blue-200 text-blue-800",
-        loading: "bg-gray-50 border-gray-200 text-gray-800",
+        info: "bg-gray-50 border-gray-200 text-gray-700",
+        loading: "bg-gray-50 border-gray-200 text-gray-700",
       };
 
       const toast = document.createElement("div");
       toast.id = toastId;
-      toast.className = `px-4 py-3 rounded-lg border shadow-lg flex items-center gap-3 ${colors[type]} animate-slide-in`;
-      toast.innerHTML = `
-    <span class="text-lg">${icons[type]}</span>
-    <span class="font-medium">${message}</span>
-  `;
+      toast.className = `border ${colors[type]} animate-slide-in`;
+      toast.style.cssText = "font-size:12px;padding:6px 12px;border-radius:6px;max-width:280px;pointer-events:auto;box-shadow:0 2px 8px rgba(0,0,0,0.1);";
+      toast.innerHTML = `<span class="font-medium">${message}</span>`;
 
       toastContainer.appendChild(toast);
 
-      // Auto remove after 3 seconds (5 seconds for success)
-      const duration = type === "success" ? 5000 : 3000;
+      const duration = type === "error" ? 2500 : 1500;
       setTimeout(() => {
         toast.classList.add("animate-fade-out");
         setTimeout(() => {
@@ -332,7 +313,7 @@ if (typeof window.Utils === "undefined") {
                 <button class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition" id="confirm-cancel">
                   Hủy
                 </button>
-                <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" id="confirm-ok">
+                <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition" id="confirm-ok">
                   OK
                 </button>
               </div>
@@ -449,7 +430,6 @@ if (typeof window.Utils === "undefined") {
         this.showToast("Đã sao chép vào clipboard", "success", 2000);
         return true;
       } catch (err) {
-        console.error("Copy failed:", err);
         this.showToast("Không thể sao chép", "error");
         return false;
       }
@@ -470,5 +450,4 @@ if (typeof window.Utils === "undefined") {
     },
   };
 
-  console.log("🚀 Utils đã được khởi tạo với JWT support!");
 }

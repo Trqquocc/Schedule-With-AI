@@ -2,7 +2,6 @@
   "use strict";
 
   if (window.AppNavigation) {
-    console.log("⏭️ AppNavigation already loaded");
     return;
   }
 
@@ -14,45 +13,31 @@
 
     init() {
       if (this.initialized) {
-        console.log(" AppNavigation already initialized");
         return;
       }
-
-      console.log(" AppNavigation.init() called");
 
       this.navButtons = document.querySelectorAll("[data-section]");
       this.sections = document.querySelectorAll(".section");
 
       if (this.navButtons.length === 0) {
-        console.error(" No navigation buttons found with [data-section]!");
         return;
       }
 
       if (this.sections.length === 0) {
-        console.error(" No sections found with .section class!");
         return;
       }
-
-      console.log(` Found ${this.navButtons.length} nav buttons`);
-      console.log(` Found ${this.sections.length} sections`);
 
       this.bindEvents();
       this.ensureSingleActiveSection();
       this.initialized = true;
-
-      console.log(" AppNavigation initialized successfully");
-      console.log(`   Current section: ${this.currentSection}`);
     },
 
     async cleanupCurrentSection() {
       if (!this.currentSection) return;
 
-      console.log(` Cleaning up: ${this.currentSection}`);
-
       const cleanupMap = {
         schedule: () => {
           // Don't destroy - keep calendar alive for instant re-entry
-          console.log(' Schedule: keeping calendar alive');
         },
         work: () => {
           if (window.WorkManager && WorkManager.cleanup) {
@@ -70,8 +55,6 @@
           }
         },
         ai: () => {
-          console.log(" AI tab: Keeping calendar alive, just hiding");
-
           const aiCalendar = document.getElementById("ai-calendar");
           if (aiCalendar && window.AIModule && AIModule.calendar) {
             if (AIModule.calendar) {
@@ -98,11 +81,9 @@
         if (section.classList.contains("active")) {
           if (activeFound) {
             section.classList.remove("active");
-            console.log(` Removed duplicate active from: ${section.id}`);
           } else {
             activeFound = true;
             this.currentSection = section.id.replace("-section", "");
-            console.log(` Active section: ${this.currentSection}`);
           }
         }
       });
@@ -112,32 +93,23 @@
         if (scheduleSection) {
           scheduleSection.classList.add("active");
           this.currentSection = "schedule";
-          console.log(" Set schedule as default active section");
         }
       }
     },
 
     bindEvents() {
-      console.log("🔗 Binding navigation events...");
-
       this.navButtons.forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.preventDefault();
           this.handleNavigation(btn);
         });
-        console.log(`   Bound click event: ${btn.dataset.section}`);
       });
-
-      console.log(" All navigation events bound");
     },
 
     async handleNavigation(btn) {
       const targetSection = btn.dataset.section;
-      console.log(`🖱️ Navigation clicked: ${targetSection}`);
-      console.log(`   Current section: ${this.currentSection}`);
 
       if (targetSection === this.currentSection) {
-        console.log("⏭️ Already on this section, skipping");
         return;
       }
 
@@ -146,8 +118,6 @@
 
     async navigateToSection(sectionName) {
       try {
-        console.log(`🔄 Navigating to section: ${sectionName}`);
-
         const previousSection = this.currentSection;
 
         await this.cleanupCurrentSection();
@@ -165,11 +135,8 @@
           },
         });
         document.dispatchEvent(event);
-        console.log(`📢 Dispatched section-changed event for: ${sectionName}`);
-
-        console.log(` Navigation to ${sectionName} completed`);
       } catch (error) {
-        console.error(` Navigation to ${sectionName} failed:`, error);
+        console.error(`Navigation to ${sectionName} failed:`, error);
 
         const errorEvent = new CustomEvent("section-change-error", {
           detail: {
@@ -183,11 +150,8 @@
     },
 
     updateNavButtons(targetSection) {
-      console.log(`🔘 Updating nav buttons for: ${targetSection}`);
-
       this.navButtons.forEach((btn) => {
-        btn.classList.remove("bg-gray-300", "text-gray-900", "bg-gray-200");
-        btn.classList.add("text-gray-600", "hover:bg-gray-100");
+        btn.classList.remove("is-active", "bg-gray-300", "text-gray-900", "bg-gray-200");
         btn.removeAttribute("aria-current");
       });
 
@@ -195,16 +159,12 @@
         `[data-section="${targetSection}"]`
       );
       if (targetBtn) {
-        targetBtn.classList.add("bg-gray-200", "text-gray-900");
-        targetBtn.classList.remove("text-gray-600", "hover:bg-gray-100");
+        targetBtn.classList.add("is-active");
         targetBtn.setAttribute("aria-current", "page");
-        console.log(` Updated button: ${targetSection}`);
       }
     },
 
     toggleSections(targetSection) {
-      console.log(`🔀 Toggling sections to: ${targetSection}`);
-
       this.sections.forEach((section) => {
         section.classList.remove("active");
       });
@@ -214,9 +174,6 @@
       );
       if (targetSectionEl) {
         targetSectionEl.classList.add("active");
-        console.log(` Activated section: ${targetSection}-section`);
-      } else {
-        console.error(` Section not found: ${targetSection}-section`);
       }
     },
 
@@ -225,13 +182,11 @@
       const container = document.getElementById(containerId);
 
       if (!container) {
-        console.error(` Container not found: ${containerId}`);
         return;
       }
 
       // If section content already loaded, just update size
       if (container._sectionLoaded && container.children.length > 0) {
-        console.log(` Section ${sectionName} already loaded, skipping re-render`);
         if (sectionName === 'schedule' && window.CalendarModule?.calendar) {
           requestAnimationFrame(() => {
             window.CalendarModule.calendar.updateSize();
@@ -253,15 +208,9 @@
       }
       container._sectionLoaded = true;
 
-      console.log(` Loading content for: ${sectionName}`);
-
       if (window.ComponentLoader && ComponentLoader.loadPageContent) {
-        console.log(`🔥 Loading content via ComponentLoader...`);
         await ComponentLoader.loadPageContent(sectionName);
       } else {
-        console.error(
-          ` ComponentLoader not available or missing loadPageContent`
-        );
         return;
       }
 
@@ -279,23 +228,16 @@
 
       setTimeout(() => {
         if (sectionName === "schedule" && window.CalendarModule) {
-          console.log("🔄 Refreshing calendar...");
           CalendarModule.refreshEvents && CalendarModule.refreshEvents();
           CalendarModule.refreshDragDrop && CalendarModule.refreshDragDrop();
         } else if (sectionName === "work") {
-          console.log("🔄 WORK SECTION - Ensuring tasks are loaded...");
-
           const workEvent = new CustomEvent("work-tab-activated");
           document.dispatchEvent(workEvent);
 
           if (window.WorkManager) {
             if (!WorkManager.initialized && WorkManager.init) {
-              console.log(" WorkManager not initialized, calling init()");
               WorkManager.init();
             } else if (WorkManager.loadTasks) {
-              console.log(
-                " WorkManager already initialized, calling loadTasks()"
-              );
               WorkManager.loadTasks();
             }
           }
@@ -307,7 +249,6 @@
             }, 800);
           }
         } else if (sectionName === "ai" && window.AIModule) {
-          console.log("🔄 Refreshing AI suggestions...");
           AIModule.refreshSuggestions && AIModule.refreshSuggestions();
 
           if (AIModule.restoreCalendar) {
@@ -319,8 +260,6 @@
       }, 200);
 
       window.scrollTo(0, 0);
-
-      console.log(` Section ${sectionName} initialized successfully`);
     },
 
     async refreshCurrentSection() {
@@ -331,7 +270,4 @@
   };
 
   window.AppNavigation = AppNavigation;
-
-  console.log(" AppNavigation loaded and ready");
-  console.log("   Available methods:", Object.keys(AppNavigation));
 })();

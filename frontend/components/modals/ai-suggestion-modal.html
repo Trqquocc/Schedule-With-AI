@@ -143,11 +143,9 @@
 </div>
 
 <script>
-  console.log(" AI Modal Script - Enhanced Integration v2.0");
 
   (function () {
     async function initializeAIModal() {
-      console.log(" Initializing AI modal...");
 
       try {
         if (!window.AIHandler) {
@@ -163,9 +161,7 @@
         }
 
         if (window.AIHandler && window.AIHandler.initAIModal) {
-          console.log(" Calling AIHandler.initAIModal...");
           await AIHandler.initAIModal();
-          console.log(" Modal initialized and populated");
         } else {
           console.error(" AIHandler.initAIModal not available");
         }
@@ -176,13 +172,11 @@
 
     window.addEventListener("modalOpened", (e) => {
       if (e.detail && e.detail.modalId === "aiSuggestionModal") {
-        console.log("🎯 AI Modal opened via ModalManager, initializing...");
         setTimeout(initializeAIModal, 300);
       }
     });
 
     window.initializeAIModal = initializeAIModal;
 
-    console.log(" AI Modal Event Listener ready");
   })();
 </script>

@@ -14,13 +14,48 @@ const STATUS_MAP = {
   canceled: 3,
 };
 
-// Mapping màu theo độ ưu tiên
+// Priority color fallback (frontend PriorityTheme is the source of truth for UI).
+// Backend returns these for legacy consumers; they match the muted defaults in main.css.
 const PRIORITY_COLORS = {
-  1: "#34D399",
-  2: "#60A5FA",
-  3: "#FBBF24",
-  4: "#F87171",
+  1: "#10B981",
+  2: "#3B82F6",
+  3: "#F59E0B",
+  4: "#DC2626",
 };
+
+// DB schema has NOT NULL on CongViec.MaLoai. When a task is created without
+// an explicit category, reuse (or lazily create) a per-user default "Chưa phân loại".
+async function ensureDefaultCategory(userId) {
+  const DEFAULT_NAME = "Chưa phân loại";
+
+  // Reuse existing default if present.
+  const { data: existing } = await supabase
+    .from("LoaiCongViec")
+    .select("MaLoai")
+    .eq("UserID", userId)
+    .eq("TenLoai", DEFAULT_NAME)
+    .limit(1)
+    .maybeSingle();
+  if (existing?.MaLoai) return existing.MaLoai;
+
+  // Otherwise fall back to the user's first category, or create the default.
+  const { data: anyCat } = await supabase
+    .from("LoaiCongViec")
+    .select("MaLoai")
+    .eq("UserID", userId)
+    .order("MaLoai", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (anyCat?.MaLoai) return anyCat.MaLoai;
+
+  const { data: created, error } = await supabase
+    .from("LoaiCongViec")
+    .insert({ UserID: userId, TenLoai: DEFAULT_NAME, MoTa: "Danh mục mặc định" })
+    .select("MaLoai")
+    .single();
+  if (error) throw error;
+  return created.MaLoai;
+}
 
 // Middleware xác thực JWT
 const authenticateToken = async (req, res, next) => {
@@ -86,7 +121,7 @@ router.get("/", authenticateToken, async (req, res) => {
       MucDoTapTrung: task.MucDoTapTrung,
       ThoiDiemThichHop: task.ThoiDiemThichHop,
       LuongTheoGio: task.LuongTheoGio,
-      MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#60A5FA",
+      MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#3B82F6",
       TenLoai: task.LoaiCongViec?.TenLoai || null,
     }));
 
@@ -146,11 +181,25 @@ router.post("/", authenticateToken, async (req, res) => {
       gioKetThucCoDinh = gioKetThucCoDinh.toISOString();
     }
 
+    // Resolve category: explicit MaLoai, else fall back to user's default.
+    let maLoai = d.MaLoai ? parseInt(d.MaLoai, 10) : null;
+    if (!maLoai || Number.isNaN(maLoai)) {
+      try {
+        maLoai = await ensureDefaultCategory(userId);
+      } catch (e) {
+        console.error("Không tạo được danh mục mặc định:", e);
+        return res.status(500).json({
+          success: false,
+          message: "Không tạo được danh mục mặc định. Vui lòng tạo danh mục trước.",
+        });
+      }
+    }
+
     const { data: createdTask, error } = await supabase
       .from("CongViec")
       .insert({
         UserID: userId,
-        MaLoai: d.MaLoai || null,
+        MaLoai: maLoai,
         TieuDe: d.TieuDe.trim(),
         MoTa: d.MoTa || "",
         Tag: d.Tag || "",
@@ -181,7 +230,7 @@ router.post("/", authenticateToken, async (req, res) => {
 
     const responseTask = {
       ...createdTask,
-      MauSac: PRIORITY_COLORS[createdTask.MucDoUuTien] || "#60A5FA",
+      MauSac: PRIORITY_COLORS[createdTask.MucDoUuTien] || "#3B82F6",
     };
 
     res.status(201).json({
@@ -228,7 +277,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
       data: {
         ID: task.MaCongViec,
         ...task,
-        MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#60A5FA",
+        MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#3B82F6",
       },
     });
   } catch (error) {
@@ -280,7 +329,14 @@ router.put("/:id", authenticateToken, async (req, res) => {
 
     if (d.TieuDe) updateData.TieuDe = d.TieuDe;
     if (d.MoTa !== undefined) updateData.MoTa = d.MoTa;
-    if (d.MaLoai !== undefined) updateData.MaLoai = d.MaLoai;
+    if (d.MaLoai !== undefined) {
+      // MaLoai is NOT NULL in DB — auto-fall back to default if cleared.
+      let maLoai = d.MaLoai ? parseInt(d.MaLoai, 10) : null;
+      if (!maLoai || Number.isNaN(maLoai)) {
+        try { maLoai = await ensureDefaultCategory(req.userId); } catch (_) { maLoai = null; }
+      }
+      if (maLoai) updateData.MaLoai = maLoai;
+    }
     if (d.Tag !== undefined) updateData.Tag = d.Tag;
     if (d.ThoiGianUocTinh !== undefined) updateData.ThoiGianUocTinh = d.ThoiGianUocTinh;
     if (d.MucDoUuTien !== undefined) updateData.MucDoUuTien = d.MucDoUuTien;

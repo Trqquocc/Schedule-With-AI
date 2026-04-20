@@ -67,8 +67,8 @@
     background: #e5e7eb !important;
   }
 
-  #sidebar-container .bg-blue-500 {
-    background: #3b82f6 !important;
+  #sidebar-container .bg-red-500 {
+    background: #ef4444 !important;
   }
 
   #sidebar-container .text-white {
@@ -154,6 +154,33 @@
     color: #374151 !important;
   }
 
+  /* ===== Nav button state ===== */
+  #sidebar-container .nav-btn {
+    color: #94a3b8 !important;
+    background: transparent !important;
+    transition: background .15s, color .15s !important;
+  }
+  #sidebar-container .nav-btn > i {
+    color: inherit !important;
+    width: 18px;
+    text-align: center;
+  }
+  #sidebar-container .nav-btn:hover {
+    background: rgba(255,255,255,0.06) !important;
+    color: #cbd5e1 !important;
+  }
+  #sidebar-container .nav-btn.is-active {
+    background: linear-gradient(135deg,#2d3f55 0%,#334155 100%) !important;
+    color: #f1f5f9 !important;
+    font-weight: 600 !important;
+  }
+  #sidebar-container .nav-btn.is-active > i {
+    color: #f87171 !important;
+  }
+  body.dark #sidebar-container .nav-btn.is-active {
+    background: linear-gradient(135deg,#273548 0%,#2d3f55 100%) !important;
+  }
+
   #sidebar-container .hover\:bg-gray-100:hover {
     background: #f3f4f6 !important;
   }
@@ -217,6 +244,15 @@
     visibility: visible !important;
     opacity: 1 !important;
     overflow: hidden !important;
+  }
+
+  body.dark #sidebar-container {
+    background: #1a2332 !important;
+    border-right: 1px solid #2d3d50 !important;
+  }
+
+  body.dark #sidebar-container aside {
+    background: #1a2332 !important;
   }
 
   #sidebar-container aside {
@@ -306,7 +342,7 @@
     left: 0 !important;
     right: 0 !important;
     height: 4px !important;
-    background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6) !important;
+    background: linear-gradient(90deg, #ec4899, #8b5cf6, #ef4444) !important;
   }
 
   #settingsModal .modal-content h3 {
@@ -436,12 +472,12 @@
   }
 
   #settingsModal #openProfileBtn {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
   }
 
   #settingsModal #openProfileBtn:hover {
-    border-color: #3b82f6 !important;
-    color: #1e40af !important;
+    border-color: #ef4444 !important;
+    color: #991b1b !important;
   }
 
   #settingsModal #openNotificationBtn {
@@ -566,7 +602,7 @@
   <!-- Logo/Brand -->
   <div>
     <div class="px-4 mb-5 flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+      <div class="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
         <i class="fas fa-calendar-check text-white text-sm"></i>
       </div>
       <span style="color:#f1f5f9;font-weight:700;font-size:15px;">Schedule AI</span>
@@ -575,36 +611,32 @@
     <nav class="space-y-1">
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm font-medium rounded-lg px-4 py-3 bg-gray-200"
+        class="nav-btn w-full flex items-center gap-3 text-sm font-medium rounded-lg px-4 py-3 is-active"
         data-section="schedule"
-        style="color:#f1f5f9;"
       >
-        <i class="far fa-calendar-alt" style="color:#60a5fa;"></i>
+        <i class="far fa-calendar-alt"></i>
         <span>Lịch trình</span>
       </button>
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3 hover:bg-gray-100"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
         data-section="work"
-        style="color:#94a3b8;"
       >
         <i class="far fa-clipboard"></i>
         <span>Công việc</span>
       </button>
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3 hover:bg-gray-100"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
         data-section="ai"
-        style="color:#94a3b8;"
       >
         <i class="fas fa-magic"></i>
         <span>Tham Khảo AI</span>
       </button>
       <button
         type="button"
-        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3 hover:bg-gray-100"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
         data-section="salary"
-        style="color:#94a3b8;"
       >
         <i class="fas fa-calculator"></i>
         <span>Tính lương</span>
@@ -614,8 +646,8 @@
 
   <!-- User Info Bottom -->
   <div style="border-top:1px solid #334155;padding-top:16px;margin-top:16px;">
-    <div class="flex items-center gap-3 px-3 py-2 rounded-xl" style="background:#0f172a;">
-      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+    <div id="sidebarProfileBtn" class="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all hover:opacity-80" style="background:#0f172a;" title="Cập nhật hồ sơ">
+      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" id="sidebarAvatarContainer">
         <span class="avatar-letter">?</span>
       </div>
       <div class="flex-1 min-w-0">
@@ -661,7 +693,7 @@
 
     <!-- ── HERO HEADER ── -->
     <div style="
-      background:linear-gradient(135deg,#1d4ed8 0%,#4f46e5 50%,#7c3aed 100%);
+      background:linear-gradient(135deg,#b91c1c 0%,#4f46e5 50%,#7c3aed 100%);
       padding:24px 24px 20px;
       position:relative;overflow:hidden;flex-shrink:0
     ">
@@ -718,11 +750,11 @@
           width:100%;display:flex;align-items:center;justify-content:space-between;
           padding:11px 12px;border-radius:12px;background:transparent;border:none;cursor:pointer;
           transition:background .15s;text-align:left;margin-bottom:2px
-        " onmouseover="this.style.background='var(--sm-hover,#eff6ff)'"
+        " onmouseover="this.style.background='var(--sm-hover,#fef2f2)'"
            onmouseout="this.style.background='transparent'">
           <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:36px;height:36px;border-radius:10px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="fas fa-user-circle" style="color:#2563eb;font-size:15px"></i>
+            <div style="width:36px;height:36px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-user-circle" style="color:#dc2626;font-size:15px"></i>
             </div>
             <div>
               <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Cập nhật hồ sơ</div>
@@ -776,14 +808,14 @@
             <button id="smLightBtn" onclick="if(window.ThemeManager&&document.body.classList.contains('dark')){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}" style="
               border-radius:10px;padding:10px;border:2px solid #e2e8f0;
               background:#fff;cursor:pointer;transition:all .2s;text-align:center
-            " onmouseover="this.style.borderColor='#2563eb'" onmouseout="if(!document.body.classList.contains('dark')){this.style.borderColor='#2563eb'}else{this.style.borderColor='#e2e8f0'}">
+            " onmouseover="this.style.borderColor='#dc2626'" onmouseout="if(!document.body.classList.contains('dark')){this.style.borderColor='#dc2626'}else{this.style.borderColor='#e2e8f0'}">
               <!-- mini UI mockup - light -->
               <div style="background:#f1f5f9;border-radius:6px;height:36px;margin-bottom:6px;padding:4px;display:flex;gap:3px;align-items:flex-start">
                 <div style="width:8px;background:#e2e8f0;border-radius:2px;height:100%"></div>
                 <div style="flex:1;display:flex;flex-direction:column;gap:2px">
                   <div style="height:6px;background:#e2e8f0;border-radius:2px;width:70%"></div>
                   <div style="height:6px;background:#e2e8f0;border-radius:2px;width:90%"></div>
-                  <div style="height:6px;background:#dbeafe;border-radius:2px;width:50%"></div>
+                  <div style="height:6px;background:#fee2e2;border-radius:2px;width:50%"></div>
                 </div>
               </div>
               <div style="font-size:11px;font-weight:600;color:#475569;display:flex;align-items:center;justify-content:center;gap:4px">
@@ -949,7 +981,7 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
     const isDark = document.body.classList.contains('dark');
     const lightBtn = document.getElementById('smLightBtn');
     const darkBtn  = document.getElementById('smDarkBtn');
-    if (lightBtn) lightBtn.style.borderColor = isDark ? '#334155' : '#2563eb';
+    if (lightBtn) lightBtn.style.borderColor = isDark ? '#334155' : '#dc2626';
     if (darkBtn)  darkBtn.style.borderColor  = isDark ? '#818cf8' : '#334155';
     updateSidebarThemeToggle();
   }
@@ -964,7 +996,6 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
   updateSettingsThemeUI();
 
   (function () {
-    console.log("Sidebar + Settings Modal loaded");
 
     const settingsModal = document.getElementById("settingsModal");
     const openBtn = document.getElementById("settingsBtn");
@@ -1015,16 +1046,12 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
       e.preventDefault();
       settingsModal.classList.remove("hidden");
       if (window.ProfileManager && !window.ProfileManager.initialized) {
-        console.log("🔧 Initializing ProfileManager from settings modal...");
         window.ProfileManager.init();
       }
       if (
         window.NotificationManager &&
         !window.NotificationManager.initialized
       ) {
-        console.log(
-          "🔧 Initializing NotificationManager from settings modal..."
-        );
         window.NotificationManager.init();
       }
     });
@@ -1032,12 +1059,10 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
     function bindProfileButton() {
       const btn = document.getElementById("openProfileBtn");
       if (!btn) {
-        console.log("⏳ Profile button not ready, retry in 100ms...");
         setTimeout(bindProfileButton, 100);
         return;
       }
 
-      console.log("🔗 Binding profile button...");
 
       btn.onclick = null;
 
@@ -1046,16 +1071,13 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
           e.preventDefault();
           e.stopPropagation();
         }
-        console.log("📋 Profile button clicked!");
         handleOpenProfileModal();
         return false;
       };
 
-      console.log("✅ Profile button bound!");
     }
 
     function handleOpenProfileModal() {
-      console.log("📋 Opening profile modal from settings...");
 
       closeModal();
 
@@ -1063,15 +1085,9 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
         const profileModal = document.getElementById("profileModal");
 
         if (!profileModal) {
-          console.error("❌ Profile modal not found in DOM!");
-          console.log(
-            "Available modals:",
-            [...document.querySelectorAll("[id*='Modal']")].map((m) => m.id)
-          );
           return;
         }
 
-        console.log("✅ Profile modal found, opening...");
 
         profileModal.classList.remove("hidden");
         profileModal.classList.add("active", "show");
@@ -1087,11 +1103,9 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
           window.ProfileManager &&
           window.ProfileManager.fillFormWithUserData
         ) {
-          console.log("📝 Filling form with user data...");
           window.ProfileManager.fillFormWithUserData();
         }
 
-        console.log("✅ Profile modal opened successfully");
       }, 100);
     }
 
@@ -1100,7 +1114,6 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
     setInterval(() => {
       const btn = document.getElementById("openProfileBtn");
       if (btn && !btn.onclick) {
-        console.log("🔄 Re-binding profile button (periodic check)...");
         bindProfileButton();
       }
     }, 500);
@@ -1147,6 +1160,22 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
       openProfileBtn.addEventListener("click", (e) => {
         e.preventDefault();
         // Wait for ProfileManager if not ready yet
+        const tryOpen = () => {
+          if (window.ProfileManager && ProfileManager.openProfileModal) {
+            ProfileManager.openProfileModal();
+          } else {
+            setTimeout(tryOpen, 100);
+          }
+        };
+        tryOpen();
+      });
+    }
+
+    // Sidebar profile button - opens profile modal directly
+    const sidebarProfileBtn = document.getElementById("sidebarProfileBtn");
+    if (sidebarProfileBtn) {
+      sidebarProfileBtn.addEventListener("click", (e) => {
+        e.preventDefault();
         const tryOpen = () => {
           if (window.ProfileManager && ProfileManager.openProfileModal) {
             ProfileManager.openProfileModal();

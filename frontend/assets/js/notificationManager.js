@@ -2,7 +2,6 @@
   "use strict";
 
   if (window.NotificationManager) {
-    console.log(" NotificationManager already exists");
     return;
   }
 
@@ -13,20 +12,13 @@
 
     init() {
       if (this.initialized) {
-        console.log(" NotificationManager already initialized");
         return;
       }
 
-      console.log(" NotificationManager initialization started");
-
       this.loadUserData();
-
       this.checkTelegramStatus();
-
       this.bindEvents();
-
       this.initialized = true;
-      console.log(" NotificationManager initialized successfully");
     },
 
     loadUserData() {
@@ -34,10 +26,9 @@
         const userData = localStorage.getItem("user_data");
         if (userData) {
           this.currentUser = JSON.parse(userData);
-          console.log(" User data loaded");
         }
       } catch (err) {
-        console.error(" Error loading user data:", err);
+        console.error("Error loading user data:", err);
       }
     },
 
@@ -90,16 +81,11 @@
           }
         }
       });
-
-      console.log(" Events bound");
     },
 
     openNotificationModal() {
-      console.log(" Opening notification modal");
-
       const modal = document.getElementById("notificationModal");
       if (!modal) {
-        console.error(" Notification modal not found");
         return;
       }
 
@@ -123,7 +109,6 @@
             e.stopPropagation();
             this.connectTelegram();
           };
-          console.log(" Connect button re-bound");
         }
 
         const saveBtn = document.getElementById("saveNotificationSettingsBtn");
@@ -133,11 +118,8 @@
             e.stopPropagation();
             this.saveSettingsAndClose();
           };
-          console.log(" Save button re-bound");
         }
       }, 100);
-
-      console.log(" Notification modal opened");
     },
 
     async checkTelegramStatusInModal() {
@@ -163,16 +145,11 @@
 
           this.updateConnectionStatus(connected);
           this.toggleConnectionSection(!connected);
-
-          if (connected) {
-            console.log(" Telegram is connected - hiding connection section");
-          }
         } else {
           this.updateConnectionStatus(false);
           this.toggleConnectionSection(true);
         }
       } catch (err) {
-        console.warn(" Could not check telegram status:", err);
         this.updateConnectionStatus(false);
         this.toggleConnectionSection(true);
       }
@@ -219,14 +196,11 @@
           this.telegramConnected = data.connected || false;
 
           if (this.telegramConnected) {
-            console.log(" Telegram connected");
             this.updateConnectionStatus(true);
           }
-        } else if (response.status === 404) {
-          console.log("⏳ Telegram status endpoint not yet implemented");
         }
       } catch (err) {
-        console.warn(" Could not check telegram status:", err);
+        // Telegram status check failed silently
       }
     },
 
@@ -260,20 +234,15 @@
           if (dailySummaryTime && parsed.dailySummaryTime) {
             dailySummaryTime.value = parsed.dailySummaryTime;
           }
-
-          console.log(" Settings loaded");
         }
       } catch (err) {
-        console.warn(" Could not load settings:", err);
+        // Settings load failed silently
       }
     },
 
     async connectTelegram() {
-      console.log("🔗 Starting Telegram connection...");
-
       const connectBtn = document.getElementById("connectTelegramBtn");
       if (!connectBtn) {
-        console.error(" Connect button not found!");
         this.showStatus(" Lỗi: Nút kết nối không được tìm thấy", "error");
         return;
       }
@@ -306,9 +275,6 @@
         const result = await response.json();
         const { telegramUrl, code } = result;
 
-        console.log("🔗 Connection code:", code);
-        console.log(" Opening Telegram bot...");
-
         this.showStatus(
           " Đang mở Telegram... Hãy nhấn /start để kết nối",
           "info"
@@ -323,9 +289,6 @@
 
         const connectionCheckInterval = setInterval(async () => {
           checkCount++;
-          console.log(
-            ` Checking connection status... (${checkCount}/${maxChecks})`
-          );
 
           try {
             const token = localStorage.getItem("auth_token");
@@ -349,7 +312,6 @@
               const statusData = await statusResponse.json();
 
               if (statusData.connected) {
-                console.log("✅ Telegram connected!");
                 clearInterval(connectionCheckInterval);
 
                 // Bước 4: Gọi connect-telegram để xác thực với backend
@@ -369,7 +331,6 @@
 
                 if (verifyResponse.ok) {
                   const verifyData = await verifyResponse.json();
-                  console.log("✅ Connection verified:", verifyData);
 
                   this.telegramConnected = true;
                   this.updateConnectionStatus(true);
@@ -410,13 +371,13 @@
                   }, 2000);
                 } else {
                   const error = await verifyResponse.json();
-                  console.error(" Verification error:", error);
+                  console.error("Telegram verification error:", error);
                   this.showStatus(` Lỗi xác thực: ${error.message}`, "error");
                 }
               }
             }
           } catch (err) {
-            console.warn(" Error checking connection status:", err);
+            // Connection status check failed silently
           }
 
           // Hết timeout
@@ -424,7 +385,6 @@
             clearInterval(connectionCheckInterval);
             connectBtn.disabled = false;
             connectBtn.innerHTML = originalText;
-            console.log(" Connection check timeout");
             this.showStatus(
               " Timeout: Vui lòng kiểm tra Telegram và thử lại",
               "error"
@@ -440,7 +400,7 @@
           }
         }, 3000);
       } catch (error) {
-        console.error(" Error starting connection:", error);
+        console.error("Error starting Telegram connection:", error);
         this.showStatus(` Lỗi: ${error.message}`, "error");
         if (connectBtn) {
           connectBtn.disabled = false;
@@ -466,7 +426,6 @@
       };
 
       localStorage.setItem("notification_settings", JSON.stringify(settings));
-      console.log(" Notification settings saved", settings);
       return settings;
     },
 
@@ -486,12 +445,10 @@
           });
 
           if (response.ok) {
-            const result = await response.json();
-            console.log(" Settings saved successfully:", result);
             this.showStatus(" ✅ Cài đặt đã được lưu thành công", "success");
           } else {
             const error = await response.json();
-            console.error(" Server error:", error);
+            console.error("Error saving notification settings:", error);
             this.showStatus(` ❌ Lỗi: ${error.message}`, "error");
             return;
           }
@@ -503,7 +460,7 @@
           this.closeModal();
         }, 1500);
       } catch (error) {
-        console.error(" Error saving settings:", error);
+        console.error("Error saving notification settings:", error);
         this.showStatus(` ❌ Lỗi: ${error.message}`, "error");
       }
     },
@@ -529,9 +486,9 @@
       const statusEl = document.getElementById("notificationStatusMessage");
       if (!statusEl) return;
 
-      let bgColor = "bg-blue-50";
-      let borderColor = "border-blue-200";
-      let textColor = "text-blue-700";
+      let bgColor = "bg-red-50";
+      let borderColor = "border-red-200";
+      let textColor = "text-red-700";
 
       if (type === "success") {
         bgColor = "bg-green-50";
@@ -553,8 +510,6 @@
     },
 
     closeModal() {
-      console.log("🚪 Closing notification modal");
-
       const modal = document.getElementById("notificationModal");
       if (!modal) return;
 
@@ -566,12 +521,9 @@
       }
 
       document.body.style.overflow = "";
-      console.log(" Notification modal closed");
     },
 
-    cleanup() {
-      console.log(" NotificationManager cleanup");
-    },
+    cleanup() {},
   };
 
   window.NotificationManager = NotificationManager;
@@ -583,6 +535,4 @@
   } else {
     setTimeout(() => NotificationManager.init(), 100);
   }
-
-  console.log(" NotificationManager loaded");
 })();

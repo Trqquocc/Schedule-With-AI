@@ -201,7 +201,16 @@ router.post("/events", authenticateToken, async (req, res) => {
     const userId = req.userId;
     const d = req.body;
 
-    if (!d.TieuDe || !d.GioBatDau) {
+    // Accept both Vietnamese (legacy) and English field names for consistency with PUT.
+    const title = d.TieuDe ?? d.title;
+    const start = d.GioBatDau ?? d.start;
+    const end = d.GioKetThuc ?? d.end;
+    const note = d.GhiChu ?? d.note;
+    const completed = d.DaHoanThanh ?? d.completed;
+    const aiSuggested = d.AI_DeXuat ?? d.aiSuggested;
+    const taskId = d.MaCongViec ?? d.taskId;
+
+    if (!title || !start) {
       return res.status(400).json({
         success: false,
         message: "Thiếu thông tin bắt buộc",
@@ -212,13 +221,13 @@ router.post("/events", authenticateToken, async (req, res) => {
       .from("LichTrinh")
       .insert({
         UserID: userId,
-        MaCongViec: d.MaCongViec || null,
-        TieuDe: d.TieuDe,
-        GioBatDau: new Date(d.GioBatDau).toISOString(),
-        GioKetThuc: d.GioKetThuc ? new Date(d.GioKetThuc).toISOString() : null,
-        DaHoanThanh: d.DaHoanThanh || false,
-        GhiChu: d.GhiChu || null,
-        AI_DeXuat: d.AI_DeXuat || false,
+        MaCongViec: taskId || null,
+        TieuDe: title,
+        GioBatDau: new Date(start).toISOString(),
+        GioKetThuc: end ? new Date(end).toISOString() : null,
+        DaHoanThanh: completed || false,
+        GhiChu: note || null,
+        AI_DeXuat: aiSuggested || false,
         NgayTao: new Date().toISOString(),
       })
       .select("MaLichTrinh")
@@ -233,12 +242,12 @@ router.post("/events", authenticateToken, async (req, res) => {
       });
     }
 
-    // Cập nhật trạng thái công việc nếu có MaCongViec
-    if (d.MaCongViec) {
+    // Cập nhật trạng thái công việc nếu có taskId
+    if (taskId) {
       await supabase
         .from("CongViec")
         .update({ TrangThaiThucHien: 1 })
-        .eq("MaCongViec", d.MaCongViec)
+        .eq("MaCongViec", taskId)
         .eq("UserID", userId);
     }
 
@@ -263,11 +272,18 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
     const d = req.body;
     const updateData = {};
 
-    if (d.title !== undefined) updateData.TieuDe = d.title;
-    if (d.note !== undefined) updateData.GhiChu = d.note;
-    if (d.start !== undefined) updateData.GioBatDau = new Date(d.start).toISOString();
-    if (d.end !== undefined) updateData.GioKetThuc = d.end ? new Date(d.end).toISOString() : null;
-    if (d.completed !== undefined) updateData.DaHoanThanh = d.completed ? true : false;
+    // Accept both Vietnamese (legacy) and English field names.
+    const title = d.TieuDe ?? d.title;
+    const note = d.GhiChu ?? d.note;
+    const start = d.GioBatDau ?? d.start;
+    const end = d.GioKetThuc ?? d.end;
+    const completed = d.DaHoanThanh ?? d.completed;
+
+    if (title !== undefined) updateData.TieuDe = title;
+    if (note !== undefined) updateData.GhiChu = note;
+    if (start !== undefined) updateData.GioBatDau = new Date(start).toISOString();
+    if (end !== undefined) updateData.GioKetThuc = end ? new Date(end).toISOString() : null;
+    if (completed !== undefined) updateData.DaHoanThanh = completed ? true : false;
 
     if (Object.keys(updateData).length === 0) {
       return res

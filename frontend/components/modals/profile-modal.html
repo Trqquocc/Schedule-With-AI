@@ -3,11 +3,11 @@
     class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8 transform transition-all"
   >
     <div
-      class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50"
+      class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-red-50"
     >
       <div class="flex items-center gap-3">
         <div
-          class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white"
+          class="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center text-white"
         >
           <i class="fas fa-user-edit"></i>
         </div>
@@ -33,7 +33,7 @@
         >
           <div class="relative">
             <div
-              class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg"
+              class="w-24 h-24 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg"
               id="profileAvatar"
             >
               ?
@@ -142,7 +142,7 @@
       <button
         type="button"
         id="saveProfileBtn"
-        class="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-medium hover:from-indigo-600 hover:to-blue-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+        class="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-red-500 text-white font-medium hover:from-indigo-600 hover:to-red-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
       >
         <i class="fas fa-save"></i>Lưu Thay Đổi
       </button>
@@ -185,143 +185,81 @@
   (function () {
     "use strict";
 
-    console.log("🎯 Profile Modal script STARTED");
-
-    // Immediately bind events without delay
     bindProfileModalEvents();
 
     function bindProfileModalEvents() {
-      const cancelBtn = document.getElementById("cancelProfileBtn");
-      if (!cancelBtn) {
+      const checkBtn = document.getElementById("cancelProfileBtn");
+      if (!checkBtn) {
         setTimeout(bindProfileModalEvents, 50);
         return;
       }
-
-      console.log("🔗 Binding profile modal events NOW...");
 
       const modal = document.getElementById("profileModal");
       const closeBtn = document.getElementById("closeProfileModal");
       const cancelBtn = document.getElementById("cancelProfileBtn");
       const saveBtn = document.getElementById("saveProfileBtn");
 
-      console.log("Elements found:", {
-        modal: !!modal,
-        closeBtn: !!closeBtn,
-        cancelBtn: !!cancelBtn,
-        saveBtn: !!saveBtn,
-      });
-
-      // ============================================
-      // CLOSE BUTTON (X)
-      // ============================================
       if (closeBtn) {
         closeBtn.onclick = function (e) {
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-          console.log("✅ CLOSE button clicked!");
+          e?.preventDefault();
+          e?.stopPropagation();
           closeProfileModalNow();
           return false;
         };
-        console.log("✅ Close button bound (onclick)");
       }
 
-      // ============================================
-      // CANCEL BUTTON
-      // ============================================
       if (cancelBtn) {
         cancelBtn.onclick = function (e) {
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-          console.log("✅ CANCEL button clicked - Returning to home interface");
+          e?.preventDefault();
+          e?.stopPropagation();
           closeProfileModalNow();
-
-          console.log("🏠 Navigating to Home/Schedule...");
-          try {
-            if (
-              window.AppNavigation &&
-              typeof AppNavigation.navigateToSection === "function"
-            ) {
-              AppNavigation.navigateToSection("schedule");
-            } else {
-              const scheduleBtn = document.querySelector(
-                'button[data-section="schedule"]'
-              );
-              if (scheduleBtn) scheduleBtn.click();
-            }
-          } catch (err) {
-            console.error("Navigation error:", err);
-          }
-
           return false;
         };
-        console.log("✅ Cancel button bound (onclick)");
       }
 
-      // ============================================
-      // SAVE BUTTON
-      // ============================================
       if (saveBtn) {
         saveBtn.onclick = async function (e) {
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-          console.log("✅ SAVE button clicked!");
+          e?.preventDefault();
+          e?.stopPropagation();
           await saveProfileDataNow();
           return false;
         };
-        console.log("✅ Save button bound (onclick)");
       }
 
-      // ============================================
-      // BACKDROP CLICK
-      // ============================================
       if (modal) {
         modal.onclick = function (e) {
           if (e.target === modal) {
-            console.log("🎯 Backdrop clicked!");
             closeProfileModalNow();
           }
         };
-        console.log("✅ Backdrop click bound");
       }
 
-      console.log("✅✅✅ All events bound successfully!");
+      // ESC key to close
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) {
+          closeProfileModalNow();
+        }
+      });
     }
 
-    // ============================================
-    // CLOSE MODAL FUNCTION
-    // ============================================
     function closeProfileModalNow() {
-      console.log("🚪 Closing profile modal via ModalManager...");
-
+      const modal = document.getElementById("profileModal");
+      if (modal) {
+        modal.classList.add("hidden");
+        modal.classList.remove("show", "active");
+        modal.style.display = "none";
+      }
       if (window.ModalManager && window.ModalManager.close) {
         window.ModalManager.close("profileModal");
-      } else {
-        console.error("❌ ModalManager not available");
       }
     }
 
-    // ============================================
-    // SAVE PROFILE FUNCTION
-    // ============================================
     async function saveProfileDataNow() {
-      console.log("💾💾💾 SAVING PROFILE DATA NOW...");
-
-      // Use ProfileManager to save
       if (window.ProfileManager && window.ProfileManager.saveProfile) {
-        console.log("✅ Using ProfileManager.saveProfile()");
         await window.ProfileManager.saveProfile();
       } else {
-        console.error("❌ ProfileManager not available");
-        alert("❌ Hệ thống chưa sẵn sàng");
+        Utils.showToast?.("Hệ thống chưa sẵn sàng", "error");
       }
     }
-
-    console.log("✅✅✅ Profile modal script READY!");
   })();
 </script>

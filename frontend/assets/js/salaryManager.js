@@ -98,8 +98,6 @@
       return sum + (Number(entry.amount) || 0);
     }, 0);
 
-    console.log(`💰 Loaded ${entries.length} completed schedules, total: ${formatCurrency(totalAmount)}`);
-
     const tableContainer = document.getElementById("salary-table");
     if (tableContainer) {
       tableContainer.innerHTML = renderSalaryTable(entries);
@@ -244,8 +242,6 @@
   }
 
   async function init() {
-    console.log("💰 Initializing SalaryManager...");
-
     initializeDateInputs();
     setupTabSwitching();
     setupDateFilters();
@@ -255,13 +251,10 @@
 
     // Lắng nghe sự kiện hoàn thành công việc
     document.addEventListener("eventCompleted", async (e) => {
-      console.log("📢 Event completed detected, reloading salary data:", e.detail);
       if (e.detail.completed) {
         await handleLoadSalary();
       }
     });
-
-    console.log("✅ SalaryManager initialized successfully");
   }
 
   window.SalaryManager = {

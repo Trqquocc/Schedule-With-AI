@@ -2,35 +2,28 @@
   "use strict";
 
   if (window.ModalManager) {
-    console.log(" ModalManager already exists, replacing...");
     delete window.ModalManager;
   }
 
   const ModalManager = {
     activeModal: null,
+    modalStack: [], // stack of open modal IDs; top = currently active
     initialized: false,
     cachedContent: new Map(),
 
     init() {
       if (this.initialized) {
-        console.log(" ModalManager already initialized");
         return;
       }
 
-      console.log("ModalManager initialization started");
       this.fixNestedModals();
       this.setupGlobalEventListeners();
       this.initialized = true;
-      console.log(" ModalManager initialized successfully");
     },
 
     fixNestedModals() {
       const allModals = document.querySelectorAll("#aiSuggestionModal");
       if (allModals.length > 1) {
-        console.log(
-          ` Phát hiện ${allModals.length} modals với ID aiSuggestionModal (nested)`
-        );
-
         const modalsArray = Array.from(allModals);
 
         const parentModal = modalsArray.find(
@@ -41,51 +34,36 @@
         );
 
         if (parentModal && childModal && parentModal !== childModal) {
-          console.log(" Đang fix nested modal structure...");
-
           while (childModal.firstChild) {
             parentModal.appendChild(childModal.firstChild);
           }
-
           childModal.remove();
-
-          console.log(" Đã xoá modal duplicate!");
         }
       }
     },
 
     showModalById(modalId) {
-      console.log(` showModalById called for: ${modalId}`);
-
       const modal = document.getElementById(modalId);
       if (!modal) {
-        console.error(` Modal not found: ${modalId}`);
         return false;
       }
-
-      console.log(` Modal found, current classes: ${modal.className}`);
 
       modal.classList.remove("hidden");
       modal.classList.add("active", "show");
 
       document.body.style.overflow = "hidden";
 
+      // Push onto stack: parent modals remain open underneath; close() pops back.
+      if (this.activeModal && this.activeModal !== modalId) {
+        this.modalStack.push(this.activeModal);
+      }
       this.activeModal = modalId;
-
-      console.log(`🎯 Modal ${modalId} updated classes: ${modal.className}`);
 
       window.dispatchEvent(
         new CustomEvent("modalShown", {
           detail: { modalId },
         })
       );
-
-      setTimeout(() => {
-        const computed = window.getComputedStyle(modal);
-        console.log(`   - Computed Display: ${computed.display}`);
-        console.log(`   - Computed Opacity: ${computed.opacity}`);
-        console.log(`   - Computed Visibility: ${computed.visibility}`);
-      }, 0);
 
       window.dispatchEvent(
         new CustomEvent("modalOpened", {
@@ -104,125 +82,97 @@
       const modal = document.getElementById(modalId);
       if (!modal) return;
 
-      const rect = modal.getBoundingClientRect();
       const computed = window.getComputedStyle(modal);
 
-      console.log(` Verification for ${modalId}:`);
-      console.log(`   - Width: ${rect.width}px, Height: ${rect.height}px`);
-      console.log(`   - Display: ${computed.display}`);
-      console.log(`   - Visibility: ${computed.visibility}`);
-      console.log(`   - Opacity: ${computed.opacity}`);
-      console.log(`   - Z-index: ${computed.zIndex}`);
-
       if (computed.display === "none") {
-        console.error(" Modal display is NONE! Forcing flex...");
         modal.style.display = "flex";
       }
 
       if (parseFloat(computed.opacity) < 1) {
-        console.warn(" Modal opacity < 1, forcing 1");
         modal.style.opacity = "1";
       }
 
       const content = modal.querySelector(".modal-content");
       if (content) {
         const contentRect = content.getBoundingClientRect();
-        console.log(`   - Content rect:`, contentRect);
-
         if (contentRect.height > window.innerHeight) {
-          console.warn(" Modal content taller than viewport, enabling scroll");
           modal.style.overflow = "auto";
         }
       }
     },
+
     close(modalId) {
       const targetModal = modalId || this.activeModal;
       const modal = document.getElementById(targetModal);
 
       if (!modal) {
-        console.warn(` Modal not found for closing: ${targetModal}`);
         return;
       }
 
-      console.log(` Closing modal: ${targetModal}`);
-
       modal.classList.remove("active", "show");
-
       modal.classList.add("hidden");
 
       modal.style.display = "";
       modal.style.opacity = "";
       modal.style.visibility = "";
 
-      document.body.style.overflow = "";
-      this.activeModal = null;
+      // Pop stack: if there's a parent modal underneath, restore it as active.
+      if (this.activeModal === targetModal) {
+        this.activeModal = this.modalStack.pop() || null;
+      } else {
+        // Closing a non-top modal (rare): filter it out of the stack.
+        this.modalStack = this.modalStack.filter((id) => id !== targetModal);
+      }
+
+      // Only release body scroll lock if no modal is still open.
+      if (!this.activeModal) {
+        document.body.style.overflow = "";
+      }
+
       window.dispatchEvent(
         new CustomEvent("modalClosed", {
           detail: { modalId: targetModal },
         })
       );
+    },
 
-      console.log(` Modal ${targetModal} closed`);
+    /** Is this click on the active modal's backdrop (not its content)? */
+    _isBackdropClick(e) {
+      if (!this.activeModal) return false;
+      const modal = document.getElementById(this.activeModal);
+      if (!modal) return false;
+      const t = e.target;
+      // Direct click on the .modal container or its .modal-overlay.
+      if (t === modal) return true;
+      if (t.classList && t.classList.contains("modal-overlay") && modal.contains(t)) return true;
+      if (t.hasAttribute && t.hasAttribute("data-modal-close")) return true;
+      return false;
     },
 
     setupGlobalEventListeners() {
       document.addEventListener("click", (e) => {
         if (!this.activeModal) return;
-
-        const categoryModal = document.getElementById("createCategoryModal");
-        const isCategoryModalOpen =
-          categoryModal &&
-          !categoryModal.classList.contains("hidden") &&
-          categoryModal.style.display !== "none";
-        if (isCategoryModalOpen) {
-          console.log(" Category modal is open, ignoring backdrop click");
-          return;
-        }
-
-        if (e.target.classList.contains("modal") && this.activeModal) {
-          console.log(" Backdrop clicked, closing modal");
+        if (this._isBackdropClick(e)) {
           this.close(this.activeModal);
         }
       });
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && this.activeModal) {
-          console.log("⌨️ ESC pressed, closing modal");
           this.close(this.activeModal);
         }
       });
-
-      console.log(" Global event listeners setup complete");
     },
+
     reinitializeModalHandlers(modal) {
-      if (!modal) return;
-
-      console.log(`🔄 Reinitializing handlers for: ${modal.id}`);
-
-      const closeButtons = modal.querySelectorAll(
-        ".modal-close, [data-modal-close], [id*='cancel'], [id*='close']"
-      );
-
-      closeButtons.forEach((btn) => {
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode?.replaceChild(newBtn, btn);
-
-        newBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log(` Close button clicked in ${modal.id}`);
-          this.close(modal.id);
-        });
-      });
-
-      console.log(`    Reinitialized ${closeButtons.length} close buttons`);
+      // Modal-specific scripts bind their own X / cancel / overlay handlers on DOM load.
+      // Global listeners (ESC + backdrop click) in setupGlobalEventListeners cover the rest.
+      // Intentionally empty to avoid destructive cloneNode that dropped per-modal handlers
+      // (e.g., form-reset on close in create-task-modal.html).
     },
 
     showCreateTaskModal(taskData = null) {
-      console.log(" [ModalManager] Opening create task modal...");
-
       const modal = document.getElementById("createTaskModal");
       if (!modal) {
-        console.error(" Create task modal not found");
         return false;
       }
 
@@ -258,39 +208,15 @@
     },
 
     debug() {
-      console.log("=== MODAL MANAGER DEBUG ===");
-      console.log("Initialized:", this.initialized);
-      console.log("Active modal:", this.activeModal);
-
-      const modals = document.querySelectorAll(".modal");
-      console.log(`\nFound ${modals.length} modals:`);
-
-      modals.forEach((modal) => {
-        const computed = window.getComputedStyle(modal);
-        const rect = modal.getBoundingClientRect();
-
-        console.log(`\n ${modal.id}:`);
-        console.log("  Classes:", modal.className);
-        console.log("  Display:", computed.display);
-        console.log("  Visibility:", computed.visibility);
-        console.log("  Opacity:", computed.opacity);
-        console.log("  Z-index:", computed.zIndex);
-        console.log("  Position:", computed.position);
-        console.log("  Dimensions:", `${rect.width}x${rect.height}`);
-      });
-
-      console.log("\n========================");
+      // Debug utility — intentionally kept without console output
     },
   };
 
   window.ModalManager = ModalManager;
 
   window.testModal = (modalId = "createTaskModal") => {
-    console.log(`🧪 Testing modal: ${modalId}`);
     ModalManager.showModalById(modalId);
   };
 
   window.debugModals = () => ModalManager.debug();
-
-  console.log(" ModalManager v2.2 loaded");
 })();

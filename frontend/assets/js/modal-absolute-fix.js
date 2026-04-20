@@ -2,17 +2,13 @@
   "use strict";
 
   function absoluteFixModalDimensions() {
-    console.log(" ABSOLUTE FIX: Setting explicit dimensions...");
-
     const modal = document.getElementById("aiSuggestionModal");
     if (!modal) {
-      console.error(" Modal not found");
       return false;
     }
 
     const content = modal.querySelector(".modal-content");
     if (!content) {
-      console.error(" .modal-content not found");
       return false;
     }
 
@@ -21,11 +17,6 @@
 
     const modalWidth = Math.min(800, viewportWidth * 0.9);
     const modalHeight = Math.min(600, viewportHeight * 0.9);
-
-    console.log("📐 Calculated dimensions:", {
-      viewport: `${viewportWidth}x${viewportHeight}`,
-      modal: `${modalWidth}x${modalHeight}`,
-    });
 
     content.style.width = `${modalWidth}px`;
     content.style.height = `${modalHeight}px`;
@@ -77,48 +68,11 @@
 
     void content.offsetHeight;
 
-    setTimeout(() => {
-      const rect = content.getBoundingClientRect();
-      console.log(" Final dimensions:", {
-        width: rect.width,
-        height: rect.height,
-        offsetWidth: content.offsetWidth,
-        offsetHeight: content.offsetHeight,
-      });
-
-      if (rect.width > 0 && rect.height > 0) {
-        console.log(" SUCCESS! Modal is now visible!");
-        return true;
-      } else {
-        console.error(" STILL FAILED!");
-        console.log(
-          "Last resort: Check if modal is inside another hidden element"
-        );
-
-        let parent = content.parentElement;
-        let level = 0;
-        while (parent && level < 10) {
-          const computed = window.getComputedStyle(parent);
-          console.log(`Parent level ${level} (${parent.tagName}):`, {
-            display: computed.display,
-            visibility: computed.visibility,
-            width: parent.offsetWidth,
-            height: parent.offsetHeight,
-          });
-          parent = parent.parentElement;
-          level++;
-        }
-
-        return false;
-      }
-    }, 100);
-
     return true;
   }
 
   window.addEventListener("modalOpened", (e) => {
     if (e.detail?.modalId === "aiSuggestionModal") {
-      console.log("🎯 AI Modal opened, applying absolute fix...");
       setTimeout(() => absoluteFixModalDimensions(), 100);
       setTimeout(() => absoluteFixModalDimensions(), 300);
       setTimeout(() => absoluteFixModalDimensions(), 500);
@@ -127,13 +81,9 @@
 
   window.addEventListener("modalShown", (e) => {
     if (e.detail?.modalId === "aiSuggestionModal") {
-      console.log("🎯 AI Modal shown, applying absolute fix...");
       setTimeout(() => absoluteFixModalDimensions(), 100);
     }
   });
 
   window.absoluteFixModalDimensions = absoluteFixModalDimensions;
-
-  console.log(" Absolute Modal Fix loaded");
-  console.log(" Manual: absoluteFixModalDimensions()");
 })();

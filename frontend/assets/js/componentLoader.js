@@ -2,7 +2,6 @@
   "use strict";
 
   if (window.ComponentLoader) {
-    console.log(" ComponentLoader already exists, skipping...");
     return;
   }
 
@@ -24,17 +23,14 @@
       const container = document.getElementById(containerId);
 
       if (!container) {
-        console.warn(` Container not found: #${containerId}`);
         return false;
       }
 
       if (this.loadedComponents.has(containerId) && !forceReload) {
-        console.log(`✓ Component already loaded: ${containerId}`);
         return true;
       }
 
       try {
-        console.log(` Loading: ${filePath} → #${containerId}`);
         const response = await fetch(filePath);
 
         if (!response.ok) {
@@ -44,18 +40,15 @@
         const html = await response.text();
 
         if (containerId === "sidebar-container") {
-          console.log(`🎭 SIDEBAR LOADING STARTED`);
           try {
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = html;
-            console.log(` HTML parsed`);
 
             const styleTag = tempDiv.querySelector("style");
             if (styleTag) {
               const newStyle = document.createElement("style");
               newStyle.innerHTML = styleTag.innerHTML;
               document.head.appendChild(newStyle);
-              console.log(` Sidebar styles injected into <head>`);
 
               await new Promise((r) => setTimeout(r, 50));
             }
@@ -64,10 +57,8 @@
             if (!asideElement) {
               throw new Error("No <aside> element found in sidebar.html");
             }
-            console.log(` <aside> element found`);
 
             container.innerHTML = asideElement.outerHTML;
-            console.log(` Sidebar HTML inserted into #sidebar-container`);
 
             const settingsModal = tempDiv.querySelector("#settingsModal");
             if (settingsModal) {
@@ -75,7 +66,6 @@
                 document.getElementById("settingsModal");
               if (settingsContainer) {
                 settingsContainer.outerHTML = settingsModal.outerHTML;
-                console.log(` SettingsModal injected`);
               }
             }
 
@@ -84,10 +74,8 @@
               const newScript = document.createElement("script");
               newScript.innerHTML = scripts[idx].innerHTML;
               document.body.appendChild(newScript);
-              console.log(` Script ${idx + 1}/${scripts.length} executed`);
             }
 
-            console.log(` SIDEBAR LOADING COMPLETE`);
 
             const forceSidebarVisibility = () => {
               const style = document.createElement("style");
@@ -117,7 +105,6 @@
                 }
               `;
               document.head.appendChild(style);
-              console.log(" Sidebar visibility CSS injected");
             };
             setTimeout(forceSidebarVisibility, 50);
           } catch (error) {
@@ -125,20 +112,17 @@
             container.innerHTML = html;
           }
         } else if (containerId.includes("Modal")) {
-          console.log(`🎭 Loading modal: ${containerId}`);
           const tempDiv = document.createElement("div");
           tempDiv.innerHTML = html;
 
           const nestedModal = tempDiv.querySelector(`#${containerId}`);
 
           if (nestedModal) {
-            console.log(`🔄 Fixing nested modal structure: ${containerId}`);
 
             const nestedInsideNested = nestedModal.querySelector(
               `#${containerId}`
             );
             if (nestedInsideNested) {
-              console.warn(` DOUBLE NESTED MODAL DETECTED!`);
 
               let deepestModal = nestedInsideNested;
               while (deepestModal.querySelector(`#${containerId}`)) {
@@ -168,7 +152,6 @@
         this.loadedComponents.add(containerId);
         container.dataset.loaded = "true";
 
-        console.log(` Loaded successfully: ${containerId}`);
         return true;
       } catch (err) {
         console.error(` Error loading ${filePath}:`, err);
@@ -194,7 +177,6 @@
 
           if (script.src) {
             if (this.loadedScripts.has(script.src)) {
-              console.log(`⏭️ Script already loaded: ${script.src}`);
               script.remove();
               continue;
             }
@@ -204,7 +186,6 @@
             await new Promise((resolve, reject) => {
               newScript.onload = () => {
                 this.loadedScripts.add(script.src);
-                console.log(`✓ Script loaded: ${script.src}`);
                 resolve();
               };
               newScript.onerror = () => {
@@ -225,11 +206,9 @@
       }
     },
     async loadPageContent(sectionName) {
-      console.log(`\n🔄 Loading section: ${sectionName}`);
 
       const filePath = this.PAGE_MAP[sectionName];
       if (!filePath) {
-        console.error(` Unknown section: ${sectionName}`);
         return false;
       }
 
@@ -258,41 +237,32 @@
           break;
 
         case "ai":
-          console.log(" AI section - no extras needed");
           break;
       }
     },
 
     initializeSection(sectionName) {
-      console.log(` Initializing section: ${sectionName}`);
-
       const initMap = {
         schedule: () => {
           if (window.CalendarModule?.init) {
-            console.log(" Initializing CalendarModule...");
             CalendarModule.init();
           }
         },
 
         ai: () => {
           if (window.AIModule?.init) {
-            console.log(" Initializing AIModule...");
             AIModule.init();
-          } else {
-            console.error(" AIModule not found!");
           }
         },
 
         work: () => {
           if (window.WorkManager?.init) {
-            console.log("💼 Initializing WorkManager...");
             WorkManager.init();
           }
         },
 
         salary: () => {
           if (window.SalaryManager?.init) {
-            console.log("💰 Initializing SalaryManager...");
             SalaryManager.init();
           }
           if (window.TabManager?.init) {
@@ -302,7 +272,6 @@
 
         profile: () => {
           if (window.ProfileManager?.init) {
-            console.log(" Initializing ProfileManager...");
             ProfileManager.init();
           }
         },
@@ -310,7 +279,6 @@
         settings: () => {
           if (window.ProfileManager?.init) ProfileManager.init();
           if (window.NotificationManager?.init) NotificationManager.init();
-          console.log("👤 Initialized managers for settings modal");
         },
       };
 
@@ -322,47 +290,31 @@
           console.error(` Error initializing ${sectionName}:`, err);
         }
       } else {
-        console.log(` No initialization needed for: ${sectionName}`);
       }
     },
 
     async init() {
-      console.log(" ComponentLoader v3.0 - Initializing...\n");
-
       try {
-        console.log(" Loading sidebar...");
         await this.loadComponent(
           "sidebar-container",
           "components/sidebar.html"
         );
-        console.log(" Sidebar loaded\n");
 
         const navbarContainer = document.getElementById("navbar-container");
         if (navbarContainer) {
-          console.log(" Loading navbar...");
           await this.loadComponent(
             "navbar-container",
             "components/navbar.html"
           );
-          console.log(" Navbar loaded\n");
-        } else {
-          console.log(" navbar-container not found, skipping\n");
         }
 
-        console.log(" Loading modals...");
         await this.loadModals();
-        console.log(" Modals loaded\n");
 
         const activeSection = document.querySelector(".section.active");
         if (activeSection) {
           const sectionName = activeSection.id.replace("-section", "");
-          console.log(`📄 Loading active section: ${sectionName}`);
           await this.loadPageContent(sectionName);
-        } else {
-          console.log(" No active section found");
         }
-
-        console.log("\n ComponentLoader initialization complete!");
       } catch (err) {
         console.error(" ComponentLoader initialization failed:", err);
         throw err;
@@ -370,8 +322,6 @@
     },
 
     async loadModals() {
-      console.log(" Loading modals...");
-
       const modals = [
         {
           id: "createTaskModal",
@@ -397,6 +347,10 @@
           id: "notificationModal",
           path: "components/modals/notification-modal.html",
         },
+        {
+          id: "priorityManagerModal",
+          path: "components/modals/priority-manager-modal.html",
+        },
       ];
 
       for (const modal of modals) {
@@ -408,14 +362,11 @@
             this.fixNestedModals(modal.id);
           }, 100);
         } catch (err) {
-          console.warn(` Failed to load modal: ${modal.id}`, err);
         }
       }
     },
 
     fixNestedModals(modalId = null) {
-      console.log(" Checking for nested modals...");
-
       const modalIds = modalId
         ? [modalId]
         : [
@@ -431,9 +382,6 @@
         const modals = document.querySelectorAll(`#${id}`);
 
         if (modals.length > 1) {
-          console.warn(` Multiple ${id} modals found: ${modals.length}`);
-          console.log(" Fixing nested structure...");
-
           const mainModal = modals[0];
           const isHidden = mainModal.classList.contains("hidden");
 
@@ -457,8 +405,6 @@
             mainModal.style.visibility = "visible";
             mainModal.style.opacity = "1";
           }
-
-          console.log(` Fixed nested modal: ${id}`);
         }
       });
     },
@@ -466,7 +412,6 @@
     checkModalStructure(modalId) {
       const modal = document.getElementById(modalId);
       if (!modal) {
-        console.warn(` Modal not found: ${modalId}`);
         return false;
       }
 
@@ -476,12 +421,10 @@
         return false;
       }
 
-      console.log(` Modal structure OK: ${modalId}`);
       return true;
     },
 
     fixAllModals() {
-      console.log("🛠️ Fixing ALL nested modals...");
       this.fixNestedModals();
 
       document.querySelectorAll(".modal.active.show").forEach((modal) => {
@@ -492,31 +435,16 @@
         }
       });
 
-      console.log(" All modals fixed");
       return true;
     },
 
     debugModal(modalId) {
       const modal = document.getElementById(modalId);
       if (!modal) {
-        console.error(` Modal not found: ${modalId}`);
         return;
       }
 
-      console.log(`=== DEBUG MODAL: ${modalId} ===`);
-      console.log("Classes:", modal.className);
-      console.log("Display:", getComputedStyle(modal).display);
-      console.log("Children:", modal.children.length);
 
-      const nested = modal.querySelector(`#${modalId}`);
-      console.log("Has nested self?", !!nested);
-
-      if (nested) {
-        console.log(" NESTED FOUND! Structure:");
-        console.log(modal.outerHTML.substring(0, 500) + "...");
-      }
-
-      console.log("======================");
     },
 
     async reloadComponent(containerId, filePath) {
@@ -531,18 +459,11 @@
     },
 
     reset() {
-      console.log("🔄 Resetting ComponentLoader...");
       this.loadedComponents.clear();
       this.currentSection = null;
-      console.log(" ComponentLoader reset complete");
     },
 
     debug() {
-      console.log("\n=== ComponentLoader Debug ===");
-      console.log("Current section:", this.currentSection);
-      console.log("Loaded components:", [...this.loadedComponents]);
-      console.log("Loaded scripts:", [...this.loadedScripts]);
-      console.log("============================\n");
     },
   };
 
@@ -550,7 +471,6 @@
 
   window.fixModal = function (modalId = "aiSuggestionModal") {
     if (window.ComponentLoader && ComponentLoader.fixNestedModals) {
-      console.log(` Manual fix for modal: ${modalId}`);
       ComponentLoader.fixNestedModals(modalId);
 
       const modal = document.getElementById(modalId);
@@ -558,18 +478,7 @@
         modal.style.display = "flex";
         modal.style.visibility = "visible";
         modal.style.opacity = "1";
-
-        const content = modal.querySelector(".modal-content");
-        if (content) {
-          console.log(" Content dimensions:", {
-            width: content.offsetWidth,
-            height: content.offsetHeight,
-            display: getComputedStyle(content).display,
-          });
-        }
       }
-    } else {
-      console.error(" ComponentLoader not available");
     }
   };
 
@@ -579,5 +488,4 @@
     }
   }, 1000);
 
-  console.log(" ComponentLoader v3.0 ready!\n");
 })();

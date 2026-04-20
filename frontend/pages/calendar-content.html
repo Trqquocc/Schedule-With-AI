@@ -2,8 +2,8 @@
   <!-- Sidebar -->
   <div
     id="calendar-sidebar"
-    class="calendar-sidebar w-56 bg-white border-r"
-    style="border-color:#e2e8f0;flex-shrink:0"
+    class="calendar-sidebar w-56 bg-white border-r flex flex-col"
+    style="border-color:#e2e8f0;flex-shrink:0;height:100%;min-height:0"
   ></div>
 
   <!-- Main calendar area -->
@@ -16,7 +16,7 @@
         <!-- Left: icon + nav + title -->
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-               style="background:linear-gradient(135deg,#2563eb,#4f46e5)">
+               style="background:linear-gradient(135deg,#dc2626,#4f46e5)">
             <i class="fas fa-calendar-alt text-white text-sm"></i>
           </div>
 
@@ -31,8 +31,8 @@
             </button>
             <button id="cal-today-btn"
               class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors"
-              style="color:#2563eb"
-              onmouseover="this.style.background='#eff6ff'"
+              style="color:#dc2626"
+              onmouseover="this.style.background='#fef2f2'"
               onmouseout="this.style.background='transparent'">
               Hôm nay
             </button>
@@ -53,33 +53,83 @@
           </h2>
         </div>
 
-        <!-- Right: view switcher -->
-        <div class="flex items-center gap-1 rounded-xl p-1" style="background:#f1f5f9">
-          <button id="cal-day-view" data-view="timeGridDay"
-            class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-            style="color:#64748b">
-            Ngày
+        <!-- Right: working-hours picker + view switcher -->
+        <div class="flex items-center gap-3 relative">
+          <button id="cal-hours-btn"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+            style="color:#475569;background:#f1f5f9"
+            onmouseover="this.style.background='#e2e8f0'"
+            onmouseout="this.style.background='#f1f5f9'"
+            title="Tuỳ chỉnh khung giờ hiển thị">
+            <i class="far fa-clock"></i>
+            <span id="cal-hours-label">07:00 – 22:00</span>
           </button>
-          <button id="cal-week-view" data-view="timeGridWeek"
-            class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-            style="color:#64748b">
-            Tuần
-          </button>
-          <button id="cal-month-view" data-view="dayGridMonth"
-            class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-white transition-all"
-            style="color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-            Tháng
-          </button>
+
+          <div id="cal-hours-popover" class="hidden absolute right-0 top-full mt-2 z-20 rounded-xl p-4"
+               style="background:#fff;border:1px solid #e2e8f0;box-shadow:rgba(0,0,0,0.22) 3px 5px 30px 0;min-width:260px">
+            <div class="text-xs font-semibold mb-2" style="color:#1d1d1f;letter-spacing:-0.12px">
+              Khung giờ hiển thị
+            </div>
+            <div class="flex items-center gap-2 mb-3">
+              <div class="flex-1">
+                <label class="text-[10px] font-medium uppercase tracking-wide" style="color:#94a3b8">Từ</label>
+                <input id="cal-hours-start" type="time" step="3600" value="07:00"
+                  class="w-full mt-1 px-2 py-1.5 rounded-lg text-sm"
+                  style="border:1px solid #e2e8f0;background:#fff;color:#1d1d1f" />
+              </div>
+              <div class="flex-1">
+                <label class="text-[10px] font-medium uppercase tracking-wide" style="color:#94a3b8">Đến</label>
+                <input id="cal-hours-end" type="time" step="3600" value="22:00"
+                  class="w-full mt-1 px-2 py-1.5 rounded-lg text-sm"
+                  style="border:1px solid #e2e8f0;background:#fff;color:#1d1d1f" />
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <button id="cal-hours-reset" class="text-xs font-medium" style="color:#64748b">
+                <i class="fas fa-undo text-[10px] mr-1"></i>Mặc định
+              </button>
+              <div class="flex gap-2">
+                <button id="cal-hours-cancel" class="px-3 py-1.5 text-xs font-semibold rounded-lg"
+                  style="background:#f1f5f9;color:#64748b">Huỷ</button>
+                <button id="cal-hours-save" class="px-3 py-1.5 text-xs font-semibold text-white rounded-lg"
+                  style="background:var(--apple-blue)">Áp dụng</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1 rounded-xl p-1" style="background:#f1f5f9">
+            <button id="cal-day-view" data-view="timeGridDay"
+              class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all">
+              Ngày
+            </button>
+            <button id="cal-week-view" data-view="timeGridWeek"
+              class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all">
+              Tuần
+            </button>
+            <button id="cal-month-view" data-view="dayGridMonth"
+              class="cal-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all">
+              Tháng
+            </button>
+          </div>
         </div>
 
       </div>
     </nav>
 
+    <!-- Priority legend -->
+    <div class="priority-legend flex items-center gap-3 px-5 py-1.5 border-b" style="border-color:#e2e8f0;background:#fafbfc;flex-shrink:0">
+      <span style="font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:0.5px">Ưu tiên:</span>
+      <span class="flex items-center gap-1"><span style="width:8px;height:8px;border-radius:50%;background:#34D399;display:inline-block"></span><span style="font-size:10px;color:#64748b">Thấp</span></span>
+      <span class="flex items-center gap-1"><span style="width:8px;height:8px;border-radius:50%;background:#60A5FA;display:inline-block"></span><span style="font-size:10px;color:#64748b">TB</span></span>
+      <span class="flex items-center gap-1"><span style="width:8px;height:8px;border-radius:50%;background:#FBBF24;display:inline-block"></span><span style="font-size:10px;color:#64748b">Cao</span></span>
+      <span class="flex items-center gap-1"><span style="width:8px;height:8px;border-radius:50%;background:#F87171;display:inline-block"></span><span style="font-size:10px;color:#64748b">Rất cao</span></span>
+    </div>
+
     <!-- Calendar container -->
     <div id="calendar" class="flex-1 overflow-hidden" style="min-height:0">
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p class="text-gray-500 font-medium">Đang tải lịch trình...</p>
         </div>
       </div>
@@ -90,7 +140,6 @@
 
 <script>
   (function () {
-    console.log("📅 Calendar content loaded");
 
     function initCalendar() {
       if (typeof CalendarModule === "undefined") {
@@ -106,9 +155,54 @@
         return;
       }
 
-      CalendarModule.init()
-        .then(() => console.log("✅ Calendar initialized"))
-        .catch((err) => console.error("❌ Calendar init failed:", err));
+      CalendarModule.init().catch(() => {});
+      setupHoursPicker();
+    }
+
+    function setupHoursPicker() {
+      const btn = document.getElementById("cal-hours-btn");
+      const pop = document.getElementById("cal-hours-popover");
+      const startIn = document.getElementById("cal-hours-start");
+      const endIn = document.getElementById("cal-hours-end");
+      const label = document.getElementById("cal-hours-label");
+      if (!btn || !pop || !startIn || !endIn) return;
+
+      const hm = (hms) => hms.slice(0, 5); // "HH:MM:SS" → "HH:MM"
+      const refreshLabel = () => {
+        const h = CalendarModule.getWorkingHours();
+        label.textContent = `${hm(h.start)} – ${hm(h.end)}`;
+        startIn.value = hm(h.start);
+        endIn.value = hm(h.end);
+      };
+      refreshLabel();
+
+      const closePop = () => pop.classList.add("hidden");
+      const openPop = () => { refreshLabel(); pop.classList.remove("hidden"); };
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        pop.classList.contains("hidden") ? openPop() : closePop();
+      });
+      document.addEventListener("click", (e) => {
+        if (!pop.classList.contains("hidden") && !pop.contains(e.target) && e.target !== btn) {
+          closePop();
+        }
+      });
+
+      document.getElementById("cal-hours-cancel")?.addEventListener("click", closePop);
+      document.getElementById("cal-hours-reset")?.addEventListener("click", () => {
+        if (CalendarModule.setWorkingHours("07:00", "22:00")) {
+          refreshLabel();
+          Utils?.showToast?.("Đã đặt lại khung giờ mặc định", "success");
+        }
+      });
+      document.getElementById("cal-hours-save")?.addEventListener("click", () => {
+        if (CalendarModule.setWorkingHours(startIn.value, endIn.value)) {
+          refreshLabel();
+          closePop();
+          Utils?.showToast?.("Đã cập nhật khung giờ hiển thị", "success");
+        }
+      });
     }
 
     setTimeout(initCalendar, 100);

@@ -272,7 +272,6 @@
             taskTitles[suggestion.taskId] ||
             suggestion.taskTitle ||
             `Công việc #${suggestion.taskId || index}`;
-
           return {
             id: `ai-suggestion-${suggestion.taskId || index}-${Date.now()}`,
             title: taskTitle,

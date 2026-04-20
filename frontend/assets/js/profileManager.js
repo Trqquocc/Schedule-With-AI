@@ -11,17 +11,12 @@
         }
         return { rangeCount: 0, getRangeAt: () => null };
       } catch (e) {
-        console.warn(
-          "⚠️ Selection error suppressed from extension:",
-          e.message
-        );
         return { rangeCount: 0, getRangeAt: () => null };
       }
     };
   }
 
   if (window.ProfileManager) {
-    console.log(" ProfileManager already exists");
     return;
   }
 
@@ -31,18 +26,14 @@
 
     init() {
       if (this.initialized) {
-        console.log(" ProfileManager already initialized");
         return;
       }
-
-      console.log(" ProfileManager initialization started");
 
       this.loadUserData();
 
       this.bindEvents();
 
       this.initialized = true;
-      console.log(" ProfileManager initialized successfully");
     },
 
     loadUserData() {
@@ -50,16 +41,13 @@
         const userData = localStorage.getItem("user_data");
         if (userData) {
           this.currentUser = JSON.parse(userData);
-          console.log(" User data loaded:", this.currentUser);
         }
       } catch (err) {
-        console.error(" Error loading user data:", err);
+        console.error("Error loading user data:", err);
       }
     },
 
     bindEvents() {
-      console.log("🔗 Binding profile modal events...");
-
       // Save button
       const saveBtn = document.getElementById("saveProfileBtn");
       if (saveBtn) {
@@ -69,7 +57,6 @@
           e.preventDefault();
           this.saveProfile();
         });
-        console.log("  ✅ Save button bound");
       }
 
       // Close button (X)
@@ -81,7 +68,6 @@
           e.preventDefault();
           this.closeModal();
         });
-        console.log("  ✅ Close button bound");
       }
 
       // Cancel button
@@ -93,7 +79,6 @@
           e.preventDefault();
           this.closeModal();
         });
-        console.log("  ✅ Cancel button bound");
       }
 
       // Avatar upload
@@ -102,7 +87,6 @@
         avatarInput.addEventListener("change", (e) =>
           this.handleAvatarUpload(e)
         );
-        console.log("  ✅ Avatar input bound");
       }
 
       // ESC key
@@ -114,18 +98,14 @@
           }
         }
       });
-
-      console.log("✅ All profile events bound successfully");
     },
 
     waitForModalThenBind() {
       const checkModal = () => {
         const modal = document.getElementById("profileModal");
         if (modal) {
-          console.log("✅ Profile modal found in DOM");
           this.bindEvents();
         } else {
-          console.log("⏳ Waiting for profile modal...");
           setTimeout(checkModal, 100);
         }
       };
@@ -134,11 +114,8 @@
 
     async init() {
       if (this.initialized) {
-        console.log("ℹ️ ProfileManager already initialized");
         return;
       }
-
-      console.log("🔧 ProfileManager initialization started");
 
       // Load user data từ localStorage hoặc API
       await this.loadUserData();
@@ -147,18 +124,14 @@
       this.waitForModalThenBind();
 
       this.initialized = true;
-      console.log("✅ ProfileManager initialized successfully");
     },
 
     async openProfileModal() {
-      console.log("🟢 Opening profile modal...");
-
       // ALWAYS reload data from API to ensure fresh data
       await this.loadUserData();
 
       const modal = document.getElementById("profileModal");
       if (!modal) {
-        console.error("❌ Profile modal not found");
         return;
       }
 
@@ -174,38 +147,26 @@
         modal.style.display = "flex";
         document.body.style.overflow = "hidden";
       }
-
-      console.log("✅ Profile modal opened");
     },
 
     async loadUserData() {
       try {
-        console.log("📦 Loading user data...");
-
         // Thử lấy từ localStorage trước
         let userData = localStorage.getItem("user_data");
 
         if (userData) {
           try {
             this.currentUser = JSON.parse(userData);
-            console.log(
-              "✅ User data loaded from localStorage:",
-              this.currentUser
-            );
             return;
           } catch (parseError) {
-            console.warn(
-              "⚠️ Failed to parse localStorage user_data, fetching from API..."
-            );
+            // Failed to parse localStorage, fetch from API
           }
         }
 
         // Nếu không có trong localStorage, fetch từ API
-        console.log("🔍 No local data, fetching from API...");
         const token = localStorage.getItem("auth_token");
 
         if (!token) {
-          console.warn("⚠️ No auth token found");
           return;
         }
 
@@ -222,7 +183,6 @@
         }
 
         const data = await response.json();
-        console.log("📡 API response:", data);
 
         if (!data.success || !data.data) {
           throw new Error("Invalid API response structure");
@@ -231,10 +191,8 @@
         // Lưu vào localStorage và currentUser
         this.currentUser = data.data;
         localStorage.setItem("user_data", JSON.stringify(data.data));
-
-        console.log("✅ User data fetched and saved:", this.currentUser);
       } catch (err) {
-        console.error("❌ Error loading user data:", err);
+        console.error("Error loading user data:", err);
         this.showStatus(
           `Không thể tải thông tin người dùng: ${err.message}`,
           "error"
@@ -244,7 +202,6 @@
 
     async loadUserDataFromAPI() {
       try {
-        console.log(" Fetching user profile from API...");
         const response = await fetch("/api/profile", {
           method: "GET",
           headers: {
@@ -257,31 +214,23 @@
         }
 
         const data = await response.json();
-        console.log(" User profile fetched from API:", data);
 
         if (data && data.data) {
           this.currentUser = data.data;
           localStorage.setItem("user_data", JSON.stringify(data.data));
-          console.log(" User data updated from API");
         }
       } catch (error) {
-        console.error(" Error fetching user profile from API:", error);
+        console.error("Error fetching user profile from API:", error);
       }
     },
 
     fillFormWithUserData() {
-      console.log("📄 Filling form with user data...");
-
       if (!this.currentUser) {
-        console.error("❌ No user data available");
         return;
       }
 
-      console.log("📋 Current user data:", this.currentUser);
-
       const form = document.getElementById("profileForm");
       if (!form) {
-        console.error("❌ Profile form not found");
         return;
       }
 
@@ -311,31 +260,40 @@
         bio: getValue("bio") || getValue("Bio") || "",
       };
 
-      console.log("📊 Fields to fill:", fields);
-
       // Fill form
       Object.entries(fields).forEach(([fieldName, value]) => {
         const element = form.elements[fieldName];
         if (element) {
           element.value = value || "";
-          console.log(`  ✅ ${fieldName} = "${value}"`);
-        } else {
-          console.warn(`  ⚠️ Element not found: ${fieldName}`);
         }
       });
 
       // Update avatar
       const userName = fields.hoten || fields.username || "?";
       this.updateAvatarDisplay(userName);
-
-      console.log("✅ Form filled successfully");
     },
 
     updateAvatarDisplay(userName) {
       const avatar = document.getElementById("profileAvatar");
+      const savedAvatar = localStorage.getItem("user_avatar");
       if (avatar) {
-        const letter = (userName || "?").charAt(0).toUpperCase();
-        avatar.textContent = letter;
+        if (savedAvatar) {
+          avatar.innerHTML = "";
+          avatar.style.backgroundImage = `url(${savedAvatar})`;
+          avatar.style.backgroundSize = "cover";
+          avatar.style.backgroundPosition = "center";
+        } else {
+          const letter = (userName || "?").charAt(0).toUpperCase();
+          avatar.textContent = letter;
+        }
+      }
+      // Also update sidebar avatar
+      const sidebarAvatar = document.getElementById("sidebarAvatarContainer");
+      if (sidebarAvatar && savedAvatar) {
+        sidebarAvatar.innerHTML = "";
+        sidebarAvatar.style.backgroundImage = `url(${savedAvatar})`;
+        sidebarAvatar.style.backgroundSize = "cover";
+        sidebarAvatar.style.backgroundPosition = "center";
       }
     },
 
@@ -354,24 +312,41 @@
       }
 
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = (readerEvent) => {
         const img = new Image();
         img.onload = () => {
-          this.currentUser.avatar = e.target.result;
-          console.log(" Avatar updated (base64)");
-          this.showStatus(" Avatar được cập nhật", "success");
+          const base64 = readerEvent.target.result;
+          if (this.currentUser) this.currentUser.avatar = base64;
+          localStorage.setItem("user_avatar", base64);
+
+          // Update profile modal avatar
+          const profileAvatar = document.getElementById("profileAvatar");
+          if (profileAvatar) {
+            profileAvatar.innerHTML = "";
+            profileAvatar.style.backgroundImage = `url(${base64})`;
+            profileAvatar.style.backgroundSize = "cover";
+            profileAvatar.style.backgroundPosition = "center";
+          }
+
+          // Update sidebar avatar
+          const sidebarAvatar = document.getElementById("sidebarAvatarContainer");
+          if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = "";
+            sidebarAvatar.style.backgroundImage = `url(${base64})`;
+            sidebarAvatar.style.backgroundSize = "cover";
+            sidebarAvatar.style.backgroundPosition = "center";
+          }
+
+          Utils.showToast?.("Avatar đã được cập nhật", "success");
         };
-        img.src = e.target.result;
+        img.src = readerEvent.target.result;
       };
       reader.readAsDataURL(file);
     },
 
     async saveProfile() {
-      console.log("💾 Saving profile...");
-
       const form = document.getElementById("profileForm");
       if (!form) {
-        console.error("❌ Form not found");
         return;
       }
 
@@ -393,12 +368,9 @@
           this.currentUser._id;
       }
 
-      console.log("🔑 User ID:", userId);
-      console.log("📋 Current user object:", this.currentUser);
-
       if (!userId) {
         this.showStatus(
-          "❌ Không tìm thấy ID người dùng. Vui lòng đăng nhập lại.",
+          "Không tìm thấy ID người dùng. Vui lòng đăng nhập lại.",
           "error"
         );
         return;
@@ -418,8 +390,6 @@
         updatedUser.Password = password;
       }
 
-      console.log("📦 Data to send:", updatedUser);
-
       // Disable button
       const saveBtn = document.getElementById("saveProfileBtn");
       if (!saveBtn) return;
@@ -434,8 +404,6 @@
           throw new Error("Không tìm thấy token xác thực");
         }
 
-        console.log(`🔄 Sending PUT request to /api/users/${userId}`);
-
         const response = await fetch(`/api/users/${userId}`, {
           method: "PUT",
           headers: {
@@ -445,10 +413,7 @@
           body: JSON.stringify(updatedUser),
         });
 
-        console.log("📡 Response status:", response.status);
-
         const responseData = await response.json();
-        console.log("📡 Response data:", responseData);
 
         if (!response.ok) {
           throw new Error(responseData.message || `HTTP ${response.status}`);
@@ -466,8 +431,6 @@
         localStorage.setItem("user_data", JSON.stringify(newUserData));
         this.currentUser = newUserData;
 
-        console.log("✅ Local data updated:", newUserData);
-
         // Update sidebar
         if (window.updateSidebarUser) {
           window.updateSidebarUser(newUserData);
@@ -478,8 +441,8 @@
         // Close modal after 1.5s
         setTimeout(() => this.closeModal(), 1500);
       } catch (error) {
-        console.error("❌ Save error:", error);
-        this.showStatus(`❌ Lỗi: ${error.message}`, "error");
+        console.error("Save profile error:", error);
+        this.showStatus(`Lỗi: ${error.message}`, "error");
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalText;
@@ -487,8 +450,6 @@
     },
 
     closeModal() {
-      console.log("🚪 Closing profile modal");
-
       const modal = document.getElementById("profileModal");
       if (!modal) return;
 
@@ -500,17 +461,15 @@
         modal.style.display = "none";
         document.body.style.overflow = "";
       }
-
-      console.log("✅ Profile modal closed");
     },
 
     showStatus(message, type = "info") {
       const statusEl = document.getElementById("profileStatusMessage");
       if (!statusEl) return;
 
-      let bgColor = "bg-blue-50";
-      let borderColor = "border-blue-200";
-      let textColor = "text-blue-700";
+      let bgColor = "bg-red-50";
+      let borderColor = "border-red-200";
+      let textColor = "text-red-700";
 
       if (type === "success") {
         bgColor = "bg-green-50";
@@ -531,34 +490,27 @@
       }, 5000);
     },
 
-    cleanup() {
-      console.log(" ProfileManager cleanup");
-    },
+    cleanup() {},
   };
 
   window.ProfileManager = ProfileManager;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      console.log(" DOMContentLoaded - initializing ProfileManager...");
       setTimeout(() => {
         ProfileManager.init();
       }, 500);
     });
   } else {
-    console.log(" Document already loaded - initializing ProfileManager...");
     setTimeout(() => {
       ProfileManager.init();
     }, 500);
   }
 
-  console.log(" ProfileManager script loaded");
-
   window.addEventListener(
     "error",
     (event) => {
       if (event.message && event.message.includes("getRangeAt")) {
-        console.warn(" Extension selection error suppressed");
         event.preventDefault();
         return true;
       }

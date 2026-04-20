@@ -14,7 +14,7 @@
     <div class="bg-gray-50 p-4 rounded-lg">
       <div class="flex items-center space-x-3">
         <div
-          class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center"
+          class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center"
         >
           <span class="text-white font-semibold text-sm">U</span>
         </div>
@@ -140,7 +140,7 @@
     const btn = document.getElementById('themeToggleBtn');
     const thumb = document.getElementById('themeToggleThumb');
     const label = document.getElementById('theme-label');
-    if (btn) btn.style.background = isDark ? '#2563eb' : '#cbd5e1';
+    if (btn) btn.style.background = isDark ? '#dc2626' : '#cbd5e1';
     if (thumb) thumb.style.transform = isDark ? 'translateX(18px)' : 'translateX(2px)';
     if (label) label.textContent = isDark ? 'Tối' : 'Sáng';
   }
@@ -166,14 +166,12 @@
     const updateProfileBtn = document.getElementById("updateProfileBtn");
     if (updateProfileBtn) {
       updateProfileBtn.addEventListener("click", function () {
-        console.log("Navigate to profile section");
       });
     }
 
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", function () {
-        console.log("Logout requested");
       });
     }
   });

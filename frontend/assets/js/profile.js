@@ -2,7 +2,6 @@
   "use strict";
 
   if (window.ProfileManager) {
-    console.log("⏭️ ProfileManager already loaded");
     return;
   }
 
@@ -12,28 +11,21 @@
 
     init() {
       if (this.initialized) {
-        console.log(" ProfileManager already initialized");
         return;
       }
 
-      console.log(" Initializing ProfileManager...");
       this.initialized = true;
 
       this.loadUserProfile();
       this.bindEvents();
-
-      console.log(" ProfileManager initialized successfully");
     },
 
     loadUserProfile() {
       const user = JSON.parse(localStorage.getItem("user_data") || "{}");
 
       if (!user.ID) {
-        console.warn(" No user ID found in localStorage");
         return;
       }
-
-      console.log("📄 Loading user profile for:", user.username);
 
       const fields = {
         hoten: user.hoten || "",
@@ -56,8 +48,6 @@
           .charAt(0)
           .toUpperCase();
       }
-
-      console.log(" User profile loaded");
     },
 
     bindEvents() {
@@ -82,8 +72,6 @@
           handler,
         });
       }
-
-      console.log(" ProfileManager events bound");
     },
 
     async saveProfile() {
@@ -93,8 +81,6 @@
           SoDienThoai: document.getElementById("phone")?.value || "",
           DiaChi: document.getElementById("address")?.value || "",
         };
-
-        console.log("💾 Saving profile:", formData);
 
         if (typeof Utils === "undefined") {
           throw new Error("Utils module not available");
@@ -116,13 +102,11 @@
           if (window.App && App.updateUserInfo) {
             App.updateUserInfo();
           }
-
-          console.log(" Profile saved successfully");
         } else {
           throw new Error(result.message || "Không thể cập nhật");
         }
       } catch (error) {
-        console.error(" Error saving profile:", error);
+        console.error("Error saving profile:", error);
         if (typeof Utils !== "undefined" && Utils.showToast) {
           Utils.showToast("Lỗi cập nhật: " + error.message, "error");
         }
@@ -138,8 +122,6 @@
     },
 
     cleanup() {
-      console.log(" Cleaning up ProfileManager...");
-
       this.eventListeners.forEach(({ element, event, handler }) => {
         if (element && element.removeEventListener) {
           element.removeEventListener(event, handler);
@@ -148,10 +130,6 @@
 
       this.eventListeners = [];
       this.initialized = false;
-
-      console.log(" ProfileManager cleaned up");
     },
   };
-
-  console.log(" ProfileManager loaded");
 })();
