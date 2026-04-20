@@ -1169,7 +1169,7 @@ body.dark .priority-legend span {
    ============================================================== */
 .fc-event {
   --ev-accent: #3b82f6;
-  background: #f1f5f9 !important;
+  background: color-mix(in srgb, var(--ev-accent) 22%, transparent) !important;
   background-image: none !important;
   color: #0f172a !important;
   border: 1px solid #111827 !important;
@@ -1205,7 +1205,7 @@ body.dark .priority-legend span {
   font-weight: 600 !important;
 }
 
-/* Title frame — centered, semi-transparent priority-colored fill. */
+/* Title frame — centered, neutral gray against the priority-tinted card body. */
 .sched-evt-title {
   display: flex;
   align-items: center;
@@ -1213,7 +1213,7 @@ body.dark .priority-legend span {
   text-align: center;
   padding: 6px 10px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--ev-accent) 22%, transparent);
+  background: #e2e8f0;
   font-weight: 600;
   font-size: 13.5px;
   line-height: 1.25;
@@ -1332,15 +1332,13 @@ body.dark .priority-legend span {
 
 /* Dark-mode: flip the intent — dark body, lighter border, same halo */
 body.dark .fc-event {
-  background: var(--bg-card) !important;
+  background: color-mix(in srgb, var(--ev-accent) 30%, transparent) !important;
   color: var(--text-primary) !important;
   border-color: var(--border) !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.03),
-    0 0 8px 0 color-mix(in srgb, var(--ev-accent) 30%, transparent) !important;
+  box-shadow: none !important;
 }
 body.dark .sched-evt-title {
-  background: color-mix(in srgb, var(--ev-accent) 30%, transparent);
+  background: var(--bg-card-alt);
   color: var(--text-primary);
 }
 body.dark .sched-evt-meta span {
