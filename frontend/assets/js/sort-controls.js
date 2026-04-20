@@ -26,9 +26,9 @@
   if (window.SortControls) return;
 
   const CRITERIA = [
-    { key: "category", label: "Danh mục", icon: "fa-folder", defaultDir: "asc" },
-    { key: "priority", label: "Ưu tiên", icon: "fa-flag", defaultDir: "desc" },
-    { key: "duration", label: "Thời gian", icon: "fa-clock", defaultDir: "asc" },
+    { key: "category", label: "Danh mục", short: "Loại", icon: "fa-folder", defaultDir: "asc" },
+    { key: "priority", label: "Ưu tiên", short: "Ưu tiên", icon: "fa-flag", defaultDir: "desc" },
+    { key: "duration", label: "Thời gian", short: "Giờ", icon: "fa-clock", defaultDir: "asc" },
   ];
 
   function readState(storageKey) {
@@ -56,34 +56,57 @@
     }
   }
 
-  function chipHTML(c, active, direction) {
+  function chipHTML(c, active, direction, compact) {
     const dirIcon =
       active && direction === "desc"
         ? "fa-arrow-down-wide-short"
         : active
         ? "fa-arrow-up-short-wide"
-        : "fa-sort";
+        : null;
     const bg = active ? "#dc2626" : "#fff";
     const color = active ? "#fff" : "#374151";
     const border = active ? "#dc2626" : "#e2e8f0";
+    const label = compact ? c.short : c.label;
+    const pad = compact ? "px-2 py-1" : "px-3 py-1.5";
+    const gap = compact ? "gap-1" : "gap-1.5";
+    const iconSize = compact ? "text-[10px]" : "text-[11px]";
+    const dirSpan = dirIcon
+      ? `<i class="fas ${dirIcon} text-[9px] opacity-80"></i>`
+      : "";
     return `
       <button type="button"
-        class="sort-chip flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all select-none"
+        class="sort-chip flex items-center ${gap} ${pad} rounded-md border text-[11px] font-semibold transition-all select-none"
         data-sort-key="${c.key}"
         aria-pressed="${active ? "true" : "false"}"
-        style="background:${bg};color:${color};border-color:${border}">
-        <i class="fas ${c.icon} text-[11px]"></i>
-        <span>${c.label}</span>
-        <i class="fas ${dirIcon} text-[10px] opacity-80"></i>
+        title="${c.label}"
+        style="background:${bg};color:${color};border-color:${border};white-space:nowrap">
+        <i class="fas ${c.icon} ${iconSize}"></i>
+        <span>${label}</span>
+        ${dirSpan}
       </button>
     `;
   }
 
-  function rootHTML(state) {
+  function rootHTML(state, compact) {
     const chips = CRITERIA.map((c) =>
-      chipHTML(c, c.key === state.criterion, state.direction)
+      chipHTML(c, c.key === state.criterion, state.direction, compact)
     ).join("");
     const resetVisible = state.criterion ? "" : "hidden";
+    if (compact) {
+      const clearBtn = `
+        <button type="button"
+          class="sort-clear ${resetVisible} flex items-center justify-center w-6 h-6 rounded-md border"
+          style="border-color:#e2e8f0;color:#94a3b8;background:#fff"
+          title="Bỏ sắp xếp">
+          <i class="fas fa-times text-[10px]"></i>
+        </button>`;
+      return `
+        <div class="sort-controls flex items-center gap-1 flex-nowrap overflow-x-auto">
+          ${chips}
+          ${clearBtn}
+        </div>
+      `;
+    }
     return `
       <div class="sort-controls flex items-center gap-2 flex-wrap">
         <span class="text-xs font-medium" style="color:#64748b">
@@ -103,12 +126,13 @@
     opts = opts || {};
     const storageKey = opts.storageKey || null;
     const onChange = typeof opts.onChange === "function" ? opts.onChange : null;
+    const compact = opts.compact === true;
 
     let state = readState(storageKey);
-    container.innerHTML = rootHTML(state);
+    container.innerHTML = rootHTML(state, compact);
 
     function rerender() {
-      container.innerHTML = rootHTML(state);
+      container.innerHTML = rootHTML(state, compact);
       wire();
     }
 
