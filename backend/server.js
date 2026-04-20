@@ -19,6 +19,7 @@ const eventSubtasksRoutes = require("./routes/event-subtasks");
 const taskInstancesRoutes = require("./routes/task-instances");
 const applyScheduleRoutes = require("./routes/apply-schedule");
 const scheduleCompletionRoutes = require("./routes/schedule-completion");
+const aiReferenceRoutes = require("./routes/ai-reference");
 const adjustmentsRoutes = require("./routes/adjustments");
 
 const app = express();
@@ -77,6 +78,7 @@ app.use("/api/event-subtasks", eventSubtasksRoutes);
 app.use("/api/task-instances", authenticateToken, taskInstancesRoutes);
 app.use("/api/schedule", authenticateToken, applyScheduleRoutes);
 app.use("/api/schedule", authenticateToken, scheduleCompletionRoutes);
+app.use("/api/ai-reference", authenticateToken, aiReferenceRoutes);
 app.use("/api/adjustments", authenticateToken, adjustmentsRoutes);
 
 // API cũ vẫn dùng (nếu có)

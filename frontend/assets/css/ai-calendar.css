@@ -580,3 +580,63 @@ body.dark #aiSuggestionModal .task-item:hover {
 body.dark #aiSuggestionModal .task-list-container {
   border-color: var(--border) !important;
 }
+
+/* ==============================================================
+   AI REFERENCE SECTION — purple-tinted workspace for AI suggestions.
+   Scoped under .ai-ref-section so it doesn't leak to main Lịch trình.
+   ============================================================== */
+.ai-ref-section .ai-ref-task-row {
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ai-ref-section .ai-ref-task-row:hover {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+.ai-ref-section .ai-ref-task-row:has(.ai-ref-task-cb:checked) {
+  background: #f3f0ff;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.18);
+}
+
+/* AI-proposed event overlay on the main AI calendar:
+   dashed purple border, soft purple fill, italic title. */
+#ai-calendar .fc-event.ai-ref-proposal {
+  background: #f5f3ff !important;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 10px,
+    rgba(124, 58, 237, 0.08) 10px,
+    rgba(124, 58, 237, 0.08) 20px
+  ) !important;
+  border: 2px dashed #7c3aed !important;
+  color: #4c1d95 !important;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.1),
+    0 0 10px 0 rgba(124, 58, 237, 0.25) !important;
+  animation: aiRefProposalPulse 2.6s ease-in-out infinite;
+}
+#ai-calendar .fc-event.ai-ref-proposal .fc-event-title,
+#ai-calendar .fc-event.ai-ref-proposal .fc-event-time {
+  color: #4c1d95 !important;
+  font-style: italic;
+}
+@keyframes aiRefProposalPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.1), 0 0 10px 0 rgba(124, 58, 237, 0.25); }
+  50%      { box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.2), 0 0 18px 0 rgba(124, 58, 237, 0.45); }
+}
+
+/* Dark-mode: keep the purple character but raise contrast */
+body.dark .ai-ref-section .ai-ref-task-row {
+  background: var(--bg-card-alt, #334155) !important;
+  border-color: var(--border, #475569) !important;
+  color: var(--text-primary, #e2e8f0) !important;
+}
+body.dark .ai-ref-section .ai-ref-task-row:has(.ai-ref-task-cb:checked) {
+  background: #3b2a5c !important;
+  border-color: #a78bfa !important;
+}
+body.dark #ai-calendar .fc-event.ai-ref-proposal {
+  background: rgba(124, 58, 237, 0.18) !important;
+  border-color: #a78bfa !important;
+  color: #ddd6fe !important;
+}

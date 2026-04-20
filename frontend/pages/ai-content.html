@@ -1,93 +1,171 @@
-<div class="flex-1 flex flex-col" style="background:var(--bg-app,#f1f5f9);min-height:0">
-
-  <!-- Navbar -->
-  <nav class="ai-toolbar bg-white border-b px-5 py-3 flex-shrink-0" style="border-color:#e2e8f0">
-    <div class="flex items-center justify-between gap-4">
-
-      <!-- Left: icon + nav + title -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-             style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">
-          <i class="fas fa-robot text-white text-sm"></i>
-        </div>
-
-        <div class="flex items-center gap-1">
-          <button id="ai-cal-prev-btn"
-            class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-            style="color:#6b7280"
-            onmouseover="this.style.background='#f3f4f6'"
-            onmouseout="this.style.background='transparent'"
-            title="Tháng trước">
-            <i class="fas fa-chevron-left text-xs"></i>
-          </button>
-          <button id="ai-cal-today-btn"
-            class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors"
-            style="color:#7c3aed"
-            onmouseover="this.style.background='#f5f3ff'"
-            onmouseout="this.style.background='transparent'">
-            Hôm nay
-          </button>
-          <button id="ai-cal-next-btn"
-            class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-            style="color:#6b7280"
-            onmouseover="this.style.background='#f3f4f6'"
-            onmouseout="this.style.background='transparent'"
-            title="Tháng sau">
-            <i class="fas fa-chevron-right text-xs"></i>
-          </button>
-        </div>
-
-        <h2 id="ai-calendar-title"
-          class="text-lg font-bold"
-          style="color:#1e293b;min-width:180px">
-          Tháng 11 năm 2025
-        </h2>
-      </div>
-
-      <!-- Right: AI button + view switcher -->
-      <div class="flex items-center gap-3">
-        <button id="ai-suggest-btn"
-          class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md transition-all"
-          style="background:linear-gradient(135deg,#7c3aed,#4f46e5);box-shadow:0 4px 15px rgba(124,58,237,0.35)"
-          onmouseover="this.style.boxShadow='0 6px 20px rgba(124,58,237,0.5)';this.style.transform='translateY(-1px)'"
-          onmouseout="this.style.boxShadow='0 4px 15px rgba(124,58,237,0.35)';this.style.transform='translateY(0)'">
-          <i class="fas fa-magic text-xs"></i>
-          <span>Tham Khảo AI</span>
+<div class="flex h-full ai-ref-section" style="--ai-ref-primary:#7c3aed;--ai-ref-soft:#faf5ff;--ai-ref-border:#e9d5ff">
+  <!-- Sidebar: task pool with checkbox select -->
+  <div id="ai-ref-sidebar"
+    class="w-60 flex flex-col flex-shrink-0 border-r"
+    style="background:#fff;border-color:var(--ai-ref-border);height:100%;min-height:0">
+    <div class="p-3 border-b flex-shrink-0" style="border-color:var(--ai-ref-border)">
+      <h3 class="font-semibold text-base flex items-center justify-between" style="color:#1e293b">
+        <span><i class="fas fa-magic mr-1.5" style="color:var(--ai-ref-primary)"></i>Công việc</span>
+        <button id="ai-ref-refresh-btn"
+          class="text-sm transition-transform duration-300 hover:rotate-180"
+          style="color:var(--ai-ref-primary)"
+          title="Tải lại">
+          <i class="fas fa-sync-alt"></i>
         </button>
-
-        <div class="flex items-center gap-1 rounded-xl p-1" style="background:#f1f5f9">
-          <button id="ai-cal-day-view" data-view="timeGridDay"
-            class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-            style="color:#64748b">
-            Ngày
-          </button>
-          <button id="ai-cal-week-view" data-view="timeGridWeek"
-            class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-            style="color:#64748b">
-            Tuần
-          </button>
-          <button id="ai-cal-month-view" data-view="dayGridMonth"
-            class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-white transition-all"
-            style="color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-            Tháng
-          </button>
-        </div>
+      </h3>
+      <p class="text-xs text-gray-500 mt-1">Chọn để AI gợi ý lịch</p>
+      <div class="mt-2 flex items-center gap-2 text-xs">
+        <button id="ai-ref-select-all-btn"
+          class="px-2 py-1 rounded-md border"
+          style="border-color:var(--ai-ref-border);color:var(--ai-ref-primary);background:#fff"
+          title="Chọn tất cả">
+          <i class="fas fa-check-double mr-1"></i>Tất cả
+        </button>
+        <button id="ai-ref-clear-sel-btn"
+          class="px-2 py-1 rounded-md border"
+          style="border-color:#e2e8f0;color:#64748b;background:#fff"
+          title="Bỏ chọn">
+          Bỏ chọn
+        </button>
+        <span class="ml-auto font-semibold" style="color:var(--ai-ref-primary)">
+          <span id="ai-ref-selected-count">0</span> đã chọn
+        </span>
       </div>
-
     </div>
-  </nav>
 
-  <!-- Calendar -->
-  <div id="ai-calendar" class="flex-1 overflow-hidden">
-    <div class="flex items-center justify-center h-full">
-      <div class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-        <p class="text-lg font-medium text-gray-500">Đang tải lịch trình AI...</p>
-        <p class="text-sm mt-2 text-gray-400">Nhấn "Tham Khảo AI" để tạo lịch trình thông minh</p>
+    <div id="ai-ref-task-list"
+      class="flex-1 overflow-y-auto overflow-x-hidden p-3"
+      style="min-height:0">
+      <div class="text-center text-gray-500 py-8 text-sm">
+        <div class="animate-pulse">Đang tải công việc...</div>
       </div>
     </div>
   </div>
 
+  <!-- Main calendar area -->
+  <div class="flex-1 flex flex-col min-w-0" style="background:var(--ai-ref-soft)">
+
+    <!-- Toolbar -->
+    <nav class="ai-toolbar bg-white border-b px-5 py-3 flex-shrink-0" style="border-color:var(--ai-ref-border)">
+      <div class="flex items-center justify-between gap-4">
+
+        <!-- Left: brand + date nav -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+               style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">
+            <i class="fas fa-robot text-white text-sm"></i>
+          </div>
+
+          <div class="flex items-center gap-1">
+            <button id="ai-cal-prev-btn"
+              class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+              style="color:#6b7280"
+              title="Tháng trước">
+              <i class="fas fa-chevron-left text-xs"></i>
+            </button>
+            <button id="ai-cal-today-btn"
+              class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors"
+              style="color:var(--ai-ref-primary)">
+              Hôm nay
+            </button>
+            <button id="ai-cal-next-btn"
+              class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+              style="color:#6b7280"
+              title="Tháng sau">
+              <i class="fas fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+
+          <h2 id="ai-calendar-title"
+            class="text-lg font-bold"
+            style="color:#1e293b;min-width:180px">
+            Tháng
+          </h2>
+        </div>
+
+        <!-- Right: AI actions + view switcher -->
+        <div class="flex items-center gap-2">
+          <button id="ai-ref-suggest-btn"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md transition-all"
+            style="background:linear-gradient(135deg,#7c3aed,#4f46e5);box-shadow:0 4px 15px rgba(124,58,237,0.35)"
+            title="Gợi ý lịch trình bằng AI">
+            <i class="fas fa-wand-magic-sparkles text-xs"></i>
+            <span>Lập lịch tự động</span>
+          </button>
+
+          <button class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border"
+            style="border-color:var(--ai-ref-border);background:#fff;color:#94a3b8;cursor:not-allowed;opacity:0.6"
+            disabled
+            title="Sắp ra mắt">
+            <i class="fas fa-scale-balanced text-xs"></i>
+            <span>Cân bằng</span>
+          </button>
+          <button class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border"
+            style="border-color:var(--ai-ref-border);background:#fff;color:#94a3b8;cursor:not-allowed;opacity:0.6"
+            disabled
+            title="Sắp ra mắt">
+            <i class="fas fa-chart-line text-xs"></i>
+            <span>Phân tích</span>
+          </button>
+          <button class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border"
+            style="border-color:var(--ai-ref-border);background:#fff;color:#94a3b8;cursor:not-allowed;opacity:0.6"
+            disabled
+            title="Sắp ra mắt">
+            <i class="fas fa-comments text-xs"></i>
+            <span>Hỏi AI</span>
+          </button>
+
+          <div class="flex items-center gap-1 rounded-xl p-1 ml-2" style="background:#f1f5f9">
+            <button id="ai-cal-day-view" data-view="timeGridDay"
+              class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+              style="color:#64748b">Ngày</button>
+            <button id="ai-cal-week-view" data-view="timeGridWeek"
+              class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+              style="color:#64748b">Tuần</button>
+            <button id="ai-cal-month-view" data-view="dayGridMonth"
+              class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-white transition-all"
+              style="color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,0.1)">Tháng</button>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+
+    <!-- Pending proposals action bar — visible while proposals are unconfirmed -->
+    <div id="ai-ref-proposal-bar"
+      class="hidden items-center justify-between gap-3 px-5 py-2 border-b"
+      style="background:#f5f3ff;border-color:var(--ai-ref-border)">
+      <span class="text-sm" style="color:#4c1d95">
+        <i class="fas fa-sparkles mr-1"></i>
+        <strong id="ai-ref-proposal-count">0</strong> đề xuất chờ xác nhận
+      </span>
+      <div class="flex items-center gap-2">
+        <button id="ai-ref-accept-all-btn"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+          style="background:#10b981">
+          <i class="fas fa-check"></i> Chấp nhận tất cả
+        </button>
+        <button id="ai-ref-reject-all-btn"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold border"
+          style="border-color:#e2e8f0;color:#64748b;background:#fff">
+          Bỏ tất cả
+        </button>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div id="ai-calendar" class="flex-1 overflow-hidden">
+      <div class="flex items-center justify-center h-full">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
+            style="border-color:var(--ai-ref-primary)"></div>
+          <p class="text-lg font-medium text-gray-500">Đang tải lịch trình AI...</p>
+          <p class="text-sm mt-2 text-gray-400">Chọn công việc bên trái rồi bấm "Lập lịch tự động"</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
@@ -95,12 +173,12 @@
     let isInitializing = false;
     let isInitialized = false;
 
-    function waitForAIModule() {
-      if (window.AIModule) {
+    function waitForModule() {
+      if (window.AIModule && window.AIReferenceModule) {
         if (isInitializing) return;
-
         if (isInitialized && AIModule.isInitialized && AIModule.calendar) {
           AIModule.refreshUI();
+          AIReferenceModule.onSectionEnter();
           return;
         }
 
@@ -115,27 +193,26 @@
         AIModule.monthBtnId = "ai-cal-month-view";
 
         AIModule.init()
-          .then(() => { isInitialized = true; isInitializing = false; })
+          .then(() => {
+            isInitialized = true;
+            isInitializing = false;
+            AIReferenceModule.onSectionEnter();
+          })
           .catch(() => { isInitialized = false; isInitializing = false; });
       } else {
-        setTimeout(waitForAIModule, 100);
+        setTimeout(waitForModule, 100);
       }
     }
 
-    setTimeout(waitForAIModule, 300);
+    setTimeout(waitForModule, 300);
 
-    let tabChangeListenerAdded = false;
-    if (!tabChangeListenerAdded) {
-      tabChangeListenerAdded = true;
-      document.addEventListener("section-changed", (e) => {
-        if (e.detail && e.detail.section === "ai") {
-          setTimeout(() => {
-            if (window.AIModule && AIModule.refreshFromDatabase) {
-              AIModule.refreshFromDatabase();
-            }
-          }, 1000);
-        }
-      }, { once: false });
-    }
+    document.addEventListener("section-changed", (e) => {
+      if (e.detail?.section === "ai") {
+        setTimeout(() => {
+          if (window.AIModule?.refreshFromDatabase) AIModule.refreshFromDatabase();
+          if (window.AIReferenceModule?.onSectionEnter) AIReferenceModule.onSectionEnter();
+        }, 500);
+      }
+    });
   })();
 </script>
