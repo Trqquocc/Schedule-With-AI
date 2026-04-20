@@ -502,14 +502,12 @@
           el.setAttribute("data-event-id", info.event.id);
           el.setAttribute("data-eventid", info.event.id);
 
-          // Priority halo colour — consumed by .fc-event CSS (color-mix glow).
-          const accent =
-            info.event.extendedProps.accent ||
-            info.event.extendedProps.originalColor ||
-            "#3B82F6";
-          el.style.setProperty("--ev-accent", accent);
-
           const priority = info.event.extendedProps.priority || 2;
+          // Bind --ev-accent to the user's palette CSS var, not a frozen hex,
+          // so the card tint updates live when priority colors are customized.
+          el.style.setProperty("--ev-accent", `var(--prio-${priority})`);
+
+
           if (priority === 1) {
             el.classList.add("event-priority-low");
           } else if (priority === 3) {
