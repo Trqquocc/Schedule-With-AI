@@ -106,6 +106,11 @@ router.post("/complete-day", async (req, res) => {
     }
     const [startIso, endIso] = range;
     const completed = req.body?.completed === false ? false : true;
+    // Optional cap: when completing, only touch events that started at/before
+    // `before`. This keeps future events untouched ("chưa tới giờ").
+    // Restore ignores the cap so the user can undo accidental marks anywhere.
+    const before = typeof req.body?.before === "string" ? req.body.before : null;
+    const beforeValid = before && !Number.isNaN(new Date(before).getTime());
 
     let q = supabase
       .from("LichTrinh")
@@ -118,6 +123,10 @@ router.post("/complete-day", async (req, res) => {
     // reflects real changes (and we avoid pointless writes).
     if (completed) {
       q = q.or("DaHoanThanh.is.null,DaHoanThanh.eq.false");
+      if (beforeValid) {
+        // Cap upper bound: only events already started by `before` get marked.
+        q = q.lte("GioBatDau", before);
+      }
     } else {
       q = q.eq("DaHoanThanh", true);
     }

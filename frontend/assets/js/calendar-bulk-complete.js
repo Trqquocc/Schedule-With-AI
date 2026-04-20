@@ -154,19 +154,61 @@
     }
   }
 
+  /**
+   * Split selection into [canAct, blockedFuture] for a given direction.
+   * When completing, events whose start time is still in the future are
+   * blocked ("chưa tới giờ"). When restoring, everything is allowed.
+   */
+  function partitionSelectionByTime(completed) {
+    const cal = window.CalendarModule?.calendar;
+    const now = Date.now();
+    const canAct = [];
+    const blockedFuture = [];
+    for (const id of state.selected) {
+      if (!completed) {
+        canAct.push(id);
+        continue;
+      }
+      const ev = cal?.getEventById(id);
+      const t = ev?.start ? ev.start.getTime() : null;
+      if (t !== null && t > now) {
+        blockedFuture.push(id);
+      } else {
+        canAct.push(id);
+      }
+    }
+    return { canAct, blockedFuture };
+  }
+
   async function bulkComplete() {
     if (state.selected.size === 0) return;
-    const ids = Array.from(state.selected);
     const restore = allSelectedAreCompleted();
     const completed = !restore;
+
+    const { canAct, blockedFuture } = partitionSelectionByTime(completed);
+
+    if (canAct.length === 0) {
+      Utils.showToast?.(
+        "Không có công việc nào có thể hoàn thành (các việc đã chọn chưa tới giờ).",
+        "warning"
+      );
+      return;
+    }
+    if (blockedFuture.length > 0) {
+      Utils.showToast?.(
+        `Bỏ qua ${blockedFuture.length} công việc chưa tới giờ.`,
+        "warning"
+      );
+    }
+
     try {
       const result = await Utils.makeRequest(
         "/api/schedule/complete-batch",
         "POST",
-        { ids, completed }
+        { ids: canAct, completed }
       );
       if (!result.success) throw new Error(result.message || "Lỗi server");
-      const updated = result.data?.updated ?? result.updated ?? ids.length;
+      const updated = result.data?.updated ?? result.updated ?? canAct.length;
       const verb = completed ? "hoàn thành" : "khôi phục về chưa hoàn thành";
       Utils.showToast?.(`Đã ${verb} ${updated} việc`, "success");
       clearSelection();
@@ -180,28 +222,38 @@
 
   /**
    * Scan FullCalendar's current event store for today and decide whether we're
-   * in "complete" or "restore" mode:
-   *   - totalToday  = events starting in today's local window
-   *   - doneToday   = of those, how many are completed
-   * If totalToday > 0 and doneToday === totalToday → every event is done,
-   * so the daily-check action flips to restore.
+   * in "complete" or "restore" mode.
+   *
+   *   - pastTotal / pastDone    = events whose start <= now (eligible to complete)
+   *   - dayTotal  / dayDone     = all events in today's window (for restore)
+   *
+   * Complete mode only considers past events (future ones stay untouched).
+   * Restore mode considers the entire day (so accidental future marks can be undone).
    */
   function inspectToday() {
     const cal = window.CalendarModule?.calendar;
-    const now = new Date();
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const now = Date.now();
+    const today = new Date();
+    const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const dayEnd = dayStart + 24 * 60 * 60 * 1000;
-    let total = 0;
-    let done = 0;
+    let pastTotal = 0;
+    let pastDone = 0;
+    let dayTotal = 0;
+    let dayDone = 0;
     if (cal) {
       for (const ev of cal.getEvents()) {
         const t = ev.start ? ev.start.getTime() : NaN;
         if (!(t >= dayStart && t < dayEnd)) continue;
-        total++;
-        if (ev.extendedProps?.completed) done++;
+        dayTotal++;
+        const done = !!ev.extendedProps?.completed;
+        if (done) dayDone++;
+        if (t <= now) {
+          pastTotal++;
+          if (done) pastDone++;
+        }
       }
     }
-    return { total, done };
+    return { pastTotal, pastDone, dayTotal, dayDone };
   }
 
   async function dailyCheck() {
@@ -211,13 +263,34 @@
     const d = String(date.getDate()).padStart(2, "0");
     const dateStr = `${y}-${m}-${d}`;
 
-    const { total, done } = inspectToday();
-    const restore = total > 0 && done === total;
+    const { pastTotal, pastDone, dayTotal, dayDone } = inspectToday();
+
+    // Restore = entire day is already done (safe to unmark everything, including future).
+    // Complete = only affects past events (future ones are never marked by daily check).
+    const restore = dayTotal > 0 && dayDone === dayTotal;
     const completed = !restore;
 
-    const confirmTitle = restore
-      ? `Khôi phục ${total} công việc hôm nay?`
-      : `Đánh dấu tất cả công việc hôm nay là hoàn thành?`;
+    let confirmTitle;
+    if (restore) {
+      confirmTitle = `Khôi phục ${dayTotal} công việc hôm nay?`;
+    } else if (pastTotal === 0) {
+      // Nothing to do yet — warn and bail.
+      if (window.Swal) {
+        await Swal.fire({
+          icon: "info",
+          title: "Chưa có việc nào đã qua giờ",
+          text: "Daily check chỉ đánh dấu các công việc đã qua thời gian hiện tại.",
+          confirmButtonColor: "#4f46e5",
+        });
+      } else {
+        Utils.showToast?.("Chưa có việc nào đã qua giờ", "warning");
+      }
+      return;
+    } else {
+      const remainingNote = pastTotal - pastDone;
+      confirmTitle = `Đánh dấu ${remainingNote} công việc đã qua giờ hôm nay là hoàn thành?`;
+    }
+
     const confirmIcon = restore ? "warning" : "question";
     const confirmBtnText = restore ? "Khôi phục" : "Đánh dấu";
     const confirmBtnColor = restore ? "#f59e0b" : "#10b981";
@@ -240,10 +313,13 @@
     if (!confirmed) return;
 
     try {
+      const body = { date: dateStr, completed };
+      // Cap upper bound at "now" so future events stay untouched on mark.
+      if (completed) body.before = new Date().toISOString();
       const result = await Utils.makeRequest(
         "/api/schedule/complete-day",
         "POST",
-        { date: dateStr, completed }
+        body
       );
       if (!result.success) throw new Error(result.message || "Lỗi server");
       const updated = result.data?.updated ?? result.updated ?? 0;
