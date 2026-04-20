@@ -15,6 +15,10 @@
 
     _isModalInitialized: false,
     _isSubmitting: false,
+    _lastTasks: [],
+    _lastTaskList: null,
+    _sortCtrl: null,
+    _sortState: { criterion: null, direction: "asc" },
 
     async initAIModal() {
       if (this._isModalInitialized) {
@@ -147,6 +151,7 @@
             complexity: task.MucDoPhucTap || task.complexity || 2,
             focusLevel: task.MucDoTapTrung || task.focusLevel || 2,
             suitableTime: timeMap[task.ThoiDiemThichHop] || "anytime",
+            category: task.TenLoai || task.LoaiCongViec?.TenLoai || null,
             color: getColorByPriority(priority),
           };
         });
@@ -190,6 +195,8 @@
         const tasks = await this.loadPendingTasks();
         console.log(` Loaded ${tasks.length} tasks`);
 
+        this.mountAISortControls(modal);
+
         const taskList = modal.querySelector("#aiTaskList");
         if (taskList) {
           this.renderTasksToModal(tasks, taskList);
@@ -216,6 +223,22 @@
       }
     },
 
+    mountAISortControls(modal) {
+      if (!modal || !window.SortControls) return;
+      const host = modal.querySelector("#aiSortControls");
+      if (!host || host.childElementCount > 0) return;
+      this._sortCtrl = window.SortControls.mount(host, {
+        storageKey: "sort.ai-modal",
+        onChange: (state) => {
+          this._sortState = state;
+          if (this._lastTaskList) {
+            this.renderTasksToModal(this._lastTasks, this._lastTaskList);
+          }
+        },
+      });
+      this._sortState = this._sortCtrl.getState();
+    },
+
     renderTasksToModal(tasks, taskList) {
       console.log("🔄 Rendering tasks to modal...", {
         tasksCount: tasks?.length,
@@ -227,14 +250,29 @@
         return;
       }
 
+      // Cache for re-render on sort change.
+      this._lastTasks = Array.isArray(tasks) ? tasks.slice() : [];
+      this._lastTaskList = taskList;
+
       if (!tasks || tasks.length === 0) {
         taskList.innerHTML = this.getEmptyStateHTML();
         this.updateTaskStats(0);
         return;
       }
 
+      // Apply sort (AI modal uses English-shape keys).
+      let rendered = tasks;
+      if (window.TaskSorter && this._sortState.criterion) {
+        rendered = window.TaskSorter.sortTasks(
+          tasks,
+          this._sortState.criterion,
+          this._sortState.direction,
+          "ai"
+        );
+      }
+
       let html = "";
-      tasks.forEach((task) => {
+      rendered.forEach((task) => {
         const priorityClass = `priority-${task.priority}`;
         const duration = task.estimatedMinutes || 60;
 
@@ -1164,6 +1202,8 @@
               <span>Chọn tất cả</span>
             </button>
           </div>
+
+          <div id="aiSortControls" class="mb-2"></div>
 
           <div class="task-list-container">
             <div class="task-list" id="aiTaskList">

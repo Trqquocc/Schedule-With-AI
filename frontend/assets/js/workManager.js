@@ -8,6 +8,9 @@
   window.WorkManager = {
     initialized: false,
     eventListeners: [],
+    _tasksCache: [],
+    _sortCtrl: null,
+    _sortState: { criterion: null, direction: "asc" },
 
     async init() {
       if (this.initialized) {
@@ -71,7 +74,9 @@
         }
 
         const tasks = result.data || [];
+        this._tasksCache = tasks;
         this.renderTasks(tasks);
+        this.mountSortControls();
       } catch (err) {
         console.error(" Error loading tasks:", err);
         this.showErrorState();
@@ -175,6 +180,21 @@
       }
     },
 
+    mountSortControls() {
+      const host = document.getElementById("work-sort-controls");
+      if (!host || !window.SortControls) return;
+      // Host re-created by componentLoader — remount if empty.
+      if (host.childElementCount > 0) return;
+      this._sortCtrl = window.SortControls.mount(host, {
+        storageKey: "sort.work",
+        onChange: (state) => {
+          this._sortState = state;
+          this.renderTasks(this._tasksCache);
+        },
+      });
+      this._sortState = this._sortCtrl.getState();
+    },
+
     renderTasks(tasks) {
       const container = document.getElementById("work-items-container");
       if (!container) {
@@ -227,10 +247,17 @@
         emptyState.classList.add("hidden");
       }
 
-      const pendingTasks = tasks.filter((task) => task.TrangThaiThucHien !== 2);
-      const completedTasks = tasks.filter(
+      let pendingTasks = tasks.filter((task) => task.TrangThaiThucHien !== 2);
+      let completedTasks = tasks.filter(
         (task) => task.TrangThaiThucHien === 2
       );
+
+      // Apply current sort (criterion null -> preserves input order)
+      if (window.TaskSorter && this._sortState && this._sortState.criterion) {
+        const { criterion, direction } = this._sortState;
+        pendingTasks = window.TaskSorter.sortTasks(pendingTasks, criterion, direction, "cv");
+        completedTasks = window.TaskSorter.sortTasks(completedTasks, criterion, direction, "cv");
+      }
 
       let html = `
     <!-- Công việc đang chờ -->

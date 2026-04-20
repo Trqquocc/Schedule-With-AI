@@ -19,6 +19,7 @@
     </button>
   </h3>
   <p class="text-xs text-gray-500 mt-1">Kéo thả vào lịch để lên kế hoạch</p>
+  <div id="sidebar-sort-controls" class="mt-2"></div>
 </div>
 
 <!-- Scrollable task list — only region that scrolls -->
@@ -30,58 +31,57 @@
 
 <script>
   (function () {
+    // Module-level cache so sort changes can re-render without refetching.
+    let _pendingCache = [];
+    let _sortCtrl = null;
+    let _sortState = { criterion: null, direction: "asc" };
 
-    window.loadUserTasks = async function (forceRefresh = false) {
+    function mountSortControls() {
+      const host = document.getElementById("sidebar-sort-controls");
+      if (!host || !window.SortControls) return;
+      if (host.childElementCount > 0) return;
+      _sortCtrl = window.SortControls.mount(host, {
+        storageKey: "sort.sidebar",
+        onChange: (state) => {
+          _sortState = state;
+          renderTasksList();
+        },
+      });
+      _sortState = _sortCtrl.getState();
+    }
+
+    function renderTasksList() {
       const container = document.getElementById("task-list");
-      if (!container) {
+      if (!container) return;
+
+      if (_pendingCache.length === 0) {
+        container.innerHTML = `
+      <div class="text-center text-gray-500 py-8">
+        <i class="fas fa-tasks text-4xl mb-3 text-gray-300"></i>
+        <p class="font-medium">Không có công việc nào</p>
+        <p class="text-sm mt-1">Chuyển sang tab "Công việc" để tạo mới</p>
+      </div>`;
         return;
       }
 
-      try {
-        container.innerHTML = `
-      <div class="text-center py-8">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-        <p class="mt-2 text-gray-500">Đang tải công việc...</p>
-      </div>
-    `;
+      let tasks = _pendingCache;
+      if (window.TaskSorter && _sortState.criterion) {
+        tasks = window.TaskSorter.sortTasks(
+          tasks,
+          _sortState.criterion,
+          _sortState.direction,
+          "cv"
+        );
+      }
 
-        const url = forceRefresh ? `/api/tasks?t=${Date.now()}` : "/api/tasks";
+      container.innerHTML = "";
 
-        const result = await Utils.makeRequest(url, "GET");
+      // Single source of truth: PriorityTheme reads from CSS vars (--prio-1..4).
+      const getPriorityColor = (priority) =>
+        window.PriorityTheme ? PriorityTheme.getColor(priority) : "#3B82F6";
 
-        if (!result.success) {
-          throw new Error(result.message || "Lỗi tải công việc");
-        }
-
-        const allTasks = result.data || [];
-
-        const pendingTasks = allTasks.filter((task) => {
-          const status =
-            task.TrangThaiThucHien || task.Status || task.DaHoanThanh || 0;
-          return status !== 2 && status !== "completed" && status !== "done";
-        });
-
-
-        container.innerHTML = "";
-
-        if (pendingTasks.length === 0) {
-          container.innerHTML = `
-        <div class="text-center text-gray-500 py-8">
-          <i class="fas fa-tasks text-4xl mb-3 text-gray-300"></i>
-          <p class="font-medium">Không có công việc nào</p>
-          <p class="text-sm mt-1">Chuyển sang tab "Công việc" để tạo mới</p>
-        </div>`;
-          return;
-        }
-
-        // Single source of truth: PriorityTheme reads from CSS vars (--prio-1..4).
-        const getPriorityColor = (priority) =>
-          window.PriorityTheme ? PriorityTheme.getColor(priority) : "#3B82F6";
-
-        // Render từng task (giữ nguyên phần render)
-        // Build task items via DocumentFragment — single DOM write, no per-item reflow.
-        const frag = document.createDocumentFragment();
-        pendingTasks.forEach((task, index) => {
+      const frag = document.createDocumentFragment();
+      tasks.forEach((task, index) => {
           const taskId = task.MaCongViec || task.ID || task.id;
           const title = task.TieuDe || task.Title || `Công việc ${index + 1}`;
           const description = task.MoTa || task.Description || "";
@@ -146,30 +146,56 @@
             </div>
           `;
 
-          frag.appendChild(taskElement);
+        frag.appendChild(taskElement);
+      });
+      container.appendChild(frag);
+
+      // FC.Draggable uses a single container-level instance with event delegation,
+      // so we just ensure it's initialized once after the list mounts.
+      if (window.CalendarModule?.setupExternalDraggable) {
+        window.CalendarModule.setupExternalDraggable();
+      }
+    }
+
+    window.loadUserTasks = async function (forceRefresh = false) {
+      const container = document.getElementById("task-list");
+      if (!container) return;
+
+      mountSortControls();
+
+      try {
+        container.innerHTML = `
+      <div class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+        <p class="mt-2 text-gray-500">Đang tải công việc...</p>
+      </div>
+    `;
+
+        const url = forceRefresh ? `/api/tasks?t=${Date.now()}` : "/api/tasks";
+        const result = await Utils.makeRequest(url, "GET");
+        if (!result.success) {
+          throw new Error(result.message || "Lỗi tải công việc");
+        }
+
+        const allTasks = result.data || [];
+        _pendingCache = allTasks.filter((task) => {
+          const status =
+            task.TrangThaiThucHien || task.Status || task.DaHoanThanh || 0;
+          return status !== 2 && status !== "completed" && status !== "done";
         });
-        container.appendChild(frag);
 
-        // FC.Draggable uses a single container-level instance with event delegation,
-        // so we just ensure it's initialized once after the list mounts.
-        if (window.CalendarModule?.setupExternalDraggable) {
-          window.CalendarModule.setupExternalDraggable();
-        }
+        renderTasksList();
       } catch (error) {
-
-        const container = document.getElementById("task-list");
-        if (container) {
-          container.innerHTML = `
-        <div class="text-center text-red-600 py-8">
-          <i class="fas fa-exclamation-circle text-2xl mb-3"></i>
-          <p class="font-medium">Lỗi tải công việc</p>
-          <p class="text-sm mt-1">${error.message || "Không thể kết nối"}</p>
-          <button onclick="window.loadUserTasks(true)"
-                  class="mt-3 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium">
-            <i class="fas fa-redo mr-2"></i>Thử lại
-          </button>
-        </div>`;
-        }
+        container.innerHTML = `
+      <div class="text-center text-red-600 py-8">
+        <i class="fas fa-exclamation-circle text-2xl mb-3"></i>
+        <p class="font-medium">Lỗi tải công việc</p>
+        <p class="text-sm mt-1">${error.message || "Không thể kết nối"}</p>
+        <button onclick="window.loadUserTasks(true)"
+                class="mt-3 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium">
+          <i class="fas fa-redo mr-2"></i>Thử lại
+        </button>
+      </div>`;
       }
     };
 
