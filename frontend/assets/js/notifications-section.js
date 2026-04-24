@@ -5,8 +5,6 @@
 
 (function () {
   "use strict";
-  if (window.__notifSectionBound) return;
-  window.__notifSectionBound = true;
 
   const TOGGLES = [
     { key: "thongBaoNhiemVu",   icon: "fa-tasks",        title: "Nhắc nhở nhiệm vụ hôm nay", hint: "Bot gửi danh sách công việc hàng ngày" },
@@ -20,13 +18,17 @@
   const $ = (id) => document.getElementById(id);
   let state = null;
   let saveTimer = null;
+  let wiredOnce = false;
 
-  boot();
+  // Expose init for componentLoader — called each time the section mounts.
+  window.NotificationsSection = { init: boot };
 
   async function boot() {
+    // Guard: only run when the notifications page DOM is actually present.
+    if (!$("tg-status-badge") || !$("notif-toggle-list")) return;
     buildToggleRows();
     buildDayOfMonthOptions();
-    wireButtons();
+    if (!wiredOnce) { wireButtons(); wiredOnce = true; }
     await refreshAll();
   }
 

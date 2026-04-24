@@ -280,6 +280,10 @@
         settings: () => {
           if (window.ProfileManager?.init) ProfileManager.init();
         },
+
+        notifications: () => {
+          if (window.NotificationsSection?.init) NotificationsSection.init();
+        },
       };
 
       const initFn = initMap[sectionName];

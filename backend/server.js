@@ -23,6 +23,7 @@ const aiReferenceRoutes = require("./routes/ai-reference");
 const adjustmentsRoutes = require("./routes/adjustments");
 const notificationRoutes = require("./routes/notification.routes");
 const notificationPrefsRoutes = require("./routes/notification-prefs");
+const chatAdvisorRoutes = require("./routes/chat-advisor");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -84,6 +85,7 @@ app.use("/api/ai-reference", authenticateToken, aiReferenceRoutes);
 app.use("/api/adjustments", authenticateToken, adjustmentsRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/notifications", authenticateToken, notificationPrefsRoutes);
+app.use("/api/chat-advisor", authenticateToken, chatAdvisorRoutes);
 
 // API cũ vẫn dùng (nếu có)
 app.get("/api/work/tasks", authenticateToken, (req, res) =>
