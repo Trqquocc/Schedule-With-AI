@@ -27,6 +27,23 @@ bot.getMe()
     console.error("Telegram bot.getMe failed:", err.message);
   });
 
+// Register slash-command menu so Telegram clients show a popup of
+// available commands when the user types "/". Runs once at startup.
+// List must be plain text (no HTML); descriptions max 256 chars.
+const COMMAND_MENU = [
+  { command: "start", description: "Khởi động / lấy mã kết nối" },
+  { command: "help", description: "Xem hướng dẫn và danh sách lệnh" },
+  { command: "status", description: "Kiểm tra trạng thái kết nối" },
+  { command: "schedule", description: "Xem lịch trình hôm nay" },
+  { command: "daily", description: "Tick hoàn thành công việc hôm nay" },
+  { command: "taocongviec", description: "Tạo công việc nhanh bằng AI" },
+  { command: "settings", description: "Cài đặt thông báo" },
+  { command: "disconnect", description: "Ngắt kết nối tài khoản" },
+];
+bot.setMyCommands(COMMAND_MENU)
+  .then(() => console.log(`Telegram command menu registered (${COMMAND_MENU.length} commands)`))
+  .catch((err) => console.error("setMyCommands failed:", err.message));
+
 // /start
 bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   const chatId = msg.chat.id;
@@ -42,15 +59,17 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   try {
     const { data } = await supabase
       .from("TelegramConnections")
-      .select("ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
+      .select("TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
-    if (data) {
-      const taskStatus = data.ThongBaoNhiemVu ? "✅" : "❌";
-      const aiStatus = data.ThongBaoGoiY ? "✅" : "❌";
+    // Row tồn tại nhưng TrangThaiKetNoi=false (user đã /disconnect) → xem như chưa kết nối.
+    if (data && data.TrangThaiKetNoi) {
       await bot.sendMessage(chatId,
-        `✅ <b>Kết nối Telegram thành công!</b>\n\nTài khoản của bạn đã được kết nối.\n\nBạn đang nhận:\n${taskStatus} Lịch trình hàng ngày (8:00 AM)\n${taskStatus} Nhắc nhở nhiệm vụ (2:00 PM)\n${aiStatus} Tổng kết cuối ngày (6:00 PM)\n\nGõ /help để xem các lệnh khác.`,
+        `✅ <b>Tài khoản đã kết nối</b>\n\n` +
+        `Gõ /status để xem cài đặt hiện tại, /settings để bật/tắt thông báo, ` +
+        `hoặc /schedule để xem lịch hôm nay.\n\n` +
+        `Gõ /help để xem toàn bộ lệnh.`,
         { parse_mode: "HTML" }
       );
     } else {
@@ -74,7 +93,7 @@ bot.onText(/\/help/, async (msg) => {
     `/status - Kiểm tra kết nối\n` +
     `/schedule - Lịch trình hôm nay\n` +
     `/daily - Tick hoàn thành công việc hôm nay\n` +
-    `/taocongviec &lt;mô tả&gt; - Tạo công việc nhanh (AI)\n` +
+    `/taocongviec &lt;mô tả&gt; [-note: ghi chú] - Tạo công việc nhanh (AI)\n` +
     `/settings - Cài đặt thông báo\n` +
     `/disconnect - Ngắt kết nối\n\n` +
     `💡 Bạn có thể tùy chỉnh thông báo trên web hoặc dùng /settings`,
@@ -92,7 +111,7 @@ bot.onText(/\/status/, async (msg) => {
       .eq("TelegramChatId", chatId.toString())
       .single();
 
-    if (data) {
+    if (data && data.TrangThaiKetNoi) {
       const taskStatus = data.ThongBaoNhiemVu ? "✅" : "❌";
       const eventStatus = data.ThongBaoSuKien ? "✅" : "❌";
       const aiStatus = data.ThongBaoGoiY ? "✅" : "❌";
@@ -101,7 +120,7 @@ bot.onText(/\/status/, async (msg) => {
         { parse_mode: "HTML" }
       );
     } else {
-      await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nGõ /start để kết nối.");
+      await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nVào website để tạo mã kết nối, rồi gõ /start <code>mã</code>.");
     }
   } catch (error) {
     console.error("❌ Error checking status:", error);
@@ -115,12 +134,12 @@ bot.onText(/\/settings/, async (msg) => {
   try {
     const { data } = await supabase
       .from("TelegramConnections")
-      .select("UserID, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
+      .select("UserID, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
-    if (!data) {
-      await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nGõ /start để kết nối.");
+    if (!data || !data.TrangThaiKetNoi) {
+      await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nVào website để lấy mã kết nối mới.");
       return;
     }
 
@@ -150,12 +169,12 @@ bot.on("callback_query", async (query) => {
   try {
     const { data: conn } = await supabase
       .from("TelegramConnections")
-      .select("UserID, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
+      .select("UserID, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
-    if (!conn) {
-      await bot.answerCallbackQuery(query.id, { text: "❌ Không tìm thấy kết nối" });
+    if (!conn || !conn.TrangThaiKetNoi) {
+      await bot.answerCallbackQuery(query.id, { text: "❌ Kết nối đã bị ngắt" });
       return;
     }
 
@@ -193,7 +212,7 @@ bot.onText(/\/disconnect/, async (msg) => {
   try {
     const { data } = await supabase
       .from("TelegramConnections")
-      .select("UserID")
+      .select("UserID, TrangThaiKetNoi")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
@@ -202,8 +221,13 @@ bot.onText(/\/disconnect/, async (msg) => {
       return;
     }
 
+    if (!data.TrangThaiKetNoi) {
+      await bot.sendMessage(chatId, "ℹ️ Bạn đã ngắt kết nối từ trước.\n\nVào website để lấy mã kết nối lại.");
+      return;
+    }
+
     await supabase.from("TelegramConnections").update({ TrangThaiKetNoi: false }).eq("UserID", data.UserID);
-    await bot.sendMessage(chatId, "✅ Đã ngắt kết nối.\n\nGõ /start nếu muốn kết nối lại.");
+    await bot.sendMessage(chatId, "✅ Đã ngắt kết nối.\n\nVào website để kết nối lại khi cần.");
   } catch (error) {
     console.error("❌ Error disconnecting:", error);
     await bot.sendMessage(chatId, "❌ Lỗi ngắt kết nối.");
@@ -216,12 +240,12 @@ bot.onText(/\/schedule/, async (msg) => {
   try {
     const { data: conn } = await supabase
       .from("TelegramConnections")
-      .select("UserID")
+      .select("UserID, TrangThaiKetNoi")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
-    if (!conn) {
-      await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nGõ /start.");
+    if (!conn || !conn.TrangThaiKetNoi) {
+      await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nVào website để lấy mã kết nối mới.");
       return;
     }
 
@@ -312,24 +336,78 @@ async function sendTodaySchedule(userId, chatId) {
 
     const { data: records } = await supabase
       .from("LichTrinh")
-      .select("GioBatDau, GioKetThuc, CongViec(TieuDe, MoTa)")
+      .select(
+        "MaLichTrinh, TieuDe, GhiChu, GioBatDau, GioKetThuc, DaHoanThanh, " +
+        "CongViec(TieuDe, MoTa, Tag, MucDoUuTien)"
+      )
       .eq("UserID", userId)
       .gte("GioBatDau", todayStart.toISOString())
       .lte("GioBatDau", todayEnd.toISOString())
       .order("GioBatDau", { ascending: true });
 
+    const todayLabel = todayStart.toLocaleDateString("vi-VN", {
+      weekday: "long", day: "2-digit", month: "2-digit", year: "numeric",
+    });
+
     if (!records || records.length === 0) {
-      await bot.sendMessage(chatId, "📅 <b>Lịch trình hôm nay</b>\n\nBạn không có công việc nào hôm nay.", { parse_mode: "HTML" });
+      await bot.sendMessage(chatId,
+        `📅 <b>Lịch trình ${todayLabel}</b>\n\n` +
+        `Hôm nay bạn không có công việc nào được đặt lịch.\n` +
+        `Chúc bạn một ngày nhẹ nhõm! ☕`,
+        { parse_mode: "HTML" });
       return { success: true };
     }
 
-    let message = `📅 <b>Lịch trình ngày hôm nay</b>\n\n`;
+    const fmtTime = (iso) => new Date(iso).toLocaleTimeString("vi-VN", {
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const prioIcon = (p) => (p >= 3 ? "🔴" : p === 2 ? "🟡" : p === 1 ? "🟢" : "⚪");
+    const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    // Title rule: ưu tiên tên từ CongViec (tên công việc đầy đủ), chỉ fallback
+    // LichTrinh.TieuDe khi sự kiện không gắn công việc (thường là mã/tên tắt).
+    const pickTitle = (r) => {
+      const fromTask = r.CongViec?.TieuDe?.trim();
+      if (fromTask) return fromTask;
+      const own = r.TieuDe?.trim();
+      return own || "(Chưa đặt tên)";
+    };
+    // Description rule: ghép MoTa (từ CongViec) với GhiChu (ghi chú riêng của lượt lịch).
+    const pickDesc = (r) => {
+      const parts = [];
+      if (r.CongViec?.MoTa?.trim()) parts.push(r.CongViec.MoTa.trim());
+      if (r.GhiChu?.trim()) parts.push(`💬 ${r.GhiChu.trim()}`);
+      return parts.join("\n   ");
+    };
+
+    const doneCount = records.filter((r) => r.DaHoanThanh).length;
+    const total = records.length;
+
+    let message = `📅 <b>Lịch trình ${todayLabel}</b>\n`;
+    message += `<i>${total} công việc • đã xong ${doneCount}/${total}</i>\n\n`;
+
+    // Tag: dạng "#a, #b" — tách theo dấu phẩy, bỏ khoảng trắng, chuẩn hoá có/không "#".
+    const fmtTags = (raw) => {
+      if (!raw || !String(raw).trim()) return "";
+      return String(raw)
+        .split(/[,;]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => (s.startsWith("#") ? s : `#${s}`))
+        .join(" ");
+    };
+
     records.forEach((task, index) => {
-      const startTime = new Date(task.GioBatDau).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-      const endTime = task.GioKetThuc ? new Date(task.GioKetThuc).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "";
-      message += `${index + 1}. <b>${task.CongViec?.TieuDe || "Không có tiêu đề"}</b>\n`;
-      message += `   ⏰ ${startTime}${endTime ? ` → ${endTime}` : ""}\n`;
-      if (task.CongViec?.MoTa) message += `   📝 ${task.CongViec.MoTa}\n`;
+      const start = fmtTime(task.GioBatDau);
+      const end = task.GioKetThuc ? fmtTime(task.GioKetThuc) : "";
+      const title = esc(pickTitle(task));
+      const desc = pickDesc(task);
+      const tags = fmtTags(task.CongViec?.Tag);
+      const status = task.DaHoanThanh ? "✅" : "⬜";
+      const prio = prioIcon(task.CongViec?.MucDoUuTien);
+      message += `${status} <b>${index + 1}. ${title}</b> ${prio}\n`;
+      message += `   ⏰ ${start}${end ? ` → ${end}` : ""}\n`;
+      if (desc) message += `   📝 ${esc(desc)}\n`;
+      if (tags) message += `   🏷️ <i>${esc(tags)}</i>\n`;
       message += "\n";
     });
     message += "Chúc bạn một ngày làm việc hiệu quả! 💪";
@@ -376,17 +454,20 @@ async function autoConnectUser(code, chatId, username, firstName) {
       NgayCapNhat: new Date().toISOString(),
     }, { onConflict: "UserID" });
 
-    const { data: settings } = await supabase
-      .from("TelegramConnections")
-      .select("ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
-      .eq("UserID", userId)
-      .single();
-
-    const taskStatus = settings?.ThongBaoNhiemVu ? "✅" : "❌";
-    const aiStatus = settings?.ThongBaoGoiY ? "✅" : "❌";
-
     await bot.sendMessage(chatId,
-      `🎉 <b>Chào mừng ${firstName}!</b>\n\nBạn đã kết nối với bot lịch trình.\n\nBạn sẽ nhận:\n${taskStatus} Lịch trình hàng ngày (8:00 AM)\n${taskStatus} Nhắc nhở nhiệm vụ (2:00 PM)\n${aiStatus} Tổng kết cuối ngày (6:00 PM)\n\nGõ /help để xem các lệnh khác.`,
+      `🎉 <b>Chào mừng ${firstName}!</b>\n\n` +
+      `Bạn đã kết nối thành công với <b>Thông Báo Lịch Trình</b>.\n\n` +
+      `<b>Bot có thể gửi cho bạn:</b>\n` +
+      `• 📅 Lịch trình đầu ngày — tóm tắt công việc hôm nay\n` +
+      `• 🔔 Nhắc 15 phút trước mỗi công việc\n` +
+      `• ✅ Nhắc tick công việc giữa ngày (dùng /daily)\n` +
+      `• 📊 Thống kê cuối tuần (Chủ nhật 20:00)\n` +
+      `• 🌱 Gợi ý cân bằng cuối tuần (AI)\n` +
+      `• 💰 Thông báo lương hàng tháng\n\n` +
+      `<b>Bật/tắt & chỉnh giờ:</b>\n` +
+      `• Gõ /settings trong chat này\n` +
+      `• Hoặc vào mục "Thông báo" trên website để chỉnh chi tiết\n\n` +
+      `Gõ /help để xem toàn bộ lệnh.`,
       { parse_mode: "HTML" }
     );
 
