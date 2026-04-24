@@ -629,7 +629,7 @@
     async _handleEventReceive(info) {
       try {
         const draggedEl = info.draggedEl;
-        let taskId, title, color, priority, duration, hasFixedTime, fixedStart, fixedEnd;
+        let taskId, title, color, priority, duration, hasFixedTime, fixedStart, fixedEnd, note;
 
         if (draggedEl) {
           taskId = draggedEl.dataset.taskId;
@@ -640,6 +640,8 @@
           hasFixedTime = draggedEl.dataset.hasFixedTime === "true";
           fixedStart = draggedEl.dataset.fixedStart || "";
           fixedEnd = draggedEl.dataset.fixedEnd || "";
+          // Task description (MoTa) — e.g. "Mã môn: CS 420 SO" for image-imported tasks.
+          note = draggedEl.dataset.taskDescription || "";
         } else {
           taskId = info.jsEvent?.dataTransfer?.getData("text/plain");
           const jsonData = info.jsEvent?.dataTransfer?.getData("application/json");
@@ -652,8 +654,10 @@
             hasFixedTime = data.hasFixedTime || false;
             fixedStart = data.fixedStart || "";
             fixedEnd = data.fixedEnd || "";
+            note = data.description || data.note || "";
           } else {
             duration = 60;
+            note = "";
           }
         }
 
@@ -676,7 +680,7 @@
             info.event.setStart(fStart);
             info.event.setEnd(fEnd);
 
-            await this.saveDroppedEvent(taskId, title, color, fStart, fEnd, priority, duration);
+            await this.saveDroppedEvent(taskId, title, color, fStart, fEnd, priority, duration, note);
             return;
           }
         }
@@ -704,7 +708,7 @@
           return;
         }
 
-        await this.saveDroppedEvent(taskId, title, color, start, end, priority, duration);
+        await this.saveDroppedEvent(taskId, title, color, start, end, priority, duration, note);
       } catch (err) {
         console.error(" Event receive error:", err);
         info.event.remove();
@@ -928,6 +932,7 @@
         const color = taskData.color || "#3B82F6";
         const durationMinutes = taskData.duration || 60;
         const priority = taskData.priority || 2;
+        const note = taskData.description || taskData.note || "";
 
         const calendar = this.calendar;
 
@@ -1009,7 +1014,8 @@
           startDate,
           endDate,
           priority,
-          durationMinutes
+          durationMinutes,
+          note
         );
       } catch (error) {
         console.error("Drop error:", error);
@@ -1026,7 +1032,8 @@
       start,
       end,
       priority = 2,
-      duration = 60
+      duration = 60,
+      note = ""
     ) {
       try {
         // Color is derived from priority at render time — no need to persist MauSac.
@@ -1037,6 +1044,7 @@
           GioKetThuc: end.toISOString(),
           MucDoUuTien: priority,
           AI_DeXuat: 0,
+          GhiChu: note || "",
         };
 
         const res = await Utils.makeRequest(
@@ -1071,6 +1079,7 @@
             tempEvent.setExtendedProp("isFromDrag", true);
             tempEvent.setExtendedProp("priority", priority);
             tempEvent.setExtendedProp("completed", false);
+            tempEvent.setExtendedProp("note", note || "");
 
             tempEvent.setProp("editable", true);
             tempEvent.setProp("durationEditable", true);

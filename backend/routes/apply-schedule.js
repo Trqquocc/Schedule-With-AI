@@ -31,8 +31,14 @@ function buildNote(item) {
 }
 
 function buildInsertRow(item, source, rank, batchId, userId) {
+  // Caller may attach task_id to link this session to a parent CongViec
+  // (e.g. when grouping multiple sessions of one course into one task).
+  const linkedTaskId =
+    item.task_id != null && !Number.isNaN(parseInt(item.task_id, 10))
+      ? parseInt(item.task_id, 10)
+      : null;
   return {
-    task_id: null,
+    task_id: linkedTaskId,
     user_id: userId,
     start_at: item.startAt,
     end_at: item.endAt,

@@ -33,9 +33,15 @@ let _instancesTableMissingWarned = false;
 
 function isInstancesTableMissing(error) {
   if (!error) return false;
+  // PGRST205 = schema cache miss, 42P01 = relation does not exist.
+  // Do NOT match on message text alone — RLS errors (42501) also mention
+  // "task_instances" and would be misreported as "migration pending".
+  if (error.code === "PGRST205" || error.code === "42P01") return true;
+  const msg = String(error.message || "").toLowerCase();
   return (
-    error.code === "PGRST205" ||
-    (error.message && error.message.includes("task_instances"))
+    msg.includes("does not exist") ||
+    msg.includes("could not find the table") ||
+    msg.includes("schema cache")
   );
 }
 

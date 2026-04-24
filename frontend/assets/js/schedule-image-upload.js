@@ -21,7 +21,8 @@
     file: null,
     base64: null,
     mimeType: null,
-    items: [],
+    items: [],    // flat list from API (kept for Apply-flat path + legacy)
+    groups: [],   // grouped by course: [{ title, courseCode, sessions: [...] }]
     warnings: [],
     wiredDom: false,
   };
@@ -61,6 +62,7 @@
     state.base64 = null;
     state.mimeType = null;
     state.items = [];
+    state.groups = [];
     state.warnings = [];
     $("scheduleImportThumbWrap")?.classList.add("hidden");
     $("scheduleImportPreview")?.classList.add("hidden");
@@ -76,12 +78,17 @@
     dz.addEventListener("click", () => fi.click());
     dz.addEventListener("dragover", (e) => {
       e.preventDefault();
-      dz.style.background = "#eff6ff";
+      dz.style.background = "var(--accent-light)";
+      dz.style.borderColor = "var(--accent)";
     });
-    dz.addEventListener("dragleave", () => (dz.style.background = "#f8fafc"));
+    const resetDzTone = () => {
+      dz.style.background = "var(--bg-card-alt)";
+      dz.style.borderColor = "var(--border-hover)";
+    };
+    dz.addEventListener("dragleave", resetDzTone);
     dz.addEventListener("drop", (e) => {
       e.preventDefault();
-      dz.style.background = "#f8fafc";
+      resetDzTone();
       const f = e.dataTransfer?.files?.[0];
       if (f) handleFilePicked(f);
     });
@@ -209,40 +216,141 @@
     }
     state.items = res.data.items || [];
     state.warnings = res.data.warnings || [];
+    state.groups = buildGroups(state.items);
     hideStatus();
     renderItems();
   }
 
-  // ---- Items rendering + edit -----------------------------------------
+  // ---- Grouping: 1 course = 1 task, many sessions ---------------------
+  // Key = courseCode (preferred) or normalized title. Sessions inherit
+  // per-day campus/location/note from the flat parse response.
+  function groupKey(it) {
+    return (it.courseCode || "").trim() || (it.title || "").trim().toLowerCase();
+  }
+  function buildGroups(items) {
+    const byKey = new Map();
+    for (const it of items) {
+      const k = groupKey(it);
+      if (!byKey.has(k)) {
+        byKey.set(k, {
+          title: it.title || it.courseCode || "(Không rõ tên)",
+          courseCode: it.courseCode || null,
+          sessions: [],
+        });
+      }
+      byKey.get(k).sessions.push({
+        startAt: it.startAt,
+        endAt: it.endAt,
+        campus: it.campus || null,
+        location: it.location || null,
+        note: it.note || null,
+      });
+    }
+    return [...byKey.values()];
+  }
+
+  // Rebuild flat items[] from groups (used by Apply path which passes items).
+  function flattenGroups(groups) {
+    const out = [];
+    for (const g of groups) {
+      for (const s of g.sessions) {
+        out.push({
+          title: g.title,
+          courseCode: g.courseCode,
+          startAt: s.startAt,
+          endAt: s.endAt,
+          campus: s.campus,
+          location: s.location,
+          note: s.note,
+        });
+      }
+    }
+    return out;
+  }
+
+  // ---- Preview rendering (grouped) ------------------------------------
   function renderItems() {
     const tbody = $("scheduleImportTbody");
     tbody.innerHTML = "";
-    state.items.forEach((it, i) => {
-      const tr = document.createElement("tr");
-      tr.className = "border-t border-slate-100";
-      tr.innerHTML = `
-        <td class="px-2 py-1"><input data-f="title" class="w-full px-1 py-1 text-xs border border-slate-200 rounded" value="${escapeAttr(it.title || "")}"></td>
-        <td class="px-2 py-1"><input data-f="startAt" type="datetime-local" class="w-full px-1 py-1 text-xs border border-slate-200 rounded" value="${toLocal(it.startAt)}"></td>
-        <td class="px-2 py-1"><input data-f="endAt" type="datetime-local" class="w-full px-1 py-1 text-xs border border-slate-200 rounded" value="${toLocal(it.endAt)}"></td>
-        <td class="px-2 py-1"><input data-f="note" class="w-full px-1 py-1 text-xs border border-slate-200 rounded" value="${escapeAttr(buildDisplayNote(it))}"></td>
-        <td class="px-2 py-1 text-right"><button data-del="${i}" class="text-rose-600 text-xs">✕</button></td>
-      `;
-      tr.querySelectorAll("input").forEach((inp) =>
-        inp.addEventListener("input", (e) => {
-          const f = e.target.getAttribute("data-f");
-          state.items[i][f] =
-            f === "startAt" || f === "endAt" ? fromLocal(e.target.value) : e.target.value;
-        })
-      );
-      tr.querySelector("[data-del]").addEventListener("click", () => {
-        state.items.splice(i, 1);
+
+    state.groups.forEach((g, gi) => {
+      // Course header row — editable task title
+      const headTr = document.createElement("tr");
+      headTr.style.background = "var(--bg-card-alt)";
+      headTr.innerHTML = `
+        <td colspan="5" style="padding:8px 10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-book" style="color:var(--accent); font-size:12px;"></i>
+            <input data-gi="${gi}" data-f="title"
+                   style="flex:1; font-weight:600; font-size:13px; color:var(--text-primary);
+                          background:transparent; border:1px solid transparent; padding:4px 6px; border-radius:6px;"
+                   value="${escapeAttr(g.title)}">
+            <span style="font-size:12px; color:var(--text-muted);">${g.sessions.length} buổi</span>
+            <button data-del-group="${gi}" title="Xoá cả môn"
+                    style="color:var(--danger); font-size:12px; background:transparent; border:0; cursor:pointer;">
+              ✕ Xoá môn
+            </button>
+          </div>
+        </td>`;
+      tbody.appendChild(headTr);
+
+      // Session rows under this course
+      g.sessions.forEach((s, si) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="padding:4px 10px; color:var(--text-muted); font-size:12px;">Buổi ${si + 1}</td>
+          <td style="padding:4px 6px;">
+            <input data-gi="${gi}" data-si="${si}" data-f="startAt" type="datetime-local"
+                   value="${toLocal(s.startAt)}">
+          </td>
+          <td style="padding:4px 6px;">
+            <input data-gi="${gi}" data-si="${si}" data-f="endAt" type="datetime-local"
+                   value="${toLocal(s.endAt)}">
+          </td>
+          <td style="padding:4px 6px;">
+            <input data-gi="${gi}" data-si="${si}" data-f="note"
+                   value="${escapeAttr(buildDisplayNote(s))}">
+          </td>
+          <td style="padding:4px 10px; text-align:right;">
+            <button data-del-session="${gi}:${si}"
+                    style="color:var(--danger); font-size:12px; background:transparent; border:0; cursor:pointer;">✕</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    });
+
+    // Wire edits
+    tbody.querySelectorAll("input").forEach((inp) => {
+      inp.addEventListener("input", (e) => {
+        const gi = Number(e.target.getAttribute("data-gi"));
+        const si = e.target.getAttribute("data-si");
+        const f = e.target.getAttribute("data-f");
+        const v =
+          f === "startAt" || f === "endAt" ? fromLocal(e.target.value) : e.target.value;
+        if (si == null) state.groups[gi][f] = v;
+        else state.groups[gi].sessions[Number(si)][f] = v;
+      });
+    });
+    tbody.querySelectorAll("[data-del-group]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const gi = Number(btn.getAttribute("data-del-group"));
+        state.groups.splice(gi, 1);
         renderItems();
       });
-      tbody.appendChild(tr);
     });
-    $("scheduleImportCount").textContent = state.items.length;
+    tbody.querySelectorAll("[data-del-session]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const [gi, si] = btn.getAttribute("data-del-session").split(":").map(Number);
+        state.groups[gi].sessions.splice(si, 1);
+        if (state.groups[gi].sessions.length === 0) state.groups.splice(gi, 1);
+        renderItems();
+      });
+    });
+
+    const totalSessions = state.groups.reduce((n, g) => n + g.sessions.length, 0);
+    $("scheduleImportCount").textContent = `${state.groups.length} môn / ${totalSessions} buổi`;
     $("scheduleImportPreview").classList.remove("hidden");
-    $("scheduleImportFooter").classList.toggle("hidden", state.items.length === 0);
+    $("scheduleImportFooter").classList.toggle("hidden", totalSessions === 0);
 
     const wrap = $("scheduleImportWarnings");
     if (state.warnings.length) {
@@ -254,49 +362,127 @@
   function addBlankRow() {
     const now = new Date();
     const end = new Date(now.getTime() + 60 * 60 * 1000);
-    state.items.push({
+    state.groups.push({
       title: "",
-      startAt: now.toISOString(),
-      endAt: end.toISOString(),
-      note: "",
+      courseCode: null,
+      sessions: [
+        { startAt: now.toISOString(), endAt: end.toISOString(), note: "" },
+      ],
     });
   }
 
-  // ---- Save (additive) ------------------------------------------------
+  // Duration (minutes) of the first session — used as ThoiGianUocTinh on the
+  // task template so the task card shows the real length, not the 60-min default.
+  function estimateGroupMinutes(g) {
+    const s = g.sessions?.[0];
+    if (!s?.startAt || !s?.endAt) return 60;
+    const mins = Math.round((new Date(s.endAt) - new Date(s.startAt)) / 60000);
+    return mins > 0 ? mins : 60;
+  }
+
+  // ---- Save (additive, grouped) ---------------------------------------
+  // For each course group: POST /api/tasks once → get taskId →
+  // POST /api/task-instances per session with task_id = taskId.
   async function save() {
-    if (!state.items.length) return;
+    const totalSessions = state.groups.reduce((n, g) => n + g.sessions.length, 0);
+    if (!totalSessions) return;
     setButtonsDisabled(true);
     showStatus("loading", "Đang lưu…");
-    let ok = 0;
+
+    let taskOk = 0;
+    let instOk = 0;
     let fail = 0;
-    for (const it of state.items) {
-      const r = await window.Utils.makeRequest("/api/task-instances", "POST", {
-        start_at: it.startAt,
-        end_at: it.endAt,
-        title: it.title,
-        note: buildDisplayNote(it),
+
+    for (const g of state.groups) {
+      const taskRes = await window.Utils.makeRequest("/api/tasks", "POST", {
+        TieuDe: (g.title || "(Không rõ tên)").trim(),
+        MoTa: g.courseCode ? `Mã môn: ${g.courseCode}` : "",
+        MucDoUuTien: 2,
+        CoThoiGianCoDinh: false,
+        ThoiGianUocTinh: estimateGroupMinutes(g),
       });
-      if (r && r.success) ok++;
-      else fail++;
+      const taskId = taskRes?.data?.MaCongViec ?? taskRes?.data?.ID;
+      if (!taskRes?.success || !taskId) {
+        fail += g.sessions.length;
+        continue;
+      }
+      taskOk++;
+
+      for (const s of g.sessions) {
+        const r = await window.Utils.makeRequest(
+          "/api/task-instances",
+          "POST",
+          {
+            task_id: taskId,
+            start_at: s.startAt,
+            end_at: s.endAt,
+            note: buildDisplayNote({ ...s, courseCode: g.courseCode }),
+          }
+        );
+        if (r && r.success) instOk++;
+        else fail++;
+      }
     }
+
     setButtonsDisabled(false);
     showStatus(
       fail ? "error" : "success",
-      `Đã lưu ${ok}/${state.items.length} công việc${fail ? ` (${fail} thất bại)` : ""}`
+      `Đã lưu ${taskOk} môn (${instOk}/${totalSessions} buổi)${fail ? ` — ${fail} lỗi` : ""}`
     );
     document.dispatchEvent(new CustomEvent("taskCreated"));
     if (!fail) setTimeout(close, 1200);
   }
 
-  // ---- Apply (priority override) --------------------------------------
+  // ---- Apply (priority override, grouped) -----------------------------
+  // Create the parent CongViec first, then pass task_id on each item so
+  // the server-side priority-override insert links them to one task.
   async function applyWithPreview() {
-    if (!state.items.length) return;
+    const totalSessions = state.groups.reduce((n, g) => n + g.sessions.length, 0);
+    if (!totalSessions) return;
+
     const source = state.type === "study" ? "ocr_study" : "ocr_work";
     setButtonsDisabled(true);
-    showStatus("loading", "Đang kiểm tra trùng giờ…");
+    showStatus("loading", "Đang tạo công việc & kiểm tra trùng giờ…");
+
+    // 1. Create one CongViec per group, gather task_ids.
+    const withTaskIds = [];
+    const createdTaskIds = [];
+    for (const g of state.groups) {
+      const taskRes = await window.Utils.makeRequest("/api/tasks", "POST", {
+        TieuDe: (g.title || "(Không rõ tên)").trim(),
+        MoTa: g.courseCode ? `Mã môn: ${g.courseCode}` : "",
+        MucDoUuTien: 2,
+        CoThoiGianCoDinh: false,
+        ThoiGianUocTinh: estimateGroupMinutes(g),
+      });
+      const taskId = taskRes?.data?.MaCongViec ?? taskRes?.data?.ID;
+      if (!taskRes?.success || !taskId) {
+        setButtonsDisabled(false);
+        showStatus(
+          "error",
+          `Tạo công việc "${g.title}" thất bại. Không thể áp dụng.`
+        );
+        return;
+      }
+      createdTaskIds.push(taskId);
+      for (const s of g.sessions) {
+        withTaskIds.push({
+          task_id: taskId,
+          title: g.title,
+          courseCode: g.courseCode,
+          startAt: s.startAt,
+          endAt: s.endAt,
+          campus: s.campus,
+          location: s.location,
+          note: s.note,
+        });
+      }
+    }
+
+    // 2. Dry-run priority-override preview.
     const dry = await window.Utils.makeRequest("/api/schedule/apply", "POST", {
       source,
-      items: state.items,
+      items: withTaskIds,
       dryRun: true,
     });
     setButtonsDisabled(false);
@@ -306,17 +492,22 @@
     }
     const d = dry.data;
     const ok = confirm(
-      `Áp dụng sẽ:\n• Thêm ${d.inserted} công việc mới\n• Xoá ${d.deleted} công việc cũ trùng giờ (ưu tiên thấp hơn)\n• Bỏ qua ${d.skipped} công việc bị chặn bởi lịch ưu tiên cao hơn\n\nTiếp tục?`
+      `Áp dụng ${state.groups.length} môn / ${totalSessions} buổi sẽ:\n` +
+        `• Thêm ${d.inserted} buổi mới\n` +
+        `• Xoá ${d.deleted} buổi cũ trùng giờ (ưu tiên thấp hơn)\n` +
+        `• Bỏ qua ${d.skipped} buổi bị chặn bởi lịch ưu tiên cao hơn\n\nTiếp tục?`
     );
     if (!ok) {
       hideStatus();
       return;
     }
+
+    // 3. Real insert.
     setButtonsDisabled(true);
     showStatus("loading", "Đang áp dụng…");
     const r = await window.Utils.makeRequest("/api/schedule/apply", "POST", {
       source,
-      items: state.items,
+      items: withTaskIds,
       dryRun: false,
     });
     setButtonsDisabled(false);
@@ -326,7 +517,7 @@
     }
     showStatus(
       "success",
-      `Đã áp dụng: +${r.data.inserted} / -${r.data.deleted} / bỏ qua ${r.data.skipped}`
+      `Đã áp dụng: +${r.data.inserted} buổi / -${r.data.deleted} / bỏ qua ${r.data.skipped}`
     );
     document.dispatchEvent(new CustomEvent("taskCreated"));
     setTimeout(close, 1500);
@@ -361,12 +552,17 @@
   function showStatus(kind, msg) {
     const el = $("scheduleImportStatus");
     if (!el) return;
-    const styles = {
-      loading: "background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe",
-      success: "background:#f0fdf4;color:#166534;border:1px solid #bbf7d0",
-      error: "background:#fef2f2;color:#991b1b;border:1px solid #fecaca",
+    const base =
+      "margin-top:12px;padding:10px 12px;border-radius:8px;font-size:14px;line-height:1.4;";
+    const tones = {
+      loading:
+        "background:var(--accent-light);color:var(--accent);border:1px solid rgba(0,113,227,0.25);",
+      success:
+        "background:rgba(48,209,88,0.12);color:#0a7d32;border:1px solid rgba(48,209,88,0.25);",
+      error:
+        "background:rgba(255,59,48,0.1);color:#b00020;border:1px solid rgba(255,59,48,0.25);",
     };
-    el.style.cssText = styles[kind] || styles.loading;
+    el.style.cssText = base + (tones[kind] || tones.loading);
     el.textContent = msg;
     el.classList.remove("hidden");
   }

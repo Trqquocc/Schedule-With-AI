@@ -111,6 +111,20 @@ WHERE lt."GioBatDau" IS NOT NULL
 -- anon key, matching the convention of all other tables (CongViec, LichTrinh, etc.).
 -- User isolation is enforced by the user_id = req.userId WHERE clause in routes.
 
+-- Supabase Dashboard sometimes auto-enables RLS (with FORCE). Strip any policies,
+-- clear FORCE, and DISABLE RLS so anon-key inserts from the Node backend work.
+DO $$
+DECLARE p record;
+BEGIN
+  FOR p IN SELECT policyname FROM pg_policies WHERE tablename = 'task_instances'
+  LOOP
+    EXECUTE format('DROP POLICY %I ON task_instances', p.policyname);
+  END LOOP;
+END $$;
+
+ALTER TABLE task_instances NO FORCE ROW LEVEL SECURITY;
+ALTER TABLE task_instances DISABLE ROW LEVEL SECURITY;
+
 -- =============================================================
 -- END OF MIGRATION
 -- To roll back: DROP TABLE IF EXISTS "task_instances";

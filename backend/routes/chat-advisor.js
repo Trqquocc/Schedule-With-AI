@@ -24,7 +24,8 @@ if (apiKey) {
     model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_PROMPT,
-      generationConfig: { temperature: 0.7, topP: 0.9, maxOutputTokens: 1024 },
+      // 4096 is enough for long advisory replies; avoids mid-sentence cutoff.
+      generationConfig: { temperature: 0.7, topP: 0.9, maxOutputTokens: 4096 },
     });
     console.log(
       "[chat-advisor] Gemini ready (" +
@@ -176,16 +177,52 @@ router.post("/stream", async (req, res) => {
     const result = await chat.sendMessageStream(userMsg + contextBlock);
 
     let full = "";
-    for await (const chunk of result.stream) {
-      const text = chunk.text?.() || "";
-      if (text) {
-        full += text;
-        send({ chunk: text });
+    let streamErr = null;
+    try {
+      for await (const chunk of result.stream) {
+        const text = chunk.text?.() || "";
+        if (text) {
+          full += text;
+          send({ chunk: text });
+        }
       }
+    } catch (e) {
+      streamErr = e;
     }
 
-    const saved = await insertMessage(userId, "assistant", full || "(không có phản hồi)");
-    send({ done: true, messageId: saved.Id });
+    // Surface finishReason when Gemini stops early (MAX_TOKENS, SAFETY, etc.)
+    let finishReason = null;
+    try {
+      const agg = await result.response;
+      finishReason = agg?.candidates?.[0]?.finishReason || null;
+    } catch {
+      /* ignore — already have full from chunks */
+    }
+
+    // Always persist whatever text we managed to stream (no silent loss).
+    const persisted = full.trim()
+      ? await insertMessage(userId, "assistant", full)
+      : null;
+
+    if (streamErr) {
+      console.error("[chat-advisor] stream aborted:", streamErr.message, "finishReason:", finishReason);
+      send({
+        error:
+          finishReason === "SAFETY"
+            ? "Gemini chặn nội dung vì lý do an toàn. Thử hỏi lại bằng cách khác."
+            : finishReason === "RECITATION"
+            ? "Gemini chặn vì phản hồi trích dẫn nội dung bản quyền."
+            : `Stream bị ngắt: ${streamErr.message}`,
+        messageId: persisted?.Id ?? null,
+      });
+    } else if (finishReason === "MAX_TOKENS") {
+      send({
+        error: "Phản hồi bị cắt vì vượt giới hạn độ dài. Hỏi lại ngắn gọn hơn hoặc chia nhỏ câu hỏi.",
+        messageId: persisted?.Id ?? null,
+      });
+    } else {
+      send({ done: true, messageId: persisted?.Id ?? null });
+    }
     res.end();
   } catch (err) {
     console.error("POST /chat-advisor/stream:", err);

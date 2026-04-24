@@ -7,6 +7,7 @@ require("dotenv").config();
 // GEMINI AI INITIALIZATION
 let geminiModel = null;
 let geminiAvailable = false;
+let genAI = null;
 
 try {
   const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -14,7 +15,7 @@ try {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "") {
     console.log("Initializing Gemini AI...");
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     geminiModel = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
@@ -1211,8 +1212,114 @@ const MAX_BASE64_BYTES = Math.ceil(8 * 1024 * 1024 * 1.37); // ~8MB binary
  * Mirrors `callGeminiAI` retry behaviour but uses parts array and
  * per-call JSON generationConfig so we don't mutate the module-level model.
  */
+// Rotate through vision-capable models so a 503 on one doesn't kill the call.
+// Order: flash (best quality) → flash-lite (less loaded) → 1.5-flash (fallback pool).
+const VISION_MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-1.5-flash",
+];
+
+// Extract the first complete JSON object via brace counting (string-aware).
+// Regex /{[\s\S]*}/ is greedy and picks up trailing garbage after the object,
+// which breaks JSON.parse with "Expected ',' or ']'".
+function extractFirstJsonObject(text) {
+  const start = text.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) { esc = false; continue; }
+      if (c === "\\") { esc = true; continue; }
+      if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+// Lenient cleanup for common Gemini JSON quirks: smart quotes and trailing commas.
+function sanitizeLooseJson(raw) {
+  return raw
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/,(\s*[}\]])/g, "$1");
+}
+
+// Same brace counter but for arrays — Gemini sometimes returns top-level [...]
+function extractFirstJsonArray(text) {
+  const start = text.indexOf("[");
+  if (start === -1) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) { esc = false; continue; }
+      if (c === "\\") { esc = true; continue; }
+      if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (c === "[") depth++;
+    else if (c === "]") {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function parseVisionJson(text) {
+  // Prefer object form (expected: {items: [...]}). Fall back to bare array, fenced block, then lenient parse.
+  let raw = extractFirstJsonObject(text);
+  let asArray = false;
+  if (!raw) {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (fenced) raw = extractFirstJsonObject(fenced[1]);
+  }
+  if (!raw) {
+    raw = extractFirstJsonArray(text);
+    asArray = !!raw;
+  }
+  if (!raw) {
+    // Log a snippet of the actual response so we can see what Gemini really sent.
+    console.log("[vision] raw response snippet:", text.slice(0, 300));
+    throw new Error("No JSON in vision response");
+  }
+
+  const doParse = (s) => JSON.parse(s);
+  let parsed;
+  try {
+    parsed = doParse(raw);
+  } catch (e1) {
+    try {
+      parsed = doParse(sanitizeLooseJson(raw));
+    } catch (e2) {
+      const posMatch = /position (\d+)/i.exec(e2.message);
+      if (posMatch) {
+        const pos = Number(posMatch[1]);
+        const ctx = raw.slice(Math.max(0, pos - 60), pos + 60);
+        throw new Error(`${e2.message} | near: ...${ctx}...`);
+      }
+      throw e2;
+    }
+  }
+  // Promote bare array → expected shape
+  if (asArray) parsed = { items: parsed, warnings: [] };
+  return parsed;
+}
+
 async function callGeminiVision(prompt, imageBase64, mimeType) {
-  if (!geminiAvailable || !geminiModel) {
+  if (!geminiAvailable || !genAI) {
     throw new Error("Gemini AI is not available");
   }
 
@@ -1221,17 +1328,25 @@ async function callGeminiVision(prompt, imageBase64, mimeType) {
     { inlineData: { mimeType, data: imageBase64 } },
   ];
 
-  const maxRetries = 3;
+  const maxRetries = VISION_MODEL_FALLBACKS.length + 1; // 4 tries total
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    // Use primary twice (so transient 503 can recover), then rotate fallbacks.
+    const modelName =
+      attempt <= 2
+        ? VISION_MODEL_FALLBACKS[0]
+        : VISION_MODEL_FALLBACKS[attempt - 2] || VISION_MODEL_FALLBACKS[VISION_MODEL_FALLBACKS.length - 1];
+
     try {
       if (attempt > 1) {
-        const delayMs = Math.pow(2, attempt) * 1000;
+        // Exponential backoff w/ jitter: ~2s, 4s, 8s
+        const delayMs = 1500 * Math.pow(2, attempt - 1) + Math.random() * 800;
         await new Promise((r) => setTimeout(r, delayMs));
       }
 
-      const result = await geminiModel.generateContent({
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent({
         contents: [{ role: "user", parts }],
         generationConfig: {
           temperature: 0.2,
@@ -1240,25 +1355,32 @@ async function callGeminiVision(prompt, imageBase64, mimeType) {
         },
       });
 
-      const text = (await result.response).text();
+      const text = ((await result.response).text() || "").trim();
+      if (!text) throw new Error("Empty response from AI (service busy)");
 
-      // Primary path: responseMimeType=json → response should be clean JSON.
-      // Fallback path: strip markdown fences / extract first {...} block (same as callGeminiAI).
-      let jsonMatch = text.match(/{[\s\S]*}/);
-      if (!jsonMatch) {
-        const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (fenced) jsonMatch = fenced[1].match(/{[\s\S]*}/);
-      }
-      if (!jsonMatch) throw new Error("No JSON in vision response");
-
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = parseVisionJson(text);
       if (!Array.isArray(parsed.items)) {
         throw new Error("Invalid response: missing items array");
       }
       return parsed;
     } catch (err) {
       lastError = err;
-      console.log(`[vision] attempt ${attempt} failed: ${err.message}`);
+      console.log(`[vision] attempt ${attempt} (${modelName}) failed: ${err.message}`);
+      // Retry on transient AI errors AND on malformed JSON (Gemini sometimes
+      // produces invalid JSON that a second attempt returns clean).
+      const msg = String(err.message || "").toLowerCase();
+      const transient =
+        msg.includes("503") ||
+        msg.includes("overload") ||
+        msg.includes("busy") ||
+        msg.includes("unavailable") ||
+        msg.includes("high demand") ||
+        msg.includes("empty response") ||
+        msg.includes("no json") ||
+        msg.includes("expected") ||
+        msg.includes("position") ||
+        msg.includes("unexpected");
+      if (!transient) break;
     }
   }
   throw lastError;
@@ -1345,10 +1467,26 @@ router.post("/parse-schedule-image", authenticateToken, async (req, res) => {
       aiOutput = await callGeminiVision(prompt, imageBase64, mimeType);
     } catch (err) {
       console.error("[parse-schedule-image] vision failed:", err.message);
+      const msg = String(err.message || "").toLowerCase();
+      const isOverload =
+        msg.includes("503") ||
+        msg.includes("overload") ||
+        msg.includes("busy") ||
+        msg.includes("unavailable") ||
+        msg.includes("high demand");
+      const isParseFail =
+        msg.includes("expected") ||
+        msg.includes("position") ||
+        msg.includes("unexpected") ||
+        msg.includes("no json");
       return res.status(503).json({
         success: false,
         error: "AI_UNAVAILABLE",
-        message: "AI đang bận hoặc không khả dụng. Vui lòng thử lại sau.",
+        message: isOverload
+          ? "Dịch vụ AI đang quá tải. Vui lòng thử lại sau khoảng 1-2 phút."
+          : isParseFail
+          ? "AI trả về dữ liệu không hợp lệ. Thử lại lần nữa hoặc chụp ảnh rõ hơn."
+          : "Không đọc được nội dung ảnh. Ảnh có thể mờ hoặc không phải lịch — vui lòng thử ảnh khác.",
       });
     }
 

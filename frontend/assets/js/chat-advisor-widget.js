@@ -297,9 +297,22 @@
         if (!line) continue;
         try {
           const obj = JSON.parse(line);
-          if (obj.chunk) { bubble.textContent += obj.chunk; scrollToBottom(); }
-          else if (obj.error) throw new Error(obj.error);
-          else if (obj.done) { /* final tick */ }
+          if (obj.chunk) {
+            bubble.textContent += obj.chunk;
+            scrollToBottom();
+          } else if (obj.error) {
+            // Append a visible warning so the user knows why the reply ended.
+            const note = document.createElement("div");
+            note.style.cssText =
+              "margin-top:6px;padding:6px 10px;border-radius:8px;" +
+              "background:rgba(255,59,48,0.08);color:#b00020;" +
+              "font-size:12px;line-height:1.4;";
+            note.textContent = `⚠️ ${obj.error}`;
+            bubble.appendChild(note);
+            scrollToBottom();
+          } else if (obj.done) {
+            /* final tick */
+          }
         } catch (err) {
           console.warn("[cadv] parse chunk failed:", err.message, line);
         }
