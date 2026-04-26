@@ -459,7 +459,7 @@ async function autoConnectUser(code, chatId, username, firstName) {
       `Bạn đã kết nối thành công với <b>Thông Báo Lịch Trình</b>.\n\n` +
       `<b>Bot có thể gửi cho bạn:</b>\n` +
       `• 📅 Lịch trình đầu ngày — tóm tắt công việc hôm nay\n` +
-      `• 🔔 Nhắc 15 phút trước mỗi công việc\n` +
+      `• 🔔 Nhắc trước mỗi công việc theo thời gian bạn cài đặt\n` +
       `• ✅ Nhắc tick công việc giữa ngày (dùng /daily)\n` +
       `• 📊 Thống kê cuối tuần (Chủ nhật 20:00)\n` +
       `• 🌱 Gợi ý cân bằng cuối tuần (AI)\n` +

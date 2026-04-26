@@ -85,6 +85,36 @@
     </div>
   </section>
 
+  <!-- Pre-task reminder (custom minutes) -->
+  <section id="notif-prereminder-card" class="bg-white rounded-2xl border border-slate-200 p-5 mb-5 opacity-60 pointer-events-none">
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="font-semibold text-slate-800">Nhắc trước mỗi công việc</h2>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="pref-thongbao-15phut" class="sr-only peer" />
+        <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-indigo-500 transition"></div>
+        <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition peer-checked:translate-x-5"></div>
+      </label>
+    </div>
+    <p class="text-xs text-slate-400 mb-4">Bot sẽ ping Telegram trước khi tới giờ bắt đầu công việc.</p>
+
+    <div class="flex items-center gap-3">
+      <i class="fas fa-bell text-slate-400 w-5 text-center"></i>
+      <label for="pref-phut-nhac-truoc" class="text-sm font-medium text-slate-700 flex-1">
+        Gửi trước
+      </label>
+      <input
+        type="number"
+        id="pref-phut-nhac-truoc"
+        min="1"
+        max="180"
+        step="1"
+        class="w-24 px-3 py-1.5 rounded-lg border border-slate-200 text-sm bg-white text-right"
+      />
+      <span class="text-sm text-slate-500">phút</span>
+    </div>
+    <p class="text-xs text-slate-400 mt-1 ml-7">Tối thiểu 1 phút, tối đa 180 phút.</p>
+  </section>
+
   <div id="notif-status-msg" class="hidden p-3 rounded-lg text-sm"></div>
 </div>
 

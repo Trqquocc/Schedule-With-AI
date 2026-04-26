@@ -28,6 +28,7 @@ const DEFAULT_PREFS = {
   thongBaoCuoiTuan:  true,
   thongBaoLuong:     false,
   ngayNhanLuong:     1,
+  phutNhacTruoc:     15,
 };
 
 // DB column ↔ JSON key map (single source of truth for both directions).
@@ -44,6 +45,7 @@ const COLS = {
   ThongBaoCuoiTuan:  "thongBaoCuoiTuan",
   ThongBaoLuong:     "thongBaoLuong",
   NgayNhanLuong:     "ngayNhanLuong",
+  PhutNhacTruoc:     "phutNhacTruoc",
 };
 
 function rowToPrefs(row) {
@@ -115,6 +117,10 @@ router.put("/prefs", async (req, res) => {
       } else if (col === "NgayNhanLuong") {
         const n = Number.parseInt(v, 10);
         if (!Number.isInteger(n) || n < 1 || n > 28) { invalid.push(key); continue; }
+        update[col] = n;
+      } else if (col === "PhutNhacTruoc") {
+        const n = Number.parseInt(v, 10);
+        if (!Number.isInteger(n) || n < 1 || n > 180) { invalid.push(key); continue; }
         update[col] = n;
       }
     }

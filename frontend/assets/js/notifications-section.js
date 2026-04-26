@@ -8,7 +8,6 @@
 
   const TOGGLES = [
     { key: "thongBaoNhiemVu",   icon: "fa-tasks",        title: "Nhắc nhở nhiệm vụ hôm nay", hint: "Bot gửi danh sách công việc hàng ngày" },
-    { key: "thongBao15Phut",    icon: "fa-bell",         title: "Nhắc 15 phút trước",         hint: "Gửi 15 phút trước khi tới giờ công việc" },
     { key: "thongBaoHangNgay",  icon: "fa-sun",          title: "Thông báo hàng ngày",        hint: "Tóm tắt lịch trình đầu ngày" },
     { key: "thongBaoTuan",      icon: "fa-chart-bar",    title: "Thống kê cuối tuần",         hint: "Gửi vào Chủ nhật 20:00" },
     { key: "thongBaoCuoiTuan",  icon: "fa-seedling",     title: "Gợi ý cuối tuần (AI)",       hint: "Đề xuất công việc cân bằng dựa trên thống kê" },
@@ -74,6 +73,8 @@
       $(id)?.addEventListener("change", onTimeChange);
     });
     $("pref-ngay-luong")?.addEventListener("change", onDayChange);
+    $("pref-thongbao-15phut")?.addEventListener("change", onPreReminderToggle);
+    $("pref-phut-nhac-truoc")?.addEventListener("change", onPreReminderMinutes);
   }
 
   async function refreshAll() {
@@ -107,7 +108,7 @@
   }
 
   function setLocked(locked) {
-    const cards = [$("notif-prefs-card"), $("notif-times-card")];
+    const cards = [$("notif-prefs-card"), $("notif-times-card"), $("notif-prereminder-card")];
     cards.forEach((c) => {
       if (!c) return;
       c.classList.toggle("opacity-60", locked);
@@ -136,6 +137,8 @@
     if ($("time-nhac-nhiem-vu"))   $("time-nhac-nhiem-vu").value   = state.gioNhacNhiemVu   || "14:00";
     if ($("time-tong-ket"))        $("time-tong-ket").value        = state.gioTongKetNgay   || "18:00";
     if ($("pref-ngay-luong"))      $("pref-ngay-luong").value      = String(state.ngayNhanLuong || 1);
+    if ($("pref-thongbao-15phut")) $("pref-thongbao-15phut").checked = !!state.thongBao15Phut;
+    if ($("pref-phut-nhac-truoc")) $("pref-phut-nhac-truoc").value = String(state.phutNhacTruoc || 15);
   }
 
   function onPrefChange(e) {
@@ -149,6 +152,17 @@
   }
   function onDayChange(e) {
     scheduleSave({ ngayNhanLuong: parseInt(e.target.value, 10) });
+  }
+  function onPreReminderToggle(e) {
+    scheduleSave({ thongBao15Phut: e.target.checked });
+  }
+  function onPreReminderMinutes(e) {
+    // Clamp to [1, 180] before saving so server-side validation never trips on slips.
+    let n = parseInt(e.target.value, 10);
+    if (!Number.isFinite(n)) n = 15;
+    n = Math.max(1, Math.min(180, n));
+    e.target.value = String(n);
+    scheduleSave({ phutNhacTruoc: n });
   }
 
   let pending = {};
