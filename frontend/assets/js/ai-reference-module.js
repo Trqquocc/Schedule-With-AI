@@ -75,13 +75,26 @@
     }
   }
 
+  // Fields required before AI can schedule optimally.
+  // Missing → card shown in warning state + "Lập lịch" validation blocks.
+  function missingAiFields(task) {
+    const missing = [];
+    if (!task.MucDoPhucTap) missing.push("Độ phức tạp");
+    if (!task.MucDoTapTrung) missing.push("Độ tập trung");
+    if (!task.ThoiDiemThichHop) missing.push("Thời điểm phù hợp");
+    return missing;
+  }
+
+  const PRIORITY_LABEL = { 1: "Thấp", 2: "TB", 3: "Cao", 4: "Rất cao" };
+  const TIME_SLOT_LABEL = { "1": "Sáng", "2": "Trưa", "3": "Chiều", "4": "Tối" };
+
   function renderTasks() {
     const host = $("ai-ref-task-list");
     if (!host) return;
     if (state.tasks.length === 0) {
       host.innerHTML = `
-        <div class="text-center text-gray-500 py-8 text-sm">
-          <i class="fas fa-tasks text-3xl mb-2 text-gray-300"></i>
+        <div class="text-center py-10 text-sm" style="color:var(--text-muted)">
+          <i class="fas fa-clipboard-list text-3xl mb-2" style="color:var(--border-hover)"></i>
           <p>Không có công việc chờ</p>
         </div>`;
       updateSelectedCount();
@@ -89,7 +102,7 @@
     }
 
     const html = state.tasks
-      .map((task) => {
+      .map((task, idx) => {
         const id = task.MaCongViec || task.ID || task.id;
         const title = task.TieuDe || "Công việc";
         const priority = parseInt(task.MucDoUuTien || 2, 10);
@@ -97,31 +110,110 @@
         const cat = task.TenLoai || task.LoaiCongViec?.TenLoai || "";
         const color = priorityColor(priority);
         const checked = state.selected.has(id) ? "checked" : "";
+        const missing = missingAiFields(task);
+        const needsAttn = missing.length > 0;
+
+        const chips = [];
+        chips.push(
+          `<span class="ai-card-chip"><i class="fas fa-flag"></i>${esc(PRIORITY_LABEL[priority] || "")}</span>`
+        );
+        chips.push(
+          `<span class="ai-card-chip"><i class="far fa-clock"></i>${dur}p</span>`
+        );
+        if (cat) {
+          chips.push(
+            `<span class="ai-card-chip"><i class="fas fa-folder"></i>${esc(cat)}</span>`
+          );
+        }
+        if (task.MucDoPhucTap) {
+          chips.push(
+            `<span class="ai-card-chip"><i class="fas fa-layer-group"></i>Phức tạp ${task.MucDoPhucTap}/5</span>`
+          );
+        }
+        if (task.MucDoTapTrung) {
+          chips.push(
+            `<span class="ai-card-chip"><i class="fas fa-bullseye"></i>Tập trung ${task.MucDoTapTrung}/5</span>`
+          );
+        }
+        if (task.ThoiDiemThichHop) {
+          chips.push(
+            `<span class="ai-card-chip"><i class="fas fa-sun"></i>${esc(TIME_SLOT_LABEL[task.ThoiDiemThichHop] || task.ThoiDiemThichHop)}</span>`
+          );
+        }
+
+        const warnBadge = needsAttn
+          ? `<span class="ai-card-warn" title="Thiếu: ${missing.join(", ")}">
+               <i class="fas fa-triangle-exclamation"></i>
+             </span>`
+          : "";
+
         return `
-          <label class="ai-ref-task-row flex items-start gap-2 p-2 rounded-lg mb-1.5 cursor-pointer border"
-            data-task-id="${id}"
-            style="border-color:#e9d5ff;background:#fff">
-            <input type="checkbox" class="ai-ref-task-cb mt-0.5" data-task-id="${id}" ${checked}>
-            <span class="flex-1 min-w-0">
-              <span class="flex items-center gap-1.5">
-                <span class="inline-block w-2 h-2 rounded-full flex-shrink-0" style="background:${color}"></span>
-                <span class="font-medium text-sm truncate" style="color:#1e293b">${esc(title)}</span>
-              </span>
-              <span class="flex flex-wrap gap-1 mt-1 text-[10px]">
-                <span class="px-1.5 py-0.5 rounded" style="background:#f1f5f9;color:#64748b">
-                  <i class="far fa-clock"></i> ${dur}p
-                </span>
-                ${cat ? `<span class="px-1.5 py-0.5 rounded" style="background:#faf5ff;color:#7c3aed">
-                  <i class="fas fa-folder"></i> ${esc(cat)}
-                </span>` : ""}
-              </span>
-            </span>
-          </label>`;
+          <div class="ai-ref-card ${needsAttn ? "needs-attention" : ""}"
+               data-task-id="${id}" data-task-idx="${idx}" draggable="true"
+               style="border-left-color:${color}">
+            <div class="ai-card-grip" title="Kéo để sắp xếp">
+              <i class="fas fa-grip-vertical"></i>
+            </div>
+            <input type="checkbox" class="ai-ref-task-cb" data-task-id="${id}" ${checked}
+                   title="Chọn cho AI gợi ý lịch">
+            <div class="ai-card-body">
+              <div class="ai-card-title-row">
+                <span class="ai-card-dot" style="background:${color}"></span>
+                <span class="ai-card-title">${esc(title)}</span>
+                ${warnBadge}
+              </div>
+              <div class="ai-card-chips">${chips.join("")}</div>
+            </div>
+          </div>`;
       })
       .join("");
 
     host.innerHTML = html;
+    wireCardDragAndClick(host);
     updateSelectedCount();
+  }
+
+  // Card interactions: click body → open edit modal; drag → reorder local list.
+  function wireCardDragAndClick(host) {
+    let dragSrcIdx = null;
+    host.querySelectorAll(".ai-ref-card").forEach((card) => {
+      // Click on body (not on checkbox or grip) → open edit modal.
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".ai-ref-task-cb")) return;
+        if (e.target.closest(".ai-card-grip")) return;
+        const id = parseInt(card.dataset.taskId, 10);
+        const task = state.tasks.find(
+          (t) => (t.MaCongViec || t.ID || t.id) === id
+        );
+        if (!task || !window.AITaskEdit) return;
+        window.AITaskEdit.open(task, (updated) => {
+          Object.assign(task, updated);
+          renderTasks();
+        });
+      });
+      // Drag-reorder (HTML5 native — UI-only, not persisted).
+      card.addEventListener("dragstart", (e) => {
+        dragSrcIdx = Number(card.dataset.taskIdx);
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+      });
+      card.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      });
+      card.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const dstIdx = Number(card.dataset.taskIdx);
+        if (dragSrcIdx == null || dragSrcIdx === dstIdx) return;
+        const moved = state.tasks.splice(dragSrcIdx, 1)[0];
+        state.tasks.splice(dstIdx, 0, moved);
+        dragSrcIdx = null;
+        renderTasks();
+      });
+    });
   }
 
   function updateSelectedCount() {
@@ -144,15 +236,20 @@
   }
 
   function selectAll() {
-    state.selected = new Set(state.tasks.map((t) => t.MaCongViec || t.ID || t.id).filter(Boolean));
-    // Flip UI checkboxes without full re-render for speed.
-    document.querySelectorAll(".ai-ref-task-cb").forEach((cb) => (cb.checked = true));
+    state.selected = new Set(
+      state.tasks.map((t) => t.MaCongViec || t.ID || t.id).filter(Boolean)
+    );
+    document
+      .querySelectorAll("#ai-ref-task-list .ai-ref-task-cb")
+      .forEach((cb) => (cb.checked = true));
     updateSelectedCount();
   }
 
   function clearSelection() {
     state.selected.clear();
-    document.querySelectorAll(".ai-ref-task-cb").forEach((cb) => (cb.checked = false));
+    document
+      .querySelectorAll("#ai-ref-task-list .ai-ref-task-cb")
+      .forEach((cb) => (cb.checked = false));
     updateSelectedCount();
   }
 
@@ -214,11 +311,105 @@
     return result.isConfirmed ? result.value : null;
   }
 
+  // Flag + highlight cards with incomplete AI attributes so the user can
+  // edit once and get good AI output long-term. Returns list of bad task ids.
+  function findSelectedWithMissing() {
+    const bad = [];
+    for (const id of state.selected) {
+      const t = state.tasks.find(
+        (x) => (x.MaCongViec || x.ID || x.id) === id
+      );
+      if (t && missingAiFields(t).length > 0) bad.push({ id, task: t });
+    }
+    return bad;
+  }
+
   async function triggerSuggest() {
     if (state.selected.size === 0) {
       Utils.showToast?.("Chọn ít nhất 1 công việc", "warning");
       return;
     }
+
+    // Block + educate user about missing AI-critical fields.
+    const missing = findSelectedWithMissing();
+    if (missing.length > 0) {
+      // Visually flash the first problematic card so user knows where to click.
+      const firstBad = document.querySelector(
+        `.ai-ref-card[data-task-id="${missing[0].id}"]`
+      );
+      firstBad?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      firstBad?.classList.add("flash-warn");
+      setTimeout(() => firstBad?.classList.remove("flash-warn"), 1600);
+
+      const rows = missing
+        .slice(0, 6)
+        .map((m) => {
+          const fields = missingAiFields(m.task)
+            .map(
+              (f) =>
+                `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;
+                              font-size:11px;font-weight:500;border-radius:999px;
+                              background:rgba(255,159,10,0.15);color:#b25e00;
+                              border:1px solid rgba(255,159,10,0.35)">
+                   <i class="fas fa-circle-exclamation" style="font-size:9px;margin-right:3px"></i>${esc(f)}
+                 </span>`
+            )
+            .join("");
+          return `
+            <div style="padding:8px 10px;border-radius:8px;background:var(--bg-card);
+                        border:1px solid var(--border);margin-bottom:6px">
+              <div style="font-weight:600;font-size:13px;color:var(--text-primary);
+                          margin-bottom:4px;
+                          white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${esc(m.task.TieuDe || "Công việc")}
+              </div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">
+                Thiếu thông tin:
+              </div>
+              <div>${fields}</div>
+            </div>`;
+        })
+        .join("");
+      const more =
+        missing.length > 6
+          ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted);text-align:center">
+               …và ${missing.length - 6} công việc khác cũng thiếu thông tin
+             </div>`
+          : "";
+      const r = await (window.Swal?.fire({
+        icon: "warning",
+        title: `${missing.length} công việc thiếu thông tin`,
+        html: `
+          <div style="text-align:left;font-size:13px;line-height:1.5">
+            <p style="margin-bottom:10px;color:var(--text-primary)">
+              Các công việc bên dưới chưa đủ
+              <strong>Độ phức tạp · Độ tập trung · Thời điểm phù hợp</strong>.
+              Bạn vẫn muốn thêm chúng vào danh sách để AI tạo lịch chứ?
+            </p>
+            <div style="max-height:240px;overflow-y:auto;padding:2px;
+                        border-radius:10px;background:var(--bg-card-alt)">
+              <div style="padding:8px">${rows}${more}</div>
+            </div>
+            <p style="margin-top:10px;padding:8px 10px;border-radius:8px;
+                      background:rgba(255,159,10,0.10);
+                      color:#b25e00;font-size:12px;line-height:1.45">
+              <i class="fas fa-triangle-exclamation" style="margin-right:4px"></i>
+              Tiếp tục có thể làm <strong>giảm độ chính xác</strong> của lịch
+              trình AI tạo. Khuyến nghị bấm thẻ công việc bên trái để bổ sung
+              thông tin trước.
+            </p>
+          </div>`,
+        width: 560,
+        confirmButtonText: "Tôi sẽ chỉnh trước",
+        showCancelButton: true,
+        cancelButtonText: "Cứ tiếp tục với thông tin hiện có",
+        confirmButtonColor: "#0071e3",
+        cancelButtonColor: "#ff9f0a",
+        reverseButtons: true,
+      }) ?? Promise.resolve({ isConfirmed: true }));
+      if (r.isConfirmed) return;
+    }
+
     const range = await promptDateRange();
     if (!range) return;
 
@@ -439,20 +630,17 @@
     const rejectAllBtn = $("ai-ref-reject-all-btn");
     if (!host || !suggestBtn) return;
 
-    // Delegated checkbox + row click — row clicks toggle the checkbox too.
+    // Checkbox toggle — card body click is handled inside wireCardDragAndClick.
     host.addEventListener("change", (e) => {
       const cb = e.target.closest(".ai-ref-task-cb");
       if (!cb) return;
       toggleTask(cb.dataset.taskId, cb.checked);
     });
+    // Stop propagation on checkbox/grip so clicks there don't open the modal.
     host.addEventListener("click", (e) => {
-      if (e.target.closest(".ai-ref-task-cb")) return; // checkbox handled by change
-      const row = e.target.closest(".ai-ref-task-row");
-      if (!row) return;
-      const cb = row.querySelector(".ai-ref-task-cb");
-      if (!cb) return;
-      cb.checked = !cb.checked;
-      toggleTask(cb.dataset.taskId, cb.checked);
+      if (e.target.closest(".ai-ref-task-cb") || e.target.closest(".ai-card-grip")) {
+        e.stopPropagation();
+      }
     });
 
     suggestBtn.addEventListener("click", triggerSuggest);

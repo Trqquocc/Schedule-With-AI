@@ -1,84 +1,168 @@
-<div class="flex h-full ai-ref-section" style="--ai-ref-primary:#7c3aed;--ai-ref-soft:#faf5ff;--ai-ref-border:#e9d5ff">
-  <!-- Sidebar: task pool with checkbox select -->
+<style>
+  /* ===== AI-reference page — token-driven polish (per DESIGN.md) ===== */
+  .ai-ref-section .ai-icon-btn {
+    width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-secondary);
+    border: 1px solid var(--border); cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .ai-ref-section .ai-icon-btn:hover {
+    background: var(--bg-card-hover); color: var(--text-primary);
+  }
+  .ai-ref-section .ai-chip-btn {
+    padding:5px 10px; font-size:12px; font-weight:500;
+    border-radius: var(--radius-sm); background: var(--bg-card);
+    color: var(--text-secondary); border: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .ai-ref-section .ai-chip-btn:hover {
+    background: var(--bg-card-hover); color: var(--text-primary);
+  }
+  .ai-ref-section .ai-view-btn {
+    padding:6px 12px; font-size:13px; font-weight:500;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: transparent; color: var(--text-muted);
+    border: 0; cursor: pointer;
+  }
+  .ai-ref-section .ai-view-btn.active,
+  .ai-ref-section .ai-view-btn:hover {
+    background: var(--bg-card); color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  #ai-ref-suggest-btn:hover { background: var(--accent-hover) !important; }
+
+  /* Task card */
+  .ai-ref-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 18px 18px 1fr;
+    gap: 8px; align-items: flex-start;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .08s ease;
+  }
+  .ai-ref-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-sm);
+  }
+  .ai-ref-card.dragging { opacity: 0.5; transform: scale(0.98); }
+  .ai-ref-card.needs-attention { border-color: rgba(255,159,10,0.5); }
+  .ai-ref-card.flash-warn {
+    animation: ai-flash-warn 1.6s ease;
+  }
+  @keyframes ai-flash-warn {
+    0%,100% { background: var(--bg-card); }
+    30%     { background: rgba(255,159,10,0.12); border-color: #ff9f0a; }
+  }
+  .ai-ref-card .ai-card-grip {
+    color: var(--text-muted); cursor: grab; font-size: 12px;
+    padding: 2px 0;
+  }
+  .ai-ref-card .ai-ref-task-cb {
+    margin-top: 3px; cursor: pointer;
+  }
+  .ai-ref-card .ai-card-body { min-width: 0; }
+  .ai-ref-card .ai-card-title-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .ai-ref-card .ai-card-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .ai-ref-card .ai-card-title {
+    font-size: 14px; font-weight: 600; color: var(--text-primary);
+    letter-spacing: -0.2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex: 1; min-width: 0;
+  }
+  .ai-ref-card .ai-card-warn {
+    color: #ff9f0a; font-size: 12px; flex-shrink: 0;
+  }
+  .ai-ref-card .ai-card-chips {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+  }
+  .ai-ref-card .ai-card-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 7px; font-size: 11px; font-weight: 500;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: var(--bg-card-alt); color: var(--text-secondary);
+    letter-spacing: -0.1px;
+  }
+  .ai-ref-card .ai-card-chip i { font-size: 10px; }
+</style>
+
+<div class="flex h-full ai-ref-section" style="background:var(--bg-app); color:var(--text-primary);">
+  <!-- Sidebar: task pool, rendered as clickable cards -->
   <div id="ai-ref-sidebar"
-    class="w-60 flex flex-col flex-shrink-0 border-r"
-    style="background:#fff;border-color:var(--ai-ref-border);height:100%;min-height:0">
-    <div class="p-3 border-b flex-shrink-0" style="border-color:var(--ai-ref-border)">
-      <h3 class="font-semibold text-base flex items-center justify-between" style="color:#1e293b">
-        <span><i class="fas fa-magic mr-1.5" style="color:var(--ai-ref-primary)"></i>Công việc</span>
+    class="flex flex-col flex-shrink-0"
+    style="width:288px; background:var(--bg-card); border-right:1px solid var(--border); height:100%; min-height:0;">
+    <div style="padding:16px 18px; border-bottom:1px solid var(--border); flex-shrink:0;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+        <h3 style="font-size:17px; font-weight:600; letter-spacing:-0.374px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+          <i class="fas fa-list-check" style="color:var(--accent);"></i>Công việc
+        </h3>
         <button id="ai-ref-refresh-btn"
-          class="text-sm transition-transform duration-300 hover:rotate-180"
-          style="color:var(--ai-ref-primary)"
+          class="ai-icon-btn"
           title="Tải lại">
           <i class="fas fa-sync-alt"></i>
         </button>
-      </h3>
-      <p class="text-xs text-gray-500 mt-1">Chọn để AI gợi ý lịch</p>
-      <div class="mt-2 flex items-center gap-2 text-xs">
-        <button id="ai-ref-select-all-btn"
-          class="px-2 py-1 rounded-md border"
-          style="border-color:var(--ai-ref-border);color:var(--ai-ref-primary);background:#fff"
-          title="Chọn tất cả">
-          <i class="fas fa-check-double mr-1"></i>Tất cả
+      </div>
+      <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+        Bấm vào thẻ để tinh chỉnh · tick chọn để AI sắp lịch
+      </p>
+      <div style="margin-top:10px; display:flex; align-items:center; gap:6px; font-size:13px;">
+        <button id="ai-ref-select-all-btn" class="ai-chip-btn" title="Chọn tất cả">
+          <i class="fas fa-check-double"></i> Tất cả
         </button>
-        <button id="ai-ref-clear-sel-btn"
-          class="px-2 py-1 rounded-md border"
-          style="border-color:#e2e8f0;color:#64748b;background:#fff"
-          title="Bỏ chọn">
+        <button id="ai-ref-clear-sel-btn" class="ai-chip-btn" title="Bỏ chọn">
           Bỏ chọn
         </button>
-        <span class="ml-auto font-semibold" style="color:var(--ai-ref-primary)">
+        <span style="margin-left:auto; font-weight:600; color:var(--accent);">
           <span id="ai-ref-selected-count">0</span> đã chọn
         </span>
       </div>
     </div>
 
     <div id="ai-ref-task-list"
-      class="flex-1 overflow-y-auto overflow-x-hidden p-3"
-      style="min-height:0">
-      <div class="text-center text-gray-500 py-8 text-sm">
+      style="flex:1; overflow-y:auto; overflow-x:hidden; padding:14px; min-height:0; display:flex; flex-direction:column; gap:10px;">
+      <div class="text-center text-sm" style="color:var(--text-muted); padding:30px 0;">
         <div class="animate-pulse">Đang tải công việc...</div>
       </div>
     </div>
   </div>
 
   <!-- Main calendar area -->
-  <div class="flex-1 flex flex-col min-w-0" style="background:var(--ai-ref-soft)">
+  <div class="flex-1 flex flex-col min-w-0" style="background:var(--bg-app);">
 
     <!-- Toolbar -->
-    <nav class="ai-toolbar bg-white border-b px-5 py-3 flex-shrink-0" style="border-color:var(--ai-ref-border)">
+    <nav class="ai-toolbar" style="background:var(--bg-card); border-bottom:1px solid var(--border); padding:12px 20px; flex-shrink:0;">
       <div class="flex items-center justify-between gap-4">
 
         <!-- Left: brand + date nav -->
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-               style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">
-            <i class="fas fa-robot text-white text-sm"></i>
+          <div style="width:36px; height:36px; border-radius:var(--radius-sm); background:var(--accent-light); color:var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fas fa-robot"></i>
           </div>
 
           <div class="flex items-center gap-1">
-            <button id="ai-cal-prev-btn"
-              class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-              style="color:#6b7280"
-              title="Tháng trước">
+            <button id="ai-cal-prev-btn" class="ai-icon-btn" title="Tháng trước">
               <i class="fas fa-chevron-left text-xs"></i>
             </button>
             <button id="ai-cal-today-btn"
-              class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors"
-              style="color:var(--ai-ref-primary)">
+              style="padding:6px 12px; font-size:14px; font-weight:600; border-radius:var(--radius-sm); background:transparent; color:var(--accent); border:1px solid var(--border); cursor:pointer;">
               Hôm nay
             </button>
-            <button id="ai-cal-next-btn"
-              class="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-              style="color:#6b7280"
-              title="Tháng sau">
+            <button id="ai-cal-next-btn" class="ai-icon-btn" title="Tháng sau">
               <i class="fas fa-chevron-right text-xs"></i>
             </button>
           </div>
 
           <h2 id="ai-calendar-title"
-            class="text-lg font-bold"
-            style="color:#1e293b;min-width:180px">
+            style="font-size:18px; font-weight:600; letter-spacing:-0.374px; color:var(--text-primary); min-width:180px;">
             Tháng
           </h2>
         </div>
@@ -86,68 +170,37 @@
         <!-- Right: AI actions + view switcher -->
         <div class="flex items-center gap-2">
           <button id="ai-ref-suggest-btn"
-            class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md transition-all"
-            style="background:linear-gradient(135deg,#7c3aed,#4f46e5);box-shadow:0 4px 15px rgba(124,58,237,0.35)"
-            title="Gợi ý lịch trình bằng AI">
-            <i class="fas fa-wand-magic-sparkles text-xs"></i>
+            title="Gợi ý lịch trình bằng AI"
+            style="display:flex; align-items:center; gap:8px; padding:8px 15px; font-size:15px; font-weight:500; color:#ffffff; background:var(--accent); border:1px solid transparent; border-radius:var(--radius-sm); letter-spacing:-0.374px; cursor:pointer;">
+            <i class="fas fa-wand-magic-sparkles"></i>
             <span>Lập lịch tự động</span>
           </button>
 
-          <button class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border"
-            style="border-color:var(--ai-ref-border);background:#fff;color:#94a3b8;cursor:not-allowed;opacity:0.6"
-            disabled
-            title="Sắp ra mắt">
-            <i class="fas fa-scale-balanced text-xs"></i>
-            <span>Cân bằng</span>
-          </button>
-          <button class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border"
-            style="border-color:var(--ai-ref-border);background:#fff;color:#94a3b8;cursor:not-allowed;opacity:0.6"
-            disabled
-            title="Sắp ra mắt">
-            <i class="fas fa-chart-line text-xs"></i>
-            <span>Phân tích</span>
-          </button>
-          <button class="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border"
-            style="border-color:var(--ai-ref-border);background:#fff;color:#94a3b8;cursor:not-allowed;opacity:0.6"
-            disabled
-            title="Sắp ra mắt">
-            <i class="fas fa-comments text-xs"></i>
-            <span>Hỏi AI</span>
-          </button>
-
-          <div class="flex items-center gap-1 rounded-xl p-1 ml-2" style="background:#f1f5f9">
-            <button id="ai-cal-day-view" data-view="timeGridDay"
-              class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-              style="color:#64748b">Ngày</button>
-            <button id="ai-cal-week-view" data-view="timeGridWeek"
-              class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-              style="color:#64748b">Tuần</button>
-            <button id="ai-cal-month-view" data-view="dayGridMonth"
-              class="ai-view-btn px-3 py-1.5 rounded-lg text-sm font-medium bg-white transition-all"
-              style="color:#1e293b;box-shadow:0 1px 3px rgba(0,0,0,0.1)">Tháng</button>
+          <div style="display:flex; align-items:center; gap:2px; padding:3px; border-radius:var(--radius-sm); background:var(--bg-card-alt); margin-left:8px;">
+            <button id="ai-cal-day-view" data-view="timeGridDay" class="ai-view-btn">Ngày</button>
+            <button id="ai-cal-week-view" data-view="timeGridWeek" class="ai-view-btn">Tuần</button>
+            <button id="ai-cal-month-view" data-view="dayGridMonth" class="ai-view-btn active">Tháng</button>
           </div>
         </div>
 
       </div>
     </nav>
 
-    <!-- Pending proposals action bar — visible while proposals are unconfirmed -->
+    <!-- Pending proposals action bar -->
     <div id="ai-ref-proposal-bar"
-      class="hidden items-center justify-between gap-3 px-5 py-2 border-b"
-      style="background:#f5f3ff;border-color:var(--ai-ref-border)">
-      <span class="text-sm" style="color:#4c1d95">
-        <i class="fas fa-sparkles mr-1"></i>
+      class="hidden"
+      style="align-items:center; justify-content:space-between; gap:12px; padding:10px 20px; border-bottom:1px solid var(--border); background:var(--accent-light);">
+      <span style="font-size:14px; color:var(--accent); font-weight:500;">
+        <i class="fas fa-sparkles" style="margin-right:6px;"></i>
         <strong id="ai-ref-proposal-count">0</strong> đề xuất chờ xác nhận
       </span>
-      <div class="flex items-center gap-2">
+      <div style="display:flex; align-items:center; gap:8px;">
         <button id="ai-ref-accept-all-btn"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-          style="background:#10b981">
-          <i class="fas fa-check"></i> Chấp nhận tất cả
+          style="padding:6px 12px; font-size:13px; font-weight:500; color:#ffffff; background:var(--accent); border:1px solid transparent; border-radius:var(--radius-sm); cursor:pointer;">
+          <i class="fas fa-check" style="margin-right:4px;"></i> Chấp nhận tất cả
         </button>
         <button id="ai-ref-reject-all-btn"
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold border"
-          style="border-color:#e2e8f0;color:#64748b;background:#fff">
+          style="padding:6px 12px; font-size:13px; font-weight:500; border:1px solid var(--border); background:var(--bg-card); color:var(--text-primary); border-radius:var(--radius-sm); cursor:pointer;">
           Bỏ tất cả
         </button>
       </div>

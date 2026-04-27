@@ -84,15 +84,38 @@ function extractJson(text) {
 
 function buildPrompt({ tasks, dateStart, dateEnd, busy, workingHours, extra }) {
   const wh = workingHours || { start: "08:00", end: "22:00" };
+  // Human-readable labels for enum-like attributes kept on CongViec so the
+  // model can reason about them without training on our internal codes.
+  // ThoiDiemThichHop is stored as "1"/"2"/"3"/"4" (aligned with create-task-modal).
+  const TIME_SLOT_LABEL = {
+    "1": "buổi sáng (07-11h)",
+    "2": "buổi trưa (11-13h)",
+    "3": "buổi chiều (13-17h)",
+    "4": "buổi tối (17-22h)",
+  };
   const tasksSpec = tasks
-    .map(
-      (t, i) =>
-        `${i + 1}. id=${t.MaCongViec} | "${t.TieuDe}" | ưu tiên=${t.MucDoUuTien || 2} | ước tính=${
-          t.ThoiGianUocTinh || 60
-        } phút${t.CoThoiGianCoDinh ? ` | giờ CỐ ĐỊNH ${t.GioBatDauCoDinh} -> ${t.GioKetThucCoDinh}` : ""}${
-          t.TenLoai ? ` | danh mục=${t.TenLoai}` : ""
-        }${t.MoTa ? ` | note=${t.MoTa.slice(0, 120)}` : ""}`
-    )
+    .map((t, i) => {
+      const parts = [
+        `id=${t.MaCongViec}`,
+        `"${t.TieuDe}"`,
+        `ưu tiên=${t.MucDoUuTien || 2}`,
+        `ước tính=${t.ThoiGianUocTinh || 60} phút`,
+      ];
+      if (t.MucDoPhucTap) parts.push(`độ phức tạp=${t.MucDoPhucTap}/5`);
+      if (t.MucDoTapTrung) parts.push(`độ tập trung cần=${t.MucDoTapTrung}/5`);
+      if (t.ThoiDiemThichHop) {
+        parts.push(
+          `thời điểm phù hợp=${TIME_SLOT_LABEL[t.ThoiDiemThichHop] || t.ThoiDiemThichHop}`
+        );
+      }
+      if (t.CoThoiGianCoDinh) {
+        parts.push(`giờ CỐ ĐỊNH ${t.GioBatDauCoDinh} -> ${t.GioKetThucCoDinh}`);
+      }
+      if (t.TenLoai) parts.push(`danh mục=${t.TenLoai}`);
+      if (t.Tag) parts.push(`tag=${t.Tag}`);
+      if (t.MoTa) parts.push(`note=${t.MoTa.slice(0, 120)}`);
+      return `${i + 1}. ${parts.join(" | ")}`;
+    })
     .join("\n");
 
   const busySpec = busy.length
@@ -117,6 +140,8 @@ RÀNG BUỘC BẮT BUỘC:
 - Task ưu tiên cao (số lớn hơn = cao hơn: 4 Rất cao, 3 Cao, 2 TB, 1 Thấp) nên được xếp sớm hơn trong khoảng thời gian.
 - Không lập lịch quá 1 task tại cùng một thời điểm.
 - Cân đối khối lượng theo ngày — đừng dồn hết vào một ngày nếu có thể trải đều.
+- Nếu task có "độ phức tạp" hoặc "độ tập trung cần" ≥4/5 → ưu tiên xếp vào khung giờ năng suất cao (sáng/đầu giờ chiều), tránh cuối ngày.
+- Nếu task có "thời điểm phù hợp" → cố gắng xếp vào khung đó, chỉ lệch khi bị bận.
 
 TASK CẦN XẾP:
 ${tasksSpec}
@@ -207,7 +232,7 @@ router.post("/suggest-schedule", async (req, res) => {
     const { data: tasks, error: tErr } = await supabase
       .from("CongViec")
       .select(
-        "MaCongViec, TieuDe, MoTa, MucDoUuTien, ThoiGianUocTinh, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LoaiCongViec(TenLoai)"
+        "MaCongViec, TieuDe, MoTa, MucDoUuTien, ThoiGianUocTinh, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop, Tag, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LoaiCongViec(TenLoai)"
       )
       .in("MaCongViec", normalizedIds)
       .eq("UserID", userId);
