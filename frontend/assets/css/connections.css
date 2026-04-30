@@ -26,8 +26,8 @@
 }
 
 .conn-tab.is-active {
-  color: #2563EB;
-  border-bottom-color: #2563EB;
+  color: var(--accent, #2563EB);
+  border-bottom-color: var(--accent, #2563EB);
   background: #fff;
 }
 
@@ -43,7 +43,7 @@ body.dark .conn-tab:hover {
 }
 
 body.dark .conn-tab.is-active {
-  color: #60a5fa;
-  border-bottom-color: #60a5fa;
+  color: var(--accent, #60a5fa);
+  border-bottom-color: var(--accent, #60a5fa);
   background: rgba(255, 255, 255, 0.04);
 }

@@ -25,27 +25,30 @@
     }
 
     const clickHandler = (e) => {
-      const target = e.target;
+      const actionBtn = e.target.closest('[class*="action-btn-"]');
+      if (actionBtn && actionBtn.dataset.taskId) {
+        const taskId = actionBtn.dataset.taskId;
+        e.preventDefault();
+        e.stopPropagation();
 
-      if (target.tagName === "BUTTON" && target.classList.contains("action-btn-")) {
+        if (actionBtn.classList.contains("action-btn-complete")) {
+          this.updateTaskStatus(taskId, true);
+        } else if (actionBtn.classList.contains("action-btn-reopen")) {
+          this.updateTaskStatus(taskId, false);
+        } else if (actionBtn.classList.contains("action-btn-edit")) {
+          this.editTask(taskId);
+        } else if (actionBtn.classList.contains("action-btn-delete")) {
+          this.deleteTask(taskId);
+        }
         return;
       }
 
-      const actionBtn = e.target.closest('[class*="action-btn-"]');
-      if (!actionBtn || !actionBtn.dataset.taskId) return;
+      if (e.target.closest("button, input, a, label")) return;
 
-      const taskId = actionBtn.dataset.taskId;
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (actionBtn.classList.contains("action-btn-complete")) {
-        this.updateTaskStatus(taskId, true);
-      } else if (actionBtn.classList.contains("action-btn-reopen")) {
-        this.updateTaskStatus(taskId, false);
-      } else if (actionBtn.classList.contains("action-btn-edit")) {
-        this.editTask(taskId);
-      } else if (actionBtn.classList.contains("action-btn-delete")) {
-        this.deleteTask(taskId);
+      const row = e.target.closest(".task-row");
+      if (row && row.dataset.taskId) {
+        const isCompleted = row.classList.contains("completed-row");
+        this.updateTaskStatus(row.dataset.taskId, !isCompleted);
       }
     };
 

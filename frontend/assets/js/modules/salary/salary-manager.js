@@ -368,15 +368,18 @@
         tabs.forEach((t) => t.classList.remove("active"));
         this.classList.add("active");
         const type = this.getAttribute("data-tab");
+        const pageTitle = document.querySelector(".salary-page .header h1");
         if (type === "salary") {
           salaryView?.classList.remove("hidden");
           statsView?.classList.add("hidden");
+          if (pageTitle) pageTitle.textContent = "Tính lương";
           const from = document.getElementById("filter-from")?.value;
           const to = document.getElementById("filter-to")?.value;
           loadAndRender(from, to);
         } else {
           salaryView?.classList.add("hidden");
           statsView?.classList.remove("hidden");
+          if (pageTitle) pageTitle.textContent = "Thống kê";
           window.StatsManager?.handleLoadStats?.();
         }
       })

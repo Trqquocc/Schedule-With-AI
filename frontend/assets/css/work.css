@@ -11,6 +11,9 @@
   background: transparent;
 }
 
+.task-row { cursor: pointer; transition: background 0.15s; }
+.task-row:hover { background: var(--bg-card-alt, #f5f5f7) !important; }
+
 /* ===== WORK TABLE — Apple card: soft shadow, no border ===== */
 .work-table-container {
   overflow-x: auto;

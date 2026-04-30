@@ -171,7 +171,7 @@
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center">
-                <div class="flex-shrink-0 w-3 h-10 rounded-sm mr-3" style="background-color:${categoryColor}"></div>
+                <div class="flex-shrink-0 w-1 h-10 rounded-full mr-3" style="background-color:${categoryColor}"></div>
                 <div>
                   <div class="font-medium text-gray-500 line-through">${task.TieuDe || ""}</div>
                   ${task.MoTa ? `<div class="text-sm text-gray-400 mt-1 line-through">${task.MoTa}</div>` : ""}

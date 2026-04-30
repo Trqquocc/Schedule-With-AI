@@ -210,6 +210,14 @@
           evEl.setAttribute("data-event-id",  info.event.id);
           evEl.setAttribute("data-eventid",   info.event.id);
 
+          // Compute duration in minutes for adaptive content display
+          const start = info.event.start;
+          const end = info.event.end || new Date(start.getTime() + 3600000);
+          const mins = Math.round((end - start) / 60000);
+          if (mins <= 30) evEl.setAttribute("data-size", "xs");
+          else if (mins <= 60) evEl.setAttribute("data-size", "sm");
+          else if (mins <= 90) evEl.setAttribute("data-size", "md");
+
           const priority = info.event.extendedProps.priority || 2;
           evEl.style.setProperty("--ev-accent", `var(--prio-${priority})`);
 
@@ -254,11 +262,9 @@
             evEl.style.overflow = "visible";
           }
 
-          // Tooltip
-          const start = info.event.start?.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) || "";
-          const end   = info.event.end?.toLocaleTimeString("vi-VN",   { hour: "2-digit", minute: "2-digit" }) || "";
-          const noteText = info.event.extendedProps?.note || "";
-          evEl.title = `${info.event.title}${noteText ? "\n" + noteText : ""}\n${start} - ${end}`;
+          // Rich tooltip — HTML popup on hover for compact events
+          evEl.removeAttribute("title");
+          this._attachEventTooltip(evEl, info.event);
         },
 
         views: {
@@ -350,11 +356,23 @@
         const todayNum    = today.getDate();
         const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
+        const eventDates = new Set();
+        if (this.calendar) {
+          this.calendar.getEvents().forEach((ev) => {
+            if (!ev.start) return;
+            const d = ev.start;
+            if (d.getFullYear() === year && d.getMonth() === month) {
+              eventDates.add(d.getDate());
+            }
+          });
+        }
+
         let cells = "";
         for (let i = 0; i < firstDay; i++) cells += `<div></div>`;
         for (let i = 1; i <= daysInMonth; i++) {
           const isToday = isCurrentMonth && i === todayNum;
-          cells += `<button class="mini-cal-day${isToday ? " today-day" : ""}" data-date="${year}-${String(month+1).padStart(2,"0")}-${String(i).padStart(2,"0")}">${i}</button>`;
+          const hasEvent = eventDates.has(i);
+          cells += `<button class="mini-cal-day${isToday ? " today-day" : ""}${hasEvent ? " has-event" : ""}" data-date="${year}-${String(month+1).padStart(2,"0")}-${String(i).padStart(2,"0")}">${i}</button>`;
         }
 
         sidebar.innerHTML = `
@@ -372,7 +390,7 @@
               ${days.map((dd) => `<div class="text-center text-xs font-semibold text-gray-400 py-1">${dd}</div>`).join("")}
             </div>
             <div class="grid grid-cols-7 gap-0.5">${cells}</div>
-            <button id="mini-today" class="mt-3 w-full text-xs font-semibold py-1.5 rounded-lg transition" style="color:#2563EB"
+            <button id="mini-today" class="mt-3 w-full text-xs font-semibold py-1.5 rounded-lg transition" style="color:var(--accent, #2563EB)"
               onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='transparent'">Hôm nay</button>
           </div>`;
 
@@ -399,6 +417,51 @@
       };
 
       render();
+    },
+
+    // ------------------------------------------------------------------
+    // Event tooltip (HTML popup, not native title)
+    // ------------------------------------------------------------------
+
+    _attachEventTooltip(el, event) {
+      let tip = null;
+      const show = () => {
+        if (tip) return;
+        const fmt = (d) => d?.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) || "";
+        const note = event.extendedProps?.note || "";
+        const cat = event.extendedProps?.category || "";
+        const subs = event.extendedProps?.subtasks || [];
+        const done = subs.filter((s) => s.is_done).length;
+
+        let rows = `<div class="evt-tip-title">${event.title}</div>`;
+        rows += `<div class="evt-tip-row"><i class="far fa-clock"></i>${fmt(event.start)} – ${fmt(event.end)}</div>`;
+        if (cat) rows += `<div class="evt-tip-row"><i class="far fa-folder"></i>${cat}</div>`;
+        if (note) rows += `<div class="evt-tip-row"><i class="far fa-sticky-note"></i>${note}</div>`;
+        if (subs.length) rows += `<div class="evt-tip-row"><i class="far fa-check-square"></i>${done}/${subs.length} subtasks</div>`;
+
+        tip = document.createElement("div");
+        tip.className = "evt-tooltip";
+        tip.innerHTML = rows;
+        document.body.appendChild(tip);
+
+        const r = el.getBoundingClientRect();
+        const tw = tip.offsetWidth;
+        let left = r.right + 8;
+        if (left + tw > window.innerWidth - 12) left = r.left - tw - 8;
+        tip.style.top = Math.max(4, r.top) + "px";
+        tip.style.left = left + "px";
+        requestAnimationFrame(() => tip.classList.add("visible"));
+      };
+      const hide = () => {
+        if (!tip) return;
+        tip.classList.remove("visible");
+        const ref = tip;
+        setTimeout(() => ref.remove(), 150);
+        tip = null;
+      };
+      el.addEventListener("mouseenter", show);
+      el.addEventListener("mouseleave", hide);
+      el.addEventListener("mousedown", hide);
     },
 
     // ------------------------------------------------------------------

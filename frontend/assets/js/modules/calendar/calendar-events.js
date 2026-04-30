@@ -208,6 +208,18 @@
     } catch (e) {}
   };
 
+  document.addEventListener("priority-colors-changed", () => {
+    if (!CM.calendar || !CM.isInitialized) return;
+    document.querySelectorAll(".fc-event[data-event-id]").forEach((el) => {
+      const evId = el.getAttribute("data-event-id");
+      const fcEvent = CM.calendar.getEventById(evId);
+      if (fcEvent) {
+        const p = fcEvent.extendedProps?.priority || 2;
+        el.style.setProperty("--ev-accent", `var(--prio-${p})`);
+      }
+    });
+  });
+
   CM.linkWorkTasksToCalendar = function () {
     const workTasks = document.querySelectorAll("#work-items-container .work-item");
     workTasks.forEach((task) => {

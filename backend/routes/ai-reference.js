@@ -274,14 +274,19 @@ router.post("/suggest-schedule", async (req, res) => {
 
     let parsed = null;
     try {
-      const result = await model.generateContent(prompt);
-      const text = (await result.response).text();
+      const geminiPromise = model.generateContent(prompt).then(async (result) => {
+        return (await result.response).text();
+      });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Gemini timeout (30s)")), 30000)
+      );
+      const text = await Promise.race([geminiPromise, timeout]);
       parsed = extractJson(text);
     } catch (e) {
       console.error("[ai-reference] Gemini call:", e.message);
       return res
         .status(502)
-        .json({ success: false, message: "Gemini không phản hồi" });
+        .json({ success: false, message: `Gemini không phản hồi: ${e.message}` });
     }
 
     if (!parsed || !Array.isArray(parsed.proposals)) {

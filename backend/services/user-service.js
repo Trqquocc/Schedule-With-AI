@@ -86,39 +86,26 @@ async function updatePriorityColors(userId, payload) {
   return merged;
 }
 
-/** GET /api/users/profile — falls back if HocVan/AvatarUrl not in schema cache */
+/** GET /api/users/profile */
 async function getProfile(userId) {
-  const FULL = "UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio, HocVan, AvatarUrl";
-  const CORE = "UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio";
-
-  let usedFallback = false;
-
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("Users")
-    .select(FULL)
+    .select("UserID, Username, Email, HoTen, HocVan, AvatarUrl")
     .eq("UserID", userId)
     .single();
 
-  if (error && /HocVan|AvatarUrl|column|schema/i.test(error.message || "")) {
-    usedFallback = true;
-    const retry = await supabase.from("Users").select(CORE).eq("UserID", userId).single();
-    data = retry.data;
-    error = retry.error;
+  if (error || !data) {
+    console.error("[getProfile] userId:", userId, "error:", error?.message);
+    throw { status: 404, message: "User not found" };
   }
 
-  if (error || !data) throw { status: 404, message: "User not found" };
-
   return {
-    usedFallback,
+    usedFallback: false,
     data: {
       id: data.UserID,
       username: data.Username,
       email: data.Email,
       hoten: data.HoTen,
-      phone: data.Phone,
-      ngaysinh: data.NgaySinh,
-      gioitinh: data.GioiTinh,
-      bio: data.Bio,
       hocvan: data.HocVan || null,
       avatarUrl: data.AvatarUrl || null,
     },
@@ -129,56 +116,53 @@ async function getProfile(userId) {
 async function getUser(userId) {
   const { data: user, error } = await supabase
     .from("Users")
-    .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio")
+    .select("UserID, Username, Email, HoTen, HocVan, AvatarUrl")
     .eq("UserID", userId)
     .single();
 
-  if (error || !user) throw { status: 404, message: "User not found" };
+  if (error || !user) {
+    console.error("[getUser] Not found. userId:", userId, "error:", error?.message);
+    throw { status: 404, message: "User not found" };
+  }
 
   return {
     id: user.UserID,
     username: user.Username,
     email: user.Email,
     hoten: user.HoTen,
-    phone: user.Phone,
-    ngaysinh: user.NgaySinh,
-    gioitinh: user.GioiTinh,
-    bio: user.Bio,
+    hocvan: user.HocVan || null,
+    avatarUrl: user.AvatarUrl || null,
   };
 }
 
 /** PUT /api/users/:id */
 async function updateUser(userId, body) {
-  const { hoten, email, phone, ngaysinh, gioitinh, bio, hocvan } = body;
+  const { hoten, email, hocvan } = body;
 
   if (!hoten || !email) {
     throw { status: 400, message: "Họ tên và email là bắt buộc" };
   }
 
-  let hocvanClean = null;
+  const updatePayload = { HoTen: hoten, Email: email };
+
   if (hocvan !== undefined && hocvan !== null && hocvan !== "") {
     if (!ALLOWED_HOCVAN.has(String(hocvan))) {
       throw { status: 400, message: "Học vấn không hợp lệ" };
     }
-    hocvanClean = String(hocvan);
+    updatePayload.HocVan = String(hocvan);
+  } else if (hocvan === "") {
+    updatePayload.HocVan = null;
   }
 
   const { data: updated, error } = await supabase
     .from("Users")
-    .update({
-      HoTen: hoten || "",
-      Email: email || "",
-      Phone: phone || null,
-      NgaySinh: ngaysinh || null,
-      GioiTinh: gioitinh || null,
-      Bio: bio || null,
-      HocVan: hocvanClean,
-    })
+    .update(updatePayload)
     .eq("UserID", userId)
-    .select("UserID, Username, Email, HoTen, Phone, NgaySinh, GioiTinh, Bio, HocVan, AvatarUrl");
+    .select("UserID, Username, Email, HoTen, HocVan, AvatarUrl");
 
   if (error || !updated || updated.length === 0) {
-    throw { status: 404, message: "User not found" };
+    console.error("[updateUser] userId:", userId, "error:", error?.message);
+    throw { status: error ? 500 : 404, message: error?.message || "User not found" };
   }
 
   const u = updated[0];
@@ -187,10 +171,6 @@ async function updateUser(userId, body) {
     username: u.Username,
     email: u.Email,
     hoten: u.HoTen,
-    phone: u.Phone,
-    ngaysinh: u.NgaySinh,
-    gioitinh: u.GioiTinh,
-    bio: u.Bio,
     hocvan: u.HocVan || null,
     avatarUrl: u.AvatarUrl || null,
   };

@@ -262,7 +262,7 @@ window.HabitsSection = {
     // Header
     const header = document.createElement("div");
     header.style.cssText =
-      "background:var(--accent-header, linear-gradient(135deg,#22c55e,#16a34a));padding:20px 24px;display:flex;align-items:center;justify-content:space-between;";
+      "background:var(--accent-header, linear-gradient(135deg,#2563EB,#1d4ed8));padding:20px 24px;display:flex;align-items:center;justify-content:space-between;";
     const title = document.createElement("h3");
     title.style.cssText = "color:#fff;font-size:17px;font-weight:700;margin:0;";
     title.textContent = habit ? "Chỉnh sửa thói quen" : "Thêm thói quen mới";
@@ -337,7 +337,7 @@ window.HabitsSection = {
     const saveBtn = document.createElement("button");
     saveBtn.textContent = habit ? "Lưu thay đổi" : "Thêm thói quen";
     saveBtn.style.cssText =
-      "padding:9px 20px;border-radius:10px;border:none;background:var(--accent, #22c55e);" +
+      "padding:9px 20px;border-radius:10px;border:none;background:var(--accent, #2563EB);" +
       "color:#fff;cursor:pointer;font-size:14px;font-weight:600;";
     saveBtn.onclick = async () => {
       const name = document.getElementById("hm-name")?.value?.trim();

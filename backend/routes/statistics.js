@@ -26,7 +26,14 @@ router.get("/", async (req, res) => {
       return res.status(500).json({ success: false, message: "Lỗi server" });
     }
 
+    // Also fetch tasks for priority + category breakdown
+    const { data: tasks } = await supabase
+      .from("CongViec")
+      .select("MaCongViec, TrangThaiThucHien, MucDoUuTien, ThoiGianUocTinh, LoaiCongViec(TenLoai)")
+      .eq("UserID", userId);
+
     const allRecords = records || [];
+    const allTasks = tasks || [];
     const total = allRecords.length;
     const completed = allRecords.filter((r) => r.DaHoanThanh).length;
     const pending = total - completed;
@@ -48,9 +55,51 @@ router.get("/", async (req, res) => {
       a.date.localeCompare(b.date)
     );
 
+    // Priority distribution
+    const priorityMap = { 1: { total: 0, done: 0 }, 2: { total: 0, done: 0 }, 3: { total: 0, done: 0 }, 4: { total: 0, done: 0 } };
+    allTasks.forEach((t) => {
+      const p = t.MucDoUuTien || 2;
+      if (priorityMap[p]) {
+        priorityMap[p].total++;
+        if (t.TrangThaiThucHien === 2) priorityMap[p].done++;
+      }
+    });
+
+    // Category distribution
+    const catMap = {};
+    allTasks.forEach((t) => {
+      const cat = t.LoaiCongViec?.TenLoai || "Chưa phân loại";
+      if (!catMap[cat]) catMap[cat] = { total: 0, done: 0 };
+      catMap[cat].total++;
+      if (t.TrangThaiThucHien === 2) catMap[cat].done++;
+    });
+
+    // Total estimated time
+    const totalMinutes = allTasks.reduce((s, t) => s + (t.ThoiGianUocTinh || 0), 0);
+    const doneMinutes = allTasks.filter((t) => t.TrangThaiThucHien === 2).reduce((s, t) => s + (t.ThoiGianUocTinh || 0), 0);
+
+    // Streak: consecutive days with completed tasks
+    const sortedDays = Object.keys(dailyMap).sort().reverse();
+    let streak = 0;
+    const todayStr = new Date().toISOString().split("T")[0];
+    for (let i = 0; i < sortedDays.length; i++) {
+      const expected = new Date(new Date(todayStr).getTime() - i * 86400000).toISOString().split("T")[0];
+      if (sortedDays[i] === expected && dailyMap[expected].completed > 0) streak++;
+      else break;
+    }
+
     res.json({
       success: true,
-      data: { total, completed, pending, percent, daily },
+      data: {
+        total, completed, pending, percent, daily,
+        totalTasks: allTasks.length,
+        completedTasks: allTasks.filter((t) => t.TrangThaiThucHien === 2).length,
+        priority: priorityMap,
+        categories: Object.entries(catMap).map(([name, v]) => ({ name, ...v })),
+        totalMinutes,
+        doneMinutes,
+        streak,
+      },
     });
   } catch (error) {
     console.error("Lỗi statistics:", error);

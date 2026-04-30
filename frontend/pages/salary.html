@@ -24,7 +24,7 @@
                     <input type="date" id="filter-from" class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm">
                     <span class="text-slate-400 text-sm">→</span>
                     <input type="date" id="filter-to" class="px-2 py-1.5 rounded-lg border border-slate-200 text-sm">
-                    <button id="btn-apply" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-white" style="background:#2563EB">Áp dụng</button>
+                    <button id="btn-apply" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-white" style="background:var(--accent, #2563EB)">Áp dụng</button>
                     <div class="flex gap-1 ml-1">
                         <button class="np-preset px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 bg-white" data-preset="week">Tuần</button>
                         <button class="np-preset px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-600 bg-white" data-preset="month">Tháng</button>
@@ -97,6 +97,20 @@
                               <canvas id="donut-chart" style="max-width:260px"></canvas>
                             </div>
                         </div>
+
+                        <div class="chart-container">
+                            <div class="chart-title">Phân bố theo độ ưu tiên</div>
+                            <div style="position:relative;height:200px">
+                              <canvas id="priority-chart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-title">Phân bố theo danh mục</div>
+                            <div style="position:relative;height:200px;display:flex;align-items:center;justify-content:center">
+                              <canvas id="category-chart" style="max-width:280px"></canvas>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="quick-stats">
@@ -120,6 +134,18 @@
                             <div class="quick-stat-item">
                                 <span class="quick-stat-label">Tỷ lệ hoàn thành</span>
                                 <span class="quick-stat-value" id="side-percent">0%</span>
+                            </div>
+                            <div class="quick-stat-item">
+                                <span class="quick-stat-label">Thời gian ước tính</span>
+                                <span class="quick-stat-value" id="side-minutes">0h</span>
+                            </div>
+                            <div class="quick-stat-item">
+                                <span class="quick-stat-label">Đã hoàn thành (giờ)</span>
+                                <span class="quick-stat-value" id="side-done-minutes">0h</span>
+                            </div>
+                            <div class="quick-stat-item">
+                                <span class="quick-stat-label">Chuỗi ngày liên tiếp</span>
+                                <span class="quick-stat-value" id="side-streak">0 ngày</span>
                             </div>
                         </div>
                     </div>
