@@ -137,14 +137,14 @@ window.CalendarShareManager = {
     const sentRows = sent.map((s) => `
       <div class="share-user-row">
         <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold"
-             style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+             style="background:#2563EB">
           ${(s.Users?.HoTen || s.Users?.Email || "?")[0].toUpperCase()}
         </div>
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-sm truncate" style="color:#1e293b">${s.Users?.HoTen || "Người dùng"}</div>
           <div class="text-xs truncate" style="color:#64748b">${s.Users?.Email || ""}</div>
         </div>
-        <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:#ede9fe;color:#6d28d9">${permLabel(s.Permission)}</span>
+        <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:#eff6ff;color:#2563EB">${permLabel(s.Permission)}</span>
         <span class="text-xs" style="color:#94a3b8">${statusLabel(s.TrangThai)}</span>
         <button onclick="CalendarShareManager.revokeShare(${s.ShareID})"
           class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
@@ -170,7 +170,7 @@ window.CalendarShareManager = {
     const receivedRows = received.map((r) => `
       <div class="share-user-row">
         <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold"
-             style="background:linear-gradient(135deg,#dc2626,#f97316)">
+             style="background:#2563EB">
           ${(r.Users?.HoTen || "?")[0].toUpperCase()}
         </div>
         <div class="flex-1 min-w-0">
@@ -198,7 +198,7 @@ window.CalendarShareManager = {
           </select>
           <button onclick="CalendarShareManager._submitInvite()"
             class="px-4 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0"
-            style="background:linear-gradient(135deg,#dc2626,#4f46e5)">
+            style="background:#2563EB">
             Mời
           </button>
         </div>
@@ -260,7 +260,7 @@ window.CalendarShareManager = {
         <div class="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style="border-color:#e2e8f0">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white"
-                 style="background:linear-gradient(135deg,#dc2626,#4f46e5)">
+                 style="background:#2563EB">
               <i class="fas fa-share-alt text-sm"></i>
             </div>
             <h3 class="font-bold text-base" style="color:#1e293b">Chia sẻ lịch</h3>

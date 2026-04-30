@@ -17,7 +17,7 @@
       <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <div>
           <div class="flex items-center gap-3 mb-1">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#dc2626,#4f46e5)">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#2563EB">
               <i class="fas fa-tasks text-white text-base"></i>
             </div>
             <h1 class="text-2xl font-bold" style="color:#1e293b">Quản lý công việc</h1>
@@ -54,9 +54,9 @@
           <button
             id="create-task-btn"
             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white text-sm shadow-lg transition-all active:scale-95"
-            style="background:linear-gradient(135deg,#dc2626,#4f46e5);box-shadow:0 4px 15px rgba(220,38,38,0.35)"
-            onmouseover="this.style.boxShadow='0 6px 20px rgba(220,38,38,0.5)'"
-            onmouseout="this.style.boxShadow='0 4px 15px rgba(220,38,38,0.35)'"
+            style="background:#2563EB;box-shadow:0 4px 15px rgba(37,99,235,0.35)"
+            onmouseover="this.style.boxShadow='0 6px 20px rgba(37,99,235,0.5)'"
+            onmouseout="this.style.boxShadow='0 4px 15px rgba(37,99,235,0.35)'"
           >
             <i class="fas fa-plus text-xs"></i>
             Tạo công việc mới
@@ -73,14 +73,14 @@
               type="text"
               id="task-search"
               placeholder="Tìm kiếm theo tiêu đề, mô tả..."
-              class="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
               style="border-color:#e2e8f0;background:#f8fafc"
             />
           </div>
           <div class="flex gap-3 flex-wrap">
             <select
               id="status-filter"
-              class="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              class="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
               style="border-color:#e2e8f0;background:#f8fafc;color:#374151"
             >
               <option value="all">Tất cả trạng thái</option>
@@ -89,7 +89,7 @@
             </select>
             <select
               id="priority-filter"
-              class="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              class="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
               style="border-color:#e2e8f0;background:#f8fafc;color:#374151"
             >
               <option value="all">Tất cả ưu tiên</option>
@@ -100,7 +100,7 @@
             </select>
             <select
               id="category-filter"
-              class="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              class="px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
               style="border-color:#e2e8f0;background:#f8fafc;color:#374151"
             >
               <option value="all">Tất cả danh mục</option>

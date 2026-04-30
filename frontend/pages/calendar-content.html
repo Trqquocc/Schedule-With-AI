@@ -16,7 +16,7 @@
         <!-- Left: icon + nav + title -->
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-               style="background:linear-gradient(135deg,#dc2626,#4f46e5)">
+               style="background:#2563EB">
             <i class="fas fa-calendar-alt text-white text-sm"></i>
           </div>
 
@@ -31,8 +31,8 @@
             </button>
             <button id="cal-today-btn"
               class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors"
-              style="color:#dc2626"
-              onmouseover="this.style.background='#fef2f2'"
+              style="color:#2563EB"
+              onmouseover="this.style.background='#eff6ff'"
               onmouseout="this.style.background='transparent'">
               Hôm nay
             </button>
@@ -58,9 +58,9 @@
           <!-- Share calendar button -->
           <button id="btn-share-calendar"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
-            style="color:#4f46e5;background:#ede9fe;position:relative"
-            onmouseover="this.style.background='#ddd6fe'"
-            onmouseout="this.style.background='#ede9fe'"
+            style="color:#2563EB;background:#eff6ff;position:relative"
+            onmouseover="this.style.background='#dbeafe'"
+            onmouseout="this.style.background='#eff6ff'"
             title="Chia sẻ lịch"
             onclick="if(!Utils.requireAuth())return;CalendarShareManager.openShareModal()">
             <i class="fas fa-share-alt text-xs"></i>

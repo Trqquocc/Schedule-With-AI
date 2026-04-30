@@ -43,19 +43,19 @@
 }
 
 .fc-event.event-ai-suggested {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
-  border-color: #7c3aed !important;
-  border-left: 4px solid #a78bfa !important;
+  background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%) !important;
+  border-color: #1d4ed8 !important;
+  border-left: 4px solid #60a5fa !important;
   color: white !important;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
   position: relative;
 }
 
 .fc-event.event-ai-suggested:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .fc-event.event-ai-suggested::after {
@@ -73,7 +73,7 @@
 }
 
 #ai-suggest-btn {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -99,7 +99,7 @@
 
 #ai-suggest-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
 }
 
 #ai-suggest-btn:active {
@@ -125,7 +125,7 @@
 }
 
 #aiEventDetailModal .fa-robot {
-  color: #8b5cf6;
+  color: #2563EB;
   font-size: 20px;
 }
 
@@ -219,18 +219,18 @@
 
   .fc-event.event-ai-suggested {
     background: white !important;
-    border: 2px solid #8b5cf6 !important;
-    color: #8b5cf6 !important;
+    border: 2px solid #2563EB !important;
+    color: #2563EB !important;
   }
 }
 
 #ai-suggest-btn:focus {
-  outline: 3px solid rgba(139, 92, 246, 0.5);
+  outline: 3px solid rgba(37, 99, 235, 0.5);
   outline-offset: 2px;
 }
 
 .fc-event.event-ai-suggested:focus {
-  outline: 3px solid #8b5cf6;
+  outline: 3px solid #2563EB;
   outline-offset: 2px;
   z-index: 10;
 }
@@ -438,8 +438,8 @@
 }
 
 #aiSuggestionModal .task-item.selected {
-  background-color: #e0e7ff;
-  border-color: #8b5cf6;
+  background-color: #eff6ff;
+  border-color: #2563EB;
 }
 
 #aiSuggestionModal .task-checkbox-label {
@@ -489,7 +489,7 @@ body.dark #ai-cal-next-btn {
 }
 
 body.dark #ai-cal-today-btn {
-  color: #a78bfa !important;
+  color: #60a5fa !important;
 }
 
 /* View switcher pill */
@@ -589,13 +589,13 @@ body.dark #aiSuggestionModal .task-list-container {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .ai-ref-section .ai-ref-task-row:hover {
-  border-color: #c4b5fd;
-  background: #faf5ff;
+  border-color: #bfdbfe;
+  background: #eff6ff;
 }
 .ai-ref-section .ai-ref-task-row:has(.ai-ref-task-cb:checked) {
-  background: #f3f0ff;
-  border-color: #a78bfa;
-  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.18);
+  background: #eff6ff;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.18);
 }
 
 /* AI-proposed event overlay on the main AI calendar:
@@ -632,8 +632,8 @@ body.dark .ai-ref-section .ai-ref-task-row {
   color: var(--text-primary, #e2e8f0) !important;
 }
 body.dark .ai-ref-section .ai-ref-task-row:has(.ai-ref-task-cb:checked) {
-  background: #3b2a5c !important;
-  border-color: #a78bfa !important;
+  background: #1e3a5f !important;
+  border-color: #60a5fa !important;
 }
 body.dark #ai-calendar .fc-event.ai-ref-proposal {
   background: rgba(124, 58, 237, 0.18) !important;

@@ -73,8 +73,8 @@
       .cadv-bubble {
         position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
         border-radius: 50%; border: none; cursor: pointer; z-index: 9998;
-        background: linear-gradient(135deg,#7c3aed,#4f46e5);
-        color: #fff; font-size: 22px; box-shadow: 0 10px 25px rgba(79,70,229,0.35);
+        background: linear-gradient(135deg,#2563EB,#1d4ed8);
+        color: #fff; font-size: 22px; box-shadow: 0 10px 25px rgba(37,99,235,0.35);
         transition: transform .15s;
       }
       .cadv-bubble:hover { transform: scale(1.06); }
@@ -85,7 +85,7 @@
         display: flex; flex-direction: column; overflow: hidden;
       }
       .cadv-header {
-        padding: 12px 14px; background: linear-gradient(135deg,#7c3aed,#4f46e5);
+        padding: 12px 14px; background: linear-gradient(135deg,#2563EB,#1d4ed8);
         color: #fff; display: flex; justify-content: space-between; align-items: center;
       }
       .cadv-head-info { display: flex; align-items: center; gap: 10px; }
@@ -108,7 +108,7 @@
         white-space: pre-wrap; word-wrap: break-word;
       }
       .cadv-msg.user .cadv-bubble-msg {
-        background: linear-gradient(135deg,#7c3aed,#4f46e5); color: #fff; border-bottom-right-radius: 4px;
+        background: linear-gradient(135deg,#2563EB,#1d4ed8); color: #fff; border-bottom-right-radius: 4px;
       }
       .cadv-msg.assistant .cadv-bubble-msg {
         background: #fff; color: #334155; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px;
@@ -116,10 +116,10 @@
       .cadv-msg.loading .cadv-bubble-msg { opacity: .7; font-style: italic; }
       .cadv-context-pill {
         display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 0 12px 8px;
-        background: #ede9fe; color: #6d28d9; border-radius: 10px; font-size: 12px;
+        background: #eff6ff; color: #2563EB; border-radius: 10px; font-size: 12px;
       }
       .cadv-context-pill button {
-        margin-left: auto; background: transparent; border: none; color: #6d28d9;
+        margin-left: auto; background: transparent; border: none; color: #2563EB;
         font-size: 16px; cursor: pointer; line-height: 1;
       }
       .cadv-composer {
@@ -129,15 +129,15 @@
         flex: 1; resize: none; border: 1px solid #e2e8f0; border-radius: 10px;
         padding: 8px 10px; font-size: 13px; max-height: 100px; font-family: inherit;
       }
-      .cadv-composer textarea:focus { outline: none; border-color: #7c3aed; }
+      .cadv-composer textarea:focus { outline: none; border-color: #2563EB; }
       .cadv-send, .cadv-ctx-btn {
         border: none; cursor: pointer; border-radius: 10px; width: 38px;
         display: flex; align-items: center; justify-content: center; font-size: 13px;
       }
-      .cadv-send { background: linear-gradient(135deg,#7c3aed,#4f46e5); color: #fff; }
+      .cadv-send { background: linear-gradient(135deg,#2563EB,#1d4ed8); color: #fff; }
       .cadv-send:disabled { opacity: .5; cursor: not-allowed; }
       .cadv-ctx-btn { background: #f1f5f9; color: #64748b; }
-      .cadv-ctx-btn.active { background: #ede9fe; color: #6d28d9; }
+      .cadv-ctx-btn.active { background: #eff6ff; color: #2563EB; }
     `;
     document.head.appendChild(style);
   }

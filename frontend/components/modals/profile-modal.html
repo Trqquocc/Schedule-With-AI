@@ -5,9 +5,9 @@
 -->
 <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 my-8">
   <!-- Header -->
-    <div class="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-red-50">
+    <div class="flex justify-between items-center p-6 border-b border-gray-200" style="background:#eff6ff">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-red-500 flex items-center justify-center text-white">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white" style="background:#2563EB">
           <i class="fas fa-user-edit"></i>
         </div>
         <div>
@@ -24,7 +24,7 @@
     <div class="flex border-b border-gray-200 px-4" role="tablist">
       <button type="button" class="profile-tab-btn px-4 py-3 text-sm font-semibold relative"
         data-tab="info" aria-selected="true"
-        style="color:#dc2626">
+        style="color:#2563EB">
         <i class="fas fa-id-card mr-2"></i>Thông tin cá nhân
       </button>
       <button type="button" class="profile-tab-btn px-4 py-3 text-sm font-semibold relative"
@@ -39,7 +39,7 @@
       <form id="profileInfoForm" class="space-y-6">
         <div class="flex flex-col items-center gap-3 pb-6 border-b border-gray-200">
           <div class="relative">
-            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-400 to-red-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg overflow-hidden"
+            <div class="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-lg overflow-hidden" style="background:#2563EB"
               id="profileAvatar">?</div>
             <label for="avatarInput"
               class="absolute bottom-0 right-0 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-2 cursor-pointer transition-colors shadow-md"
@@ -118,7 +118,7 @@
           <i class="fas fa-times mr-2"></i>Hủy
         </button>
         <button type="button" id="saveProfileBtn"
-          class="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-red-500 text-white font-medium hover:from-indigo-600 hover:to-red-600 transition-all shadow-md flex items-center gap-2">
+          class="px-6 py-3 rounded-lg text-white font-medium transition-all shadow-md flex items-center gap-2" style="background:#2563EB" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563EB'">
           <i class="fas fa-save"></i>Lưu thay đổi
         </button>
       </div>
@@ -167,7 +167,7 @@
           <i class="fas fa-times mr-2"></i>Hủy
         </button>
         <button type="button" id="savePasswordBtn"
-          class="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-red-500 text-white font-medium hover:from-indigo-600 hover:to-red-600 transition-all shadow-md flex items-center gap-2">
+          class="px-6 py-3 rounded-lg text-white font-medium transition-all shadow-md flex items-center gap-2" style="background:#2563EB" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563EB'">
           <i class="fas fa-save"></i>Đổi mật khẩu
         </button>
       </div>
@@ -205,7 +205,7 @@
     transition: color 0.15s, border-color 0.15s;
   }
   #profileModal .profile-tab-btn[aria-selected="true"] {
-    border-bottom-color: #dc2626;
+    border-bottom-color: #2563EB;
   }
   #profileModal #profileAvatar img {
     width: 100%;
@@ -275,7 +275,7 @@
       modal.querySelectorAll(".profile-tab-btn").forEach((b) => {
         const on = b.dataset.tab === tab;
         b.setAttribute("aria-selected", on ? "true" : "false");
-        b.style.color = on ? "#dc2626" : "#64748b";
+        b.style.color = on ? "#2563EB" : "#64748b";
       });
       const info = document.getElementById("profile-tab-info");
       const pw = document.getElementById("profile-tab-password");

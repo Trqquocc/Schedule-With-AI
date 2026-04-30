@@ -2,7 +2,7 @@
    Apple-inspired design system (per DESIGN.md)
    - SF Pro Display (≥20px) / SF Pro Text (<20px) with optical sizing
    - Binary surface rhythm: #000 ↔ #f5f5f7
-   - Single accent: Apple Blue #0071e3 for interactive only
+   - Single accent: Brand Blue #2563EB for interactive only
    - One soft diffused shadow, 980px pill radius for CTAs
    ============================================================ */
 
@@ -13,9 +13,9 @@
   --apple-near-black: #1d1d1f;
   --apple-surface: #f5f5f7;
   --apple-white: #ffffff;
-  --apple-blue: #0071e3;
-  --apple-link: #0066cc;
-  --apple-link-dark: #2997ff;
+  --apple-blue: #2563EB;
+  --apple-link: #2563EB;
+  --apple-link-dark: #60a5fa;
   --apple-text-secondary: rgba(0, 0, 0, 0.8);
   --apple-text-tertiary: rgba(0, 0, 0, 0.48);
   --apple-btn-active: #ededf2;
@@ -41,11 +41,11 @@
   --border: rgba(0, 0, 0, 0.08);
   --border-hover: rgba(0, 0, 0, 0.16);
 
-  /* Accent = Apple Blue (only chromatic color, reserved for interactive) */
+  /* Accent = Blue (only chromatic color, reserved for interactive) */
   --accent: var(--apple-blue);
-  --accent-hover: #0077ed;
-  --accent-light: rgba(0, 113, 227, 0.08);
-  --accent-gradient: linear-gradient(135deg, #0071e3, #0066cc);
+  --accent-hover: #1d4ed8;
+  --accent-light: rgba(37, 99, 235, 0.08);
+  --accent-gradient: linear-gradient(135deg, #2563EB, #1d4ed8);
 
   /* Semantic */
   --success: #30d158;
@@ -555,7 +555,7 @@ body.dark #task-list { background: transparent; }
    Apple palette without rewriting every HTML file.
    ============================================================ */
 
-/* Primary CTA reds → Apple Blue */
+/* Primary CTA reds → Brand Blue */
 .bg-red-600, .bg-red-700, .bg-blue-600, .bg-blue-700 {
   background-color: var(--apple-blue) !important;
 }

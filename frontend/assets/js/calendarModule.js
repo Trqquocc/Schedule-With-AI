@@ -1701,7 +1701,7 @@
           <div class="subtask-card rounded-lg p-2.5 flex items-start gap-2" data-subtask-id="${s.id}"
             style="background:#fff;border:1px solid #e2e8f0;${s.is_done ? "opacity:0.6" : ""}">
             <input type="checkbox" class="subtask-done mt-0.5" data-subtask-id="${s.id}" ${s.is_done ? "checked" : ""}
-              style="accent-color:#dc2626;flex-shrink:0" />
+              style="accent-color:#2563EB;flex-shrink:0" />
             <div class="flex-1 min-w-0">
               <div class="text-sm font-semibold" style="color:#1e293b;${s.is_done ? "text-decoration:line-through" : ""}">${s.title}</div>
               ${timeStr ? `<div class="text-[11px] mt-0.5" style="color:#64748b"><i class="far fa-clock mr-1"></i>${timeStr}</div>` : ""}

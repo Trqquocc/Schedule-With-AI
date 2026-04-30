@@ -63,9 +63,9 @@
         : active
         ? "fa-arrow-up-short-wide"
         : null;
-    const bg = active ? "#dc2626" : "#fff";
+    const bg = active ? "#2563EB" : "#fff";
     const color = active ? "#fff" : "#374151";
-    const border = active ? "#dc2626" : "#e2e8f0";
+    const border = active ? "#2563EB" : "#e2e8f0";
     const label = compact ? c.short : c.label;
     const pad = compact ? "px-2 py-1" : "px-3 py-1.5";
     const gap = compact ? "gap-1" : "gap-1.5";

@@ -163,7 +163,7 @@
 
           const calendarEvents = events.map((ev, idx) => {
             const color =
-              ev.Color || this.getPriorityColor(ev.priority) || "#8B5CF6";
+              ev.Color || this.getPriorityColor(ev.priority) || "#2563EB";
 
             console.log(
               `   [${idx}] "${ev.TieuDe}" | ${ev.GioBatDau} | color: ${color}`
@@ -211,7 +211,7 @@
         3: "#F59E0B",
         4: "#EF4444",
       };
-      return colors[priority] || "#8B5CF6";
+      return colors[priority] || "#2563EB";
     },
 
     async loadAISuggestions(suggestions) {
@@ -277,8 +277,8 @@
             title: taskTitle,
             start: start.toISOString(),
             end: end.toISOString(),
-            backgroundColor: suggestion.color || "#8B5CF6",
-            borderColor: suggestion.color || "#7c3aed",
+            backgroundColor: suggestion.color || "#2563EB",
+            borderColor: suggestion.color || "#1d4ed8",
             classNames: ["event-ai-suggested"],
             extendedProps: {
               taskId: suggestion.taskId,
@@ -1025,8 +1025,8 @@
           title: ev.TieuDe || ev.title || `Công việc #${ev.taskId}`,
           start: ev.GioBatDau || ev.start,
           end: ev.GioKetThuc || ev.end,
-          backgroundColor: ev.Color || ev.color || "#8B5CF6",
-          borderColor: ev.Color || ev.color || "#7c3aed",
+          backgroundColor: ev.Color || ev.color || "#2563EB",
+          borderColor: ev.Color || ev.color || "#1d4ed8",
           classNames: ["event-ai-suggested"],
           extendedProps: {
             note: ev.GhiChu || ev.reason || "AI đề xuất",
@@ -1076,8 +1076,8 @@
             title: ev.TieuDe || ev.title || "AI Đề xuất",
             start: ev.ThoiGianBatDau || ev.start,
             end: ev.ThoiGianKetThuc || ev.end,
-            backgroundColor: ev.MaMau || ev.Color || "#8B5CF6",
-            borderColor: ev.MaMau || ev.Color || "#7c3aed",
+            backgroundColor: ev.MaMau || ev.Color || "#2563EB",
+            borderColor: ev.MaMau || ev.Color || "#1d4ed8",
             classNames: ["event-ai-suggested"],
             extendedProps: {
               note: ev.GhiChu || ev.reason || "AI đề xuất",

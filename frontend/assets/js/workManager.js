@@ -111,7 +111,7 @@
           </div>
           <h3 id="overlay-title" class="text-xl font-bold text-gray-800 mb-2">${message}</h3>
           <p id="overlay-description" class="text-gray-600 mb-6">Thao tác đã được thực hiện thành công!</p>
-          <button id="close-overlay-btn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+          <button id="close-overlay-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
             Đóng
           </button>
         </div>

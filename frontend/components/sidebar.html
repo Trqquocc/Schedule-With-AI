@@ -70,6 +70,9 @@
   #sidebar-container .bg-red-500 {
     background: #ef4444 !important;
   }
+  #sidebar-container .bg-blue-600 {
+    background: #2563EB !important;
+  }
 
   #sidebar-container .text-white {
     color: white !important;
@@ -175,7 +178,7 @@
     font-weight: 600 !important;
   }
   #sidebar-container .nav-btn.is-active > i {
-    color: #f87171 !important;
+    color: #60a5fa !important;
   }
   body.dark #sidebar-container .nav-btn.is-active {
     background: linear-gradient(135deg,#273548 0%,#2d3f55 100%) !important;
@@ -325,7 +328,7 @@
   }
 
   #settingsModal .modal-content > div:first-child {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%) !important;
     color: white !important;
     padding: 28px 24px !important;
     border-bottom: none !important;
@@ -342,7 +345,7 @@
     left: 0 !important;
     right: 0 !important;
     height: 4px !important;
-    background: linear-gradient(90deg, #ec4899, #8b5cf6, #ef4444) !important;
+    background: linear-gradient(90deg, #60a5fa, #2563EB, #1d4ed8) !important;
   }
 
   #settingsModal .modal-content h3 {
@@ -391,9 +394,9 @@
 
   #settingsModal .flex.items-center {
     padding: 20px !important;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%) !important;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
     border-radius: 16px !important;
-    border: 2px solid #c7d2fe !important;
+    border: 2px solid #bfdbfe !important;
     gap: 16px !important;
     margin-bottom: 24px !important;
     transition: all 0.3s ease !important;
@@ -401,14 +404,14 @@
 
   #settingsModal .flex.items-center:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15) !important;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15) !important;
   }
 
   #settingsModal .settings-avatar-letter {
     width: 56px !important;
     height: 56px !important;
     border-radius: 50% !important;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -416,7 +419,7 @@
     font-weight: 700 !important;
     font-size: 24px !important;
     flex-shrink: 0 !important;
-    box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4) !important;
+    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.4) !important;
     border: 3px solid white !important;
   }
 
@@ -458,9 +461,9 @@
 
   #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn):hover {
     background: white !important;
-    border-color: #e0e7ff !important;
+    border-color: #bfdbfe !important;
     transform: translateX(6px) !important;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1) !important;
   }
 
   #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) i {
@@ -472,12 +475,12 @@
   }
 
   #settingsModal #openProfileBtn {
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
   }
 
   #settingsModal #openProfileBtn:hover {
-    border-color: #ef4444 !important;
-    color: #991b1b !important;
+    border-color: #2563EB !important;
+    color: #1d4ed8 !important;
   }
 
   #settingsModal #openNotificationBtn {
@@ -602,7 +605,7 @@
   <!-- Logo/Brand -->
   <div>
     <div class="px-4 mb-5 flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+      <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
         <i class="fas fa-calendar-check text-white text-sm"></i>
       </div>
       <span style="color:#f1f5f9;font-weight:700;font-size:15px;">Schedule AI</span>
@@ -664,7 +667,7 @@
   <div style="border-top:1px solid #334155;padding-top:16px;margin-top:16px;">
     <!-- Profile area (shown when authenticated) -->
     <div id="sidebarProfileBtn" class="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all hover:opacity-80" style="background:#0f172a;" title="Cập nhật hồ sơ">
-      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" id="sidebarAvatarContainer">
+      <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" style="background:#2563EB" id="sidebarAvatarContainer">
         <span class="avatar-letter">?</span>
       </div>
       <div class="flex-1 min-w-0">
@@ -709,7 +712,7 @@
 
     <!-- ── HERO HEADER ── -->
     <div style="
-      background:linear-gradient(135deg,#b91c1c 0%,#4f46e5 50%,#7c3aed 100%);
+      background:linear-gradient(135deg,#2563EB 0%,#1d4ed8 100%);
       padding:24px 24px 20px;
       position:relative;overflow:hidden;flex-shrink:0
     ">
@@ -793,7 +796,7 @@
             <button id="smLightBtn" onclick="if(window.ThemeManager&&document.body.classList.contains('dark')){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}" style="
               border-radius:10px;padding:10px;border:2px solid #e2e8f0;
               background:#fff;cursor:pointer;transition:all .2s;text-align:center
-            " onmouseover="this.style.borderColor='#dc2626'" onmouseout="if(!document.body.classList.contains('dark')){this.style.borderColor='#dc2626'}else{this.style.borderColor='#e2e8f0'}">
+            " onmouseover="this.style.borderColor='#2563EB'" onmouseout="if(!document.body.classList.contains('dark')){this.style.borderColor='#2563EB'}else{this.style.borderColor='#e2e8f0'}">
               <!-- mini UI mockup - light -->
               <div style="background:#f1f5f9;border-radius:6px;height:36px;margin-bottom:6px;padding:4px;display:flex;gap:3px;align-items:flex-start">
                 <div style="width:8px;background:#e2e8f0;border-radius:2px;height:100%"></div>
@@ -852,6 +855,25 @@
               <i class="fas fa-moon" style="color:#818cf8;font-size:11px"></i>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION: MÀU CHỦ ĐẠO ── -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
+          Màu chủ đạo
+        </div>
+        <div style="background:var(--sm-section-bg,#f8fafc);border-radius:14px;padding:14px;border:1px solid var(--sm-border,#e2e8f0)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-palette" style="color:#2563EB;font-size:13px"></i>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Màu giao diện</div>
+              <div style="font-size:11px;color:var(--sm-muted,#94a3b8)">Tùy chỉnh màu chủ đạo của ứng dụng</div>
+            </div>
+          </div>
+          <div id="accentColorGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
         </div>
       </div>
 
@@ -957,7 +979,7 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
     const isDark = document.body.classList.contains('dark');
     const btn   = document.getElementById('sidebarThemeToggle');
     const thumb = document.getElementById('sidebarThemeThumb');
-    if (btn)   btn.style.background   = isDark ? '#4f46e5' : '#cbd5e1';
+    if (btn)   btn.style.background   = isDark ? '#2563EB' : '#cbd5e1';
     if (thumb) thumb.style.transform  = isDark ? 'translateX(22px)' : 'translateX(2px)';
   }
 
@@ -966,7 +988,7 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
     const isDark = document.body.classList.contains('dark');
     const lightBtn = document.getElementById('smLightBtn');
     const darkBtn  = document.getElementById('smDarkBtn');
-    if (lightBtn) lightBtn.style.borderColor = isDark ? '#334155' : '#dc2626';
+    if (lightBtn) lightBtn.style.borderColor = isDark ? '#334155' : '#2563EB';
     if (darkBtn)  darkBtn.style.borderColor  = isDark ? '#818cf8' : '#334155';
     updateSidebarThemeToggle();
   }
@@ -979,6 +1001,22 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
   // Initial sync (theme.js runs before sidebar loads)
   updateSidebarThemeToggle();
   updateSettingsThemeUI();
+
+  // Accent color picker in settings
+  (function renderAccentPicker() {
+    const grid = document.getElementById('accentColorGrid');
+    if (!grid || !window.AccentTheme) return;
+    const current = AccentTheme.get();
+    grid.innerHTML = AccentTheme.PRESETS.map(p => {
+      const active = p.hex.toUpperCase() === current.toUpperCase();
+      return `<button onclick="AccentTheme.set('${p.hex}');document.querySelectorAll('.accent-swatch').forEach(s=>s.style.outline='');this.style.outline='2px solid ${p.hex}';this.style.outlineOffset='2px';"
+        class="accent-swatch" style="
+        height:40px;border-radius:10px;border:none;cursor:pointer;
+        background:${p.hex};position:relative;transition:all .2s;
+        ${active ? `outline:2px solid ${p.hex};outline-offset:2px;` : ''}
+      "><span style="position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${p.name}</span>${active ? '<i class="fas fa-check" style="color:#fff;font-size:12px"></i>' : ''}</button>`;
+    }).join('');
+  })();
 
   (function () {
 

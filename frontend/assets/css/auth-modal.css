@@ -146,8 +146,8 @@ body.dark .auth-form-group label { color: rgba(255, 255, 255, 0.8); }
 }
 
 .auth-form-group input:focus {
-  border-color: #0071e3;
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 body.dark .auth-form-group input {
@@ -163,13 +163,13 @@ body.dark .auth-form-group input:focus {
   box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.2);
 }
 
-/* Submit button — Apple Blue */
+/* Submit button — Brand Blue */
 .auth-submit-btn {
   width: 100%;
   padding: 12px;
   border: none;
   border-radius: 980px;
-  background: #0071e3;
+  background: #2563EB;
   color: #ffffff;
   font-size: 15px;
   font-weight: 400;
@@ -181,12 +181,12 @@ body.dark .auth-form-group input:focus {
 }
 
 .auth-submit-btn:hover {
-  background: #0077ed;
+  background: #1d4ed8;
 }
 
 .auth-submit-btn:active {
   transform: scale(0.98);
-  background: #006edb;
+  background: #1e40af;
 }
 
 .auth-submit-btn:disabled {

@@ -27,9 +27,9 @@
   function setBtnActive(btn, active) {
     if (!btn) return;
     if (active) {
-      btn.style.background = "#dc2626";
+      btn.style.background = "#2563EB";
       btn.style.color = "#fff";
-      btn.style.borderColor = "#dc2626";
+      btn.style.borderColor = "#2563EB";
     } else {
       btn.style.background = "#fff";
       btn.style.color = "#374151";
@@ -41,9 +41,9 @@
     if (!el) return;
     if (selected) {
       el.classList.add("cal-evt-selected");
-      el.style.outline = "3px solid #dc2626";
+      el.style.outline = "3px solid #2563EB";
       el.style.outlineOffset = "1px";
-      el.style.boxShadow = "0 0 0 4px rgba(220,38,38,0.2)";
+      el.style.boxShadow = "0 0 0 4px rgba(37,99,235,0.2)";
     } else {
       el.classList.remove("cal-evt-selected");
       el.style.outline = "";
@@ -280,7 +280,7 @@
           icon: "info",
           title: "Chưa có việc nào đã qua giờ",
           text: "Daily check chỉ đánh dấu các công việc đã qua thời gian hiện tại.",
-          confirmButtonColor: "#4f46e5",
+          confirmButtonColor: "#2563EB",
         });
       } else {
         Utils.showToast?.("Chưa có việc nào đã qua giờ", "warning");
@@ -357,7 +357,7 @@
       </div>
     `;
     if (window.Swal) {
-      Swal.fire({ title: "Hướng dẫn", html, icon: "info", confirmButtonColor: "#4f46e5" });
+      Swal.fire({ title: "Hướng dẫn", html, icon: "info", confirmButtonColor: "#2563EB" });
     } else {
       window.alert("Chọn nhiều: bật nút hoặc giữ Ctrl/Shift rồi click việc cần chọn.");
     }

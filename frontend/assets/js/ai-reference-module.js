@@ -49,7 +49,7 @@
   function priorityColor(p) {
     return window.PriorityTheme
       ? PriorityTheme.getColor(p)
-      : "#7c3aed";
+      : "#2563EB";
   }
 
   async function loadTasks() {
@@ -291,7 +291,7 @@
       confirmButtonText: "Gợi ý",
       cancelButtonText: "Huỷ",
       showCancelButton: true,
-      confirmButtonColor: "#7c3aed",
+      confirmButtonColor: "#2563EB",
       focusConfirm: false,
       preConfirm: () => {
         const s = document.getElementById("aiRefDateStart").value;
@@ -403,7 +403,7 @@
         confirmButtonText: "Tôi sẽ chỉnh trước",
         showCancelButton: true,
         cancelButtonText: "Cứ tiếp tục với thông tin hiện có",
-        confirmButtonColor: "#0071e3",
+        confirmButtonColor: "#2563EB",
         cancelButtonColor: "#ff9f0a",
         reverseButtons: true,
       }) ?? Promise.resolve({ isConfirmed: true }));
@@ -474,9 +474,9 @@
         title: p.title + "  (AI đề xuất)",
         start: p.start,
         end: p.end,
-        backgroundColor: "#f5f3ff",
-        borderColor: "#7c3aed",
-        textColor: "#4c1d95",
+        backgroundColor: "#eff6ff",
+        borderColor: "#2563EB",
+        textColor: "#1e40af",
         classNames: ["ai-ref-proposal"],
         extendedProps: {
           isProposal: true,
