@@ -512,7 +512,7 @@
         }
       } catch (error) {
         console.error("Error opening modal:", error);
-        alert("Lỗi mở modal: " + error.message);
+        Utils?.alert?.(error.message, "Lỗi mở modal", "error");
       }
     },
 

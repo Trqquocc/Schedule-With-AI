@@ -151,10 +151,8 @@
       });
       container.appendChild(frag);
 
-      // FC.Draggable uses a single container-level instance with event delegation,
-      // so we just ensure it's initialized once after the list mounts.
-      if (window.CalendarModule?.setupExternalDraggable) {
-        window.CalendarModule.setupExternalDraggable();
+      if (window.CalendarModule?.initializeExternalDraggable) {
+        window.CalendarModule.initializeExternalDraggable();
       }
     }
 

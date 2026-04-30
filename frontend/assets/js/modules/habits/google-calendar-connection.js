@@ -51,7 +51,7 @@ window.GoogleCalendarConnection = {
   },
 
   async disconnect() {
-    if (!confirm('Bạn có chắc muốn ngắt kết nối Google Calendar?')) return;
+    if (!await Utils.confirmDanger("Ngắt kết nối Google Calendar?", "Ngắt kết nối")) return;
     try {
       const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/google-calendar/disconnect', {

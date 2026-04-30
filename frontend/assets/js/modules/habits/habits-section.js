@@ -50,7 +50,7 @@ window.HabitsSection = {
     if (this.habits.length === 0) {
       list.innerHTML = `
         <div class="habits-empty">
-          <div class="empty-icon">🌱</div>
+          <div class="empty-icon"><i class="fas fa-seedling"></i></div>
           <p style="font-weight:600;font-size:15px;color:#64748b;">Chưa có thói quen nào</p>
           <p style="font-size:13px;margin-top:4px;">Nhấn "Thêm thói quen" để bắt đầu hành trình</p>
         </div>`;
@@ -83,7 +83,12 @@ window.HabitsSection = {
 
     const icon = document.createElement("span");
     icon.className = "habit-icon";
-    icon.textContent = h.BieuTuong || "📌";
+    const iconClass = h.BieuTuong || "fas fa-bullseye";
+    if (iconClass.startsWith("fas ") || iconClass.startsWith("far ") || iconClass.startsWith("fab ")) {
+      icon.innerHTML = `<i class="${iconClass}"></i>`;
+    } else {
+      icon.textContent = iconClass;
+    }
 
     const name = document.createElement("span");
     name.className = "habit-name";
@@ -91,7 +96,7 @@ window.HabitsSection = {
 
     const streak = document.createElement("span");
     streak.className = "streak-badge";
-    streak.innerHTML = `🔥 ${h.Streak || 0}`;
+    streak.innerHTML = `<i class="fas fa-fire"></i> ${h.Streak || 0}`;
 
     const actions = document.createElement("div");
     actions.className = "habit-actions";
@@ -245,12 +250,34 @@ window.HabitsSection = {
     const existing = document.getElementById("habitModalOverlay");
     if (existing) existing.remove();
 
-    const EMOJIS = [
-      "📌","💪","🏃","📚","🧘","💧","🥗","🛌","✍️","🎯",
-      "🎵","🌿","🔥","🧹","💊","🚴","🏋️","🧠","🌅","📖",
+    const HABIT_ICONS = [
+      { icon: "fas fa-bullseye", label: "Mục tiêu" },
+      { icon: "fas fa-dumbbell", label: "Tập luyện" },
+      { icon: "fas fa-running", label: "Chạy bộ" },
+      { icon: "fas fa-book", label: "Đọc sách" },
+      { icon: "fas fa-spa", label: "Thiền" },
+      { icon: "fas fa-tint", label: "Uống nước" },
+      { icon: "fas fa-apple-alt", label: "Ăn lành" },
+      { icon: "fas fa-bed", label: "Ngủ sớm" },
+      { icon: "fas fa-pen", label: "Viết" },
+      { icon: "fas fa-crosshairs", label: "Tập trung" },
+      { icon: "fas fa-music", label: "Âm nhạc" },
+      { icon: "fas fa-leaf", label: "Thiên nhiên" },
+      { icon: "fas fa-fire", label: "Streak" },
+      { icon: "fas fa-broom", label: "Dọn dẹp" },
+      { icon: "fas fa-pills", label: "Thuốc" },
+      { icon: "fas fa-bicycle", label: "Xe đạp" },
+      { icon: "fas fa-heartbeat", label: "Sức khỏe" },
+      { icon: "fas fa-brain", label: "Tư duy" },
+      { icon: "fas fa-sun", label: "Dậy sớm" },
+      { icon: "fas fa-code", label: "Lập trình" },
+      { icon: "fas fa-pray", label: "Cầu nguyện" },
+      { icon: "fas fa-walking", label: "Đi bộ" },
+      { icon: "fas fa-guitar", label: "Guitar" },
+      { icon: "fas fa-palette", label: "Sáng tạo" },
     ];
 
-    let selectedEmoji = habit ? habit.BieuTuong : "📌";
+    let selectedIcon = habit?.BieuTuong || "fas fa-bullseye";
 
     const overlay = document.createElement("div");
     overlay.id = "habitModalOverlay";
@@ -304,16 +331,17 @@ window.HabitsSection = {
         </div>
       </div>`;
 
-    // Build emoji grid
+    // Build icon grid
     setTimeout(() => {
       const grid = document.getElementById("hm-emoji-grid");
       if (!grid) return;
-      EMOJIS.forEach((em) => {
+      HABIT_ICONS.forEach((entry) => {
         const item = document.createElement("div");
-        item.className = "emoji-picker-item" + (em === selectedEmoji ? " selected" : "");
-        item.textContent = em;
+        item.className = "emoji-picker-item" + (entry.icon === selectedIcon ? " selected" : "");
+        item.title = entry.label;
+        item.innerHTML = `<i class="${entry.icon}"></i>`;
         item.addEventListener("click", () => {
-          selectedEmoji = em;
+          selectedIcon = entry.icon;
           grid.querySelectorAll(".emoji-picker-item").forEach((el) =>
             el.classList.remove("selected")
           );
@@ -349,7 +377,7 @@ window.HabitsSection = {
       }
       saveBtn.disabled = true;
       saveBtn.textContent = "Đang lưu...";
-      await this.saveHabit({ name, icon: selectedEmoji, frequency: freq, target }, habit?.HabitID);
+      await this.saveHabit({ name, icon: selectedIcon, frequency: freq, target }, habit?.HabitID);
       overlay.remove();
     };
 
@@ -399,12 +427,12 @@ window.HabitsSection = {
       }
     } catch (err) {
       console.error("Lỗi saveHabit:", err);
-      alert("Lỗi lưu thói quen: " + err.message);
+      Utils?.alert?.(err.message, "Lỗi lưu thói quen", "error");
     }
   },
 
   async deleteHabit(id) {
-    if (!confirm("Xóa thói quen này?")) return;
+    if (!await Utils.confirmDanger("Xoá thói quen này?", "Xoá thói quen")) return;
     try {
       const res = await fetch(`/api/habits/${id}`, {
         method: "DELETE",

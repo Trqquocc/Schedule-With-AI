@@ -212,7 +212,7 @@
     } else if (window.ModalManager?.showModalById) {
       window.ModalManager.showModalById("priorityManagerModal");
     } else {
-      alert("Không mở được Quản lý độ ưu tiên. Xem console.");
+      Utils?.alert?.("Không mở được Quản lý độ ưu tiên", "Lỗi", "error");
     }
   };
 

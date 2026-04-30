@@ -26,10 +26,8 @@
         await this._initInternal();
         this.isInitialized = true;
 
-        setTimeout(() => {
-          this.setupDropZone();
-          this.setupTaskDragListeners();
-        }, 1000);
+        setTimeout(() => this.setupDropZone?.(), 500);
+        setTimeout(() => this.setupTaskDragListeners?.(), 2000);
       } catch (err) {
         console.error("Calendar initialization failed:", err);
         this.showError(err);
@@ -146,21 +144,23 @@
         moreLinkText: (n) => `+ ${n} thêm`,
         noEventsText: "Không có sự kiện",
 
-        eventReceive: (info) => { this._handleEventReceive(info); },
+        eventReceive: (info) => { this._handleEventReceive?.(info); },
 
         eventDrop: async (info) => {
           if (!window.Utils?.isLoggedIn()) { info.revert(); return; }
-          await this._handleEventUpdate(info);
+          if (this._handleEventUpdate) await this._handleEventUpdate(info);
+          else info.revert();
         },
 
         eventResize: async (info) => {
           if (!window.Utils?.isLoggedIn()) { info.revert(); return; }
-          await this._handleEventUpdate(info);
+          if (this._handleEventUpdate) await this._handleEventUpdate(info);
+          else info.revert();
         },
 
         select: (info) => {
           if (!window.Utils?.requireAuth()) { this.calendar.unselect(); return; }
-          this._showQuickCreateModal(info.start, info.end, info.allDay);
+          this._showQuickCreateModal?.(info.start, info.end, info.allDay);
           this.calendar.unselect();
         },
 
@@ -174,7 +174,7 @@
           const x = info.jsEvent?.clientX, y = info.jsEvent?.clientY;
           if (typeof x !== "number" || typeof y !== "number") return;
           if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
-            this._dragDeleteEvent(info.event);
+            this._dragDeleteEvent?.(info.event);
           }
         },
 
@@ -182,10 +182,10 @@
           info.jsEvent.preventDefault();
           if (!window.Utils?.requireAuth()) return;
           if (window.CalendarBulkComplete?.handleEventClick(info)) return;
-          this._showEventDetails(info.event);
+          this._showEventDetails?.(info.event);
         },
 
-        datesSet: () => this.updateCalendarTitle(),
+        datesSet: () => { document.querySelectorAll(".evt-tooltip").forEach((t) => t.remove()); this.updateCalendarTitle(); },
 
         eventContent: (arg) => {
           const ev = arg.event;
@@ -278,7 +278,7 @@
       window.calendar = this.calendar;
       this.updateCalendarTitle();
       this.initMiniCalendar();
-      this.setupDropZone();
+      this.setupDropZone?.();
     },
 
     // ------------------------------------------------------------------
@@ -312,6 +312,7 @@
     },
 
     changeView(view) {
+      document.querySelectorAll(".evt-tooltip").forEach((t) => t.remove());
       this.currentView = view;
       this.calendar.changeView(view);
       this.updateCalendarTitle();
@@ -425,8 +426,21 @@
 
     _attachEventTooltip(el, event) {
       let tip = null;
+      let hideTimer = null;
+
+      const hide = () => {
+        clearTimeout(hideTimer);
+        if (!tip) return;
+        tip.classList.remove("visible");
+        const ref = tip;
+        setTimeout(() => ref.remove(), 120);
+        tip = null;
+      };
+
       const show = () => {
+        document.querySelectorAll(".evt-tooltip").forEach((t) => t.remove());
         if (tip) return;
+
         const fmt = (d) => d?.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) || "";
         const note = event.extendedProps?.note || "";
         const cat = event.extendedProps?.category || "";
@@ -451,14 +465,10 @@
         tip.style.top = Math.max(4, r.top) + "px";
         tip.style.left = left + "px";
         requestAnimationFrame(() => tip.classList.add("visible"));
+
+        hideTimer = setTimeout(hide, 3000);
       };
-      const hide = () => {
-        if (!tip) return;
-        tip.classList.remove("visible");
-        const ref = tip;
-        setTimeout(() => ref.remove(), 150);
-        tip = null;
-      };
+
       el.addEventListener("mouseenter", show);
       el.addEventListener("mouseleave", hide);
       el.addEventListener("mousedown", hide);

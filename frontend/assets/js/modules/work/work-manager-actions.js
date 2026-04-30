@@ -130,7 +130,7 @@
       if (typeof Swal === "undefined") {
         // Fallback: native confirm (skip in silent/bulk mode).
         if (!silent) {
-          if (!confirm(`Bạn có chắc chắn muốn xóa công việc "${taskTitle}"?`)) {
+          if (!await Utils.confirmDanger(`Xoá công việc "${taskTitle}"?`, "Xoá công việc")) {
             Utils?.showToast?.("Đã hủy xóa", "info");
             return;
           }
@@ -249,7 +249,7 @@
   WM.bulkComplete = async function () {
     const { pending } = this.getSelectedByStatus();
     if (pending.length === 0) return;
-    if (!confirm(`Đánh dấu ${pending.length} công việc là đã hoàn thành?`)) return;
+    if (!await Utils.confirm(`Đánh dấu ${pending.length} công việc là đã hoàn thành?`)) return;
     await Promise.all(pending.map((id) => this.updateTaskStatus(id, true, { silent: true })));
     Utils?.showToast?.(`Đã hoàn thành ${pending.length} công việc`, "success");
     await this.loadTasks();
@@ -259,7 +259,7 @@
   WM.bulkRestore = async function () {
     const { completed } = this.getSelectedByStatus();
     if (completed.length === 0) return;
-    if (!confirm(`Khôi phục ${completed.length} công việc về danh sách đang làm?`)) return;
+    if (!await Utils.confirm(`Khôi phục ${completed.length} công việc về danh sách đang làm?`)) return;
     await Promise.all(completed.map((id) => this.updateTaskStatus(id, false, { silent: true })));
     Utils?.showToast?.(`Đã khôi phục ${completed.length} công việc`, "success");
     await this.loadTasks();
@@ -269,7 +269,7 @@
   WM.bulkDelete = async function () {
     const ids = this.getSelectedTaskIds();
     if (ids.length === 0) return;
-    if (!confirm(`Xoá ${ids.length} công việc? Hành động không thể khôi phục.`)) return;
+    if (!await Utils.confirmDanger(`Xoá ${ids.length} công việc? Hành động không thể khôi phục.`, "Xoá hàng loạt")) return;
     await Promise.all(ids.map((id) => this.deleteTask(id, { silent: true })));
     Utils?.showToast?.(`Đã xoá ${ids.length} công việc`, "success");
     await this.loadTasks();

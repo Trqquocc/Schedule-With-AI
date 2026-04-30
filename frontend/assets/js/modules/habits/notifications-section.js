@@ -222,12 +222,12 @@
   }
 
   async function onDisconnect() {
-    if (!confirm("Ngắt kết nối Telegram? Bạn sẽ không nhận thông báo nữa.")) return;
+    if (!await Utils.confirmDanger("Ngắt kết nối Telegram? Bạn sẽ không nhận thông báo nữa.", "Ngắt kết nối")) return;
     try {
       await api("/api/notifications/disconnect", { method: "POST" });
       await refreshAll();
     } catch (err) {
-      alert("Lỗi ngắt kết nối: " + (err.message || ""));
+      Utils?.alert?.(err.message || "Không thể ngắt kết nối", "Lỗi", "error");
     }
   }
 

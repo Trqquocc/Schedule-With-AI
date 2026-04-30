@@ -217,7 +217,7 @@
       document.getElementById("cadv-ctx-btn").classList.add("active");
       document.getElementById("cadv-context-pill").classList.remove("cadv-hidden");
     } catch (err) {
-      alert("Không lấy được context: " + err.message);
+      Utils?.alert?.(err.message, "Lỗi context", "error");
     }
   }
 
@@ -228,7 +228,7 @@
   }
 
   async function onClear() {
-    if (!confirm("Xoá toàn bộ lịch sử chat?")) return;
+    if (!await Utils.confirmDanger("Xoá toàn bộ lịch sử chat?", "Xoá lịch sử")) return;
     await api("/api/chat-advisor/history", { method: "DELETE" });
     preloadHistory();
   }

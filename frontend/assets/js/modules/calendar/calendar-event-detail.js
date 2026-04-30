@@ -145,7 +145,7 @@
       completionCheckbox.addEventListener("change", () => this._updateEventStatus(event));
     }
     document.getElementById("deleteEventBtn").onclick = async () => {
-      const confirmed = confirm(`Xóa sự kiện "${event.title}"?\nThao tác này không thể hoàn tác.`);
+      const confirmed = await Utils.confirmDanger(`Xóa sự kiện "${event.title}"? Thao tác này không thể hoàn tác.`, "Xoá sự kiện");
       if (confirmed) this._deleteEvent(event);
     };
 
@@ -306,7 +306,7 @@
     list?.addEventListener("click", async (e) => {
       const del = e.target.closest(".subtask-delete");
       if (!del) return;
-      if (!confirm("Xóa minitask này?")) return;
+      if (!await Utils.confirmDanger("Xoá minitask này?", "Xoá")) return;
       const id = del.dataset.subtaskId;
       try {
         await Utils.makeRequest(`/api/event-subtasks/${id}`, "DELETE");

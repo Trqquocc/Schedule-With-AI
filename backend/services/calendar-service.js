@@ -236,11 +236,16 @@ async function updateEvent(eventId, userId, body) {
     throw { status: 400, message: "Không có gì để cập nhật" };
   }
 
-  await supabase
+  const { error } = await supabase
     .from("LichTrinh")
     .update(updateData)
     .eq("MaLichTrinh", eventId)
     .eq("UserID", userId);
+
+  if (error) {
+    console.error("[updateEvent] Supabase error:", error.message);
+    throw { status: 500, message: error.message || "Lỗi cập nhật sự kiện" };
+  }
 }
 
 /**

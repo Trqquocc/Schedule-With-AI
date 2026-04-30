@@ -308,7 +308,7 @@
       });
       confirmed = !!r.isConfirmed;
     } else {
-      confirmed = window.confirm(`${confirmTitle} (${dateStr})`);
+      confirmed = await (window.Utils?.confirm?.(`${confirmTitle} (${dateStr})`) ?? Promise.resolve(window.confirm(`${confirmTitle} (${dateStr})`)));
     }
     if (!confirmed) return;
 
@@ -359,7 +359,7 @@
     if (window.Swal) {
       Swal.fire({ title: "Hướng dẫn", html, icon: "info", confirmButtonColor: "#2563EB" });
     } else {
-      window.alert("Chọn nhiều: bật nút hoặc giữ Ctrl/Shift rồi click việc cần chọn.");
+      Utils?.alert?.("Bật nút hoặc giữ Ctrl/Shift rồi click việc cần chọn.", "Hướng dẫn chọn nhiều", "info");
     }
   }
 

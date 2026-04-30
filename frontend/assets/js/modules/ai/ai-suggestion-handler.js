@@ -520,8 +520,8 @@
 
     showError(message) {
       console.error("Error:", message);
-      if (window.Utils && Utils.showToast) Utils.showToast(message, "error");
-      else alert(message);
+      if (window.Utils?.showToast) Utils.showToast(message, "error");
+      else if (window.Utils?.alert) Utils.alert(message, "Lỗi", "error");
     },
 
     showSuccess(message) {

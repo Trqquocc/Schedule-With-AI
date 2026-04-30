@@ -373,15 +373,13 @@
   // Drag-to-delete
   // ------------------------------------------------------------------
 
-  CM._dragDeleteEvent = function (event) {
+  CM._dragDeleteEvent = async function (event) {
     const id = event.id?.toString() || "";
     if (!id || id.startsWith("temp-") || id.startsWith("drag-")) {
       try { event.remove(); } catch (_) {}
       return;
     }
-    const confirmed = confirm(
-      `Xóa sự kiện "${event.title}"?\nKéo thả vào danh sách công việc để xóa. Không thể hoàn tác.`
-    );
+    const confirmed = await Utils.confirmDanger(`Xóa sự kiện "${event.title}"? Không thể hoàn tác.`, "Xoá sự kiện");
     if (!confirmed) return;
     this._deleteEvent(event);
   };

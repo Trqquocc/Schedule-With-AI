@@ -491,11 +491,12 @@
       return;
     }
     const d = dry.data;
-    const ok = confirm(
-      `Áp dụng ${state.groups.length} môn / ${totalSessions} buổi sẽ:\n` +
-        `• Thêm ${d.inserted} buổi mới\n` +
-        `• Xoá ${d.deleted} buổi cũ trùng giờ (ưu tiên thấp hơn)\n` +
-        `• Bỏ qua ${d.skipped} buổi bị chặn bởi lịch ưu tiên cao hơn\n\nTiếp tục?`
+    const ok = await Utils.confirm(
+      `Áp dụng ${state.groups.length} môn / ${totalSessions} buổi:<br>` +
+        `• Thêm ${d.inserted} buổi mới<br>` +
+        `• Xoá ${d.deleted} buổi cũ trùng giờ<br>` +
+        `• Bỏ qua ${d.skipped} buổi bị chặn`,
+      "Xác nhận áp dụng"
     );
     if (!ok) {
       hideStatus();

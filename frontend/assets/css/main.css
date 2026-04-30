@@ -401,6 +401,44 @@ body.fa-loaded span[class*="fa-"] {
 }
 .modal.hidden { display: none !important; }
 
+/* ═══════ Utility Dialog (Utils.alert / Utils.confirm) ═══════ */
+.util-dialog-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0); padding: 16px;
+  transition: background .2s;
+}
+.util-dialog-overlay.visible { background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); }
+.util-dialog-overlay.closing { background: rgba(0,0,0,0); }
+.util-dialog-panel {
+  background: #fff; border-radius: 16px; padding: 28px 24px 20px; width: 360px; max-width: 100%;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2); text-align: center;
+  transform: scale(0.95) translateY(10px); opacity: 0; transition: all .2s ease;
+}
+.util-dialog-overlay.visible .util-dialog-panel { transform: none; opacity: 1; }
+.util-dialog-overlay.closing .util-dialog-panel { transform: scale(0.95) translateY(10px); opacity: 0; }
+.util-dialog-icon { font-size: 36px; margin-bottom: 12px; }
+.util-dialog-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
+.util-dialog-msg { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 20px; }
+.util-dialog-btns { display: flex; gap: 8px; justify-content: center; }
+.util-btn-secondary {
+  padding: 8px 20px; border-radius: 10px; border: 1px solid #e2e8f0;
+  background: #fff; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.util-btn-secondary:hover { background: #f1f5f9; }
+.util-btn-primary {
+  padding: 8px 20px; border-radius: 10px; border: none;
+  background: var(--accent, #2563EB); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.util-btn-primary:hover { filter: brightness(1.1); }
+.util-btn-danger { background: #dc2626 !important; }
+.util-btn-danger:hover { background: #b91c1c !important; filter: none; }
+body.dark .util-dialog-panel { background: #1e293b; }
+body.dark .util-dialog-title { color: #f1f5f9; }
+body.dark .util-dialog-msg { color: #94a3b8; }
+body.dark .util-btn-secondary { background: #334155; border-color: #475569; color: #e2e8f0; }
+body.dark .util-btn-secondary:hover { background: #475569; }
+
 /* Lift any inline .modal-content to Apple card elevation */
 .modal-content {
   border-radius: var(--radius-lg);

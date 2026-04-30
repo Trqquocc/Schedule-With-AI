@@ -48,7 +48,7 @@
     gap: 8px !important;
   }
 
-  #sidebar-container button {
+  #sidebar-container aside button {
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
@@ -278,324 +278,48 @@
   #sidebar-container .hover\:text-gray-700:hover { color: #f1f5f9 !important; }
   #sidebar-container .hover\:text-red-600:hover { color: #f87171 !important; }
 
-  #settingsModal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    z-index: 10000 !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    backdrop-filter: blur(8px) !important;
-    padding: 16px !important;
-    animation: fadeIn 0.2s ease-out !important;
-  }
-
-  #settingsModal.hidden {
-    display: none !important;
-  }
-
-  #settingsModal .modal-content {
-    background: white !important;
-    border-radius: 20px !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-    max-width: 440px !important;
-    width: 100% !important;
-    max-height: 90vh !important;
-    overflow: hidden !important;
-    border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  }
-
-  #settingsModal .modal-content::-webkit-scrollbar {
-    width: 8px !important;
-  }
-
-  #settingsModal .modal-content::-webkit-scrollbar-track {
-    background: transparent !important;
-  }
-
-  #settingsModal .modal-content::-webkit-scrollbar-thumb {
-    background: #cbd5e1 !important;
-    border-radius: 4px !important;
-  }
-
-  #settingsModal .modal-content::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8 !important;
-  }
-
-  #settingsModal .modal-content > div:first-child {
-    background: var(--accent-header, linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)) !important;
-    color: white !important;
-    padding: 28px 24px !important;
-    border-bottom: none !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    position: relative !important;
-  }
-
-  #settingsModal .modal-content > div:first-child::after {
-    content: "" !important;
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 4px !important;
-    background: linear-gradient(90deg, #60a5fa, #2563EB, #1d4ed8) !important;
-  }
-
-  #settingsModal .modal-content h3 {
-    color: white !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    margin: 0 !important;
-    letter-spacing: -0.5px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-  }
-
-  #settingsModal .modal-content h3::before {
-    content: "" !important;
-    font-size: 28px !important;
-  }
-
-  #settingsModal #closeSettingsModal {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    color: white !important;
-    width: 40px !important;
-    height: 40px !important;
-    border-radius: 12px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    padding: 0 !important;
-    font-size: 20px !important;
-  }
-
-  #settingsModal #closeSettingsModal:hover {
-    background: rgba(255, 255, 255, 0.3) !important;
-    transform: rotate(90deg) scale(1.1) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  }
-
-  #settingsModal .modal-content > div:nth-child(2) {
-    padding: 24px !important;
-    overflow-y: auto !important;
-    max-height: calc(90vh - 120px) !important;
-  }
-
-  #settingsModal .flex.items-center {
-    padding: 20px !important;
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
-    border-radius: 16px !important;
-    border: 2px solid #bfdbfe !important;
-    gap: 16px !important;
-    margin-bottom: 24px !important;
-    transition: all 0.3s ease !important;
-  }
-
-  #settingsModal .flex.items-center:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15) !important;
-  }
-
-  #settingsModal .settings-avatar-letter {
-    width: 56px !important;
-    height: 56px !important;
-    border-radius: 50% !important;
-    background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    color: white !important;
-    font-weight: 700 !important;
-    font-size: 24px !important;
-    flex-shrink: 0 !important;
-    box-shadow: 0 8px 16px rgba(37, 99, 235, 0.4) !important;
-    border: 3px solid white !important;
-  }
-
-  #settingsModal .settings-user-name {
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    color: #1e293b !important;
-    margin-bottom: 4px !important;
-  }
-
-  #settingsModal .settings-user-email {
-    font-size: 13px !important;
-    color: #64748b !important;
-  }
-
-  #settingsModal .space-y-2 {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 8px !important;
-    padding-bottom: 20px !important;
-    border-bottom: 2px solid #f1f5f9 !important;
-    margin-bottom: 20px !important;
-  }
-
-  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) {
-    padding: 16px 20px !important;
-    border-radius: 14px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    border: 2px solid transparent !important;
-    cursor: pointer !important;
-    font-weight: 600 !important;
-    font-size: 15px !important;
-    color: #334155 !important;
-    background: #f8fafc !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-  }
-
-  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn):hover {
-    background: white !important;
-    border-color: #bfdbfe !important;
-    transform: translateX(6px) !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1) !important;
-  }
-
-  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) i {
-    transition: transform 0.3s ease !important;
-  }
-
-  #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn):hover i {
-    transform: scale(1.2) !important;
-  }
-
-  #settingsModal #openProfileBtn {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
-  }
-
-  #settingsModal #openProfileBtn:hover {
-    border-color: #2563EB !important;
-    color: #1d4ed8 !important;
-  }
-
-  #settingsModal #openNotificationBtn {
-    background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%) !important;
-  }
-
-  #settingsModal #openNotificationBtn:hover {
-    border-color: #06b6d4 !important;
-    color: #0e7490 !important;
-  }
-
-  #settingsModal button[class*="palette"] {
-    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
-  }
-
-  #settingsModal button[class*="palette"]:hover {
-    border-color: #a855f7 !important;
-    color: #7e22ce !important;
-  }
-
-  #settingsModal button[class*="globe"] {
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-  }
-
-  #settingsModal button[class*="globe"]:hover {
-    border-color: #f59e0b !important;
-    color: #b45309 !important;
-  }
-
-  #settingsModal #modalLogoutBtn {
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
-    border: 2px solid #fecaca !important;
-    padding: 16px 20px !important;
-    border-radius: 14px !important;
-    transition: all 0.3s ease !important;
-    font-weight: 600 !important;
-    font-size: 15px !important;
-    color: #dc2626 !important;
-    margin-top: 8px !important;
-  }
-
-  #settingsModal #modalLogoutBtn:hover {
-    background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%) !important;
-    border-color: #ef4444 !important;
-    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25) !important;
-    transform: translateY(-2px) !important;
-  }
-
-  #settingsModal #modalLogoutBtn i {
-    transition: transform 0.3s ease !important;
-  }
-
-  #settingsModal #modalLogoutBtn:hover i {
-    transform: translateX(-4px) !important;
-  }
-
-  #settingsModal .text-center.text-xs {
-    padding-top: 20px !important;
-    border-top: 2px solid #f1f5f9 !important;
-    color: #94a3b8 !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.5px !important;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(40px) scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @media (max-width: 480px) {
-    #settingsModal .modal-content {
-      max-width: 100% !important;
-      width: calc(100% - 32px) !important;
-      max-height: 95vh !important;
-      border-radius: 16px !important;
-    }
-
-    #settingsModal .modal-content > div:first-child {
-      padding: 20px 16px !important;
-    }
-
-    #settingsModal .modal-content h3 {
-      font-size: 20px !important;
-    }
-
-    #settingsModal .modal-content > div:nth-child(2) {
-      padding: 16px !important;
-    }
-
-    #settingsModal .settings-avatar-letter {
-      width: 48px !important;
-      height: 48px !important;
-      font-size: 20px !important;
-    }
-
-    #settingsModal button:not(#closeSettingsModal):not(#modalLogoutBtn) {
-      padding: 14px 16px !important;
-      font-size: 14px !important;
-    }
-  }
+  /* ═══════ Settings Modal ═══════ */
+  #settingsModal { position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px; }
+  #settingsModal.hidden { display:none !important; }
+  #settingsModal .sm-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px); }
+  #settingsModal .sm-panel { position:relative;width:400px;max-width:100%;max-height:calc(100vh - 3rem);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;animation:smSlideUp .25s ease; }
+  #settingsModal .sm-header { background:var(--accent-header, linear-gradient(135deg,#2563EB,#1d4ed8));padding:20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+  #settingsModal .sm-user { display:flex;align-items:center;gap:12px; }
+  #settingsModal .sm-avatar { width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0; }
+  #settingsModal .sm-user-info { min-width:0; }
+  #settingsModal .settings-user-name { color:#fff;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  #settingsModal .settings-user-email { color:rgba(255,255,255,0.7);font-size:11px;margin-top:2px; }
+  #settingsModal .sm-close { width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.8);font-size:12px;transition:background .2s;padding:0 !important; }
+  #settingsModal .sm-close:hover { background:rgba(255,255,255,0.25); }
+  #settingsModal .sm-body { padding:16px;overflow-y:auto;flex:1; }
+  #settingsModal .sm-section-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:8px;padding-left:2px; }
+  #settingsModal .sm-card { background:#f8fafc;border-radius:12px;padding:14px;border:1px solid #e2e8f0;margin-bottom:10px; }
+  #settingsModal .sm-row { display:flex;align-items:center;justify-content:space-between; }
+  #settingsModal .sm-row-left { display:flex;align-items:center;gap:10px; }
+  #settingsModal .sm-icon { width:28px;height:28px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;color:var(--accent,#2563EB);font-size:12px;flex-shrink:0;text-align:center;line-height:28px; }
+  #settingsModal .sm-label { font-size:13px;font-weight:600;color:#1e293b; }
+  #settingsModal .sm-desc { font-size:11px;color:#94a3b8;margin-top:1px; }
+  #settingsModal .sm-toggle { position:relative;width:42px;height:24px;border-radius:12px;background:#cbd5e1;border:none;cursor:pointer;transition:background .3s;flex-shrink:0;padding:0 !important; }
+  #settingsModal .sm-toggle-thumb { position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:transform .3s; }
+  #settingsModal .sm-color-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
+  #settingsModal .sm-color-grid button { width:100% !important;height:38px !important;border-radius:10px !important;border:none !important;cursor:pointer !important;position:relative !important;transition:transform .15s,box-shadow .15s !important;padding:0 !important;display:block !important; }
+  #settingsModal .sm-color-grid button:hover { transform:scale(1.05); }
+  #settingsModal .sm-color-grid button.active { outline:2.5px solid currentColor;outline-offset:3px;box-shadow:0 2px 10px rgba(0,0,0,0.15); }
+  #settingsModal .sm-color-grid button .swatch-name { position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,0.4); }
+  #settingsModal .sm-color-grid button .swatch-check { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,0.4); }
+  #settingsModal .sm-footer { padding:12px 16px;border-top:1px solid #e2e8f0;flex-shrink:0; }
+  #settingsModal .sm-logout-btn { width:100%;padding:10px 16px;border-radius:10px;border:1.5px solid #fecaca;background:#fff5f5;cursor:pointer;transition:all .2s;color:#dc2626;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px; }
+  #settingsModal .sm-logout-btn:hover { background:#fee2e2;border-color:#f87171; }
+  body.dark #settingsModal .sm-panel { background:#1e293b; }
+  body.dark #settingsModal .sm-section-label { color:#475569; }
+  body.dark #settingsModal .sm-card { background:#162032;border-color:#334155; }
+  body.dark #settingsModal .sm-label { color:#f1f5f9; }
+  body.dark #settingsModal .sm-desc { color:#64748b; }
+  body.dark #settingsModal .sm-icon { background:#1e3a5f; }
+  body.dark #settingsModal .sm-footer { border-color:#334155; }
+  body.dark #settingsModal .sm-logout-btn { background:rgba(220,38,38,0.08);border-color:rgba(248,113,113,0.3); }
+  body.dark #settingsModal .sm-logout-btn:hover { background:rgba(220,38,38,0.15);border-color:#f87171; }
+  @keyframes smSlideUp { from{opacity:0;transform:translateY(20px) scale(0.96)} to{opacity:1;transform:none} }
 </style>
 
 <aside
@@ -699,327 +423,93 @@
   </div>
 </aside>
 
-<div id="settingsModal" class="modal hidden" style="align-items:center;justify-content:center">
-  <div id="settingsModalPanel" class="settings-modal-panel" style="
-    width:480px;max-width:calc(100vw - 2rem);
-    background:var(--sm-bg,#fff);
-    border-radius:20px;
-    box-shadow:0 25px 60px rgba(0,0,0,0.18),0 8px 24px rgba(0,0,0,0.1);
-    overflow:hidden;
-    display:flex;flex-direction:column;
-    max-height:calc(100vh - 3rem);
-  ">
-
-    <!-- ── HERO HEADER ── -->
-    <div style="
-      background:var(--accent-header, linear-gradient(135deg,#2563EB 0%,#1d4ed8 100%));
-      padding:24px 24px 20px;
-      position:relative;overflow:hidden;flex-shrink:0
-    ">
-      <!-- decorative circles -->
-      <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,0.06);border-radius:50%"></div>
-      <div style="position:absolute;bottom:-20px;left:60px;width:80px;height:80px;background:rgba(255,255,255,0.04);border-radius:50%"></div>
-
-      <!-- close btn -->
-      <button id="closeSettingsModal" style="
-        position:absolute;top:16px;right:16px;
-        width:32px;height:32px;border-radius:8px;
-        background:rgba(255,255,255,0.15);border:none;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;
-        color:rgba(255,255,255,0.8);transition:all .2s;
-      " onmouseover="this.style.background='rgba(255,255,255,0.25)'"
-         onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-        <i class="fas fa-times" style="font-size:13px"></i>
-      </button>
-
-      <!-- Avatar + Info -->
-      <div style="display:flex;align-items:center;gap:16px;position:relative">
-        <div style="
-          width:60px;height:60px;border-radius:16px;flex-shrink:0;
-          background:rgba(255,255,255,0.2);
-          border:2px solid rgba(255,255,255,0.35);
-          display:flex;align-items:center;justify-content:center;
-          font-size:22px;font-weight:700;color:#fff;
-          box-shadow:0 4px 16px rgba(0,0,0,0.2)
-        ">
-          <span class="settings-avatar-letter">?</span>
+<!-- ═══════ SETTINGS MODAL ═══════ -->
+<div id="settingsModal" class="modal hidden">
+  <div class="sm-overlay"></div>
+  <div class="sm-panel">
+    <div class="sm-header">
+      <div class="sm-user">
+        <div class="sm-avatar"><span class="settings-avatar-letter">?</span></div>
+        <div class="sm-user-info">
+          <div class="settings-user-name">Người dùng</div>
+          <div class="settings-user-email">email@example.com</div>
         </div>
-        <div style="flex:1;min-width:0">
-          <div style="color:#fff;font-size:17px;font-weight:700;line-height:1.2" class="settings-user-name">Người dùng</div>
-          <div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:3px" class="settings-user-email">email@example.com</div>
-          <div style="display:flex;align-items:center;gap:5px;margin-top:6px">
-            <span style="width:6px;height:6px;background:#4ade80;border-radius:50%;display:inline-block;box-shadow:0 0 0 2px rgba(74,222,128,0.3)"></span>
-            <span style="color:rgba(255,255,255,0.6);font-size:11px">Đang hoạt động</span>
+      </div>
+      <button class="sm-close" id="closeSettingsModal"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="sm-body">
+      <div class="sm-section-label">Giao diện</div>
+
+      <div class="sm-card sm-row">
+        <div class="sm-row-left">
+          <i class="fas fa-moon sm-icon"></i>
+          <div>
+            <div class="sm-label">Chế độ tối</div>
+            <div class="sm-desc">Bảo vệ mắt, giảm ánh sáng xanh</div>
           </div>
         </div>
+        <button class="sm-toggle" id="sidebarThemeToggle" onclick="if(window.ThemeManager){ThemeManager.toggle();updateSidebarThemeToggle();}">
+          <span class="sm-toggle-thumb" id="sidebarThemeThumb"></span>
+        </button>
+      </div>
+
+      <div class="sm-card">
+        <div class="sm-row-left" style="margin-bottom:12px">
+          <i class="fas fa-palette sm-icon"></i>
+          <div>
+            <div class="sm-label">Màu chủ đạo</div>
+            <div class="sm-desc">Tuỳ chỉnh màu giao diện</div>
+          </div>
+        </div>
+        <div class="sm-color-grid" id="accentColorGrid"></div>
       </div>
     </div>
 
-    <!-- ── SCROLLABLE BODY ── -->
-    <div style="overflow-y:auto;flex:1;padding:20px 20px 8px">
-
-      <!-- ── SECTION: TÀI KHOẢN ── -->
-      <div style="margin-bottom:20px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
-          Tài khoản
-        </div>
-
-        <!-- Profile button moved to sidebar user area (click name/email
-             in the left sidebar to edit profile). Kept the settings modal
-             focused on account-level actions. -->
-
-        <!-- Notifications moved to its own sidebar nav section (see main nav
-             above with data-section="notifications"). -->
-      </div>
-
-      <!-- ── SECTION: GIAO DIỆN ── -->
-      <div style="margin-bottom:20px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
-          Giao diện
-        </div>
-
-        <!-- Theme card row -->
-        <div style="background:var(--sm-section-bg,#f8fafc);border-radius:14px;padding:14px;border:1px solid var(--sm-border,#e2e8f0)">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div style="width:32px;height:32px;border-radius:8px;background:#f3e8ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="fas fa-adjust" style="color:#7c3aed;font-size:13px"></i>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Chế độ màu</div>
-              <div style="font-size:11px;color:var(--sm-muted,#94a3b8)">Chọn giao diện sáng hoặc tối</div>
-            </div>
-          </div>
-
-          <!-- Light / Dark preview cards -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <!-- Light Mode -->
-            <button id="smLightBtn" onclick="if(window.ThemeManager&&document.body.classList.contains('dark')){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}" style="
-              border-radius:10px;padding:10px;border:2px solid #e2e8f0;
-              background:#fff;cursor:pointer;transition:all .2s;text-align:center
-            " onmouseover="this.style.borderColor='#2563EB'" onmouseout="if(!document.body.classList.contains('dark')){this.style.borderColor='#2563EB'}else{this.style.borderColor='#e2e8f0'}">
-              <!-- mini UI mockup - light -->
-              <div style="background:#f1f5f9;border-radius:6px;height:36px;margin-bottom:6px;padding:4px;display:flex;gap:3px;align-items:flex-start">
-                <div style="width:8px;background:#e2e8f0;border-radius:2px;height:100%"></div>
-                <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-                  <div style="height:6px;background:#e2e8f0;border-radius:2px;width:70%"></div>
-                  <div style="height:6px;background:#e2e8f0;border-radius:2px;width:90%"></div>
-                  <div style="height:6px;background:#fee2e2;border-radius:2px;width:50%"></div>
-                </div>
-              </div>
-              <div style="font-size:11px;font-weight:600;color:#475569;display:flex;align-items:center;justify-content:center;gap:4px">
-                <i class="fas fa-sun" style="color:#f59e0b;font-size:10px"></i> Sáng
-              </div>
-            </button>
-
-            <!-- Dark Mode -->
-            <button id="smDarkBtn" onclick="if(window.ThemeManager&&!document.body.classList.contains('dark')){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}" style="
-              border-radius:10px;padding:10px;border:2px solid #e2e8f0;
-              background:#1e293b;cursor:pointer;transition:all .2s;text-align:center
-            " onmouseover="this.style.borderColor='#818cf8'" onmouseout="if(document.body.classList.contains('dark')){this.style.borderColor='#818cf8'}else{this.style.borderColor='#e2e8f0'}">
-              <!-- mini UI mockup - dark -->
-              <div style="background:#0f172a;border-radius:6px;height:36px;margin-bottom:6px;padding:4px;display:flex;gap:3px;align-items:flex-start">
-                <div style="width:8px;background:#334155;border-radius:2px;height:100%"></div>
-                <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-                  <div style="height:6px;background:#334155;border-radius:2px;width:70%"></div>
-                  <div style="height:6px;background:#334155;border-radius:2px;width:90%"></div>
-                  <div style="height:6px;background:#1e3a5f;border-radius:2px;width:50%"></div>
-                </div>
-              </div>
-              <div style="font-size:11px;font-weight:600;color:#94a3b8;display:flex;align-items:center;justify-content:center;gap:4px">
-                <i class="fas fa-moon" style="color:#818cf8;font-size:10px"></i> Tối
-              </div>
-            </button>
-          </div>
-
-          <!-- Toggle switch alternative -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--sm-border,#e2e8f0)">
-            <span style="font-size:12px;color:var(--sm-muted,#94a3b8)">
-              <i class="fas fa-magic" style="margin-right:5px;color:#a78bfa"></i>Chuyển đổi nhanh
-            </span>
-            <div style="display:flex;align-items:center;gap:8px">
-              <i class="fas fa-sun" style="color:#f59e0b;font-size:11px"></i>
-              <button id="sidebarThemeToggle"
-                      onclick="if(window.ThemeManager){ThemeManager.toggle();updateSidebarThemeToggle();updateSettingsThemeUI();}"
-                      style="
-                        position:relative;width:44px;height:24px;border-radius:12px;
-                        background:#cbd5e1;border:none;cursor:pointer;
-                        transition:background .3s;flex-shrink:0
-                      ">
-                <span id="sidebarThemeThumb" style="
-                  position:absolute;top:2px;left:2px;
-                  width:20px;height:20px;border-radius:50%;
-                  background:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);
-                  transition:transform .3s
-                "></span>
-              </button>
-              <i class="fas fa-moon" style="color:#818cf8;font-size:11px"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── SECTION: MÀU CHỦ ĐẠO ── -->
-      <div style="margin-bottom:20px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
-          Màu chủ đạo
-        </div>
-        <div style="background:var(--sm-section-bg,#f8fafc);border-radius:14px;padding:14px;border:1px solid var(--sm-border,#e2e8f0)">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="fas fa-palette" style="color:#2563EB;font-size:13px"></i>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Màu giao diện</div>
-              <div style="font-size:11px;color:var(--sm-muted,#94a3b8)">Tùy chỉnh màu chủ đạo của ứng dụng</div>
-            </div>
-          </div>
-          <div id="accentColorGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
-        </div>
-      </div>
-
-      <!-- ── SECTION: HỆ THỐNG ── -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sm-label,#94a3b8);margin-bottom:8px;padding:0 4px">
-          Hệ thống
-        </div>
-
-        <!-- Language -->
-        <div style="
-          display:flex;align-items:center;justify-content:space-between;
-          padding:11px 12px;border-radius:12px;
-          background:var(--sm-section-bg,#f8fafc);border:1px solid var(--sm-border,#e2e8f0)
-        ">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:36px;height:36px;border-radius:10px;background:#fef9c3;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="fas fa-globe" style="color:#d97706;font-size:15px"></i>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Ngôn ngữ</div>
-              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Language / Ngôn ngữ</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:11px;font-weight:600;color:#7c3aed;background:#f3e8ff;padding:3px 10px;border-radius:20px">🇻🇳 Tiếng Việt</span>
-          </div>
-        </div>
-
-        <!-- App info row -->
-        <div style="
-          display:flex;align-items:center;justify-content:space-between;
-          padding:11px 12px;border-radius:12px;margin-top:6px
-        ">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="width:36px;height:36px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <i class="fas fa-info-circle" style="color:#16a34a;font-size:15px"></i>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--sm-text,#1e293b)">Schedule With AI</div>
-              <div style="font-size:11px;color:var(--sm-muted,#94a3b8);margin-top:1px">Phiên bản 1.0.0</div>
-            </div>
-          </div>
-          <span style="font-size:10px;font-weight:600;color:#16a34a;background:#dcfce7;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px">Stable</span>
-        </div>
-      </div>
-
-    </div><!-- end scrollable body -->
-
-    <!-- ── LOGOUT FOOTER ── -->
-    <div style="padding:12px 20px 16px;border-top:1px solid var(--sm-border,#e2e8f0);flex-shrink:0">
-      <button id="modalLogoutBtn" style="
-        width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
-        padding:11px 16px;border-radius:12px;border:1.5px solid #fecaca;
-        background:#fff5f5;cursor:pointer;transition:all .2s;
-        color:#dc2626;font-size:13px;font-weight:600
-      " onmouseover="this.style.background='#fee2e2';this.style.borderColor='#f87171'"
-         onmouseout="this.style.background='#fff5f5';this.style.borderColor='#fecaca'">
-        <i class="fas fa-sign-out-alt" style="font-size:14px"></i>
-        Đăng xuất
+    <div class="sm-footer">
+      <button class="sm-logout-btn" id="modalLogoutBtn">
+        <i class="fas fa-sign-out-alt"></i> Đăng xuất
       </button>
     </div>
-
   </div>
 </div>
 
-<style>
-/* Settings modal dark mode via CSS vars */
-body.dark #settingsModalPanel {
-  --sm-bg: #1e293b;
-  --sm-text: #f1f5f9;
-  --sm-muted: #64748b;
-  --sm-label: #475569;
-  --sm-border: #334155;
-  --sm-hover: rgba(96,165,250,0.08);
-  --sm-hover-cyan: rgba(34,211,238,0.06);
-  --sm-section-bg: #162032;
-}
-body.dark #settingsModalPanel .sm-menu-item:hover {
-  background: rgba(96,165,250,0.08) !important;
-}
-body.dark #settingsModalPanel #smLightBtn {
-  background: #0f172a;
-  border-color: #334155;
-}
-body.dark #settingsModalPanel #smDarkBtn {
-  background: #1e293b;
-  border-color: #818cf8;
-}
-body.dark #settingsModalPanel #modalLogoutBtn {
-  background: rgba(220,38,38,0.08) !important;
-  border-color: rgba(248,113,113,0.3) !important;
-}
-body.dark #settingsModalPanel #modalLogoutBtn:hover {
-  background: rgba(220,38,38,0.15) !important;
-  border-color: #f87171 !important;
-}
-</style>
-
 <script>
-  // Theme toggle helper — global so onclick can call it
-  function updateSidebarThemeToggle() {
-    const isDark = document.body.classList.contains('dark');
-    const btn   = document.getElementById('sidebarThemeToggle');
-    const thumb = document.getElementById('sidebarThemeThumb');
-    if (btn)   btn.style.background   = isDark ? '#2563EB' : '#cbd5e1';
-    if (thumb) thumb.style.transform  = isDark ? 'translateX(22px)' : 'translateX(2px)';
-  }
-
-  // Update the light/dark preview card borders in the settings modal
-  function updateSettingsThemeUI() {
-    const isDark = document.body.classList.contains('dark');
-    const lightBtn = document.getElementById('smLightBtn');
-    const darkBtn  = document.getElementById('smDarkBtn');
-    if (lightBtn) lightBtn.style.borderColor = isDark ? '#334155' : '#2563EB';
-    if (darkBtn)  darkBtn.style.borderColor  = isDark ? '#818cf8' : '#334155';
-    updateSidebarThemeToggle();
-  }
-
-  // Sync on theme change event
-  document.addEventListener('theme-changed', () => {
-    updateSidebarThemeToggle();
-    updateSettingsThemeUI();
-  });
-  // Initial sync (theme.js runs before sidebar loads)
-  updateSidebarThemeToggle();
-  updateSettingsThemeUI();
-
-  // Accent color picker in settings
-  (function renderAccentPicker() {
-    const grid = document.getElementById('accentColorGrid');
-    if (!grid || !window.AccentTheme) return;
-    const current = AccentTheme.get();
-    grid.innerHTML = AccentTheme.PRESETS.map(p => {
-      const active = p.hex.toUpperCase() === current.toUpperCase();
-      return `<button onclick="AccentTheme.set('${p.hex}');document.querySelectorAll('.accent-swatch').forEach(s=>s.style.outline='');this.style.outline='2px solid ${p.hex}';this.style.outlineOffset='2px';"
-        class="accent-swatch" style="
-        height:40px;border-radius:10px;border:none;cursor:pointer;
-        background:${p.hex};position:relative;transition:all .2s;
-        ${active ? `outline:2px solid ${p.hex};outline-offset:2px;` : ''}
-      "><span style="position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${p.name}</span>${active ? '<i class="fas fa-check" style="color:#fff;font-size:12px"></i>' : ''}</button>`;
-    }).join('');
+  // Move modal out of sidebar-container to avoid overflow:hidden clipping
+  (function() {
+    const modal = document.getElementById('settingsModal');
+    if (modal && modal.closest('#sidebar-container')) {
+      document.body.appendChild(modal);
+    }
   })();
 
-  (function () {
+  function updateSidebarThemeToggle() {
+    const isDark = document.body.classList.contains('dark');
+    const btn = document.getElementById('sidebarThemeToggle');
+    const thumb = document.getElementById('sidebarThemeThumb');
+    if (btn) btn.style.background = isDark ? 'var(--accent, #2563EB)' : '#cbd5e1';
+    if (thumb) thumb.style.transform = isDark ? 'translateX(20px)' : 'translateX(0)';
+  }
+  function updateSettingsThemeUI() { updateSidebarThemeToggle(); }
+  document.addEventListener('theme-changed', () => updateSidebarThemeToggle());
+  updateSidebarThemeToggle();
 
+  function renderAccentPicker() {
+    const grid = document.getElementById('accentColorGrid');
+    if (!grid) return;
+    if (!window.AccentTheme) { setTimeout(renderAccentPicker, 100); return; }
+    const current = AccentTheme.get();
+    grid.innerHTML = AccentTheme.PRESETS.map(p => {
+      const isActive = p.hex.toUpperCase() === current.toUpperCase();
+      return `<button style="background:${p.hex} !important;color:${p.hex}" class="${isActive ? 'active' : ''}" onclick="AccentTheme.set('${p.hex}');renderAccentPicker();">
+        <span class="swatch-name">${p.name}</span>
+        ${isActive ? '<i class="fas fa-check swatch-check"></i>' : ''}
+      </button>`;
+    }).join('');
+  }
+  renderAccentPicker();
+
+  (function () {
     const settingsModal = document.getElementById("settingsModal");
     const openBtn = document.getElementById("settingsBtn");
     const closeBtn = document.getElementById("closeSettingsModal");
@@ -1027,16 +517,16 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
 
     function updateUserInfo(user) {
       if (!user) return;
-
       const name = user.hoten || user.username || "Người dùng";
       const email = user.email || "email@example.com";
       const initial = (user.hoten || user.username || "?").charAt(0).toUpperCase();
 
-      document.querySelector(".user-name").textContent = name;
-      document.querySelector(".user-email").textContent = email;
-      document.querySelector(".settings-user-name").textContent = name;
-      document.querySelector(".settings-user-email").textContent = email;
-      document.querySelector(".settings-avatar-letter").textContent = initial;
+      const set = (sel, val) => { const el = document.querySelector(sel); if (el) el.textContent = val; };
+      set(".user-name", name);
+      set(".user-email", email);
+      set(".settings-user-name", name);
+      set(".settings-user-email", email);
+      set(".settings-avatar-letter", initial);
 
       const avatarUrl = user.avatarUrl || user.AvatarUrl || localStorage.getItem("user_avatar_url") || localStorage.getItem("user_avatar");
       const container = document.getElementById("sidebarAvatarContainer");
@@ -1048,28 +538,21 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
           container.style.backgroundPosition = "center";
         } else {
           container.style.backgroundImage = "";
-          container.querySelector(".avatar-letter")?.remove();
-          const span = document.createElement("span");
-          span.className = "avatar-letter";
-          span.textContent = initial;
-          container.appendChild(span);
+          if (!container.querySelector(".avatar-letter")) {
+            const span = document.createElement("span");
+            span.className = "avatar-letter";
+            span.textContent = initial;
+            container.appendChild(span);
+          } else {
+            container.querySelector(".avatar-letter").textContent = initial;
+          }
         }
-      } else {
-        document.querySelector(".avatar-letter").textContent = initial;
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const userData = localStorage.getItem("user_data");
-      if (userData) {
-        try {
-          const user = JSON.parse(userData);
-          updateUserInfo(user);
-        } catch (e) {
-          console.error("Lỗi parse user_data:", e);
-        }
-      }
-    });
+    // Load immediately (sidebar loads after DOMContentLoaded)
+    const userData = localStorage.getItem("user_data");
+    if (userData) { try { updateUserInfo(JSON.parse(userData)); } catch (e) {} }
 
     document.addEventListener("user-avatar-updated", (e) => {
       const container = document.getElementById("sidebarAvatarContainer");
@@ -1081,35 +564,16 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
       }
     });
 
-    openBtn?.addEventListener("click", (e) => {
-      e.preventDefault();
-      settingsModal.classList.remove("hidden");
-      if (window.ProfileManager && !window.ProfileManager.initialized) {
-        window.ProfileManager.init();
-      }
-    });
-
-    const closeModal = () => {
-      settingsModal.classList.add("hidden");
-    };
+    openBtn?.addEventListener("click", (e) => { e.preventDefault(); settingsModal.classList.remove("hidden"); });
+    const closeModal = () => settingsModal.classList.add("hidden");
     closeBtn?.addEventListener("click", closeModal);
-    settingsModal.addEventListener("click", (e) => {
-      if (e.target === settingsModal) closeModal();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) closeModal();
-    });
+    settingsModal?.querySelector(".sm-overlay")?.addEventListener("click", closeModal);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) closeModal(); });
 
-    // Show/hide auth elements + toggle button text based on login state
     function syncAuthUI() {
       const token = localStorage.getItem('auth_token');
       let isLoggedIn = false;
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          isLoggedIn = Date.now() < payload.exp * 1000;
-        } catch (e) { isLoggedIn = false; }
-      }
+      if (token) { try { const p = JSON.parse(atob(token.split('.')[1])); isLoggedIn = Date.now() < p.exp * 1000; } catch (e) {} }
       const profileBtn = document.getElementById('sidebarProfileBtn');
       const settBtn = document.getElementById('settingsBtn');
       const toggleIcon = document.getElementById('authToggleIcon');
@@ -1118,108 +582,55 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
 
       if (profileBtn) profileBtn.style.display = isLoggedIn ? 'flex' : 'none';
       if (settBtn) settBtn.style.display = isLoggedIn ? 'flex' : 'none';
-
       if (toggleIcon && toggleText && toggleBtn) {
-        if (isLoggedIn) {
-          toggleIcon.className = 'fas fa-sign-out-alt';
-          toggleText.textContent = 'Đăng xuất';
-          toggleBtn.onmouseover = function() { this.style.background='rgba(248,113,113,0.08)'; this.style.color='#f87171'; };
-          toggleBtn.onmouseout = function() { this.style.background='transparent'; this.style.color='#64748b'; };
-          toggleBtn.style.color = '#64748b';
-        } else {
-          toggleIcon.className = 'fas fa-sign-in-alt';
-          toggleText.textContent = 'Đăng nhập';
-          toggleBtn.onmouseover = function() { this.style.background='rgba(96,165,250,0.08)'; this.style.color='#60a5fa'; };
-          toggleBtn.onmouseout = function() { this.style.background='transparent'; this.style.color='#94a3b8'; };
-          toggleBtn.style.color = '#94a3b8';
-        }
+        toggleIcon.className = isLoggedIn ? 'fas fa-sign-out-alt' : 'fas fa-sign-in-alt';
+        toggleText.textContent = isLoggedIn ? 'Đăng xuất' : 'Đăng nhập';
+        toggleBtn.style.color = isLoggedIn ? '#64748b' : '#94a3b8';
       }
     }
     syncAuthUI();
     document.addEventListener('auth-success', syncAuthUI);
     document.addEventListener('auth-logout', syncAuthUI);
 
-    // Logout helper
     const doLogout = async () => {
-      try { if (typeof Utils !== "undefined") await Utils.makeRequest("/api/auth/logout", "POST"); } catch (err) {}
+      try { if (typeof Utils !== "undefined") await Utils.makeRequest("/api/auth/logout", "POST"); } catch (e) {}
       localStorage.removeItem("auth_token");
       localStorage.removeItem("token");
       localStorage.removeItem("user_data");
-      if (typeof AuthManager !== "undefined") { AuthManager.logout(); }
-      else { document.dispatchEvent(new CustomEvent('auth-logout')); }
+      if (typeof AuthManager !== "undefined") AuthManager.logout();
+      else document.dispatchEvent(new CustomEvent('auth-logout'));
       syncAuthUI();
     };
 
-    // Auth toggle button: login or logout depending on state
-    const authToggleBtn = document.getElementById('sidebarAuthToggleBtn');
-    if (authToggleBtn) {
-      authToggleBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        if (window.Utils?.isLoggedIn()) {
-          if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
-          await doLogout();
-        } else {
-          if (window.AuthModalController) {
-            AuthModalController.init();
-            AuthModalController.open('login');
-          }
-        }
-      });
-    }
+    document.getElementById('sidebarAuthToggleBtn')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (window.Utils?.isLoggedIn()) { if (!await Utils.confirm("Bạn có chắc chắn muốn đăng xuất?", "Đăng xuất")) return; await doLogout(); }
+      else if (window.AuthModalController) { AuthModalController.init(); AuthModalController.open('login'); }
+    });
 
-    // Settings modal logout button
     modalLogoutBtn?.addEventListener("click", async (e) => {
       e.preventDefault();
-      if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
+      if (!await Utils.confirm("Bạn có chắc chắn muốn đăng xuất?", "Đăng xuất")) return;
       await doLogout();
     });
 
     window.updateSidebarUser = updateUserInfo;
 
-    // Sidebar profile button - opens profile modal directly
-    const sidebarProfileBtn = document.getElementById("sidebarProfileBtn");
-    if (sidebarProfileBtn) {
-      sidebarProfileBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const tryOpen = (tries = 0) => {
-          if (window.ProfileManager?.openProfileModal) {
-            if (!window.ProfileManager.initialized) {
-              window.ProfileManager.init();
-            }
-            window.ProfileManager.openProfileModal();
-            return;
-          }
-          // Fallback: open modal directly if manager never loaded
-          if (tries > 20) {
-            const modal = document.getElementById("profileModal");
-            if (modal) {
-              modal.classList.remove("hidden");
-              modal.classList.add("active", "show");
-              modal.style.display = "flex";
-              document.body.style.overflow = "hidden";
-            } else {
-              console.error("[sidebarProfileBtn] profileModal not in DOM");
-            }
-            return;
-          }
-          setTimeout(() => tryOpen(tries + 1), 100);
-        };
-        tryOpen();
-      });
-    } else {
-      console.warn("[sidebar] #sidebarProfileBtn not found at bind time");
-    }
+    document.getElementById("sidebarProfileBtn")?.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const tryOpen = (n = 0) => {
+        if (window.ProfileManager?.openProfileModal) { if (!window.ProfileManager.initialized) window.ProfileManager.init(); window.ProfileManager.openProfileModal(); return; }
+        if (n > 20) { const m = document.getElementById("profileModal"); if (m) { m.classList.remove("hidden"); m.style.display = "flex"; } return; }
+        setTimeout(() => tryOpen(n + 1), 100);
+      };
+      tryOpen();
+    });
 
-    // Navigation
     const initNav = setInterval(() => {
       if (window.AppNavigation?.navigateToSection) {
         clearInterval(initNav);
         document.querySelectorAll("[data-section]").forEach((btn) => {
-          btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            AppNavigation.navigateToSection(btn.dataset.section);
-          });
+          btn.addEventListener("click", (e) => { e.preventDefault(); AppNavigation.navigateToSection(btn.dataset.section); });
         });
       }
     }, 100);

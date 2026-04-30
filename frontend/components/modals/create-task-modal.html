@@ -744,7 +744,7 @@
           confirmButtonColor: "#3085d6", cancelButtonColor: "#d33",
           confirmButtonText: "Đồng ý", cancelButtonText: "Hủy" }).then(r => resolve(r.isConfirmed));
       } else {
-        resolve(confirm(`${title}\n\n${message.replace(/<[^>]*>/g, "")}`));
+        Utils.confirm(message.replace(/<[^>]*>/g, ""), title).then(resolve);
       }
     });
   }

@@ -292,54 +292,76 @@ if (typeof window.Utils === "undefined") {
       return toastId;
     },
 
-    /**
-     * Hiển thị confirm dialog
-     * @param {string} message - Nội dung confirm
-     * @param {string} title - Tiêu đề (optional)
-     * @returns {Promise<boolean>}
-     */
+    _createDialog(opts) {
+      const { title, message, type, buttons, onResult } = opts;
+      const icons = { info: "fa-info-circle", success: "fa-check-circle", warning: "fa-exclamation-triangle", error: "fa-times-circle", confirm: "fa-question-circle" };
+      const iconColors = { info: "var(--accent,#2563EB)", success: "#16a34a", warning: "#f59e0b", error: "#dc2626", confirm: "var(--accent,#2563EB)" };
+
+      const overlay = document.createElement("div");
+      overlay.className = "util-dialog-overlay";
+
+      const panel = document.createElement("div");
+      panel.className = "util-dialog-panel";
+      panel.innerHTML = `
+        <div class="util-dialog-icon" style="color:${iconColors[type] || iconColors.info}">
+          <i class="fas ${icons[type] || icons.info}"></i>
+        </div>
+        ${title ? `<div class="util-dialog-title">${title}</div>` : ""}
+        <div class="util-dialog-msg">${message}</div>
+        <div class="util-dialog-btns"></div>`;
+
+      const btnContainer = panel.querySelector(".util-dialog-btns");
+      const close = (val) => { overlay.classList.add("closing"); setTimeout(() => overlay.remove(), 200); onResult(val); };
+
+      buttons.forEach((b) => {
+        const btn = document.createElement("button");
+        btn.className = b.primary ? "util-btn-primary" : "util-btn-secondary";
+        if (b.danger) btn.classList.add("util-btn-danger");
+        btn.textContent = b.label;
+        btn.addEventListener("click", () => close(b.value));
+        btnContainer.appendChild(btn);
+      });
+
+      overlay.appendChild(panel);
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) close(false); });
+      document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { document.removeEventListener("keydown", esc); close(false); } });
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add("visible"));
+    },
+
+    alert(message, title, type = "info") {
+      return new Promise((resolve) => {
+        this._createDialog({
+          title, message, type,
+          buttons: [{ label: "OK", value: true, primary: true }],
+          onResult: resolve,
+        });
+      });
+    },
+
     confirm(message, title = "Xác nhận") {
       return new Promise((resolve) => {
-        // Tạo modal confirm
-        const modal = document.createElement("div");
-        modal.className =
-          "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
-        modal.innerHTML = `
-          <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div class="p-6">
-              ${
-                title
-                  ? `<h3 class="text-lg font-semibold mb-2">${title}</h3>`
-                  : ""
-              }
-              <p class="text-gray-700 mb-6">${message}</p>
-              <div class="flex justify-end gap-3">
-                <button class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition" id="confirm-cancel">
-                  Hủy
-                </button>
-                <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition" id="confirm-ok">
-                  OK
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
+        this._createDialog({
+          title, message, type: "confirm",
+          buttons: [
+            { label: "Huỷ", value: false },
+            { label: "Xác nhận", value: true, primary: true },
+          ],
+          onResult: resolve,
+        });
+      });
+    },
 
-        document.body.appendChild(modal);
-
-        const handleConfirm = (result) => {
-          modal.remove();
-          resolve(result);
-        };
-
-        modal.querySelector("#confirm-ok").onclick = () => handleConfirm(true);
-        modal.querySelector("#confirm-cancel").onclick = () =>
-          handleConfirm(false);
-
-        // Đóng khi click ra ngoài
-        modal.onclick = (e) => {
-          if (e.target === modal) handleConfirm(false);
-        };
+    confirmDanger(message, title = "Xác nhận") {
+      return new Promise((resolve) => {
+        this._createDialog({
+          title, message, type: "warning",
+          buttons: [
+            { label: "Huỷ", value: false },
+            { label: "Xoá", value: true, primary: true, danger: true },
+          ],
+          onResult: resolve,
+        });
       });
     },
 

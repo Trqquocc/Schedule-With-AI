@@ -517,8 +517,8 @@
 
   async function handleProposalClick(p) {
     if (!window.Swal) {
-      // Simple confirm fallback.
-      if (window.confirm(`Chấp nhận "${p.title}"?`)) acceptMany([p]);
+      const ok = await Utils.confirm(`Chấp nhận "${p.title}"?`, "Xác nhận gợi ý");
+      if (ok) acceptMany([p]);
       else clearProposalById(p.taskId);
       return;
     }

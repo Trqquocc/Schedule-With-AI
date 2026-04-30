@@ -59,9 +59,15 @@ body.dark .habit-checkbox {
 
 /* ── Habit emoji icon ── */
 .habit-icon {
-  font-size: 20px;
+  font-size: 16px;
   width: 32px;
-  text-align: center;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent, #2563EB) 12%, transparent);
+  color: var(--accent, #2563EB);
   flex-shrink: 0;
 }
 
@@ -253,33 +259,44 @@ body.dark .habit-modal-panel {
 .emoji-picker-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
+  gap: 6px;
   margin-top: 8px;
 }
 .emoji-picker-item {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  border-radius: 8px;
+  font-size: 15px;
+  border-radius: 10px;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: background 0.12s, border-color 0.12s;
+  background: #f8fafc;
+  color: #475569;
+  transition: all 0.15s;
 }
 .emoji-picker-item:hover {
-  background: #f0fdf4;
+  background: color-mix(in srgb, var(--accent, #2563EB) 10%, transparent);
+  color: var(--accent, #2563EB);
 }
 .emoji-picker-item.selected {
-  border-color: #22c55e;
-  background: #dcfce7;
+  border-color: var(--accent, #2563EB);
+  background: color-mix(in srgb, var(--accent, #2563EB) 12%, transparent);
+  color: var(--accent, #2563EB);
+}
+body.dark .emoji-picker-item {
+  background: #1e293b;
+  color: #94a3b8;
 }
 body.dark .emoji-picker-item:hover {
-  background: rgba(34,197,94,0.1);
+  background: color-mix(in srgb, var(--accent, #2563EB) 15%, transparent);
+  color: var(--accent, #60a5fa);
 }
 body.dark .emoji-picker-item.selected {
-  background: rgba(34,197,94,0.15);
+  border-color: var(--accent, #60a5fa);
+  background: color-mix(in srgb, var(--accent, #2563EB) 15%, transparent);
+  color: var(--accent, #60a5fa);
 }
 
 /* ── Empty state ── */
