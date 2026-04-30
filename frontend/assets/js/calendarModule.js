@@ -1126,11 +1126,11 @@
       popup.innerHTML = `
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-xs mx-4 p-5 space-y-3">
           <h4 class="font-bold text-sm text-gray-800">Tạo danh mục mới</h4>
-          <input type="text" id="newCatName" placeholder="Tên danh mục *" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
-          <input type="text" id="newCatDesc" placeholder="Mô tả (không bắt buộc)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+          <input type="text" id="newCatName" placeholder="Tên danh mục *" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+          <input type="text" id="newCatDesc" placeholder="Mô tả (không bắt buộc)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
           <div class="flex gap-2">
             <button id="cancelNewCat" class="flex-1 py-2 border border-gray-200 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50">Hủy</button>
-            <button id="saveNewCat" class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold">Tạo</button>
+            <button id="saveNewCat" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">Tạo</button>
           </div>
         </div>`;
       document.body.appendChild(popup);
@@ -1279,25 +1279,25 @@
       const html = `
       <div id="quickCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-          <div class="bg-gradient-to-r from-red-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
+          <div style="background:#2563EB" class="px-6 py-4 flex justify-between items-center">
             <h3 class="text-white font-bold text-lg flex items-center gap-2">
               <i class="fas fa-plus-circle"></i> Tạo công việc mới
             </h3>
             <button id="closeQuickCreate" class="text-white/70 hover:text-white text-xl">&times;</button>
           </div>
           <div class="px-6 py-5 space-y-4">
-            <div id="qc-time-display" class="bg-red-50 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center gap-2">
+            <div id="qc-time-display" class="rounded-lg px-4 py-2 text-sm flex items-center gap-2" style="background:#eff6ff;color:#1d4ed8">
               <i class="fas fa-clock"></i> <span id="qc-time-label">${initialTimeLabel}</span>
             </div>
 
             <div>
               <input type="text" id="qc-title" placeholder="Tên công việc *"
-                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none text-gray-800 font-medium" />
+                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-600 focus:outline-none text-gray-800 font-medium" />
             </div>
 
             <div>
               <textarea id="qc-note" placeholder="Ghi chú (không bắt buộc)" rows="2"
-                class="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:outline-none text-gray-700 resize-none"></textarea>
+                class="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-blue-600 focus:outline-none text-gray-700 resize-none"></textarea>
             </div>
 
             <div>
@@ -1309,7 +1309,7 @@
 
             <div>
               <label class="text-sm font-semibold text-gray-600 mb-2 block flex items-center gap-1">
-                <i class="fas fa-tag text-purple-400 text-xs"></i> Loại công việc
+                <i class="fas fa-tag text-blue-400 text-xs"></i> Loại công việc
               </label>
               <div id="qc-category-chips" class="flex flex-wrap gap-2 min-h-[36px]">
                 <span class="text-xs text-gray-400 italic">Đang tải...</span>
@@ -1319,18 +1319,18 @@
 
             <div>
               <label class="text-sm font-semibold text-gray-600 mb-1 block flex items-center gap-1">
-                <i class="fas fa-clock text-red-400 text-xs"></i> Thời gian ước tính
+                <i class="fas fa-clock text-blue-400 text-xs"></i> Thời gian ước tính
               </label>
               <div class="flex items-center gap-2">
                 <input type="range" id="qc-duration" value="60" min="15" max="480" step="15"
-                  class="flex-1 accent-red-500" />
-                <span id="qc-duration-label" class="text-sm font-bold text-red-600 w-16 text-right">60 phút</span>
+                  class="flex-1 accent-blue-600" />
+                <span id="qc-duration-label" class="text-sm font-bold w-16 text-right" style="color:#2563EB">60 phút</span>
               </div>
             </div>
           </div>
           <div class="px-6 pb-5 flex gap-3">
             <button id="closeQuickCreate2" class="flex-1 py-3 border-2 border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button>
-            <button id="saveQuickCreate" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
+            <button id="saveQuickCreate" class="flex-1 py-3 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2" style="background:#2563EB" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563EB'">
               <i class="fas fa-plus"></i> Tạo công việc
             </button>
           </div>
@@ -1374,16 +1374,16 @@
             chip.className = `px-3 py-1 rounded-full text-xs font-semibold border-2 border-transparent transition-all ${colorsList[i % colorsList.length]}`;
             chip.textContent = name;
             chip.onclick = () => {
-              chips.querySelectorAll("button:not(.new-cat-btn)").forEach(b => b.classList.remove("ring-2","ring-offset-1","ring-red-500","scale-105"));
+              chips.querySelectorAll("button:not(.new-cat-btn)").forEach(b => b.classList.remove("ring-2","ring-offset-1","ring-blue-600","scale-105"));
               if (hidden.value === String(id)) { hidden.value = ""; }
-              else { hidden.value = id; chip.classList.add("ring-2","ring-offset-1","ring-red-500","scale-105"); }
+              else { hidden.value = id; chip.classList.add("ring-2","ring-offset-1","ring-blue-600","scale-105"); }
             };
             chips.appendChild(chip);
           });
           // Add "new category" button
           const newCatBtn = document.createElement("button");
           newCatBtn.type = "button";
-          newCatBtn.className = "new-cat-btn px-3 py-1 rounded-full text-xs font-semibold border-2 border-dashed border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 transition-all";
+          newCatBtn.className = "new-cat-btn px-3 py-1 rounded-full text-xs font-semibold border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-all";
           newCatBtn.textContent = "+ Mới";
           newCatBtn.onclick = () => this._showInlineNewCategory(loadQcCategories);
           chips.appendChild(newCatBtn);
@@ -1434,7 +1434,7 @@
       document.getElementById("saveQuickCreate").onclick = async () => {
         const title = document.getElementById("qc-title").value.trim();
         if (!title) {
-          document.getElementById("qc-title").classList.add("border-red-500");
+          document.getElementById("qc-title").classList.add("border-blue-600");
           document.getElementById("qc-title").placeholder = "Vui lòng nhập tên công việc!";
           return;
         }
@@ -1541,7 +1541,7 @@
           <!-- Thông tin thời gian -->
           <div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
             <div class="flex items-center gap-2 text-gray-700">
-              <i class="fas fa-calendar-alt text-red-500 w-4"></i>
+              <i class="fas fa-calendar-alt w-4" style="color:#2563EB"></i>
               <span class="font-medium">${dateStr}</span>
               <span class="text-gray-400">|</span>
               <span>${timeStr} — ${event.end ? event.end.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}) : ""}</span>
@@ -1557,15 +1557,15 @@
           <div class="space-y-1">
             <label class="text-xs font-semibold text-gray-500" for="eventNoteInput">Ghi chú</label>
             <textarea id="eventNoteInput" rows="2"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-none"
               placeholder="Thêm ghi chú...">${p.note || ""}</textarea>
           </div>
 
           <!-- Đánh dấu hoàn thành -->
-          <div class="rounded-xl border-2 p-4 ${p.completed ? "border-green-200 bg-green-50" : isFuture ? "border-gray-200 bg-gray-50 opacity-60" : "border-red-100 bg-red-50"}">
+          <div class="rounded-xl border-2 p-4 ${p.completed ? "border-green-200 bg-green-50" : isFuture ? "border-gray-200 bg-gray-50 opacity-60" : "border-blue-100 bg-blue-50"}">
             <label class="flex items-center gap-3 ${canComplete ? "cursor-pointer" : "cursor-not-allowed"}">
               <input type="checkbox" id="eventCompletedCheckbox"
-                     class="h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                     class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
                      ${p.completed ? "checked" : ""} ${completeDisabledAttr}
                      title="${completeTitle}" />
               <div>
@@ -1593,15 +1593,15 @@
 
             <!-- Inline add form (hidden by default) -->
             <div id="addSubtaskForm" class="hidden mt-3 rounded-lg p-3" style="background:#f8fafc;border:1px dashed #cbd5e1">
-              <input type="text" id="subtaskTitleInput" placeholder="Tên minitask *" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-red-500" style="border-color:#e2e8f0;background:#fff" />
+              <input type="text" id="subtaskTitleInput" placeholder="Tên minitask *" class="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" style="border-color:#e2e8f0;background:#fff" />
               <div class="grid grid-cols-2 gap-2 mt-2">
-                <input type="time" step="60" id="subtaskStartInput" class="px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-red-500" style="border-color:#e2e8f0;background:#fff" />
-                <input type="time" step="60" id="subtaskEndInput" class="px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-red-500" style="border-color:#e2e8f0;background:#fff" />
+                <input type="time" step="60" id="subtaskStartInput" class="px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-blue-600" style="border-color:#e2e8f0;background:#fff" />
+                <input type="time" step="60" id="subtaskEndInput" class="px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-blue-600" style="border-color:#e2e8f0;background:#fff" />
               </div>
               <p class="text-[10px] mt-1" style="color:#94a3b8">
                 <i class="fas fa-info-circle mr-1"></i>Giờ và phút. Phải nằm trong thời gian task chính.
               </p>
-              <textarea id="subtaskNoteInput" rows="2" placeholder="Ghi chú (không bắt buộc)" class="w-full mt-2 px-3 py-2 rounded-lg border text-xs resize-none focus:outline-none focus:ring-2 focus:ring-red-500" style="border-color:#e2e8f0;background:#fff"></textarea>
+              <textarea id="subtaskNoteInput" rows="2" placeholder="Ghi chú (không bắt buộc)" class="w-full mt-2 px-3 py-2 rounded-lg border text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-600" style="border-color:#e2e8f0;background:#fff"></textarea>
               <div class="flex justify-end gap-2 mt-2">
                 <button id="cancelAddSubtaskBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg" style="background:#f1f5f9;color:#64748b">Huỷ</button>
                 <button id="saveAddSubtaskBtn" class="px-3 py-1.5 text-xs font-semibold text-white rounded-lg" style="background:${dotColor}">Thêm</button>
@@ -1612,7 +1612,7 @@
           <!-- Buttons -->
           <div class="flex gap-3 pt-2">
             <button id="saveEventStatus"
-                    class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
+                    class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
               <i class="fas fa-save"></i> Lưu
             </button>
             <button id="deleteEventBtn"
@@ -2176,7 +2176,7 @@
               ${days.map(d => `<div class="text-center text-xs font-semibold text-gray-400 py-1">${d}</div>`).join("")}
             </div>
             <div class="grid grid-cols-7 gap-0.5">${cells}</div>
-            <button id="mini-today" class="mt-3 w-full text-xs text-red-600 font-semibold hover:bg-red-50 py-1.5 rounded-lg transition">
+            <button id="mini-today" class="mt-3 w-full text-xs font-semibold py-1.5 rounded-lg transition" style="color:#2563EB" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='transparent'">
               Hôm nay
             </button>
           </div>`;
