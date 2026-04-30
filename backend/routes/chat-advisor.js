@@ -10,7 +10,7 @@
 const express = require("express");
 const router = express.Router();
 const { supabase } = require("../config/database");
-const { SYSTEM_PROMPT } = require("./chat-advisor-prompt");
+const { SYSTEM_PROMPT } = require("../lib/chat-advisor-prompt");
 
 const apiKey =
   (process.env.GEMINI_API_KEY_CHAT_ADVISOR || "").trim() ||

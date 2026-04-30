@@ -6,7 +6,7 @@
 const express = require("express");
 const router = express.Router();
 const { supabase } = require("../config/database");
-const { recalculateStreak } = require("./habits-streak-helper");
+const { recalculateStreak } = require("../lib/habits-streak-helper");
 
 // ── GET /api/habits — list active habits with today's completion status ──
 router.get("/", async (req, res) => {
