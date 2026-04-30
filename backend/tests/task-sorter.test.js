@@ -5,7 +5,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const sorterSrc = fs.readFileSync(
-  path.join(__dirname, "..", "..", "frontend", "assets", "js", "task-sorter.js"),
+  path.join(__dirname, "..", "..", "frontend", "assets", "js", "modules", "work", "task-sorter.js"),
   "utf8"
 );
 
