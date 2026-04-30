@@ -16,7 +16,8 @@
       salary: "pages/salary.html",
       profile: "pages/profile.html",
       ai: "pages/ai-content.html",
-      notifications: "pages/notifications.html",
+      notifications: "pages/connections.html",
+      habits: "pages/habits.html",
     },
 
     async loadComponent(containerId, filePath, options = {}) {
@@ -282,12 +283,18 @@
         },
 
         notifications: () => {
-          if (window.NotificationsSection?.init) NotificationsSection.init();
+          if (window.ConnectionsSection?.init) ConnectionsSection.init();
+        },
+
+        habits: () => {
+          if (window.HabitsSection?.init) HabitsSection.init();
         },
       };
 
       const initFn = initMap[sectionName];
       if (initFn) {
+        // Skip data-loading inits when not authenticated
+        if (!window.Utils?.isLoggedIn() && sectionName !== 'settings') return;
         try {
           initFn();
         } catch (err) {

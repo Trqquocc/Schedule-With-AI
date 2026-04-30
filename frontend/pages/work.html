@@ -32,7 +32,7 @@
             style="border-color:#e2e8f0;background:#fff;color:#374151"
             onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'"
             onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'"
-            onclick="(window.ScheduleImageUpload && window.ScheduleImageUpload.open()) || (window.ComponentLoader && window.ComponentLoader.loadComponent('scheduleImportModal','components/modals/schedule-import-modal.html',{executeScripts:true}).then(()=>window.ScheduleImageUpload && window.ScheduleImageUpload.open()))"
+            onclick="if(!Utils.requireAuth())return;(window.ScheduleImageUpload && window.ScheduleImageUpload.open()) || (window.ComponentLoader && window.ComponentLoader.loadComponent('scheduleImportModal','components/modals/schedule-import-modal.html',{executeScripts:true}).then(()=>window.ScheduleImageUpload && window.ScheduleImageUpload.open()))"
             title="Import lịch học/làm từ ảnh"
           >
             <i class="fas fa-camera text-xs"></i>
@@ -45,7 +45,7 @@
             style="border-color:#e2e8f0;background:#fff;color:#374151"
             onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'"
             onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'"
-            onclick="window.__openPriorityManager && window.__openPriorityManager()"
+            onclick="if(!Utils.requireAuth())return;window.__openPriorityManager && window.__openPriorityManager()"
             title="Tuỳ chỉnh màu độ ưu tiên"
           >
             <i class="fas fa-palette text-xs"></i>
@@ -203,7 +203,7 @@
           </div>
           <button
             class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-medium shadow-md transition-all hover:shadow-lg active:scale-95"
-            onclick="if(window.ModalManager) window.ModalManager.showCreateTaskModal();"
+            onclick="if(!Utils.requireAuth())return;if(window.ModalManager) window.ModalManager.showCreateTaskModal();"
           >
             <i class="fas fa-plus"></i>
             Tạo công việc đầu tiên

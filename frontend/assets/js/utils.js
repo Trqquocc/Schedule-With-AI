@@ -36,7 +36,21 @@ if (typeof window.Utils === "undefined") {
      * @returns {boolean}
      */
     isLoggedIn() {
-      return !!this.getToken();
+      const token = this.getToken();
+      if (!token) return false;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return Date.now() < payload.exp * 1000;
+      } catch { return false; }
+    },
+
+    requireAuth() {
+      if (this.isLoggedIn()) return true;
+      if (window.AuthModalController) {
+        AuthModalController.init();
+        AuthModalController.open('login');
+      }
+      return false;
     },
 
     /**
@@ -58,6 +72,11 @@ if (typeof window.Utils === "undefined") {
         : this.API_BASE + endpoint;
 
       const token = this.getToken();
+
+      // No token → return empty data silently (guest mode, no errors)
+      if (!token && endpoint.startsWith("/api/")) {
+        return { success: true, data: [] };
+      }
 
       // Headers mặc định
       const headers = {
@@ -118,23 +137,8 @@ if (typeof window.Utils === "undefined") {
           }
         }
 
-        // Xử lý lỗi token
+        // Xử lý lỗi token — không redirect, không xóa token
         if (response.status === 401 || response.status === 403) {
-          this.clearAuth();
-
-          // Chỉ redirect nếu không phải trang login
-          if (!window.location.pathname.includes("login.html")) {
-            this.showToast(
-              response.status === 401
-                ? "Phiên đăng nhập đã hết hạn"
-                : "Không có quyền truy cập",
-              "warning"
-            );
-            setTimeout(() => {
-              window.location.href = "/login.html";
-            }, 1500);
-          }
-
           return {
             success: false,
             message: result.message || "Unauthorized",

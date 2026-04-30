@@ -166,6 +166,7 @@
   }
 
   function togglePanel() {
+    if (!window.Utils?.requireAuth()) return;
     const p = document.getElementById("cadv-panel");
     const opening = p.classList.contains("cadv-hidden");
     p.classList.toggle("cadv-hidden");

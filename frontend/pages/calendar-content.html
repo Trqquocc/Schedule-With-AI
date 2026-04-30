@@ -55,6 +55,18 @@
 
         <!-- Right: working-hours picker + view switcher -->
         <div class="flex items-center gap-3 relative">
+          <!-- Share calendar button -->
+          <button id="btn-share-calendar"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
+            style="color:#4f46e5;background:#ede9fe;position:relative"
+            onmouseover="this.style.background='#ddd6fe'"
+            onmouseout="this.style.background='#ede9fe'"
+            title="Chia sẻ lịch"
+            onclick="if(!Utils.requireAuth())return;CalendarShareManager.openShareModal()">
+            <i class="fas fa-share-alt text-xs"></i>
+            <span>Chia sẻ</span>
+            <span id="share-invitation-badge" class="share-badge hidden">0</span>
+          </button>
           <button id="cal-hours-btn"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
             style="color:#475569;background:#f1f5f9"
@@ -201,6 +213,11 @@
 
       CalendarModule.init().catch(() => {});
       setupHoursPicker();
+      // Initialise share manager: load invitations + badge, start polling
+      if (window.CalendarShareManager) {
+        CalendarShareManager.init().catch(() => {});
+        CalendarShareManager.startPolling();
+      }
     }
 
     function setupHoursPicker() {

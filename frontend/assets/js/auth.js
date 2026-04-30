@@ -16,10 +16,10 @@ const AuthManager = {
       localStorage.setItem("auth_token", result.data.token);
       localStorage.setItem("user_data", JSON.stringify(result.data.user));
 
-      Utils.showToast("Đăng nhập thành công!", "success");
-      setTimeout(() => window.location.replace("/index.html"), 600);
+      if (typeof Utils !== 'undefined') Utils.showToast("Đăng nhập thành công!", "success");
+      document.dispatchEvent(new CustomEvent('auth-success', { detail: result.data }));
     } catch (err) {
-      Utils.showToast(err.message || "Lỗi kết nối server", "error");
+      if (typeof Utils !== 'undefined') Utils.showToast(err.message || "Lỗi kết nối server", "error");
       throw err;
     }
   },
@@ -41,10 +41,10 @@ const AuthManager = {
       localStorage.setItem("auth_token", result.data.token);
       localStorage.setItem("user_data", JSON.stringify(result.data.user));
 
-      Utils.showToast("Đăng ký thành công! Chào mừng bạn!", "success");
-      setTimeout(() => window.location.replace("/index.html"), 800);
+      if (typeof Utils !== 'undefined') Utils.showToast("Đăng ký thành công! Chào mừng bạn!", "success");
+      document.dispatchEvent(new CustomEvent('auth-success', { detail: result.data }));
     } catch (err) {
-      Utils.showToast(err.message || "Lỗi kết nối server", "error");
+      if (typeof Utils !== 'undefined') Utils.showToast(err.message || "Lỗi kết nối server", "error");
       throw err;
     }
   },
@@ -52,8 +52,8 @@ const AuthManager = {
   logout() {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_data");
-    Utils.showToast("Đăng xuất thành công", "info");
-    setTimeout(() => window.location.replace("/login.html"), 600);
+    if (typeof Utils !== 'undefined') Utils.showToast("Đăng xuất thành công", "info");
+    document.dispatchEvent(new CustomEvent('auth-logout'));
   },
 
   getToken() {

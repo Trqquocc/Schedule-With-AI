@@ -24,6 +24,12 @@ const adjustmentsRoutes = require("./routes/adjustments");
 const notificationRoutes = require("./routes/notification.routes");
 const notificationPrefsRoutes = require("./routes/notification-prefs");
 const chatAdvisorRoutes = require("./routes/chat-advisor");
+const pomodoroRoutes = require("./routes/pomodoro");
+const tagsRoutes = require("./routes/tags");
+const calendarSharesRoutes = require("./routes/calendar-shares");
+const calendarSharedEventsRoute = require("./routes/calendar-shared-events");
+const habitsRoutes = require("./routes/habits");
+const googleCalendarRoutes = require("./routes/google-calendar");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -86,6 +92,13 @@ app.use("/api/adjustments", authenticateToken, adjustmentsRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/notifications", authenticateToken, notificationPrefsRoutes);
 app.use("/api/chat-advisor", authenticateToken, chatAdvisorRoutes);
+app.use("/api/pomodoro", authenticateToken, pomodoroRoutes);
+app.use("/api/tags", authenticateToken, tagsRoutes);
+app.use("/api/calendar-shares", authenticateToken, calendarSharesRoutes);
+app.use("/api/calendar", authenticateToken, calendarSharedEventsRoute);
+app.use("/api/habits", authenticateToken, habitsRoutes);
+// google-calendar: /callback has no auth (uses signed JWT state); other routes apply auth internally
+app.use("/api/google-calendar", googleCalendarRoutes);
 
 // API cũ vẫn dùng (nếu có)
 app.get("/api/work/tasks", authenticateToken, (req, res) =>
@@ -98,8 +111,8 @@ app.get("/api/work/tasks", authenticateToken, (req, res) =>
 const sendFile = (file) => (req, res) =>
   res.sendFile(path.join(__dirname, "../frontend", file));
 
-app.get("/login", sendFile("login.html"));
-app.get("/register", sendFile("register.html"));
+app.get("/login", sendFile("index.html"));
+app.get("/register", sendFile("index.html"));
 app.get(
   [
     "/",

@@ -15,13 +15,37 @@
 
       this.initialized = true;
 
+      await this.waitForFontAwesome();
+
+      const authLoading = document.getElementById("auth-loading");
+      const mainApp = document.getElementById("main-app");
+
+      if (authLoading) authLoading.style.display = "none";
+      if (mainApp) mainApp.classList.add("ready");
+
+      // Listen for auth events
+      document.addEventListener('auth-success', () => this.onAuthSuccess());
+      document.addEventListener('auth-logout', () => this.onAuthLogout());
+
       if (!this.isAuthenticated()) {
-        window.location.href = "/login.html";
+        // Load sidebar (shows login button) + show auth modal
+        await this.initUnauthenticated();
         return;
       }
 
-      await this.waitForFontAwesome();
+      await this.initAuthenticated();
+    },
 
+    async initUnauthenticated() {
+      // Load full UI — sections will be empty (no data without auth)
+      try {
+        await ComponentLoader.init();
+      } catch (e) {}
+      if (window.AppNavigation?.init) AppNavigation.init();
+      if (window.AuthModalController) AuthModalController.init();
+    },
+
+    async initAuthenticated() {
       try {
         await ComponentLoader.init();
       } catch (err) {
@@ -47,22 +71,53 @@
         } catch (err) {}
       }
 
-      const authLoading = document.getElementById("auth-loading");
-      const mainApp = document.getElementById("main-app");
-
-      if (authLoading) {
-        authLoading.style.display = "none";
-      }
-
-      if (mainApp) {
-        mainApp.classList.add("ready");
-      }
-
       setTimeout(() => {
         this.refreshIcons();
       }, 300);
 
       this.verifyInitialization();
+      // Init auth modal controller for logout use
+      if (window.AuthModalController) AuthModalController.init();
+    },
+
+    async onAuthSuccess() {
+      // Re-init app after login/register
+      this.updateUserInfo();
+      if (window.updateSidebarUser) {
+        const user = JSON.parse(localStorage.getItem('user_data') || '{}');
+        updateSidebarUser(user);
+      }
+      // Update sidebar auth area
+      this.updateSidebarAuthState(true);
+      // If components not loaded yet, init them
+      if (!ComponentLoader.loadedComponents.has('schedule-section')) {
+        await ComponentLoader.init();
+        if (window.AppNavigation?.init) AppNavigation.init();
+        if (window.ModalManager?.init) ModalManager.init();
+        if (window.StatsManager?.init) StatsManager.init();
+      }
+      this.refreshIcons();
+    },
+
+    onAuthLogout() {
+      this.updateSidebarAuthState(false);
+      // Reset loaded state so sections reload on next login
+      ComponentLoader.loadedComponents.delete('schedule-section');
+      ComponentLoader.loadedComponents.delete('work-section');
+      ComponentLoader.loadedComponents.delete('ai-section');
+      ComponentLoader.loadedComponents.delete('salary-section');
+      ComponentLoader.loadedComponents.delete('notifications-section');
+      ComponentLoader.loadedComponents.delete('habits-section');
+      // Clear section contents (show empty UI, no forced modal)
+      document.querySelectorAll('.section').forEach(s => { s.innerHTML = ''; });
+    },
+
+    updateSidebarAuthState(isLoggedIn) {
+      const profileArea = document.getElementById('sidebarProfileBtn');
+      const settingsBtn = document.getElementById('settingsBtn');
+
+      if (profileArea) profileArea.style.display = isLoggedIn ? 'flex' : 'none';
+      if (settingsBtn) settingsBtn.style.display = isLoggedIn ? 'flex' : 'none';
     },
 
     async waitForFontAwesome(timeout = 3000) {

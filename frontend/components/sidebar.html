@@ -644,16 +644,25 @@
       <button
         type="button"
         class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
+        data-section="habits"
+      >
+        <i class="fas fa-leaf"></i>
+        <span>Thói quen</span>
+      </button>
+      <button
+        type="button"
+        class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
         data-section="notifications"
       >
-        <i class="fas fa-bell"></i>
-        <span>Thông báo</span>
+        <i class="fas fa-link"></i>
+        <span>Liên kết</span>
       </button>
     </nav>
   </div>
 
   <!-- User Info Bottom -->
   <div style="border-top:1px solid #334155;padding-top:16px;margin-top:16px;">
+    <!-- Profile area (shown when authenticated) -->
     <div id="sidebarProfileBtn" class="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all hover:opacity-80" style="background:#0f172a;" title="Cập nhật hồ sơ">
       <div class="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" id="sidebarAvatarContainer">
         <span class="avatar-letter">?</span>
@@ -674,15 +683,14 @@
         <i class="fas fa-cog"></i>
         <span>Cài đặt</span>
       </button>
+      <!-- Toggle: Đăng nhập (chưa auth) / Đăng xuất (đã auth) -->
       <button
-        data-logout
+        id="sidebarAuthToggleBtn"
         class="w-full text-left text-xs flex items-center gap-2 px-3 py-2 rounded-lg transition-all"
         style="color:#64748b;"
-        onmouseover="this.style.background='rgba(248,113,113,0.08)';this.style.color='#f87171';"
-        onmouseout="this.style.background='transparent';this.style.color='#64748b';"
       >
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Đăng xuất</span>
+        <i class="fas fa-sign-out-alt" id="authToggleIcon"></i>
+        <span id="authToggleText">Đăng xuất</span>
       </button>
     </div>
   </div>
@@ -1035,31 +1043,79 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
       if (e.target === settingsModal) closeModal();
     });
 
-    const handleLogout = async (e) => {
-      e.preventDefault();
-      if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
+    // Show/hide auth elements + toggle button text based on login state
+    function syncAuthUI() {
+      const token = localStorage.getItem('auth_token');
+      let isLoggedIn = false;
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          isLoggedIn = Date.now() < payload.exp * 1000;
+        } catch (e) { isLoggedIn = false; }
+      }
+      const profileBtn = document.getElementById('sidebarProfileBtn');
+      const settBtn = document.getElementById('settingsBtn');
+      const toggleIcon = document.getElementById('authToggleIcon');
+      const toggleText = document.getElementById('authToggleText');
+      const toggleBtn = document.getElementById('sidebarAuthToggleBtn');
 
-      try {
-        if (typeof Utils !== "undefined") {
-          await Utils.makeRequest("/api/auth/logout", "POST");
+      if (profileBtn) profileBtn.style.display = isLoggedIn ? 'flex' : 'none';
+      if (settBtn) settBtn.style.display = isLoggedIn ? 'flex' : 'none';
+
+      if (toggleIcon && toggleText && toggleBtn) {
+        if (isLoggedIn) {
+          toggleIcon.className = 'fas fa-sign-out-alt';
+          toggleText.textContent = 'Đăng xuất';
+          toggleBtn.onmouseover = function() { this.style.background='rgba(248,113,113,0.08)'; this.style.color='#f87171'; };
+          toggleBtn.onmouseout = function() { this.style.background='transparent'; this.style.color='#64748b'; };
+          toggleBtn.style.color = '#64748b';
+        } else {
+          toggleIcon.className = 'fas fa-sign-in-alt';
+          toggleText.textContent = 'Đăng nhập';
+          toggleBtn.onmouseover = function() { this.style.background='rgba(96,165,250,0.08)'; this.style.color='#60a5fa'; };
+          toggleBtn.onmouseout = function() { this.style.background='transparent'; this.style.color='#94a3b8'; };
+          toggleBtn.style.color = '#94a3b8';
         }
-      } catch (err) {}
+      }
+    }
+    syncAuthUI();
+    document.addEventListener('auth-success', syncAuthUI);
+    document.addEventListener('auth-logout', syncAuthUI);
 
+    // Logout helper
+    const doLogout = async () => {
+      try { if (typeof Utils !== "undefined") await Utils.makeRequest("/api/auth/logout", "POST"); } catch (err) {}
       localStorage.removeItem("auth_token");
       localStorage.removeItem("token");
       localStorage.removeItem("user_data");
-
-      if (typeof Utils !== "undefined") {
-        Utils.showToast("Đã đăng xuất thành công", "success");
-      }
-
-      setTimeout(() => (window.location.href = "/login.html"), 800);
+      if (typeof AuthManager !== "undefined") { AuthManager.logout(); }
+      else { document.dispatchEvent(new CustomEvent('auth-logout')); }
+      syncAuthUI();
     };
 
-    document
-      .querySelector("[data-logout]")
-      ?.addEventListener("click", handleLogout);
-    modalLogoutBtn?.addEventListener("click", handleLogout);
+    // Auth toggle button: login or logout depending on state
+    const authToggleBtn = document.getElementById('sidebarAuthToggleBtn');
+    if (authToggleBtn) {
+      authToggleBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (window.Utils?.isLoggedIn()) {
+          if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
+          await doLogout();
+        } else {
+          if (window.AuthModalController) {
+            AuthModalController.init();
+            AuthModalController.open('login');
+          }
+        }
+      });
+    }
+
+    // Settings modal logout button
+    modalLogoutBtn?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!confirm("Bạn có chắc chắn muốn đăng xuất?")) return;
+      await doLogout();
+    });
 
     window.updateSidebarUser = updateUserInfo;
 

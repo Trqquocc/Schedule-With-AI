@@ -38,7 +38,6 @@ const authenticateToken = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.error("Token verification error:", err);
     return res.status(403).json({
       success: false,
       message: "Token không hợp lệ hoặc đã hết hạn",

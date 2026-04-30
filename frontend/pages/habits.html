@@ -1,0 +1,106 @@
+<!-- habits.html — Habit Tracker page loaded into #habits-section -->
+<div style="padding: 24px; max-width: 860px; margin: 0 auto;">
+
+  <!-- ── Header ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="habits-header-icon">
+        <i class="fas fa-leaf"></i>
+      </div>
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:#1e293b;margin:0;" class="dark-text">Thói quen</h1>
+        <p style="font-size:13px;color:#94a3b8;margin:2px 0 0;">Xây dựng thói quen tốt mỗi ngày</p>
+      </div>
+    </div>
+    <button id="habit-add-btn" style="
+      display:flex;align-items:center;gap:8px;
+      padding:10px 18px;border-radius:12px;border:none;
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+      box-shadow:0 4px 12px rgba(34,197,94,0.35);
+      transition:opacity 0.15s;
+    " onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">
+      <i class="fas fa-plus"></i>
+      <span>Thêm thói quen</span>
+    </button>
+  </div>
+
+  <!-- ── Today's check-in card ── -->
+  <div style="background:#fff;border-radius:16px;border:1px solid #f1f5f9;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:24px;overflow:hidden;"
+       class="dark-card">
+    <div style="padding:16px 20px 12px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:16px;">☀️</span>
+      <span style="font-size:15px;font-weight:600;color:#1e293b;" class="dark-text">Hôm nay</span>
+      <span id="habit-today-date" style="font-size:12px;color:#94a3b8;margin-left:4px;"></span>
+    </div>
+    <div id="habit-today-list" style="padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+      <!-- Populated by HabitsSection.renderTodayList() -->
+      <div style="text-align:center;padding:32px;color:#94a3b8;font-size:13px;">Đang tải...</div>
+    </div>
+  </div>
+
+  <!-- ── Heatmap card ── -->
+  <div style="background:#fff;border-radius:16px;border:1px solid #f1f5f9;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow:hidden;"
+       class="dark-card">
+    <!-- Heatmap header with year nav -->
+    <div style="padding:16px 20px 12px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">📊</span>
+        <span style="font-size:15px;font-weight:600;color:#1e293b;" class="dark-text">Lịch sử hoàn thành</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="heatmap-prev-year" class="year-nav-btn" title="Năm trước">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span id="heatmap-year-label" style="font-size:14px;font-weight:700;color:#1e293b;min-width:44px;text-align:center;" class="dark-text"></span>
+        <button id="heatmap-next-year" class="year-nav-btn" title="Năm sau">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Habit selector pills -->
+    <div id="habit-selector-row" style="
+      padding:12px 20px 0;
+      display:flex;flex-wrap:wrap;gap:8px;
+      min-height:36px;
+    ">
+      <!-- Rendered by HabitsSection._renderHabitSelector() -->
+    </div>
+
+    <!-- Heatmap container -->
+    <div style="padding:12px 20px 20px;">
+      <div id="habit-heatmap" class="heatmap-wrapper">
+        <p style="text-align:center;color:#94a3b8;font-size:13px;padding:24px;">
+          Chưa có dữ liệu. Thêm thói quen để bắt đầu.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Set today's date label
+  (function () {
+    const el = document.getElementById("habit-today-date");
+    if (el) {
+      const d = new Date();
+      el.textContent = d.toLocaleDateString("vi-VN", {
+        weekday: "long", day: "numeric", month: "long",
+      });
+    }
+
+    // Dark mode helpers for inline-styled elements
+    const isDark = document.body.classList.contains("dark");
+    if (isDark) {
+      document.querySelectorAll(".dark-text").forEach((el) => {
+        el.style.color = "#f1f5f9";
+      });
+      document.querySelectorAll(".dark-card").forEach((el) => {
+        el.style.background = "#1e293b";
+        el.style.borderColor = "#334155";
+      });
+    }
+  })();
+</script>

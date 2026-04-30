@@ -397,6 +397,12 @@
           </div>
         </div>
 
+        <!-- Tags -->
+        <div class="auth-form-group" style="margin-top:12px">
+          <label class="block text-xs font-semibold mb-1.5" style="color:#374151">TAGS</label>
+          <div id="taskTagInputContainer" style="position:relative"></div>
+        </div>
+
         <!-- Footer Buttons -->
         <div class="flex justify-end gap-3 pt-2">
           <button
@@ -797,6 +803,8 @@
       if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus text-xs"></i> Tạo công việc';
       window.currentEditingTaskId = null;
       window.__SalaryType?.reset();
+      // Reset tag widget
+      if (_tagWidget) { try { _tagWidget.setTags([]); } catch (_) {} }
     }
   }
 
@@ -857,6 +865,7 @@
           CoThoiGianCoDinh: document.getElementById("taskFixedTime").checked,
           Tag: getTagsFromInput().join(","),
           MaLoai: getSelectedCategoryId(),
+          tagIds: getTagWidgetIds(),
         };
 
         // Append salary-type fields (LoaiLuong + branch-specific)
@@ -1186,6 +1195,11 @@
     if (taskData.LuongTheoGio) document.getElementById("taskHourlyWage").value = taskData.LuongTheoGio;
     if (taskData.Tag) document.getElementById("taskTag").value = taskData.Tag;
 
+    // Load tags into widget
+    if (_tagWidget && Array.isArray(taskData.tags) && taskData.tags.length > 0) {
+      _tagWidget.setTags(taskData.tags);
+    }
+
     // Salary-type + shifts + working days
     window.__SalaryType?.loadFromTask(taskData);
 
@@ -1219,12 +1233,28 @@
     window.currentEditingTaskId = taskData.MaCongViec || taskData.ID;
   }
 
+  // ===== Tag widget =====
+  let _tagWidget = null;
+
+  function initTagWidget() {
+    // Destroy previous instance if any
+    if (_tagWidget) { try { _tagWidget.destroy(); } catch (_) {} }
+    if (window.TagInputWidget && document.getElementById("taskTagInputContainer")) {
+      _tagWidget = TagInputWidget.create("taskTagInputContainer", { maxTags: 5 });
+    }
+  }
+
+  function getTagWidgetIds() {
+    return _tagWidget ? _tagWidget.getSelectedIds() : [];
+  }
+
   // ===== Main init =====
   function initCreateTaskModal() {
     if (window._createTaskModalInitialized) return;
     window._createTaskModalInitialized = true;
 
     loadCategoriesForModal();
+    initTagWidget();
     handleCreateTaskForm();
     handleFixedTimeToggle();
     window.__SalaryType?.bind();

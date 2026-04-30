@@ -69,10 +69,6 @@
 
         const result = await Utils.makeRequest("/api/tasks", "GET");
 
-        if (!result.success) {
-          throw new Error(result.message || "Lỗi tải công việc");
-        }
-
         const tasks = result.data || [];
         this._tasksCache = tasks;
         this.renderTasks(tasks);
@@ -80,9 +76,6 @@
       } catch (err) {
         console.error(" Error loading tasks:", err);
         this.showErrorState();
-        if (typeof Utils !== "undefined" && Utils.showToast) {
-          Utils.showToast(err.message || "Không thể tải công việc", "error");
-        }
       }
     },
 
@@ -495,6 +488,7 @@
 
         const createHandler = (e) => {
           e.preventDefault();
+          if (!Utils.requireAuth()) return;
           if (window.ModalManager) {
             window.ModalManager.showModalById("createTaskModal");
           }

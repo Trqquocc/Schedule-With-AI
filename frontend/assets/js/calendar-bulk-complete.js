@@ -374,10 +374,10 @@
     // All five must be present; if the page hasn't rendered yet, bail — caller retries.
     if (!toggle || !help || !daily || !completeBtn || !cancelBtn) return;
 
-    toggle.addEventListener("click", () => setSelectMode(!state.selectMode));
+    toggle.addEventListener("click", () => { if (!window.Utils?.requireAuth()) return; setSelectMode(!state.selectMode); });
     help.addEventListener("click", showHelp);
-    daily.addEventListener("click", dailyCheck);
-    completeBtn.addEventListener("click", bulkComplete);
+    daily.addEventListener("click", () => { if (!window.Utils?.requireAuth()) return; dailyCheck(); });
+    completeBtn.addEventListener("click", () => { if (!window.Utils?.requireAuth()) return; bulkComplete(); });
     cancelBtn.addEventListener("click", () => {
       clearSelection();
       setSelectMode(false);

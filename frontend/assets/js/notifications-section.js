@@ -233,6 +233,7 @@
 
   async function api(path, opts = {}) {
     const token = localStorage.getItem("auth_token");
+    if (!token) return {};
     const res = await fetch(path, {
       method: opts.method || "GET",
       headers: {

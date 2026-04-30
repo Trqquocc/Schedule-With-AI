@@ -416,14 +416,17 @@
         },
 
         eventDrop: async (info) => {
+          if (!window.Utils?.isLoggedIn()) { info.revert(); return; }
           await this._handleEventUpdate(info);
         },
 
         eventResize: async (info) => {
+          if (!window.Utils?.isLoggedIn()) { info.revert(); return; }
           await this._handleEventUpdate(info);
         },
 
         select: (info) => {
+          if (!window.Utils?.requireAuth()) { this.calendar.unselect(); return; }
           this._showQuickCreateModal(info.start, info.end, info.allDay);
           this.calendar.unselect();
         },
@@ -447,7 +450,7 @@
 
         eventClick: (info) => {
           info.jsEvent.preventDefault();
-          // Let bulk-complete intercept when in multi-select mode or modifier held.
+          if (!window.Utils?.requireAuth()) return;
           if (window.CalendarBulkComplete?.handleEventClick(info)) return;
           this._showEventDetails(info.event);
         },

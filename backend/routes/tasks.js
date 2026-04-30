@@ -40,6 +40,23 @@ const PRIORITY_COLORS = {
   4: "#DC2626",
 };
 
+// Sync TaskTags for a given task: delete existing then insert new ones (max 5).
+async function syncTaskTags(taskId, tagIds) {
+  if (!Array.isArray(tagIds)) return;
+  const validIds = tagIds
+    .map((id) => parseInt(id, 10))
+    .filter(Number.isFinite)
+    .slice(0, 5);
+
+  await supabase.from("TaskTags").delete().eq("MaCongViec", taskId);
+
+  if (validIds.length > 0) {
+    const rows = validIds.map((tagId) => ({ MaCongViec: taskId, TagID: tagId }));
+    const { error } = await supabase.from("TaskTags").insert(rows);
+    if (error) console.error("[tasks] syncTaskTags insert:", error.message);
+  }
+}
+
 // DB schema has NOT NULL on CongViec.MaLoai. When a task is created without
 // an explicit category, reuse (or lazily create) a per-user default "Chưa phân loại".
 async function ensureDefaultCategory(userId) {
@@ -119,6 +136,23 @@ router.get("/", authenticateToken, async (req, res) => {
       return res.status(500).json({ success: false, message: "Lỗi server" });
     }
 
+    const taskIds = (tasks || []).map((t) => t.MaCongViec);
+
+    // Batch-fetch tags for all tasks in one query
+    let taskTagsMap = {};
+    if (taskIds.length > 0) {
+      const { data: taskTagRows } = await supabase
+        .from("TaskTags")
+        .select("MaCongViec, Tags(TagID, TenTag, MauSac)")
+        .in("MaCongViec", taskIds);
+      if (taskTagRows) {
+        for (const row of taskTagRows) {
+          if (!taskTagsMap[row.MaCongViec]) taskTagsMap[row.MaCongViec] = [];
+          if (row.Tags) taskTagsMap[row.MaCongViec].push(row.Tags);
+        }
+      }
+    }
+
     const result = (tasks || []).map((task) => ({
       ID: task.MaCongViec,
       UserID: task.UserID,
@@ -140,6 +174,7 @@ router.get("/", authenticateToken, async (req, res) => {
       LuongTheoGio: task.LuongTheoGio,
       MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#3B82F6",
       TenLoai: task.LoaiCongViec?.TenLoai || null,
+      tags: taskTagsMap[task.MaCongViec] || [],
       ...mapSalaryFields(task),
     }));
 
@@ -279,9 +314,15 @@ router.post("/", authenticateToken, async (req, res) => {
       });
     }
 
+    // Sync tags if provided (max 5)
+    if (Array.isArray(d.tagIds) && d.tagIds.length > 0) {
+      await syncTaskTags(createdTask.MaCongViec, d.tagIds);
+    }
+
     const responseTask = {
       ...createdTask,
       MauSac: PRIORITY_COLORS[createdTask.MucDoUuTien] || "#3B82F6",
+      tags: [],
     };
 
     res.status(201).json({
@@ -471,6 +512,11 @@ router.put("/:id", authenticateToken, async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy công việc" });
+    }
+
+    // Sync tags if provided (max 5)
+    if (Array.isArray(d.tagIds)) {
+      await syncTaskTags(parseInt(taskId, 10), d.tagIds);
     }
 
     res.json({ success: true, message: "Cập nhật thành công" });

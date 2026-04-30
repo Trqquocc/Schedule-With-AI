@@ -32,6 +32,7 @@
   async function loadStatsData(from, to) {
     try {
       const token = getAuthToken();
+      if (!token) return { success: true, data: { total: 0, completed: 0, pending: 0, percent: 0, daily: [] }, noAuth: true };
       const params = new URLSearchParams();
       if (from) params.append("from", from);
       if (to) params.append("to", to);
@@ -340,8 +341,9 @@
         renderStatsView(result.data);
       }
     } catch (error) {
-      console.error("Error loading stats:", error);
-      alert("Lỗi khi tải dữ liệu thống kê: " + error.message);
+      if (localStorage.getItem("auth_token")) {
+        console.error("Error loading stats:", error);
+      }
     }
   }
 

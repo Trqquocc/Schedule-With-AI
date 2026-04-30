@@ -52,6 +52,12 @@
     <link rel="stylesheet" href="assets/css/ai-modal-fix.css" />
     <link rel="stylesheet" href="assets/css/login.css" />
     <link rel="stylesheet" href="assets/css/salary.css" />
+    <link rel="stylesheet" href="assets/css/connections.css" />
+    <link rel="stylesheet" href="assets/css/auth-modal.css" />
+    <link rel="stylesheet" href="assets/css/tags.css" />
+    <link rel="stylesheet" href="assets/css/pomodoro.css" />
+    <link rel="stylesheet" href="assets/css/calendar-shares.css" />
+    <link rel="stylesheet" href="assets/css/habits.css" />
 
     <style>
       body {
@@ -170,15 +176,21 @@
           <main id="salary-section" class="section"></main>
           <main id="profile-section" class="section"></main>
           <main id="notifications-section" class="section"></main>
+          <main id="habits-section" class="section"></main>
         </div>
       </div>
     </div>
 
+    <div id="authModalContainer"></div>
+    <div id="shareModalContainer"></div>
     <div id="createTaskModal" class="modal hidden"></div>
     <div id="settingsModal" class="modal hidden"></div>
 
     <!-- AI Chat Advisor — floating widget (only visible to authed users). -->
     <div id="chatAdvisorWidget"></div>
+
+    <!-- Pomodoro Timer — floating widget bottom-left (z-index 998, does not overlap chat advisor). -->
+    <div id="pomodoroWidgetContainer"></div>
 
     <script src="assets/js/theme.js"></script>
     <script src="assets/js/priority-theme.js"></script>
@@ -192,8 +204,10 @@
 
     <script src="assets/js/task-sorter.js"></script>
     <script src="assets/js/sort-controls.js"></script>
+    <script src="assets/js/calendar-share-manager.js"></script>
     <script src="assets/js/calendarModule.js"></script>
     <script src="assets/js/calendar-bulk-complete.js"></script>
+    <script src="assets/js/tag-input-widget.js"></script>
     <script src="assets/js/workManager.js"></script>
     <script src="assets/js/ai-suggestion-handler.js"></script>
     <script src="assets/js/aiModule.js"></script>
@@ -216,23 +230,20 @@
 
     <script src="assets/js/schedule-image-upload.js"></script>
     <script src="assets/js/profileManager.js"></script>
+    <script src="assets/js/google-calendar-connection.js"></script>
+    <script src="assets/js/connections-section.js"></script>
     <script src="assets/js/notifications-section.js"></script>
     <script src="assets/js/chat-advisor-widget.js"></script>
+    <script src="assets/js/pomodoro-widget-render.js"></script>
+    <script src="assets/js/pomodoro-widget.js"></script>
+    <script src="assets/js/calendar-heatmap.js"></script>
+    <script src="assets/js/habits-section.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/auth-modal-controller.js"></script>
     <script src="assets/js/app.js"></script>
-
-    <script src="assets/js/ai-modal-test-helper.js"></script>
-
-    <script src="assets/js/ai-modal-css-verify.js"></script>
-
-    <script src="assets/js/ai-modal-quick-test.js"></script>
-
-    <script src="assets/js/modal-force-display.js"></script>
-    <script src="assets/js/modal-content-loader.js"></script>
-
-    <script src="assets/js/modal-absolute-fix.js"></script>
 
     <script>
       window.debugSidebar = function () {
@@ -279,72 +290,32 @@
     </script>
 
     <script>
-      //  Auth check and Font Awesome wait
+      // Load auth modal HTML early, then start app
       (function () {
-        const token = localStorage.getItem("auth_token");
-        if (!token) return (location.href = "/login.html");
-
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          if (payload.exp * 1000 < Date.now()) throw new Error("Token expired");
-
-          //  Wait for Font Awesome
-          function waitForFA(callback, maxWait = 3000) {
-            const start = Date.now();
-
-            function check() {
-              const test = document.createElement("i");
-              test.className = "fas fa-check";
-              test.style.cssText = "position:absolute;left:-9999px;";
-              document.body.appendChild(test);
-
-              const style = window.getComputedStyle(test, ":before");
-              const loaded =
-                style.content &&
-                style.content !== "none" &&
-                style.content !== '""';
-
-              document.body.removeChild(test);
-
-              if (loaded) {
-                console.log(" Font Awesome ready");
-                document.body.classList.add("fa-loaded");
-                callback();
-              } else if (Date.now() - start < maxWait) {
-                setTimeout(check, 50);
-              } else {
-                console.warn(" FA timeout, continuing...");
-                document.body.classList.add("fa-loaded");
-                callback();
-              }
-            }
-
-            check();
-          }
-
-          waitForFA(() => {
-            document.getElementById("auth-loading")?.remove();
-            document.getElementById("main-app")?.classList.add("ready");
-
-            function startApp() {
-              if (window.App?.init) {
-                App.init();
-              } else {
-                setTimeout(startApp, 100);
-              }
-            }
-
-            if (document.readyState === "loading") {
-              document.addEventListener("DOMContentLoaded", startApp);
-            } else {
-              startApp();
-            }
-          });
-        } catch (err) {
-          console.error("Auth error:", err);
-          localStorage.clear();
-          location.href = "/login.html";
+        function loadAuthModal(callback) {
+          const container = document.getElementById('authModalContainer');
+          if (!container) return callback();
+          fetch('components/modals/auth-modal.html')
+            .then(r => r.text())
+            .then(html => { container.innerHTML = html; callback(); })
+            .catch(() => callback());
         }
+
+        function startApp() {
+          if (window.App?.init) {
+            App.init();
+          } else {
+            setTimeout(startApp, 100);
+          }
+        }
+
+        loadAuthModal(() => {
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", startApp);
+          } else {
+            startApp();
+          }
+        });
       })();
     </script>
   </body>
