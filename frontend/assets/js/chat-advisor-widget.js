@@ -73,7 +73,7 @@
       .cadv-bubble {
         position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px;
         border-radius: 50%; border: none; cursor: pointer; z-index: 9998;
-        background: linear-gradient(135deg,#2563EB,#1d4ed8);
+        background: var(--accent-gradient, linear-gradient(135deg,#2563EB,#1d4ed8));
         color: #fff; font-size: 22px; box-shadow: 0 10px 25px rgba(37,99,235,0.35);
         transition: transform .15s;
       }
@@ -85,7 +85,7 @@
         display: flex; flex-direction: column; overflow: hidden;
       }
       .cadv-header {
-        padding: 12px 14px; background: linear-gradient(135deg,#2563EB,#1d4ed8);
+        padding: 12px 14px; background: var(--accent-gradient, linear-gradient(135deg,#2563EB,#1d4ed8));
         color: #fff; display: flex; justify-content: space-between; align-items: center;
       }
       .cadv-head-info { display: flex; align-items: center; gap: 10px; }
@@ -108,7 +108,7 @@
         white-space: pre-wrap; word-wrap: break-word;
       }
       .cadv-msg.user .cadv-bubble-msg {
-        background: linear-gradient(135deg,#2563EB,#1d4ed8); color: #fff; border-bottom-right-radius: 4px;
+        background: var(--accent-gradient, linear-gradient(135deg,#2563EB,#1d4ed8)); color: #fff; border-bottom-right-radius: 4px;
       }
       .cadv-msg.assistant .cadv-bubble-msg {
         background: #fff; color: #334155; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px;
@@ -134,7 +134,7 @@
         border: none; cursor: pointer; border-radius: 10px; width: 38px;
         display: flex; align-items: center; justify-content: center; font-size: 13px;
       }
-      .cadv-send { background: linear-gradient(135deg,#2563EB,#1d4ed8); color: #fff; }
+      .cadv-send { background: var(--accent-gradient, linear-gradient(135deg,#2563EB,#1d4ed8)); color: #fff; }
       .cadv-send:disabled { opacity: .5; cursor: not-allowed; }
       .cadv-ctx-btn { background: #f1f5f9; color: #64748b; }
       .cadv-ctx-btn.active { background: #eff6ff; color: #2563EB; }

@@ -26,6 +26,7 @@ window.AccentTheme = {
     if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
     localStorage.setItem(this.STORAGE_KEY, hex);
     this.apply(hex);
+    document.dispatchEvent(new CustomEvent('accent-changed', { detail: hex }));
   },
 
   apply(hex) {
@@ -35,8 +36,16 @@ window.AccentTheme = {
     root.style.setProperty('--apple-blue', h);
     root.style.setProperty('--apple-link', h);
     root.style.setProperty('--accent-hover', this.darken(h, 15));
+    root.style.setProperty('--accent-dark', this.darken(h, 30));
     root.style.setProperty('--accent-light', this.toRgba(h, 0.08));
+    root.style.setProperty('--accent-light-bg', this.toRgba(h, 0.06));
     root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${h}, ${this.darken(h, 15)})`);
+    root.style.setProperty('--accent-header', `linear-gradient(135deg, ${this.darken(h, 25)} 0%, ${this.darken(h, 40)} 100%)`);
+  },
+
+  headerGradient() {
+    const h = this.get();
+    return `linear-gradient(135deg, ${this.darken(h, 25)} 0%, ${this.darken(h, 40)} 100%)`;
   },
 
   darken(hex, percent) {

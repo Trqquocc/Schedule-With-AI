@@ -137,7 +137,7 @@ window.CalendarShareManager = {
     const sentRows = sent.map((s) => `
       <div class="share-user-row">
         <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold"
-             style="background:#2563EB">
+             style="background:var(--accent, #2563EB)">
           ${(s.Users?.HoTen || s.Users?.Email || "?")[0].toUpperCase()}
         </div>
         <div class="flex-1 min-w-0">
@@ -170,7 +170,7 @@ window.CalendarShareManager = {
     const receivedRows = received.map((r) => `
       <div class="share-user-row">
         <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold"
-             style="background:#2563EB">
+             style="background:var(--accent, #2563EB)">
           ${(r.Users?.HoTen || "?")[0].toUpperCase()}
         </div>
         <div class="flex-1 min-w-0">
@@ -198,7 +198,7 @@ window.CalendarShareManager = {
           </select>
           <button onclick="CalendarShareManager._submitInvite()"
             class="px-4 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0"
-            style="background:#2563EB">
+            style="background:var(--accent, #2563EB)">
             Mời
           </button>
         </div>
@@ -260,7 +260,7 @@ window.CalendarShareManager = {
         <div class="flex items-center justify-between px-5 py-4 border-b flex-shrink-0" style="border-color:#e2e8f0">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white"
-                 style="background:#2563EB">
+                 style="background:var(--accent, #2563EB)">
               <i class="fas fa-share-alt text-sm"></i>
             </div>
             <h3 class="font-bold text-base" style="color:#1e293b">Chia sẻ lịch</h3>

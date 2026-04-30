@@ -8,7 +8,7 @@
     <!-- Header -->
     <div
       class="modal-header sticky top-0 z-10 px-6 py-4 flex justify-between items-center"
-      style="background:linear-gradient(135deg,#1e3a5f 0%,#1e293b 100%)"
+      style="background:var(--accent-header, linear-gradient(135deg,#1e3a5f 0%,#1e293b 100%))"
     >
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:rgba(255,255,255,0.15)">
@@ -109,7 +109,7 @@
                 type="button"
                 id="createNewCategoryBtn"
                 class="text-xs font-medium"
-                style="color:#2563EB"
+                style="color:var(--accent, #2563EB)"
                 onmouseover="this.style.color='#1d4ed8'"
                 onmouseout="this.style.color='#2563EB'"
               >
@@ -195,7 +195,7 @@
           <div id="partTimeFields" class="hidden mt-3">
             <div class="flex justify-between items-center mb-2">
               <span class="text-xs font-semibold" style="color:#374151">CA LÀM VIỆC</span>
-              <button type="button" id="addShiftBtn" class="text-xs font-semibold" style="color:#2563EB">+ Thêm ca</button>
+              <button type="button" id="addShiftBtn" class="text-xs font-semibold" style="color:var(--accent, #2563EB)">+ Thêm ca</button>
             </div>
             <div id="shiftsContainer" class="space-y-1.5"></div>
             <p class="text-[11px] mt-1.5" style="color:#94a3b8">Khi kéo thả task vào lịch, ca sẽ tự gán dựa theo giờ bắt đầu.</p>
@@ -232,7 +232,7 @@
             </div>
             <div id="fullTimeCategoryHint" class="hidden text-xs p-2 rounded-lg" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8">
               Chưa có danh mục "Full time work".
-              <button type="button" id="createFullTimeCategoryBtn" class="underline font-semibold ml-1" style="color:#2563EB">Tạo ngay</button>
+              <button type="button" id="createFullTimeCategoryBtn" class="underline font-semibold ml-1" style="color:var(--accent, #2563EB)">Tạo ngay</button>
             </div>
           </div>
         </div>
@@ -240,7 +240,7 @@
         <!-- AI fields -->
         <div class="rounded-xl p-3.5" style="background:#eff6ff;border:1px solid #bfdbfe">
           <div class="flex items-center gap-2 mb-3">
-            <i class="fas fa-brain text-xs" style="color:#2563EB"></i>
+            <i class="fas fa-brain text-xs" style="color:var(--accent, #2563EB)"></i>
             <span class="text-xs font-semibold" style="color:#1d4ed8">GỢI Ý CHO AI LÊN LỊCH</span>
           </div>
           <div class="grid grid-cols-3 gap-3">
@@ -310,7 +310,7 @@
             <!-- Time block -->
             <div class="rounded-xl border p-3" style="border-color:#e2e8f0;background:#fff">
               <div class="flex items-center gap-2 mb-2">
-                <i class="fas fa-clock text-xs" style="color:#2563EB"></i>
+                <i class="fas fa-clock text-xs" style="color:var(--accent, #2563EB)"></i>
                 <span class="text-xs font-semibold" style="color:#374151">THỜI GIAN</span>
               </div>
               <div class="grid grid-cols-3 gap-2">
@@ -359,7 +359,7 @@
             <div class="rounded-xl border p-3" style="border-color:#e2e8f0;background:#fff">
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
-                  <i class="fas fa-calendar-day text-xs" style="color:#2563EB"></i>
+                  <i class="fas fa-calendar-day text-xs" style="color:var(--accent, #2563EB)"></i>
                   <span class="text-xs font-semibold" style="color:#374151">NGÀY THỰC HIỆN</span>
                   <span id="taskFixedDateCount" class="text-[10px] font-medium px-1.5 py-0.5 rounded-full" style="background:#dbeafe;color:#1d4ed8">0</span>
                 </div>
@@ -418,7 +418,7 @@
           <button
             type="submit"
             class="px-5 py-2.5 text-sm font-semibold text-white rounded-xl flex items-center gap-2 transition-all"
-            style="background:#2563EB;box-shadow:0 4px 12px rgba(37,99,235,0.3)"
+            style="background:var(--accent, #2563EB);box-shadow:0 4px 12px var(--accent-light, rgba(37,99,235,0.3))"
             onmouseover="this.style.boxShadow='0 6px 18px rgba(37,99,235,0.45)'"
             onmouseout="this.style.boxShadow='0 4px 12px rgba(37,99,235,0.3)'"
           >
@@ -627,7 +627,7 @@
         if (isPast) {
           style = "color:#cbd5e1;cursor:not-allowed;background:#f8fafc";
         } else if (isSelected) {
-          style = "color:#fff;background:#2563EB;font-weight:700;cursor:pointer";
+          style = "color:#fff;background:var(--accent, #2563EB);font-weight:700;cursor:pointer";
         } else if (isToday) {
           style = "color:#1d4ed8;background:#dbeafe;font-weight:600;cursor:pointer";
         } else {

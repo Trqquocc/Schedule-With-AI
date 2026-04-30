@@ -1279,7 +1279,7 @@
       const html = `
       <div id="quickCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-          <div style="background:#2563EB" class="px-6 py-4 flex justify-between items-center">
+          <div style="background:var(--accent-header, #2563EB)" class="px-6 py-4 flex justify-between items-center">
             <h3 class="text-white font-bold text-lg flex items-center gap-2">
               <i class="fas fa-plus-circle"></i> Tạo công việc mới
             </h3>
@@ -1330,7 +1330,7 @@
           </div>
           <div class="px-6 pb-5 flex gap-3">
             <button id="closeQuickCreate2" class="flex-1 py-3 border-2 border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition">Hủy</button>
-            <button id="saveQuickCreate" class="flex-1 py-3 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2" style="background:#2563EB" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563EB'">
+            <button id="saveQuickCreate" class="flex-1 py-3 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2" style="background:var(--accent, #2563EB)" onmouseover="this.style.background='var(--accent-hover, #1d4ed8)'" onmouseout="this.style.background='var(--accent, #2563EB)'"
               <i class="fas fa-plus"></i> Tạo công việc
             </button>
           </div>
@@ -1529,7 +1529,7 @@
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]" id="eventDetailModal">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-4 rounded-t-2xl flex items-start justify-between gap-3">
+        <div class="px-6 py-4 rounded-t-2xl flex items-start justify-between gap-3" style="background:var(--accent-header, linear-gradient(135deg,#334155,#1e293b))">
           <div class="flex items-center gap-3 min-w-0">
             <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${dotColor}"></span>
             <h3 class="text-white font-bold text-lg leading-tight truncate">${event.title}</h3>
