@@ -63,12 +63,15 @@ window.AuthModalController = {
 
   bindOverlayClose() {
     const overlay = document.getElementById('authModalOverlay');
+    // Click overlay to close
     overlay?.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        // Don't close if not authenticated
-        if (!this.isAuthenticated()) return;
-        this.close();
-      }
+      if (e.target === overlay) this.close();
+    });
+    // X button to close
+    document.getElementById('authModalCloseBtn')?.addEventListener('click', () => this.close());
+    // ESC to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay && !overlay.classList.contains('hidden')) this.close();
     });
   },
 

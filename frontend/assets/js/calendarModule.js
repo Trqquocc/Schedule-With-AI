@@ -1426,6 +1426,8 @@
       document.getElementById("quickCreateModal").addEventListener("click", (e) => {
         if (e.target.id === "quickCreateModal") close();
       });
+      const qcEsc = (e) => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", qcEsc); } };
+      document.addEventListener("keydown", qcEsc);
 
       document.getElementById("qc-title").focus();
 
@@ -1632,6 +1634,8 @@
         if (e.target.id === "eventDetailModal")
           document.getElementById("eventDetailModal")?.remove();
       });
+      const evtEsc = (e) => { if (e.key === "Escape") { document.getElementById("eventDetailModal")?.remove(); document.removeEventListener("keydown", evtEsc); } };
+      document.addEventListener("keydown", evtEsc);
 
       document.getElementById("saveEventStatus").onclick = () =>
         this._updateEventStatus(event);

@@ -365,6 +365,10 @@ window.HabitsSection = {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) overlay.remove();
     });
+    const escHandler = (e) => {
+      if (e.key === "Escape") { overlay.remove(); document.removeEventListener("keydown", escHandler); }
+    };
+    document.addEventListener("keydown", escHandler);
 
     setTimeout(() => document.getElementById("hm-name")?.focus(), 50);
   },

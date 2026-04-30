@@ -278,6 +278,10 @@ window.CalendarShareManager = {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) this.closeShareModal();
     });
+    // Close on ESC
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !overlay.classList.contains("hidden")) this.closeShareModal();
+    });
     container.appendChild(overlay);
   },
 };

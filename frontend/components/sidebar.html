@@ -1042,6 +1042,9 @@ body.dark #settingsModalPanel #modalLogoutBtn:hover {
     settingsModal.addEventListener("click", (e) => {
       if (e.target === settingsModal) closeModal();
     });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) closeModal();
+    });
 
     // Show/hide auth elements + toggle button text based on login state
     function syncAuthUI() {
