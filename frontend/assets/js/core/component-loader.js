@@ -19,6 +19,8 @@
       notifications: "pages/connections.html",
       habits: "pages/habits.html",
       friends: "pages/friends.html",
+      groups: "pages/groups.html",
+      chat: "pages/chat.html",
     },
 
     async loadComponent(containerId, filePath, options = {}) {
@@ -293,6 +295,14 @@
 
         friends: () => {
           if (window.FriendsSection?.init) FriendsSection.init();
+        },
+
+        groups: () => {
+          if (window.GroupListSection?.init) GroupListSection.init();
+        },
+
+        chat: () => {
+          if (window.ChatListSection?.init) ChatListSection.init();
         },
       };
 

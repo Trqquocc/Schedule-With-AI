@@ -59,6 +59,8 @@
     <link rel="stylesheet" href="assets/css/calendar-shares.css" />
     <link rel="stylesheet" href="assets/css/friends.css" />
     <link rel="stylesheet" href="assets/css/habits.css" />
+    <link rel="stylesheet" href="assets/css/groups.css" />
+    <link rel="stylesheet" href="assets/css/chat.css" />
 
     <style>
       body {
@@ -179,6 +181,8 @@
           <main id="notifications-section" class="section"></main>
           <main id="habits-section" class="section"></main>
           <main id="friends-section" class="section"></main>
+          <main id="groups-section" class="section"></main>
+          <main id="chat-section" class="section"></main>
         </div>
       </div>
     </div>
@@ -260,6 +264,19 @@
 
     <!-- Modules: Friends -->
     <script src="assets/js/modules/friends/friends-section.js"></script>
+
+    <!-- Modules: Groups -->
+    <script src="assets/js/modules/groups/group-detail-render.js"></script>
+    <script src="assets/js/modules/groups/group-list-section.js"></script>
+    <script src="assets/js/modules/groups/group-detail-section.js"></script>
+
+    <!-- Modules: Chat -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/modules/chat/chat-utils.js"></script>
+    <script src="assets/js/modules/chat/chat-message-renderer.js"></script>
+    <script src="assets/js/modules/chat/chat-realtime-client.js"></script>
+    <script src="assets/js/modules/chat/chat-conversation.js"></script>
+    <script src="assets/js/modules/chat/chat-list-section.js"></script>
 
     <!-- Widgets: Chat & Pomodoro -->
     <script src="assets/js/widgets/chat-advisor/chat-advisor-widget.js"></script>

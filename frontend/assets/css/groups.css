@@ -1,0 +1,161 @@
+/* groups.css — Groups section styling */
+
+/* ── Grid layout ── */
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+/* ── Group card ── */
+.group-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+}
+
+.group-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  border-color: var(--accent, #2563eb);
+}
+
+/* ── Progress bar ── */
+.group-progress {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.group-progress-fill {
+  height: 100%;
+  background: var(--accent, #2563eb);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+/* ── Detail header ── */
+.group-detail-header {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+/* ── Member list ── */
+.group-members-list { gap: 0.5rem; }
+
+/* ── Role badges ── */
+.role-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.role-owner {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.role-admin {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.role-member {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ── Task list ── */
+.group-tasks-list { gap: 0.5rem; }
+
+.group-task-item { transition: background 0.12s; }
+.group-task-item:hover { background: #f8fafc !important; }
+
+/* ── Task status badges ── */
+.task-status-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+  transition: opacity 0.12s;
+}
+
+.task-status-badge:hover { opacity: 0.75; }
+
+.status-pending  { background: #fef9c3; color: #a16207; }
+.status-progress { background: #dbeafe; color: #1d4ed8; }
+.status-done     { background: #dcfce7; color: #15803d; }
+
+/* ── Priority dot ── */
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Add-member form inline flex ── */
+#add-member-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#add-member-form.hidden { display: none; }
+
+/* ── Dark mode ── */
+body.dark #groups-section .bg-white,
+body.dark #groups-section .group-card,
+body.dark #groups-section .group-detail-header {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark #groups-section .group-card:hover { border-color: var(--accent, #2563eb); }
+
+body.dark #groups-section .bg-slate-50,
+body.dark #groups-section .group-task-item,
+body.dark #groups-section .group-members-list .bg-slate-50 {
+  background: #0f172a !important;
+}
+
+body.dark #groups-section .text-slate-800 { color: #f1f5f9; }
+body.dark #groups-section .text-slate-500 { color: #94a3b8; }
+body.dark #groups-section .text-slate-400 { color: #64748b; }
+body.dark #groups-section .border-slate-200 { border-color: #334155; }
+
+body.dark #groups-section input,
+body.dark #groups-section select,
+body.dark #groups-section textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+body.dark #groups-section .group-progress { background: #334155; }
+
+body.dark #create-group-modal .bg-white {
+  background: #1e293b;
+}
+
+body.dark #create-group-modal .text-slate-800 { color: #f1f5f9; }
+body.dark #create-group-modal input,
+body.dark #create-group-modal textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}

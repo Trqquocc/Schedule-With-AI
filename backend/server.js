@@ -30,6 +30,11 @@ const calendarSharesRoutes = require("./routes/calendar-shares");
 const calendarSharedEventsRoute = require("./routes/calendar-shared-events");
 const habitsRoutes = require("./routes/habits");
 const friendsRoutes = require("./routes/friends");
+const groupsRoutes = require("./routes/groups");
+const groupTasksRoutes = require("./routes/group-tasks");
+const conversationsRoutes = require("./routes/conversations");
+const messagesRoutes = require("./routes/messages");
+const configRoutes = require("./routes/config");
 const googleCalendarRoutes = require("./routes/google-calendar");
 
 const app = express();
@@ -99,6 +104,11 @@ app.use("/api/calendar-shares", authenticateToken, calendarSharesRoutes);
 app.use("/api/calendar", authenticateToken, calendarSharedEventsRoute);
 app.use("/api/habits", authenticateToken, habitsRoutes);
 app.use("/api/friends", authenticateToken, friendsRoutes);
+app.use("/api/groups", authenticateToken, groupsRoutes);
+app.use("/api/group-tasks", authenticateToken, groupTasksRoutes);
+app.use("/api/conversations", authenticateToken, conversationsRoutes);
+app.use("/api/messages", authenticateToken, messagesRoutes);
+app.use("/api/config", configRoutes);
 // google-calendar: /callback has no auth (uses signed JWT state); other routes apply auth internally
 app.use("/api/google-calendar", googleCalendarRoutes);
 
@@ -125,6 +135,8 @@ app.get(
     "/profile",
     "/calendar",
     "/settings",
+    "/groups",
+    "/chat",
   ],
   sendFile("index.html")
 );
