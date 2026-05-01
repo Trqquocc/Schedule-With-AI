@@ -18,6 +18,7 @@
       ai: "pages/ai-content.html",
       notifications: "pages/connections.html",
       habits: "pages/habits.html",
+      friends: "pages/friends.html",
     },
 
     async loadComponent(containerId, filePath, options = {}) {
@@ -288,6 +289,10 @@
 
         habits: () => {
           if (window.HabitsSection?.init) HabitsSection.init();
+        },
+
+        friends: () => {
+          if (window.FriendsSection?.init) FriendsSection.init();
         },
       };
 

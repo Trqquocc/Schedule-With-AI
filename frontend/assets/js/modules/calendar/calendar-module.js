@@ -193,7 +193,10 @@
           const note = ev.extendedProps?.note || "";
           const category = ev.extendedProps?.category || "";
           const title = ev.title || "";
+          const isShared = ev.extendedProps?.isShared;
+          const ownerName = ev.extendedProps?.ownerName || "";
           const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          const sharedLabel = isShared && ownerName ? `<span class="shared-event-label"><i class="fas fa-user-friends"></i> ${esc(ownerName)}</span>` : "";
           const metaParts = [];
           if (timeText) metaParts.push(`<span><i class="far fa-clock"></i>${esc(timeText)}</span>`);
           if (category) metaParts.push(`<span><i class="fas fa-folder"></i>${esc(category)}</span>`);
@@ -201,7 +204,7 @@
           const noteHtml = note
             ? `<div class="sched-evt-note"><span class="sched-evt-note-label">Note</span><div class="sched-evt-note-body">${esc(note)}</div></div>`
             : "";
-          return { html: `<div class="sched-evt-title"><span class="sched-evt-title-text">${esc(title)}</span></div>${metaHtml}${noteHtml}` };
+          return { html: `${sharedLabel}<div class="sched-evt-title"><span class="sched-evt-title-text">${esc(title)}</span></div>${metaHtml}${noteHtml}` };
         },
 
         eventDidMount: (info) => {
@@ -227,6 +230,7 @@
 
           if (info.event.extendedProps.aiSuggested) evEl.classList.add("event-ai-suggested");
           if (info.event.extendedProps.completed)   evEl.classList.add("event-completed");
+          if (info.event.extendedProps.isShared)     evEl.classList.add("shared-event");
 
           if (window.CalendarBulkComplete?.refreshStyles) {
             queueMicrotask(() => window.CalendarBulkComplete.refreshStyles());

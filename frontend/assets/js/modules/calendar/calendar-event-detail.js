@@ -29,9 +29,10 @@
     const pri = p.priority || 2;
     const dotColor = window.PriorityTheme ? PriorityTheme.getColor(pri) : "#3B82F6";
 
-    const canComplete = !isFuture || p.completed;
+    const isSharedViewer = p.isShared && p.permission !== "editor";
+    const canComplete = (!isFuture || p.completed) && !isSharedViewer;
     const completeDisabledAttr = canComplete ? "" : "disabled";
-    const completeTitle = isFuture ? "Chưa đến thời gian làm việc" : "";
+    const completeTitle = isSharedViewer ? "Lịch được chia sẻ (chỉ xem)" : isFuture ? "Chưa đến thời gian làm việc" : "";
 
     const modalHtml = `
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]" id="eventDetailModal">
@@ -63,7 +64,7 @@
             <label class="text-xs font-semibold text-gray-500" for="eventNoteInput">Ghi chú</label>
             <textarea id="eventNoteInput" rows="2"
               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-none"
-              placeholder="Thêm ghi chú...">${p.note || ""}</textarea>
+              placeholder="Thêm ghi chú..." ${isSharedViewer ? "readonly" : ""}>${p.note || ""}</textarea>
           </div>
 
           <div class="rounded-xl border-2 p-4 ${p.completed ? "border-green-200 bg-green-50" : isFuture ? "border-gray-200 bg-gray-50 opacity-60" : "border-blue-100 bg-blue-50"}">
@@ -86,9 +87,9 @@
                 Minitask
                 <span id="subtaskCountBadge" class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style="background:${dotColor}22;color:${dotColor}">0</span>
               </div>
-              <button id="toggleAddSubtaskBtn" class="text-xs font-semibold px-2 py-1 rounded-lg" style="color:${dotColor};background:${dotColor}11">
+              ${isSharedViewer ? "" : `<button id="toggleAddSubtaskBtn" class="text-xs font-semibold px-2 py-1 rounded-lg" style="color:${dotColor};background:${dotColor}11">
                 <i class="fas fa-plus mr-1"></i>Thêm
-              </button>
+              </button>`}
             </div>
             <div id="subtaskList" class="space-y-2">
               <div class="text-xs italic" style="color:#94a3b8">Đang tải...</div>
@@ -110,6 +111,11 @@
             </div>
           </div>
 
+          ${isSharedViewer ? `
+          <div class="rounded-xl bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700 flex items-center gap-2">
+            <i class="fas fa-user-friends"></i>
+            <span>Lịch của <strong>${p.ownerName || "người khác"}</strong> (chỉ xem)</span>
+          </div>` : `
           <div class="flex gap-3 pt-2">
             <button id="saveEventStatus" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition flex items-center justify-center gap-2">
               <i class="fas fa-save"></i> Lưu
@@ -117,7 +123,7 @@
             <button id="deleteEventBtn" class="py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold border border-red-200 transition flex items-center gap-2">
               <i class="fas fa-trash"></i> Xóa
             </button>
-          </div>
+          </div>`}
         </div>
       </div>
     </div>`;
@@ -138,13 +144,15 @@
     };
     document.addEventListener("keydown", evtEsc);
 
-    // Save / complete / delete
-    document.getElementById("saveEventStatus").onclick = () => this._updateEventStatus(event);
+    // Save / complete / delete (hidden for shared viewer events)
+    const saveBtn = document.getElementById("saveEventStatus");
+    if (saveBtn) saveBtn.onclick = () => this._updateEventStatus(event);
     const completionCheckbox = document.getElementById("eventCompletedCheckbox");
     if (completionCheckbox && !completionCheckbox.disabled) {
       completionCheckbox.addEventListener("change", () => this._updateEventStatus(event));
     }
-    document.getElementById("deleteEventBtn").onclick = async () => {
+    const deleteBtn = document.getElementById("deleteEventBtn");
+    if (deleteBtn) deleteBtn.onclick = async () => {
       const confirmed = await Utils.confirmDanger(`Xóa sự kiện "${event.title}"? Thao tác này không thể hoàn tác.`, "Xoá sự kiện");
       if (confirmed) this._deleteEvent(event);
     };

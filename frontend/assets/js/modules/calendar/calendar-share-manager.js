@@ -57,8 +57,7 @@ window.CalendarShareManager = {
     await this.loadShares();
     this.renderInvitationBadge();
     this.renderShareModal();
-    // Trigger calendar refresh if available
-    if (window.CalendarModule?.reload) window.CalendarModule.reload();
+    window.CalendarModule?.refreshEventsInPlace?.();
   },
 
   // Reject an invitation
@@ -74,7 +73,7 @@ window.CalendarShareManager = {
     await this._apiFetch(`/api/calendar-shares/${shareId}`, { method: "DELETE" });
     await this.loadShares();
     this.renderShareModal();
-    if (window.CalendarModule?.reload) window.CalendarModule.reload();
+    window.CalendarModule?.refreshEventsInPlace?.();
   },
 
   // Poll every 30 s — only when calendar section is visible
@@ -107,6 +106,7 @@ window.CalendarShareManager = {
     this._ensureModalDOM();
     document.getElementById("shareModalOverlay")?.classList.remove("hidden");
     this.renderShareModal();
+    this._loadFriendsPicker();
   },
 
   closeShareModal() {
@@ -204,6 +204,12 @@ window.CalendarShareManager = {
         </div>
       </div>
 
+      <!-- Quick pick from friends -->
+      <div id="share-friends-picker" class="p-5 border-b hidden" style="border-color:#e2e8f0">
+        <p class="text-sm font-semibold mb-3" style="color:#1e293b"><i class="fas fa-user-friends mr-1" style="color:var(--accent,#2563EB)"></i>Chọn từ bạn bè</p>
+        <div id="share-friends-list" class="space-y-2"></div>
+      </div>
+
       <!-- Pending invitations -->
       ${inviteRows ? `<div class="p-5 border-b" style="border-color:#e2e8f0">
         <p class="text-sm font-semibold mb-3" style="color:#1e293b">Lời mời chờ xử lý (${invitations.length})</p>
@@ -244,6 +250,52 @@ window.CalendarShareManager = {
       this.renderShareModal();
     } catch (err) {
       Utils?.showToast?.(err.message || "Không thể gửi lời mời", "error");
+    }
+  },
+
+  // Load friends list into share modal for quick picking
+  async _loadFriendsPicker() {
+    const picker = document.getElementById("share-friends-picker");
+    const list = document.getElementById("share-friends-list");
+    if (!picker || !list) return;
+
+    try {
+      const res = await this._apiFetch("/api/friends");
+      const friends = res.data || [];
+      if (friends.length === 0) { picker.classList.add("hidden"); return; }
+
+      // Filter out friends already shared with
+      const sharedEmails = new Set([
+        ...(this.shares.sent || []).map((s) => s.Users?.Email),
+        ...(this.shares.received || []).map((r) => r.Users?.Email),
+      ]);
+      const available = friends.filter((f) => !sharedEmails.has(f.Email));
+      if (available.length === 0) { picker.classList.add("hidden"); return; }
+
+      picker.classList.remove("hidden");
+      list.innerHTML = available.map((f) => {
+        const initial = (f.HoTen || f.Email || "?")[0].toUpperCase();
+        return `
+          <div class="share-user-row" style="cursor:pointer" onclick="CalendarShareManager._pickFriend('${f.Email}')">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold"
+                 style="background:var(--accent, #2563EB)">${initial}</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-sm truncate" style="color:#1e293b">${f.HoTen || "Người dùng"}</div>
+              <div class="text-xs truncate" style="color:#64748b">${f.Email || ""}</div>
+            </div>
+            <span class="text-xs font-medium" style="color:var(--accent,#2563EB)"><i class="fas fa-share mr-1"></i>Chia sẻ</span>
+          </div>`;
+      }).join("");
+    } catch (_) {
+      picker.classList.add("hidden");
+    }
+  },
+
+  _pickFriend(email) {
+    const emailEl = document.getElementById("share-invite-email");
+    if (emailEl) {
+      emailEl.value = email;
+      emailEl.focus();
     }
   },
 

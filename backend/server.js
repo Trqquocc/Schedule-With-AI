@@ -29,6 +29,7 @@ const tagsRoutes = require("./routes/tags");
 const calendarSharesRoutes = require("./routes/calendar-shares");
 const calendarSharedEventsRoute = require("./routes/calendar-shared-events");
 const habitsRoutes = require("./routes/habits");
+const friendsRoutes = require("./routes/friends");
 const googleCalendarRoutes = require("./routes/google-calendar");
 
 const app = express();
@@ -97,6 +98,7 @@ app.use("/api/tags", authenticateToken, tagsRoutes);
 app.use("/api/calendar-shares", authenticateToken, calendarSharesRoutes);
 app.use("/api/calendar", authenticateToken, calendarSharedEventsRoute);
 app.use("/api/habits", authenticateToken, habitsRoutes);
+app.use("/api/friends", authenticateToken, friendsRoutes);
 // google-calendar: /callback has no auth (uses signed JWT state); other routes apply auth internally
 app.use("/api/google-calendar", googleCalendarRoutes);
 

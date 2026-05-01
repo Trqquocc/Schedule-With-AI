@@ -150,9 +150,39 @@
         // Subtask fetch optional — silent on failure (migration 003 not run yet).
       }
 
-      return normalEvents;
+      // Fetch shared calendar events and merge
+      const sharedEvents = await this._loadSharedEvents();
+      return normalEvents.concat(sharedEvents);
     } catch (err) {
       console.error("Load events error:", err);
+      return [];
+    }
+  };
+
+  CM._loadSharedEvents = async function () {
+    try {
+      const now = new Date();
+      const from = new Date(now.getTime() - 30 * 24 * 3600 * 1000).toISOString();
+      const to = new Date(now.getTime() + 60 * 24 * 3600 * 1000).toISOString();
+      const res = await Utils.makeRequest(`/api/calendar/shared-events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, "GET");
+      if (!res?.success || !Array.isArray(res.data)) return [];
+
+      return res.data.map((ev) => ({
+        id: ev.id,
+        title: ev.title,
+        start: new Date(ev.start),
+        end: ev.end ? new Date(ev.end) : undefined,
+        backgroundColor: ev.backgroundColor || "#94a3b8",
+        borderColor: ev.borderColor || "#94a3b8",
+        textColor: ev.textColor || "#FFFFFF",
+        classNames: ev.classNames || ["shared-event"],
+        editable: ev.extendedProps?.permission === "editor",
+        extendedProps: {
+          ...ev.extendedProps,
+          isShared: true,
+        },
+      }));
+    } catch (_) {
       return [];
     }
   };
