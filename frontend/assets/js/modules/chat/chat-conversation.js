@@ -80,7 +80,7 @@
       let url = `/api/messages?conversationId=${conversationId}&limit=30`;
       if (before) url += `&before=${encodeURIComponent(before)}`;
       const json = await this._api(url);
-      const msgs = (json.data || []).reverse(); // newest-first → reverse for top-to-bottom
+      const msgs = json.data || [];
       ChatMessageRenderer.renderAll(msgs);
       this._scrollToBottom();
     },

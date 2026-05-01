@@ -108,7 +108,7 @@
             <span class="priority-dot" style="background:${prioColors[prio]}"></span>
             <div class="flex-1 min-w-0">
               <div class="text-xs font-semibold text-slate-800 truncate">${t.TieuDe}</div>
-              ${t.assigneeName ? `<div class="text-xs text-slate-400">${t.assigneeName}</div>` : ""}
+              ${t.Assignee?.HoTen || t.assigneeName ? `<div class="text-xs text-slate-400">${t.Assignee?.HoTen || t.assigneeName}</div>` : ""}
             </div>
             <span class="task-status-badge ${statusClass}" onclick="GroupDetailSection.cycleStatus(${t.GroupTaskID},'${t.TrangThai}')">${statusLabel}</span>
             <button onclick="GroupDetailSection.deleteTask(${t.GroupTaskID})" class="text-xs text-slate-300 hover:text-red-500 transition"><i class="fas fa-times"></i></button>

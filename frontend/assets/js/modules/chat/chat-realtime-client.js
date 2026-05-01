@@ -30,9 +30,11 @@
         const res = await fetch("/api/config/public");
         if (res.ok) {
           const cfg = await res.json();
-          if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+          const url2 = cfg.data?.supabaseUrl || cfg.supabaseUrl;
+          const key2 = cfg.data?.supabaseAnonKey || cfg.supabaseAnonKey;
+          if (url2 && key2) {
             const { createClient } = window.supabase;
-            this._client = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+            this._client = createClient(url2, key2);
             return;
           }
         }
@@ -94,14 +96,16 @@
       const token = localStorage.getItem("auth_token");
       if (!token || this._currentConvId !== conversationId) return;
       try {
-        const url = `/api/messages?conversationId=${conversationId}&after=${encodeURIComponent(this._lastMsgTime)}&limit=20`;
+        const url = `/api/messages?conversationId=${conversationId}&limit=10`;
         const res = await fetch(url, { headers: { Authorization: "Bearer " + token } });
         if (!res.ok) return;
         const json = await res.json();
         const msgs = json.data || [];
         msgs.forEach((m) => {
-          this._lastMsgTime = m.NgayGui || this._lastMsgTime;
-          if (this._callback) this._callback(m);
+          if (m.NgayGui && m.NgayGui > this._lastMsgTime) {
+            this._lastMsgTime = m.NgayGui;
+            if (this._callback) this._callback(m);
+          }
         });
       } catch (_) { /* ignore poll errors */ }
     },

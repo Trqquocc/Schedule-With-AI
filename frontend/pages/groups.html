@@ -60,11 +60,11 @@
   </div>
 </div>
 
-<script src="assets/js/modules/groups/group-detail-render.js"></script>
-<script src="assets/js/modules/groups/group-list-section.js"></script>
-<script src="assets/js/modules/groups/group-detail-section.js"></script>
 <script>
   (function () {
-    if (window.GroupListSection) GroupListSection.init();
+    if (window.GroupDetailSection) {
+      document.getElementById("back-to-groups")
+        ?.addEventListener("click", () => GroupListSection.backToList());
+    }
   })();
 </script>

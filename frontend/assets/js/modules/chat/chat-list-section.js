@@ -78,19 +78,21 @@
     },
 
     _convItemHtml(conv) {
+      const id = conv.conversationId || conv.ConversationID;
       const name = ChatUtils.esc(conv.displayName || "Người dùng");
-      const last = ChatUtils.esc(ChatUtils.truncate(conv.TinNhanCuoi || "Chưa có tin nhắn", 36));
-      const time = conv.ThoiGianCuoi ? ChatUtils.relativeTimeShort(new Date(conv.ThoiGianCuoi)) : "";
-      const isGroup = conv.LoaiHoiThoai === "group";
-      const unreadDot = conv.unread > 0 ? `<div class="unread-dot"></div>` : "";
+      const last = ChatUtils.esc(ChatUtils.truncate(conv.lastMessage || conv.TinNhanCuoi || "Chưa có tin nhắn", 36));
+      const timeVal = conv.lastMessageAt || conv.ThoiGianCuoi;
+      const time = timeVal ? ChatUtils.relativeTimeShort(new Date(timeVal)) : "";
+      const isGroup = (conv.type || conv.LoaiHoiThoai) === "group";
+      const unreadDot = conv.isRead === false ? `<div class="unread-dot"></div>` : "";
       const avatar = isGroup
         ? `<div class="conv-avatar" style="background:var(--accent-gradient,linear-gradient(135deg,#2563EB,#1d4ed8))">
              <i class="fas fa-users" style="font-size:14px"></i></div>`
         : `<div class="conv-avatar">${(conv.displayName || "?")[0].toUpperCase()}</div>`;
 
       return `
-        <div class="conversation-item" data-conv-id="${conv.ConversationID}"
-          onclick="ChatListSection.selectConversation(${conv.ConversationID})">
+        <div class="conversation-item" data-conv-id="${id}"
+          onclick="ChatListSection.selectConversation(${id})">
           ${avatar}
           <div class="conv-info">
             <div class="conv-name">${name}</div>
@@ -115,13 +117,13 @@
         document.getElementById("chat-sidebar")?.classList.add("hidden-mobile");
       }
 
-      const conv = this._conversations.find((c) => c.ConversationID === id);
+      const conv = this._conversations.find((c) => (c.conversationId || c.ConversationID) === id);
       const name = conv?.displayName || "Cuộc trò chuyện";
-      const sub = conv?.LoaiHoiThoai === "group" ? "Nhóm" : "";
+      const sub = (conv?.type || conv?.LoaiHoiThoai) === "group" ? "Nhóm" : "";
 
       // Mark read (fire-and-forget) and clear unread dot
       this._api(`/api/conversations/${id}/read`, { method: "PUT" }).catch(() => {});
-      if (conv) { conv.unread = 0; this._renderConversations(); }
+      if (conv) { conv.isRead = true; this._renderConversations(); }
 
       await ChatConversation.loadConversation(id, name, sub);
     },
@@ -129,15 +131,16 @@
     async startDirectChat(userId) {
       try {
         const json = await this._api(`/api/conversations/direct/${userId}`);
-        const conv = json.data;
-        if (!conv) throw new Error("Không tìm thấy cuộc trò chuyện");
-        if (!this._conversations.find((c) => c.ConversationID === conv.ConversationID)) {
-          this._conversations.unshift(conv);
-          this._renderConversations();
+        const result = json.data;
+        if (!result) throw new Error("Không tìm thấy cuộc trò chuyện");
+        const conv = result.conversation || result;
+        const convId = conv.ConversationID || conv.conversationId;
+        if (!this._conversations.find((c) => (c.conversationId || c.ConversationID) === convId)) {
+          await this.loadConversations();
         }
-        this.selectConversation(conv.ConversationID);
+        this.selectConversation(convId);
       } catch (e) {
-        alert("Không thể mở cuộc trò chuyện: " + e.message);
+        window.Utils?.alert?.("Không thể mở cuộc trò chuyện: " + e.message, "Lỗi", "error");
       }
     },
 
@@ -165,25 +168,22 @@
 
       results.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Đang tìm...</p>`;
       try {
-        const json = await this._api(`/api/friends?q=${encodeURIComponent(query)}`);
-        const friends = json.data || [];
+        const json = await this._api("/api/friends");
+        const allFriends = json.data || [];
+        const q = query.toLowerCase();
+        const friends = allFriends.filter((f) =>
+          (f.HoTen || "").toLowerCase().includes(q) || (f.Email || "").toLowerCase().includes(q)
+        );
         if (!friends.length) {
           results.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Không tìm thấy</p>`;
           return;
         }
         results.innerHTML = friends.map((f) => {
-          const initial = (f.HoTen || f.Email || "?")[0].toUpperCase();
           const uid = f.NguoiDungID || f.UserID;
-          return `
-            <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition"
-              onclick="ChatListSection._pickFriend(${uid})">
-              <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                style="background:var(--accent,#2563EB)">${initial}</div>
-              <div>
-                <div class="text-sm font-medium text-slate-800">${ChatUtils.esc(f.HoTen || "Người dùng")}</div>
-                <div class="text-xs text-slate-400">${ChatUtils.esc(f.Email || "")}</div>
-              </div>
-            </div>`;
+          const ini = (f.HoTen || f.Email || "?")[0].toUpperCase();
+          return `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition" onclick="ChatListSection._pickFriend(${uid})">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--accent,#2563EB)">${ini}</div>
+            <div><div class="text-sm font-medium text-slate-800">${ChatUtils.esc(f.HoTen || "Người dùng")}</div><div class="text-xs text-slate-400">${ChatUtils.esc(f.Email || "")}</div></div></div>`;
         }).join("");
       } catch (_) {
         results.innerHTML = `<p class="text-xs text-red-400 text-center py-2">Lỗi tìm kiếm</p>`;

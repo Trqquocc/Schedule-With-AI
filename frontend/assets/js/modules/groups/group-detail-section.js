@@ -27,8 +27,8 @@
     },
 
     _isOwnerOrAdmin() {
-      const me = this.current?.members?.find((m) => m.UserID === this.currentUser);
-      return me && (me.VaiTro === "owner" || me.VaiTro === "admin");
+      const role = this.current?.myRole;
+      return role === "owner" || role === "admin";
     },
 
     async load(groupId) {
@@ -60,8 +60,15 @@
       if (!el || !this.current) return;
 
       const R = window.GroupDetailRender;
-      const g = this.current.group;
-      const members = this.current.members || [];
+      const g = this.current;
+      const members = (this.current.members || []).map((m) => ({
+        UserID: m.Users?.UserID || m.UserID,
+        HoTen: m.Users?.HoTen || m.HoTen || "",
+        Email: m.Users?.Email || m.Email || "",
+        AvatarUrl: m.Users?.AvatarUrl || m.AvatarUrl || "",
+        VaiTro: m.VaiTro,
+        NgayThamGia: m.NgayThamGia,
+      }));
       const canManage = this._isOwnerOrAdmin();
 
       el.innerHTML = `
@@ -86,16 +93,18 @@
       const email = emailEl?.value.trim();
       if (!email) { Utils?.showToast?.("Nhập email thành viên", "error"); return; }
       try {
-        const searchRes = await this._api(`/api/friends/search?q=${encodeURIComponent(email)}`);
-        const user = (searchRes.data || []).find((u) => u.Email === email);
-        if (!user) throw new Error("Không tìm thấy người dùng với email này");
-        await this._api(`/api/groups/${this.current.group.GroupID}/members`, {
+        const friendsRes = await this._api("/api/friends");
+        const user = (friendsRes.data || []).find((u) =>
+          (u.Email || "").toLowerCase() === email.toLowerCase()
+        );
+        if (!user) throw new Error("Không tìm thấy bạn bè với email này");
+        await this._api(`/api/groups/${this.current.GroupID}/members`, {
           method: "POST",
-          body: JSON.stringify({ userId: user.UserID }),
+          body: JSON.stringify({ userId: user.UserID || user.NguoiDungID }),
         });
         if (emailEl) emailEl.value = "";
         Utils?.showToast?.("Đã thêm thành viên!", "success");
-        await this.load(this.current.group.GroupID);
+        await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
@@ -103,9 +112,9 @@
       const ok = await Utils?.confirmDanger?.(`Xoá "${name}" khỏi nhóm?`, "Xoá thành viên");
       if (!ok) return;
       try {
-        await this._api(`/api/groups/${this.current.group.GroupID}/members/${userId}`, { method: "DELETE" });
+        await this._api(`/api/groups/${this.current.GroupID}/members/${userId}`, { method: "DELETE" });
         Utils?.showToast?.("Đã xoá thành viên", "info");
-        await this.load(this.current.group.GroupID);
+        await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
@@ -116,22 +125,23 @@
 
     async addTask() {
       const title = document.getElementById("task-title-input")?.value.trim();
-      const assignedTo = document.getElementById("task-assignee-input")?.value || null;
+      const assignedTo = document.getElementById("task-assignee-input")?.value;
       const priority = parseInt(document.getElementById("task-priority-input")?.value || "2", 10);
       if (!title) { Utils?.showToast?.("Nhập tiêu đề công việc", "error"); return; }
+      if (!assignedTo) { Utils?.showToast?.("Chọn người thực hiện", "error"); return; }
       try {
         await this._api("/api/group-tasks", {
           method: "POST",
           body: JSON.stringify({
-            groupId: this.current.group.GroupID,
+            groupId: this.current.GroupID,
             tieuDe: title,
-            assignedTo: assignedTo || undefined,
+            assignedTo: parseInt(assignedTo, 10),
             mucDoUuTien: priority,
           }),
         });
         this.hideAddTask();
         Utils?.showToast?.("Đã tạo công việc!", "success");
-        await this.load(this.current.group.GroupID);
+        await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
@@ -142,7 +152,7 @@
           method: "PUT",
           body: JSON.stringify({ trangThai: next[current] || "pending" }),
         });
-        await this.load(this.current.group.GroupID);
+        await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
@@ -152,7 +162,7 @@
       try {
         await this._api(`/api/group-tasks/${taskId}`, { method: "DELETE" });
         Utils?.showToast?.("Đã xoá công việc", "info");
-        await this.load(this.current.group.GroupID);
+        await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
   };

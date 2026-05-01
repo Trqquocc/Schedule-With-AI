@@ -78,14 +78,8 @@
   </div>
 </div>
 
-<script src="assets/js/modules/chat/chat-utils.js"></script>
-<script src="assets/js/modules/chat/chat-message-renderer.js"></script>
-<script src="assets/js/modules/chat/chat-realtime-client.js"></script>
-<script src="assets/js/modules/chat/chat-conversation.js"></script>
-<script src="assets/js/modules/chat/chat-list-section.js"></script>
 <script>
   (function () {
-    ChatConversation.init();
-    ChatListSection.init();
+    if (window.ChatConversation) ChatConversation.init();
   })();
 </script>
