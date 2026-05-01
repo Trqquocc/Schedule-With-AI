@@ -36,6 +36,7 @@ const conversationsRoutes = require("./routes/conversations");
 const messagesRoutes = require("./routes/messages");
 const configRoutes = require("./routes/config");
 const googleCalendarRoutes = require("./routes/google-calendar");
+const gamificationRoutes = require("./routes/gamification");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -111,6 +112,7 @@ app.use("/api/messages", authenticateToken, messagesRoutes);
 app.use("/api/config", configRoutes);
 // google-calendar: /callback has no auth (uses signed JWT state); other routes apply auth internally
 app.use("/api/google-calendar", googleCalendarRoutes);
+app.use("/api/gamification", authenticateToken, gamificationRoutes);
 
 // API cũ vẫn dùng (nếu có)
 app.get("/api/work/tasks", authenticateToken, (req, res) =>

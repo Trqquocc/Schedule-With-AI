@@ -55,6 +55,19 @@ router.get("/", async (req, res) => {
       a.date.localeCompare(b.date)
     );
 
+    // Group daily into weeks (ISO week, Monday-based)
+    const weeklyMap = {};
+    daily.forEach((d) => {
+      const date = new Date(d.date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay() + 1); // Monday
+      const weekKey = weekStart.toISOString().split("T")[0];
+      if (!weeklyMap[weekKey]) weeklyMap[weekKey] = { week: weekKey, total: 0, completed: 0 };
+      weeklyMap[weekKey].total += d.total;
+      weeklyMap[weekKey].completed += d.completed;
+    });
+    const weeklyComparison = Object.values(weeklyMap).sort((a, b) => a.week.localeCompare(b.week));
+
     // Priority distribution
     const priorityMap = { 1: { total: 0, done: 0 }, 2: { total: 0, done: 0 }, 3: { total: 0, done: 0 }, 4: { total: 0, done: 0 } };
     allTasks.forEach((t) => {
@@ -91,7 +104,7 @@ router.get("/", async (req, res) => {
     res.json({
       success: true,
       data: {
-        total, completed, pending, percent, daily,
+        total, completed, pending, percent, daily, weeklyComparison,
         totalTasks: allTasks.length,
         completedTasks: allTasks.filter((t) => t.TrangThaiThucHien === 2).length,
         priority: priorityMap,

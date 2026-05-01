@@ -61,6 +61,7 @@
     <link rel="stylesheet" href="assets/css/habits.css" />
     <link rel="stylesheet" href="assets/css/groups.css" />
     <link rel="stylesheet" href="assets/css/chat.css" />
+    <link rel="stylesheet" href="assets/css/gamification.css" />
 
     <style>
       body {
@@ -241,8 +242,14 @@
     <script src="assets/js/modules/salary/salary-full-time-calendar.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
     <script src="assets/js/modules/salary/stats-charts.js"></script>
+    <script src="assets/js/modules/salary/stats-advanced-charts.js"></script>
     <script src="assets/js/modules/salary/stats-manager.js"></script>
     <script src="assets/js/modules/salary/tab-manager.js"></script>
+    <!-- Export libraries (PDF + Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js" defer></script>
+    <script src="assets/js/modules/salary/stats-export.js" defer></script>
 
     <div id="eventDetailModal" class="modal hidden"></div>
     <div id="aiSuggestionModal" class="modal hidden"></div>
@@ -269,6 +276,10 @@
     <script src="assets/js/modules/groups/group-detail-render.js"></script>
     <script src="assets/js/modules/groups/group-list-section.js"></script>
     <script src="assets/js/modules/groups/group-detail-section.js"></script>
+
+    <!-- Modules: Gamification -->
+    <script src="assets/js/modules/gamification/gamification-badges.js"></script>
+    <script src="assets/js/modules/gamification/gamification-section.js"></script>
 
     <!-- Modules: Chat -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

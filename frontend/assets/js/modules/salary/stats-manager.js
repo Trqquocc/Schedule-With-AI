@@ -5,6 +5,8 @@
 
   const API = { stats: "/api/statistics" };
 
+  let cachedData = null;
+
   function getAuthToken() {
     return localStorage.getItem("auth_token");
   }
@@ -46,6 +48,8 @@
   }
 
   function renderStatsView(data) {
+    cachedData = data;
+
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set("stats-total", data.total || 0);
     set("stats-completed", data.completed || 0);
@@ -59,6 +63,14 @@
       StatsCharts.renderPriority(data.priority);
       StatsCharts.renderCategory(data.categories);
     }
+
+    if (window.StatsAdvancedCharts) {
+      StatsAdvancedCharts.renderStreak(data.streak || 0);
+      StatsAdvancedCharts.renderComparison(data.daily || []);
+      StatsAdvancedCharts.renderHeatmap(new Date().getFullYear());
+    }
+
+    window.StatsExport?.init?.();
   }
 
   function setupDateFilter() {
@@ -125,5 +137,5 @@
     }
   }
 
-  window.StatsManager = { init, loadStatsData, renderStatsView, handleLoadStats };
+  window.StatsManager = { init, loadStatsData, renderStatsView, handleLoadStats, getCachedData() { return cachedData; } };
 })();

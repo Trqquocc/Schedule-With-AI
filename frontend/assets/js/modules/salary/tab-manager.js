@@ -1,56 +1,55 @@
 (function () {
   "use strict";
 
-  if (window.TabManager) {
-    return;
-  }
+  if (window.TabManager) return;
+
+  // Maps data-tab attribute values to their corresponding view element IDs
+  const TAB_VIEWS = {
+    stats: "stats-view",
+    salary: "salary-view",
+    gamification: "gamification-view",
+  };
 
   window.TabManager = {
     init() {
-      this.initSalaryTabs();
-    },
+      const tabs = document.querySelectorAll(".tabs .tab[data-tab]");
+      if (!tabs.length) return;
 
-    initSalaryTabs() {
-      const salaryTab = document.getElementById("salary-tab");
-      const salaryStatsTab = document.getElementById("salary-stats-tab");
-      const salaryContent = document.getElementById("salary-content");
-      const salaryStatsContent = document.getElementById("stats-content");
-
-      if (
-        !salaryTab ||
-        !salaryStatsTab ||
-        !salaryContent ||
-        !salaryStatsContent
-      ) {
-        return;
-      }
-
-      salaryTab.addEventListener("click", () => {
-        this.activateTab(salaryTab, salaryStatsTab);
-        this.showContent(salaryContent, salaryStatsContent);
-      });
-
-      salaryStatsTab.addEventListener("click", () => {
-        this.activateTab(salaryStatsTab, salaryTab);
-        this.showContent(salaryStatsContent, salaryContent);
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => this.switchTab(tab.dataset.tab, tabs));
       });
     },
 
-    activateTab(activeTab, inactiveTab) {
-      activeTab.classList.remove("text-gray-700", "bg-gray-200");
-      activeTab.classList.add("text-white", "bg-red-600");
+    /**
+     * Activate the named tab and show its corresponding view.
+     * Triggers lazy-init for the gamification section on first open.
+     * @param {string} name  - value of data-tab attribute
+     * @param {NodeList} tabs - all sibling tab buttons
+     */
+    switchTab(name, tabs) {
+      // Update tab button styles
+      tabs.forEach((t) => {
+        const isActive = t.dataset.tab === name;
+        t.classList.toggle("text-white", isActive);
+        t.classList.toggle("bg-blue-600", isActive);
+        t.classList.toggle("text-gray-700", !isActive);
+        t.classList.toggle("bg-gray-200", !isActive);
+      });
 
-      inactiveTab.classList.remove("text-white", "bg-red-600");
-      inactiveTab.classList.add("text-gray-700", "bg-gray-200");
-    },
+      // Show/hide view panels
+      Object.entries(TAB_VIEWS).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (key === name) {
+          el.classList.remove("hidden");
+        } else {
+          el.classList.add("hidden");
+        }
+      });
 
-    showContent(activeContent, inactiveContent) {
-      if (window.Utils) {
-        Utils.showElement(activeContent);
-        Utils.hideElement(inactiveContent);
-      } else {
-        activeContent?.classList.remove("hidden");
-        inactiveContent?.classList.add("hidden");
+      // Lazy-init gamification data on first open
+      if (name === "gamification" && window.GamificationSection?.init) {
+        GamificationSection.init();
       }
     },
   };
