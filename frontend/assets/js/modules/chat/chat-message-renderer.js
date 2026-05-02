@@ -3,19 +3,22 @@
   "use strict";
 
   window.ChatMessageRenderer = {
-    // currentUserId must be set by ChatConversation before calling buildBubble
     currentUserId: null,
+    _nameCache: {},
 
-    // Build a full message row (avatar + bubble + timestamp)
     buildBubble(msg) {
+      if (msg.senderName && msg.SenderID) {
+        this._nameCache[String(msg.SenderID)] = msg.senderName;
+      }
+      const resolvedName = msg.senderName || this._nameCache[String(msg.SenderID)] || null;
       const isSent = String(msg.SenderID) === String(this.currentUserId);
       const side = isSent ? "sent" : "received";
       const deleted = msg.DaXoa;
       const timeStr = ChatUtils.relativeTimeLong(msg.NgayGui ? new Date(msg.NgayGui) : new Date());
-      const initial = (msg.senderName || "?")[0].toUpperCase();
+      const initial = (resolvedName || "?")[0].toUpperCase();
 
       const avatarHtml = !isSent
-        ? `<div class="msg-sender-avatar" title="${ChatUtils.esc(msg.senderName || "")}">${initial}</div>`
+        ? `<div class="msg-sender-avatar" title="${ChatUtils.esc(resolvedName || "")}">${initial}</div>`
         : "";
 
       const deleteBtn =

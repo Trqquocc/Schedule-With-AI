@@ -77,7 +77,7 @@ async function getMessages(conversationId, userId, { before, limit }) {
 
   let query = supabase
     .from("Messages")
-    .select("MessageID, ConversationID, SenderID, NoiDung, LoaiTinNhan, MetaData, NgayGui")
+    .select("MessageID, ConversationID, SenderID, NoiDung, LoaiTinNhan, MetaData, NgayGui, DaXoa")
     .eq("ConversationID", conversationId)
     .eq("DaXoa", false)
     .order("NgayGui", { ascending: false })
@@ -90,8 +90,21 @@ async function getMessages(conversationId, userId, { before, limit }) {
   const { data, error } = await query;
   if (error) throw error;
 
-  // Return oldest first
-  return (data || []).reverse();
+  const messages = (data || []).reverse();
+
+  const senderIds = [...new Set(messages.map((m) => m.SenderID).filter(Boolean))];
+  let nameMap = {};
+  if (senderIds.length > 0) {
+    const { data: users } = await supabase
+      .from("Users")
+      .select("UserID, HoTen")
+      .in("UserID", senderIds);
+    if (users) {
+      nameMap = Object.fromEntries(users.map((u) => [u.UserID, u.HoTen]));
+    }
+  }
+
+  return messages.map((m) => ({ ...m, senderName: nameMap[m.SenderID] || null }));
 }
 
 async function deleteMessage(messageId, userId) {
