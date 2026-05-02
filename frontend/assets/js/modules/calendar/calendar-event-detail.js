@@ -551,6 +551,9 @@
         Utils.showToast?.(completed ? "Đã hoàn thành công việc!" : "Bỏ đánh dấu hoàn thành", "success");
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalBtnText;
+        if (window.GroupDetailSection?.current) {
+          window.GroupDetailSection.load(window.GroupDetailSection.current.GroupID);
+        }
         setTimeout(() => { document.getElementById("eventDetailModal")?.remove(); }, 600);
       } else {
         // Revert optimistic UI

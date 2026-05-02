@@ -101,6 +101,9 @@
       if (!result.success) throw new Error(result.message || "Cập nhật thất bại");
 
       this.triggerSidebarRefresh();
+      if (window.GroupDetailSection?.current) {
+        window.GroupDetailSection.load(window.GroupDetailSection.current.GroupID);
+      }
 
       if (!silent) {
         const msg = completed ? "Đã hoàn thành công việc" : "Đã mở lại công việc";

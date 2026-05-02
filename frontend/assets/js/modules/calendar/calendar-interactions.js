@@ -358,6 +358,9 @@
         Utils.showToast?.("Đã lên lịch thành công!", "success");
         if (window.loadUserTasks) window.loadUserTasks(true);
         this.triggerSidebarRefresh();
+        if (window.GroupDetailSection?.current) {
+          window.GroupDetailSection.load(window.GroupDetailSection.current.GroupID);
+        }
       } else {
         throw new Error(res.message || "Lỗi thêm vào lịch");
       }
