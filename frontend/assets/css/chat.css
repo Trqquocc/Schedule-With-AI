@@ -217,6 +217,8 @@ body:has(main#chat-section.section.active) #main-app .flex-1.overflow-auto {
 }
 .msg-row.sent { flex-direction: row-reverse; }
 
+.msg-content-wrap { max-width: 75%; }
+
 .msg-sender-avatar {
   width: 28px;
   height: 28px;

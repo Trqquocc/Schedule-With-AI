@@ -35,16 +35,7 @@
         ? `<span class="text-xs" style="opacity:0.7">Tin nhắn đã bị xoá</span>`
         : ChatUtils.esc(msg.NoiDung || "");
 
-      return `
-        <div class="msg-row ${side}" data-msg-id="${msg.MessageID}">
-          ${avatarHtml}
-          <div>
-            <div class="message-bubble ${side}${deleted ? " deleted" : ""}" style="position:relative">
-              ${content}${deleteBtn}
-            </div>
-            <div class="msg-time">${timeStr}</div>
-          </div>
-        </div>`;
+      return `<div class="msg-row ${side}" style="display:flex;align-items:flex-end;gap:6px" data-msg-id="${msg.MessageID}">${avatarHtml}<div class="msg-content-wrap"><div class="message-bubble ${side}${deleted ? " deleted" : ""}" style="position:relative">${content}${deleteBtn}</div><div class="msg-time">${timeStr}</div></div></div>`;
     },
 
     // Render a full message list into #messages-inner, with date dividers
@@ -84,12 +75,7 @@
       if (emptyP) emptyP.remove();
       inner.insertAdjacentHTML(
         "beforeend",
-        `<div class="msg-row sent" data-msg-id="${tempId}">
-          <div>
-            <div class="message-bubble sent" style="opacity:0.7">${ChatUtils.esc(text)}</div>
-            <div class="msg-time">Đang gửi...</div>
-          </div>
-        </div>`
+        `<div class="msg-row sent" style="display:flex;align-items:flex-end;gap:6px" data-msg-id="${tempId}"><div class="msg-content-wrap"><div class="message-bubble sent" style="opacity:0.7">${ChatUtils.esc(text)}</div><div class="msg-time">Đang gửi...</div></div></div>`
       );
     },
   };

@@ -90,19 +90,7 @@
              <i class="fas fa-users" style="font-size:14px"></i></div>`
         : `<div class="conv-avatar">${(conv.displayName || "?")[0].toUpperCase()}</div>`;
 
-      return `
-        <div class="conversation-item" data-conv-id="${id}"
-          onclick="ChatListSection.selectConversation(${id})">
-          ${avatar}
-          <div class="conv-info">
-            <div class="conv-name">${name}</div>
-            <div class="conv-last">${last}</div>
-          </div>
-          <div class="conv-meta">
-            <span class="conv-time">${time}</span>
-            ${unreadDot}
-          </div>
-        </div>`;
+      return `<div class="conversation-item" style="display:flex;align-items:center;gap:10px" data-conv-id="${id}" onclick="ChatListSection.selectConversation(${id})">${avatar}<div class="conv-info"><div class="conv-name">${name}</div><div class="conv-last">${last}</div></div><div class="conv-meta"><span class="conv-time">${time}</span>${unreadDot}</div></div>`;
     },
 
     async selectConversation(id) {
