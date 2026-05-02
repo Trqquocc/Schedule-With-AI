@@ -81,29 +81,55 @@
 
     // ── Member actions ──
 
-    showAddMember() {
+    async showAddMember() {
       const form = document.getElementById("add-member-form");
       if (!form) return;
+      const isHidden = form.classList.contains("hidden");
       form.classList.toggle("hidden");
-      if (!form.classList.contains("hidden")) document.getElementById("add-member-email")?.focus();
-    },
+      if (!isHidden) return;
 
-    async addMember() {
-      const emailEl = document.getElementById("add-member-email");
-      const email = emailEl?.value.trim();
-      if (!email) { Utils?.showToast?.("Nhập email thành viên", "error"); return; }
+      const list = document.getElementById("add-member-friends-list");
+      if (!list) return;
+      list.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">Đang tải...</p>`;
+
       try {
         const friendsRes = await this._api("/api/friends");
-        const user = (friendsRes.data || []).find((u) =>
-          (u.Email || "").toLowerCase() === email.toLowerCase()
-        );
-        if (!user) throw new Error("Không tìm thấy bạn bè với email này");
+        const friends = friendsRes.data || [];
+        const memberIds = new Set((this.current.members || []).map((m) => m.Users?.UserID || m.UserID));
+        const available = friends.filter((f) => !memberIds.has(f.UserID));
+
+        if (!available.length) {
+          list.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">Không có bạn bè nào để thêm</p>`;
+          return;
+        }
+        list.innerHTML = available.map((f) => {
+          const initial = (f.HoTen || f.Email || "?")[0].toUpperCase();
+          return `
+            <div class="add-member-item flex items-center gap-2 p-2 rounded-xl cursor-pointer hover:bg-slate-100 transition"
+              onclick="GroupDetailSection.addMemberById(${f.UserID}, '${(f.HoTen || "").replace(/'/g, "\\'")}')">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                style="background:var(--accent,#2563EB)">${initial}</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs font-semibold text-slate-800 truncate">${f.HoTen || "Người dùng"}</div>
+                <div class="text-xs text-slate-400 truncate">${f.Email || ""}</div>
+              </div>
+              <button class="text-xs px-2.5 py-1 rounded-lg font-semibold text-white flex-shrink-0" style="background:var(--accent,#2563EB)">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>`;
+        }).join("");
+      } catch (err) {
+        list.innerHTML = `<p class="text-xs text-red-500 text-center py-3">${err.message}</p>`;
+      }
+    },
+
+    async addMemberById(userId, name) {
+      try {
         await this._api(`/api/groups/${this.current.GroupID}/members`, {
           method: "POST",
-          body: JSON.stringify({ userId: user.UserID || user.NguoiDungID }),
+          body: JSON.stringify({ userId }),
         });
-        if (emailEl) emailEl.value = "";
-        Utils?.showToast?.("Đã thêm thành viên!", "success");
+        Utils?.showToast?.(`Đã thêm ${name}!`, "success");
         await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
@@ -125,8 +151,10 @@
 
     async addTask() {
       const title = document.getElementById("task-title-input")?.value.trim();
+      const desc = document.getElementById("task-desc-input")?.value.trim();
       const assignedTo = document.getElementById("task-assignee-input")?.value;
       const priority = parseInt(document.getElementById("task-priority-input")?.value || "2", 10);
+      const deadline = document.getElementById("task-deadline-input")?.value || null;
       if (!title) { Utils?.showToast?.("Nhập tiêu đề công việc", "error"); return; }
       if (!assignedTo) { Utils?.showToast?.("Chọn người thực hiện", "error"); return; }
       try {
@@ -135,8 +163,10 @@
           body: JSON.stringify({
             groupId: this.current.GroupID,
             tieuDe: title,
+            moTa: desc || undefined,
             assignedTo: parseInt(assignedTo, 10),
             mucDoUuTien: priority,
+            hanChot: deadline || undefined,
           }),
         });
         this.hideAddTask();

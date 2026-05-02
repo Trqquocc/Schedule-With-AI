@@ -140,7 +140,8 @@
     },
 
     async deleteMessage(id) {
-      if (!confirm("Xoá tin nhắn này?")) return;
+      const ok = await Utils?.confirmDanger?.("Xoá tin nhắn này?", "Xoá tin nhắn");
+      if (!ok) return;
       try {
         await this._api(`/api/messages/${id}`, { method: "DELETE" });
         const bubble = document.querySelector(`[data-msg-id="${id}"] .message-bubble`);
@@ -149,7 +150,7 @@
           bubble.innerHTML = `<span class="text-xs" style="opacity:0.7">Tin nhắn đã bị xoá</span>`;
         }
       } catch (e) {
-        alert("Không thể xoá: " + e.message);
+        Utils?.showToast?.("Không thể xoá: " + e.message, "error");
       }
     },
 

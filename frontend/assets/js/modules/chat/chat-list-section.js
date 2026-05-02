@@ -149,45 +149,56 @@
     },
 
     // ===== New chat modal =====
-    _openNewChatModal() {
+    async _openNewChatModal() {
       document.getElementById("new-chat-modal")?.classList.remove("hidden");
       const input = document.getElementById("new-chat-search");
       if (input) { input.value = ""; input.focus(); }
+      await this._loadAllFriends();
+    },
+
+    async _loadAllFriends() {
       const results = document.getElementById("new-chat-results");
-      if (results) results.innerHTML = "";
+      if (!results) return;
+      results.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Đang tải...</p>`;
+      try {
+        const json = await this._api("/api/friends");
+        this._friendsCache = json.data || [];
+        this._renderFriendResults(this._friendsCache);
+      } catch (_) {
+        results.innerHTML = `<p class="text-xs text-red-400 text-center py-2">Lỗi tải danh sách bạn bè</p>`;
+      }
+    },
+
+    _renderFriendResults(friends) {
+      const results = document.getElementById("new-chat-results");
+      if (!results) return;
+      if (!friends.length) {
+        results.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Không có bạn bè nào</p>`;
+        return;
+      }
+      results.innerHTML = friends.map((f) => {
+        const uid = f.NguoiDungID || f.UserID;
+        const ini = (f.HoTen || f.Email || "?")[0].toUpperCase();
+        return `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition" onclick="ChatListSection._pickFriend(${uid})">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--accent,#2563EB)">${ini}</div>
+          <div><div class="text-sm font-medium text-slate-800">${ChatUtils.esc(f.HoTen || "Người dùng")}</div><div class="text-xs text-slate-400">${ChatUtils.esc(f.Email || "")}</div></div></div>`;
+      }).join("");
     },
 
     _closeNewChatModal() {
       document.getElementById("new-chat-modal")?.classList.add("hidden");
     },
 
-    async _searchFriends(query) {
-      const results = document.getElementById("new-chat-results");
-      if (!results) return;
-      if (!query) { results.innerHTML = ""; return; }
-
-      results.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Đang tìm...</p>`;
-      try {
-        const json = await this._api("/api/friends");
-        const allFriends = json.data || [];
-        const q = query.toLowerCase();
-        const friends = allFriends.filter((f) =>
-          (f.HoTen || "").toLowerCase().includes(q) || (f.Email || "").toLowerCase().includes(q)
-        );
-        if (!friends.length) {
-          results.innerHTML = `<p class="text-xs text-slate-400 text-center py-2">Không tìm thấy</p>`;
-          return;
-        }
-        results.innerHTML = friends.map((f) => {
-          const uid = f.NguoiDungID || f.UserID;
-          const ini = (f.HoTen || f.Email || "?")[0].toUpperCase();
-          return `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition" onclick="ChatListSection._pickFriend(${uid})">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--accent,#2563EB)">${ini}</div>
-            <div><div class="text-sm font-medium text-slate-800">${ChatUtils.esc(f.HoTen || "Người dùng")}</div><div class="text-xs text-slate-400">${ChatUtils.esc(f.Email || "")}</div></div></div>`;
-        }).join("");
-      } catch (_) {
-        results.innerHTML = `<p class="text-xs text-red-400 text-center py-2">Lỗi tìm kiếm</p>`;
+    _searchFriends(query) {
+      if (!query) {
+        this._renderFriendResults(this._friendsCache || []);
+        return;
       }
+      const q = query.toLowerCase();
+      const filtered = (this._friendsCache || []).filter((f) =>
+        (f.HoTen || "").toLowerCase().includes(q) || (f.Email || "").toLowerCase().includes(q)
+      );
+      this._renderFriendResults(filtered);
     },
 
     _pickFriend(userId) {

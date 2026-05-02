@@ -109,13 +109,13 @@
   flex-shrink: 0;
 }
 
-/* ── Add-member form inline flex ── */
-#add-member-form {
-  display: flex;
-  gap: 0.5rem;
-}
-
+/* ── Add-member form (friends picker) ── */
 #add-member-form.hidden { display: none; }
+
+#add-member-friends-list::-webkit-scrollbar { width: 4px; }
+#add-member-friends-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+
+.add-member-item:hover { background: #f1f5f9 !important; }
 
 /* ── Dark mode ── */
 body.dark #groups-section .bg-white,
@@ -159,3 +159,6 @@ body.dark #create-group-modal textarea {
   border-color: #334155;
   color: #e2e8f0;
 }
+
+body.dark #groups-section .add-member-item:hover { background: #1e293b !important; }
+body.dark #groups-section #add-member-friends-list::-webkit-scrollbar-thumb { background: #475569; }
