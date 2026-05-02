@@ -79,10 +79,14 @@
       const filteredTasks = this._getFilteredTasks();
       el.innerHTML = `
         ${R.detailHeader(g, members)}
-        ${R.memberProgressPanel(this._memberProgress)}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
-          ${R.membersPanel(members, canManage)}
-          ${R.tasksPanel(members, filteredTasks, this.tasks, this._statusFilter, this._assigneeFilter)}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5">
+          <div class="lg:col-span-1 space-y-5">
+            ${R.membersPanel(members, canManage)}
+            ${R.memberProgressPanel(this._memberProgress)}
+          </div>
+          <div class="lg:col-span-2">
+            ${R.tasksPanel(members, filteredTasks, this.tasks, this._statusFilter, this._assigneeFilter, canManage)}
+          </div>
         </div>`;
     },
 
@@ -200,12 +204,11 @@
       this._render();
     },
 
-    async cycleStatus(taskId, current) {
-      const next = { pending: "in_progress", in_progress: "completed", completed: "cancelled", cancelled: "pending" };
+    async changeStatus(taskId, newStatus) {
       try {
         await this._api(`/api/group-tasks/${taskId}`, {
           method: "PUT",
-          body: JSON.stringify({ trangThai: next[current] || "pending" }),
+          body: JSON.stringify({ trangThai: newStatus }),
         });
         await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
