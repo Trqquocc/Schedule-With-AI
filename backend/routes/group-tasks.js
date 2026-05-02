@@ -56,6 +56,16 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// GET /my-calendar — group tasks assigned to me with deadlines (for calendar view)
+router.get("/my-calendar", async (req, res) => {
+  try {
+    const data = await svc.getMyCalendarTasks(req.userId);
+    return res.json({ success: true, data });
+  } catch (err) {
+    return handleErr(res, err);
+  }
+});
+
 // DELETE /:id — delete task
 router.delete("/:id", async (req, res) => {
   try {

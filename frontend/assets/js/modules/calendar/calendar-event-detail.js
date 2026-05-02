@@ -16,6 +16,7 @@
 
   CM._showEventDetails = function (event) {
     const p = event.extendedProps;
+    if (p.isGroupTask) return this._showGroupTaskDetail(event);
     const now = new Date();
     const eventStart = event.start || now;
     const isFuture = eventStart > now;
@@ -392,6 +393,102 @@
       }
       Utils.showToast?.(errorMessage, "error");
     }
+  };
+
+  // ------------------------------------------------------------------
+  // Group task event detail
+  // ------------------------------------------------------------------
+
+  CM._showGroupTaskDetail = function (event) {
+    const p = event.extendedProps;
+    const statusMap = {
+      pending: ["Chờ xử lý", "#a16207", "#fef9c3"],
+      in_progress: ["Đang làm", "#1d4ed8", "#dbeafe"],
+      completed: ["Hoàn thành", "#15803d", "#dcfce7"],
+      cancelled: ["Đã huỷ", "#64748b", "#f1f5f9"],
+    };
+    const [statusLabel, statusColor, statusBg] = statusMap[p.status] || statusMap.pending;
+    const prioTexts = { 1: "Khẩn cấp", 2: "Bình thường", 3: "Thấp", 4: "Rất thấp" };
+    const prioColors = { 1: "#ef4444", 2: "#60A5FA", 3: "#FBBF24", 4: "#94a3b8" };
+    const dotColor = prioColors[p.priority] || "#60A5FA";
+    const deadline = p.deadline ? new Date(p.deadline).toLocaleDateString("vi-VN") : "";
+    const isOverdue = p.deadline && p.status !== "completed" && new Date(p.deadline) < new Date();
+
+    const modalHtml = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]" id="eventDetailModal">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 rounded-t-2xl flex items-start justify-between gap-3" style="background:var(--accent-header, linear-gradient(135deg,#334155,#1e293b))">
+          <div class="flex items-center gap-3 min-w-0">
+            <i class="fas fa-users-cog text-white/80 flex-shrink-0"></i>
+            <h3 class="text-white font-bold text-lg leading-tight truncate">${event.title}</h3>
+          </div>
+          <button id="closeEventDetail" class="text-white/60 hover:text-white text-2xl leading-none flex-shrink-0">&times;</button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="px-2 py-1 rounded-full font-semibold" style="background:#dbeafe;color:#1d4ed8"><i class="fas fa-users mr-1"></i>${p.groupName}</span>
+            <span class="px-2 py-1 rounded-full font-semibold" style="background:${statusBg};color:${statusColor}">${statusLabel}</span>
+            <span class="px-2 py-1 rounded-full font-semibold" style="background:${dotColor}22;color:${dotColor}">${prioTexts[p.priority] || "Bình thường"}</span>
+          </div>
+          ${p.description ? `<div class="text-sm text-gray-600 bg-gray-50 rounded-xl p-3"><i class="fas fa-align-left mr-2 text-gray-400"></i>${p.description}</div>` : ""}
+          <div class="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+            ${deadline ? `<div class="flex items-center gap-2 ${isOverdue ? "text-red-600 font-semibold" : "text-gray-700"}"><i class="fas fa-calendar-alt w-4"></i><span>Hạn chót: ${deadline}${isOverdue ? " (quá hạn)" : ""}</span></div>` : ""}
+          </div>
+          <div class="space-y-2">
+            <p class="text-xs font-semibold text-gray-500">Đổi trạng thái</p>
+            <div class="flex gap-2 flex-wrap" id="gtStatusBtns">
+              ${["pending", "in_progress", "completed", "cancelled"].map((s) => {
+                const [label, c, bg] = statusMap[s];
+                const active = s === p.status;
+                return `<button data-status="${s}" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${active ? "ring-2 ring-offset-1" : "opacity-60 hover:opacity-100"}" style="background:${bg};color:${c};${active ? `ring-color:${c}` : ""}">${label}</button>`;
+              }).join("")}
+            </div>
+          </div>
+          <button id="gtOpenGroup" class="w-full py-2.5 rounded-xl text-sm font-semibold transition border border-slate-200 hover:bg-slate-50 text-slate-700">
+            <i class="fas fa-external-link-alt mr-2"></i>Mở nhóm "${p.groupName}"
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+    document.getElementById("eventDetailModal")?.remove();
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+    document.getElementById("closeEventDetail").onclick = () => document.getElementById("eventDetailModal")?.remove();
+    document.getElementById("eventDetailModal").addEventListener("click", (e) => {
+      if (e.target.id === "eventDetailModal") document.getElementById("eventDetailModal")?.remove();
+    });
+
+    // Status change buttons
+    document.getElementById("gtStatusBtns")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button[data-status]");
+      if (!btn || btn.dataset.status === p.status) return;
+      try {
+        const token = localStorage.getItem("auth_token");
+        const res = await fetch(`/api/group-tasks/${p.groupTaskId}`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ trangThai: btn.dataset.status }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.message || "Lỗi");
+        Utils?.showToast?.("Đã cập nhật trạng thái!", "success");
+        document.getElementById("eventDetailModal")?.remove();
+        this.refreshEventsInPlace();
+      } catch (err) {
+        Utils?.showToast?.(err.message, "error");
+      }
+    });
+
+    // Open group
+    document.getElementById("gtOpenGroup")?.addEventListener("click", () => {
+      document.getElementById("eventDetailModal")?.remove();
+      const groupsNav = document.querySelector('[data-section="groups"]');
+      if (groupsNav) groupsNav.click();
+      setTimeout(() => {
+        if (window.GroupListSection) GroupListSection.openDetail(p.groupId);
+      }, 300);
+    });
   };
 
   // ------------------------------------------------------------------

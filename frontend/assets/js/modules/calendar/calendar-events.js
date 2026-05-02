@@ -150,9 +150,12 @@
         // Subtask fetch optional — silent on failure (migration 003 not run yet).
       }
 
-      // Fetch shared calendar events and merge
-      const sharedEvents = await this._loadSharedEvents();
-      return normalEvents.concat(sharedEvents);
+      // Fetch shared calendar events and group task events, then merge
+      const [sharedEvents, groupTaskEvents] = await Promise.all([
+        this._loadSharedEvents(),
+        this._loadGroupTaskEvents(),
+      ]);
+      return normalEvents.concat(sharedEvents, groupTaskEvents);
     } catch (err) {
       console.error("Load events error:", err);
       return [];
@@ -181,6 +184,20 @@
           ...ev.extendedProps,
           isShared: true,
         },
+      }));
+    } catch (_) {
+      return [];
+    }
+  };
+
+  CM._loadGroupTaskEvents = async function () {
+    try {
+      const res = await Utils.makeRequest("/api/group-tasks/my-calendar", "GET");
+      if (!res?.success || !Array.isArray(res.data)) return [];
+      return res.data.map((ev) => ({
+        ...ev,
+        editable: false,
+        extendedProps: { ...ev.extendedProps, isGroupTask: true },
       }));
     } catch (_) {
       return [];

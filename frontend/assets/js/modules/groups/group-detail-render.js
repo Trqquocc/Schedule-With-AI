@@ -67,9 +67,10 @@
       }).join("");
     },
 
-    tasksPanel(members, tasks) {
+    tasksPanel(members, filteredTasks, allTasks, statusFilter, assigneeFilter) {
       const memberOpts = members.map((m) => `<option value="${m.UserID}">${m.HoTen || m.Email}</option>`).join("");
-      const stats = this._taskStats(tasks);
+      const stats = this._taskStats(allTasks);
+      const filterBar = this._taskFilters(members, statusFilter, assigneeFilter);
       return `
         <div class="bg-white rounded-2xl border border-slate-200 p-5">
           <div class="flex items-center justify-between mb-3">
@@ -77,6 +78,7 @@
             <button onclick="GroupDetailSection.showAddTask()" class="text-xs px-3 py-1.5 rounded-lg font-semibold text-white" style="background:var(--accent,#2563EB)"><i class="fas fa-plus mr-1"></i>Thêm</button>
           </div>
           ${stats}
+          ${filterBar}
           <div id="add-task-form" class="hidden mb-3 space-y-2">
             <input id="task-title-input" type="text" placeholder="Tiêu đề công việc *"
               class="w-full px-3 py-2 rounded-xl text-xs border border-slate-200 focus:outline-none focus:ring-1" />
@@ -98,7 +100,52 @@
               <button onclick="GroupDetailSection.addTask()" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-white" style="background:var(--accent,#2563EB)">Tạo</button>
             </div>
           </div>
-          <div class="group-tasks-list space-y-2">${this.taskRows(tasks)}</div>
+          <div class="group-tasks-list space-y-2">${this.taskRows(filteredTasks)}</div>
+        </div>`;
+    },
+
+    memberProgressPanel(progress) {
+      if (!progress || !progress.length) return "";
+      const sorted = [...progress].sort((a, b) => b.percent - a.percent);
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 mt-5">
+          <p class="text-sm font-semibold text-slate-800 mb-3"><i class="fas fa-chart-bar mr-1" style="color:var(--accent,#2563EB)"></i>Tiến độ thành viên</p>
+          <div class="space-y-2.5">${sorted.map((m) => {
+            const initial = (m.hoTen || "?")[0].toUpperCase();
+            return `
+              <div class="flex items-center gap-3">
+                <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:var(--accent,#2563EB)">${initial}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between text-xs mb-0.5">
+                    <span class="font-semibold text-slate-700 truncate">${m.hoTen || "Người dùng"}</span>
+                    <span class="text-slate-400">${m.completed}/${m.total} · ${m.percent}%</span>
+                  </div>
+                  <div class="group-progress"><div class="group-progress-fill" style="width:${m.percent}%"></div></div>
+                </div>
+              </div>`;
+          }).join("")}</div>
+        </div>`;
+    },
+
+    _taskFilters(members, statusFilter, assigneeFilter) {
+      const statuses = [
+        ["all", "Tất cả", "#64748b", "#f1f5f9"],
+        ["pending", "Chờ", "#a16207", "#fef9c3"],
+        ["in_progress", "Đang làm", "#1d4ed8", "#dbeafe"],
+        ["completed", "Xong", "#15803d", "#dcfce7"],
+        ["cancelled", "Huỷ", "#64748b", "#f1f5f9"],
+      ];
+      const statusBtns = statuses.map(([val, label, c, bg]) => {
+        const active = statusFilter === val;
+        return `<button onclick="GroupDetailSection.filterByStatus('${val}')" class="px-2 py-1 rounded-lg text-xs font-semibold transition ${active ? "ring-1 ring-offset-1" : "opacity-60 hover:opacity-100"}" style="background:${bg};color:${c}">${label}</button>`;
+      }).join("");
+      const assigneeOpts = [`<option value="all" ${assigneeFilter === "all" ? "selected" : ""}>Tất cả</option>`]
+        .concat(members.map((m) => `<option value="${m.UserID}" ${String(assigneeFilter) === String(m.UserID) ? "selected" : ""}>${m.HoTen || m.Email}</option>`))
+        .join("");
+      return `
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <div class="flex gap-1">${statusBtns}</div>
+          <select onchange="GroupDetailSection.filterByAssignee(this.value)" class="px-2 py-1 rounded-lg text-xs border border-slate-200 focus:outline-none">${assigneeOpts}</select>
         </div>`;
     },
 
@@ -127,8 +174,8 @@
     },
 
     taskRows(tasks) {
-      if (!tasks.length) return `<p class="text-xs text-slate-400 text-center py-4">Chưa có công việc</p>`;
-      const statusMap = { pending: ["Chờ xử lý", "status-pending", "far fa-clock"], in_progress: ["Đang làm", "status-progress", "fas fa-spinner"], completed: ["Hoàn thành", "status-done", "fas fa-check"], cancelled: ["Huỷ", "status-pending", "fas fa-ban"] };
+      if (!tasks.length) return `<p class="text-xs text-slate-400 text-center py-4">Không có công việc nào</p>`;
+      const statusMap = { pending: ["Chờ xử lý", "status-pending", "far fa-clock"], in_progress: ["Đang làm", "status-progress", "fas fa-spinner"], completed: ["Hoàn thành", "status-done", "fas fa-check"], cancelled: ["Đã huỷ", "status-cancelled", "fas fa-ban"] };
       const prioLabels = ["", "Khẩn cấp", "Bình thường", "Thấp", "Rất thấp"];
       const prioColors = ["", "#ef4444", "#f59e0b", "#3b82f6", "#94a3b8"];
       return tasks.map((t) => {
@@ -136,18 +183,19 @@
         const prio = Math.min(4, Math.max(1, t.MucDoUuTien || 2));
         const assignee = t.Assignee?.HoTen || t.assigneeName || "";
         const deadline = t.HanChot ? new Date(t.HanChot).toLocaleDateString("vi-VN") : "";
-        const isOverdue = t.HanChot && t.TrangThai !== "completed" && new Date(t.HanChot) < new Date();
+        const isOverdue = t.HanChot && t.TrangThai !== "completed" && t.TrangThai !== "cancelled" && new Date(t.HanChot) < new Date();
         return `
-          <div class="group-task-item p-3 rounded-xl bg-slate-50">
+          <div class="group-task-item p-3 rounded-xl bg-slate-50" data-task-id="${t.GroupTaskID}">
             <div class="flex items-center gap-2">
               <span class="priority-dot" style="background:${prioColors[prio]}" title="${prioLabels[prio]}"></span>
               <div class="flex-1 min-w-0">
-                <div class="text-xs font-semibold text-slate-800 truncate">${t.TieuDe}</div>
+                <div class="text-xs font-semibold text-slate-800 truncate ${t.TrangThai === "completed" ? "line-through opacity-60" : ""}">${t.TieuDe}</div>
               </div>
-              <span class="task-status-badge ${statusClass}" onclick="GroupDetailSection.cycleStatus(${t.GroupTaskID},'${t.TrangThai}')" title="Nhấn để đổi trạng thái">
+              <span class="task-status-badge ${statusClass}" onclick="GroupDetailSection.cycleStatus(${t.GroupTaskID},'${t.TrangThai}')" title="Chờ → Đang làm → Xong → Huỷ → Chờ">
                 <i class="${statusIcon} mr-0.5"></i>${statusLabel}
               </span>
-              <button onclick="GroupDetailSection.deleteTask(${t.GroupTaskID})" class="text-xs text-slate-300 hover:text-red-500 transition"><i class="fas fa-times"></i></button>
+              <button onclick="GroupDetailSection.showEditTask(${t.GroupTaskID})" class="text-xs text-slate-300 hover:text-blue-500 transition" title="Sửa"><i class="fas fa-pen"></i></button>
+              <button onclick="GroupDetailSection.deleteTask(${t.GroupTaskID})" class="text-xs text-slate-300 hover:text-red-500 transition" title="Xoá"><i class="fas fa-times"></i></button>
             </div>
             <div class="flex items-center gap-3 mt-1.5 text-xs text-slate-400 ml-4">
               ${assignee ? `<span><i class="fas fa-user mr-1"></i>${assignee}</span>` : ""}

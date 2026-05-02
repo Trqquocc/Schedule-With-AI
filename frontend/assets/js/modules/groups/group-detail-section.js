@@ -6,6 +6,9 @@
     current: null,  // { group, members[] }
     tasks: [],
     currentUser: null,
+    _statusFilter: "all",
+    _assigneeFilter: "all",
+    _memberProgress: [],
 
     _authHeader() {
       const token = localStorage.getItem("auth_token");
@@ -42,12 +45,14 @@
       if (el) el.innerHTML = `<p class="text-slate-400 text-sm text-center py-10">Đang tải...</p>`;
 
       try {
-        const [detailRes, tasksRes] = await Promise.all([
+        const [detailRes, tasksRes, progressRes] = await Promise.all([
           this._api(`/api/groups/${groupId}`),
           this._api(`/api/group-tasks?groupId=${groupId}`),
+          this._api(`/api/group-tasks/progress?groupId=${groupId}`),
         ]);
         this.current = detailRes.data;
         this.tasks = tasksRes.data || [];
+        this._memberProgress = progressRes.data?.members || [];
       } catch (err) {
         if (el) el.innerHTML = `<p class="text-red-500 text-sm text-center py-10">${err.message}</p>`;
         return;
@@ -71,11 +76,13 @@
       }));
       const canManage = this._isOwnerOrAdmin();
 
+      const filteredTasks = this._getFilteredTasks();
       el.innerHTML = `
         ${R.detailHeader(g, members)}
+        ${R.memberProgressPanel(this._memberProgress)}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
           ${R.membersPanel(members, canManage)}
-          ${R.tasksPanel(members, this.tasks)}
+          ${R.tasksPanel(members, filteredTasks, this.tasks, this._statusFilter, this._assigneeFilter)}
         </div>`;
     },
 
@@ -175,13 +182,86 @@
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
+    _getFilteredTasks() {
+      return this.tasks.filter((t) => {
+        if (this._statusFilter !== "all" && t.TrangThai !== this._statusFilter) return false;
+        if (this._assigneeFilter !== "all" && String(t.AssignedTo) !== String(this._assigneeFilter)) return false;
+        return true;
+      });
+    },
+
+    filterByStatus(status) {
+      this._statusFilter = status;
+      this._render();
+    },
+
+    filterByAssignee(userId) {
+      this._assigneeFilter = userId;
+      this._render();
+    },
+
     async cycleStatus(taskId, current) {
-      const next = { pending: "in_progress", in_progress: "completed", completed: "pending" };
+      const next = { pending: "in_progress", in_progress: "completed", completed: "cancelled", cancelled: "pending" };
       try {
         await this._api(`/api/group-tasks/${taskId}`, {
           method: "PUT",
           body: JSON.stringify({ trangThai: next[current] || "pending" }),
         });
+        await this.load(this.current.GroupID);
+      } catch (err) { Utils?.showToast?.(err.message, "error"); }
+    },
+
+    showEditTask(taskId) {
+      const t = this.tasks.find((x) => x.GroupTaskID === taskId);
+      if (!t) return;
+      const form = document.getElementById("edit-task-form");
+      if (form) form.remove();
+
+      const card = document.querySelector(`[data-task-id="${taskId}"]`);
+      if (!card) return;
+
+      const members = (this.current.members || []).map((m) => ({
+        UserID: m.Users?.UserID || m.UserID,
+        HoTen: m.Users?.HoTen || m.HoTen || "",
+      }));
+      const memberOpts = members.map((m) => `<option value="${m.UserID}" ${m.UserID === t.AssignedTo ? "selected" : ""}>${m.HoTen}</option>`).join("");
+      const deadlineVal = t.HanChot ? t.HanChot.slice(0, 10) : "";
+
+      card.insertAdjacentHTML("afterend", `
+        <div id="edit-task-form" class="p-3 rounded-xl bg-white border border-slate-200 space-y-2 mt-1">
+          <input id="edit-task-title" type="text" value="${(t.TieuDe || "").replace(/"/g, "&quot;")}" class="w-full px-3 py-2 rounded-xl text-xs border border-slate-200 focus:outline-none focus:ring-1" />
+          <textarea id="edit-task-desc" rows="2" class="w-full px-3 py-2 rounded-xl text-xs border border-slate-200 focus:outline-none focus:ring-1 resize-none">${t.MoTa || ""}</textarea>
+          <select id="edit-task-assignee" class="w-full px-3 py-2 rounded-xl text-xs border border-slate-200">${memberOpts}</select>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="edit-task-priority" class="w-full px-3 py-2 rounded-xl text-xs border border-slate-200">
+              <option value="1" ${t.MucDoUuTien === 1 ? "selected" : ""}>Khẩn cấp</option>
+              <option value="2" ${t.MucDoUuTien === 2 ? "selected" : ""}>Bình thường</option>
+              <option value="3" ${t.MucDoUuTien === 3 ? "selected" : ""}>Thấp</option>
+            </select>
+            <input id="edit-task-deadline" type="date" value="${deadlineVal}" class="w-full px-3 py-2 rounded-xl text-xs border border-slate-200" />
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button onclick="document.getElementById('edit-task-form')?.remove()" class="px-3 py-1.5 rounded-lg text-xs border border-slate-200 text-slate-500">Huỷ</button>
+            <button onclick="GroupDetailSection.saveEditTask(${taskId})" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-white" style="background:var(--accent,#2563EB)">Lưu</button>
+          </div>
+        </div>`);
+    },
+
+    async saveEditTask(taskId) {
+      const title = document.getElementById("edit-task-title")?.value.trim();
+      if (!title) { Utils?.showToast?.("Tiêu đề không được trống", "error"); return; }
+      try {
+        await this._api(`/api/group-tasks/${taskId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            tieuDe: title,
+            moTa: document.getElementById("edit-task-desc")?.value.trim() || null,
+            assignedTo: parseInt(document.getElementById("edit-task-assignee")?.value, 10),
+            mucDoUuTien: parseInt(document.getElementById("edit-task-priority")?.value, 10),
+            hanChot: document.getElementById("edit-task-deadline")?.value || null,
+          }),
+        });
+        Utils?.showToast?.("Đã cập nhật!", "success");
         await this.load(this.current.GroupID);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },

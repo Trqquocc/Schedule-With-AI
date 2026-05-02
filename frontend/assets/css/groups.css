@@ -97,9 +97,10 @@
 
 .task-status-badge:hover { opacity: 0.75; }
 
-.status-pending  { background: #fef9c3; color: #a16207; }
-.status-progress { background: #dbeafe; color: #1d4ed8; }
-.status-done     { background: #dcfce7; color: #15803d; }
+.status-pending   { background: #fef9c3; color: #a16207; }
+.status-progress  { background: #dbeafe; color: #1d4ed8; }
+.status-done      { background: #dcfce7; color: #15803d; }
+.status-cancelled { background: #f1f5f9; color: #64748b; text-decoration: line-through; }
 
 /* ── Priority dot ── */
 .priority-dot {

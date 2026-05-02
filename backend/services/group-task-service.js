@@ -178,4 +178,44 @@ async function getProgress(actorId, groupId) {
   return result;
 }
 
-module.exports = { createTask, listTasks, updateTask, deleteTask, getProgress };
+async function getMyCalendarTasks(userId) {
+  const { data, error } = await supabase
+    .from("GroupTasks")
+    .select(`*, Groups(GroupID, TenNhom), Assignee:Users!GroupTasks_AssignedTo_fkey(HoTen)`)
+    .eq("AssignedTo", userId)
+    .not("HanChot", "is", null)
+    .neq("TrangThai", "cancelled")
+    .order("HanChot", { ascending: true });
+
+  if (error) throw error;
+
+  const PRIO_COLORS = { 1: "#F87171", 2: "#60A5FA", 3: "#FBBF24", 4: "#94a3b8" };
+
+  return (data || []).map((t) => {
+    const color = PRIO_COLORS[t.MucDoUuTien] || "#60A5FA";
+    const deadline = new Date(t.HanChot);
+    return {
+      id: `gt-${t.GroupTaskID}`,
+      title: t.TieuDe,
+      start: deadline.toISOString().slice(0, 10),
+      allDay: true,
+      backgroundColor: color,
+      borderColor: color,
+      textColor: "#FFFFFF",
+      classNames: ["group-task-event"],
+      extendedProps: {
+        isGroupTask: true,
+        groupTaskId: t.GroupTaskID,
+        groupId: t.GroupID,
+        groupName: t.Groups?.TenNhom || "",
+        description: t.MoTa || "",
+        priority: t.MucDoUuTien || 2,
+        status: t.TrangThai,
+        deadline: t.HanChot,
+        completed: t.TrangThai === "completed",
+      },
+    };
+  });
+}
+
+module.exports = { createTask, listTasks, updateTask, deleteTask, getProgress, getMyCalendarTasks };
