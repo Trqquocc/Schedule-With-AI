@@ -238,10 +238,11 @@
                 <div class="gt-card-tag" style="background:${sBg};color:${sColor}"><i class="${sIcon}"></i><span>${sLabel}</span></div>
                 <div class="gt-card-tag" style="background:${prio[2]};color:${prio[1]}"><span>${prio[0]}</span></div>
               </div>
-              <div class="mt-2">
+              <div class="flex items-center gap-3 mt-2">
                 <select onchange="GroupDetailSection.changeStatus(${t.GroupTaskID},this.value)" class="gt-status-select" style="color:${sColor}">
                   ${statusOpts}
                 </select>
+                ${t.SessionCount > 0 ? `<div class="flex items-center gap-2 flex-1"><div class="group-progress flex-1"><div class="group-progress-fill" style="width:${t.SessionPercent}%"></div></div><span class="text-xs font-semibold" style="color:${t.SessionPercent >= 100 ? "#15803d" : "#64748b"}">${t.SessionDone}/${t.SessionCount} buổi · ${t.SessionPercent}%</span></div>` : t.HasPersonalTask ? `<span class="text-xs text-slate-400"><i class="fas fa-calendar-plus mr-1"></i>Chưa lên lịch</span>` : ""}
               </div>
             </div>
           </div>`;

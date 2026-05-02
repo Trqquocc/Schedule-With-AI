@@ -1,6 +1,7 @@
 // group-task-service.js — business logic for GroupTasks
 const { supabase } = require("../config/database");
 const { getMemberRole, isOwnerOrAdmin } = require("./group-service");
+const sync = require("./group-task-sync-service");
 
 const VALID_STATUSES = new Set(["pending", "in_progress", "completed", "cancelled"]);
 const VALID_PRIORITIES = new Set([1, 2, 3, 4]);
@@ -41,6 +42,10 @@ async function createTask(actorId, { groupId, assignedTo, tieuDe, moTa, mucDoUuT
     .single();
 
   if (error) throw error;
+
+  const { data: grp } = await supabase.from("Groups").select("TenNhom").eq("GroupID", groupId).maybeSingle();
+  await sync.createPersonalTaskForGroupTask(data, grp?.TenNhom || "Nhóm");
+
   return data;
 }
 
@@ -58,6 +63,17 @@ async function listTasks(actorId, groupId) {
     .order("NgayTao", { ascending: false });
 
   if (error) throw error;
+
+  const gtIds = (data || []).map((t) => t.GroupTaskID);
+  const progressMap = await sync.getSessionProgress(gtIds);
+  for (const t of data || []) {
+    const p = progressMap.get(t.GroupTaskID);
+    t.SessionCount = p?.total || 0;
+    t.SessionDone = p?.done || 0;
+    t.SessionPercent = p?.percent || 0;
+    t.HasPersonalTask = p?.hasPersonalTask || false;
+  }
+
   return data || [];
 }
 
@@ -119,6 +135,11 @@ async function updateTask(taskId, actorId, patch) {
     .single();
 
   if (error) throw error;
+
+  if (update.TrangThai) {
+    await sync.syncStatusToPersonalTask(taskId, update.TrangThai);
+  }
+
   return data;
 }
 
@@ -133,6 +154,8 @@ async function deleteTask(taskId, actorId) {
 
   const allowed = await isOwnerOrAdmin(task.GroupID, actorId);
   if (!allowed) throw { status: 403, message: "Chỉ chủ nhóm/admin được xóa nhiệm vụ" };
+
+  await supabase.from("CongViec").update({ TrangThaiThucHien: 3 }).eq("GroupTaskID", taskId);
 
   const { error } = await supabase.from("GroupTasks").delete().eq("GroupTaskID", taskId);
   if (error) throw error;
@@ -185,6 +208,7 @@ async function getMyCalendarTasks(userId) {
     .eq("AssignedTo", userId)
     .not("HanChot", "is", null)
     .neq("TrangThai", "cancelled")
+    .neq("TrangThai", "completed")
     .order("HanChot", { ascending: true });
 
   if (error) throw error;

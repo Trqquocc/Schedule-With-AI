@@ -246,6 +246,14 @@ async function updateEvent(eventId, userId, body) {
     console.error("[updateEvent] Supabase error:", error.message);
     throw { status: 500, message: error.message || "Lỗi cập nhật sự kiện" };
   }
+
+  if (updateData.DaHoanThanh === true) {
+    const { data: ev } = await supabase.from("LichTrinh").select("MaCongViec").eq("MaLichTrinh", eventId).maybeSingle();
+    if (ev?.MaCongViec) {
+      const sync = require("./group-task-sync-service");
+      await sync.autoCompleteIfAllSessionsDone(ev.MaCongViec);
+    }
+  }
 }
 
 /**

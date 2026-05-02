@@ -85,6 +85,9 @@ async function listTasks(userId, query) {
     }
   }
 
+  const gtSync = require("./group-task-sync-service");
+  const groupInfoMap = await gtSync.getGroupInfoForTasks(taskIds);
+
   return (tasks || []).map((task) => ({
     ID: task.MaCongViec,
     UserID: task.UserID,
@@ -107,6 +110,9 @@ async function listTasks(userId, query) {
     MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#3B82F6",
     TenLoai: task.LoaiCongViec?.TenLoai || null,
     tags: taskTagsMap[task.MaCongViec] || [],
+    GroupTaskID: groupInfoMap.get(task.MaCongViec)?.GroupTaskID || null,
+    GroupName: groupInfoMap.get(task.MaCongViec)?.GroupName || null,
+    GroupTaskDeadline: groupInfoMap.get(task.MaCongViec)?.Deadline || null,
     ...mapSalaryFields(task),
   }));
 }
@@ -141,12 +147,13 @@ async function getFullTimeCategory(userId) {
 async function deleteTask(taskId, userId, force) {
   const { data: task } = await supabase
     .from("CongViec")
-    .select("TieuDe")
+    .select("TieuDe, GroupTaskID")
     .eq("MaCongViec", taskId)
     .eq("UserID", userId)
     .single();
 
   if (!task) throw { status: 404, message: "Không tìm thấy công việc hoặc không có quyền" };
+  if (task.GroupTaskID) throw { status: 400, message: "Không thể xoá công việc liên kết nhóm. Hãy xoá từ nhóm." };
 
   const { count: scheduleCount } = await supabase
     .from("LichTrinh")

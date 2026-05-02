@@ -182,6 +182,14 @@ async function updateTask(taskId, userId, d) {
   if (!data || data.length === 0) throw { status: 404, message: "Không tìm thấy công việc" };
 
   if (Array.isArray(d.tagIds)) await syncTaskTags(parseInt(taskId, 10), d.tagIds);
+
+  if (updateData.TrangThaiThucHien !== undefined) {
+    const gtSync = require("./group-task-sync-service");
+    await gtSync.syncStatusToGroupTask(parseInt(taskId, 10), updateData.TrangThaiThucHien);
+    if (updateData.TrangThaiThucHien === 2) {
+      await supabase.from("LichTrinh").update({ DaHoanThanh: true }).eq("MaCongViec", parseInt(taskId, 10));
+    }
+  }
 }
 
 module.exports = { createTask, updateTask };
