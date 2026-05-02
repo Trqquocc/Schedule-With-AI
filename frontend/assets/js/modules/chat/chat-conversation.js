@@ -116,7 +116,7 @@
         window.ChatListSection?.refresh();
       } catch (_) {
         // Dim the optimistic bubble to signal failure; restore input
-        const bubble = document.querySelector(`[data-msg-id="${tempId}"] .message-bubble`);
+        const bubble = document.querySelector(`[data-msg-id="${tempId}"] .msg-bubble`);
         if (bubble) bubble.style.opacity = "0.4";
         input.value = text;
       } finally {
@@ -144,9 +144,9 @@
       if (!ok) return;
       try {
         await this._api(`/api/messages/${id}`, { method: "DELETE" });
-        const bubble = document.querySelector(`[data-msg-id="${id}"] .message-bubble`);
+        const bubble = document.querySelector(`[data-msg-id="${id}"] .msg-bubble`);
         if (bubble) {
-          bubble.classList.add("deleted");
+          bubble.classList.add("msg-bubble-del");
           bubble.innerHTML = `<span class="text-xs" style="opacity:0.7">Tin nhắn đã bị xoá</span>`;
         }
       } catch (e) {

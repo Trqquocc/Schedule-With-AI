@@ -84,19 +84,20 @@
       const timeVal = conv.lastMessageAt || conv.ThoiGianCuoi;
       const time = timeVal ? ChatUtils.relativeTimeShort(new Date(timeVal)) : "";
       const isGroup = (conv.type || conv.LoaiHoiThoai) === "group";
-      const unreadDot = conv.isRead === false ? `<div class="unread-dot"></div>` : "";
-      const avatar = isGroup
-        ? `<div class="conv-avatar" style="background:var(--accent-gradient,linear-gradient(135deg,#2563EB,#1d4ed8))">
-             <i class="fas fa-users" style="font-size:14px"></i></div>`
-        : `<div class="conv-avatar">${(conv.displayName || "?")[0].toUpperCase()}</div>`;
+      const unread = conv.isRead === false ? `<div class="ci-unread"></div>` : "";
+      const ini = (conv.displayName || "?")[0].toUpperCase();
+      const avBg = isGroup
+        ? "background:linear-gradient(135deg,#2563EB,#1d4ed8)"
+        : "background:var(--accent,#2563EB)";
+      const avContent = isGroup ? `<i class="fas fa-users" style="font-size:14px"></i>` : ini;
 
-      return `<div class="conversation-item" style="display:flex;align-items:center;gap:10px" data-conv-id="${id}" onclick="ChatListSection.selectConversation(${id})">${avatar}<div class="conv-info"><div class="conv-name">${name}</div><div class="conv-last">${last}</div></div><div class="conv-meta"><span class="conv-time">${time}</span>${unreadDot}</div></div>`;
+      return `<div class="ci-wrap flex items-center gap-2.5 px-3.5 py-2.5" data-conv-id="${id}" onclick="ChatListSection.selectConversation(${id})"><div class="ci-avatar flex items-center justify-center" style="${avBg}">${avContent}</div><div class="flex-1 min-w-0"><div class="ci-name">${name}</div><div class="ci-last">${last}</div></div><div class="flex flex-col items-end gap-1 flex-shrink-0"><span class="ci-time">${time}</span>${unread}</div></div>`;
     },
 
     async selectConversation(id) {
       this._activeId = id;
 
-      document.querySelectorAll(".conversation-item")
+      document.querySelectorAll(".ci-wrap")
         .forEach((el) => el.classList.remove("active"));
       document.querySelector(`[data-conv-id="${id}"]`)?.classList.add("active");
 
