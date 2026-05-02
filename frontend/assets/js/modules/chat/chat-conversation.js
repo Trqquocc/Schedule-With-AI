@@ -43,6 +43,11 @@
         document.getElementById("chat-empty-state")?.classList.remove("hidden");
       });
 
+      // Close message menus on click outside
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".msg-menu-wrap")) this._closeMsgMenus();
+      });
+
       // Wire realtime → append incoming messages
       ChatRealtimeClient.onMessage((msg) => this.onNewMessage(msg));
     },
@@ -139,18 +144,65 @@
       window.ChatListSection?.refresh();
     },
 
-    async deleteMessage(id) {
-      const ok = await Utils?.confirmDanger?.("Xoá tin nhắn này?", "Xoá tin nhắn");
+    toggleMsgMenu(id) {
+      document.querySelectorAll(".msg-menu").forEach((m) => {
+        if (m.id !== `msg-menu-${id}`) m.classList.add("hidden");
+      });
+      document.getElementById(`msg-menu-${id}`)?.classList.toggle("hidden");
+    },
+
+    _closeMsgMenus() {
+      document.querySelectorAll(".msg-menu").forEach((m) => m.classList.add("hidden"));
+    },
+
+    async startEdit(id) {
+      this._closeMsgMenus();
+      const row = document.querySelector(`[data-msg-id="${id}"]`);
+      const bubble = row?.querySelector(".msg-bubble");
+      if (!bubble || bubble.classList.contains("msg-bubble-del")) return;
+
+      const oldText = bubble.textContent.trim();
+      bubble.innerHTML = `<div class="flex flex-col gap-1.5"><input type="text" class="msg-edit-input" value="${ChatUtils.esc(oldText)}" maxlength="2000" /><div class="flex gap-1.5 justify-end"><button class="msg-edit-cancel" onclick="ChatConversation.cancelEdit(${id},'${ChatUtils.esc(oldText)}')">Huỷ</button><button class="msg-edit-save" onclick="ChatConversation.saveEdit(${id})">Lưu</button></div></div>`;
+      const input = bubble.querySelector(".msg-edit-input");
+      if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+    },
+
+    cancelEdit(id, oldText) {
+      const bubble = document.querySelector(`[data-msg-id="${id}"] .msg-bubble`);
+      if (bubble) bubble.textContent = oldText;
+    },
+
+    async saveEdit(id) {
+      const input = document.querySelector(`[data-msg-id="${id}"] .msg-edit-input`);
+      const newText = input?.value.trim();
+      if (!newText) return;
+      try {
+        await this._api(`/api/messages/${id}`, {
+          method: "PUT",
+          body: JSON.stringify({ noiDung: newText }),
+        });
+        const bubble = document.querySelector(`[data-msg-id="${id}"] .msg-bubble`);
+        if (bubble) bubble.textContent = newText;
+      } catch (e) {
+        Utils?.showToast?.("Không thể sửa: " + e.message, "error");
+      }
+    },
+
+    async recallMessage(id) {
+      this._closeMsgMenus();
+      const ok = await Utils?.confirmDanger?.("Thu hồi tin nhắn này?", "Thu hồi");
       if (!ok) return;
       try {
         await this._api(`/api/messages/${id}`, { method: "DELETE" });
         const bubble = document.querySelector(`[data-msg-id="${id}"] .msg-bubble`);
         if (bubble) {
           bubble.classList.add("msg-bubble-del");
-          bubble.innerHTML = `<span class="text-xs" style="opacity:0.7">Tin nhắn đã bị xoá</span>`;
+          bubble.innerHTML = `<span class="text-xs" style="opacity:0.7">Tin nhắn đã bị thu hồi</span>`;
         }
+        const menuWrap = document.querySelector(`[data-msg-id="${id}"] .msg-menu-wrap`);
+        if (menuWrap) menuWrap.remove();
       } catch (e) {
-        Utils?.showToast?.("Không thể xoá: " + e.message, "error");
+        Utils?.showToast?.("Không thể thu hồi: " + e.message, "error");
       }
     },
 

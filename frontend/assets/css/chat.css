@@ -107,12 +107,47 @@ body:has(main#chat-section.section.active) #main-app .flex-1.overflow-auto {
 .chat-send-btn:hover { background: var(--accent-hover, #1d4ed8); }
 .chat-send-btn:disabled { opacity: 0.5; cursor: default; }
 
-.msg-del-btn {
-  position: absolute; top: -6px; right: -6px;
-  width: 16px; height: 16px; border-radius: 50%; border: none;
-  background: rgba(0,0,0,0.25); color: #fff; cursor: pointer;
-  font-size: 8px;
+/* ===== Message context menu ===== */
+.msg-row-hover .msg-menu-wrap { opacity: 0; transition: opacity 0.15s; }
+.msg-row-hover:hover .msg-menu-wrap { opacity: 1; }
+
+.msg-menu-wrap { position: relative; flex-shrink: 0; }
+.msg-menu-btn {
+  width: 24px; height: 24px; border: none; background: none;
+  color: #94a3b8; cursor: pointer; border-radius: 50%;
+  font-size: 12px; transition: background 0.12s, color 0.12s;
 }
+.msg-menu-btn:hover { background: rgba(0,0,0,0.06); color: #64748b; }
+
+.msg-menu {
+  position: absolute; top: -4px; z-index: 20;
+  background: #fff; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  min-width: 140px; padding: 4px 0; overflow: hidden;
+}
+.flex-row-reverse .msg-menu { right: 0; }
+.flex-row .msg-menu { left: 0; }
+
+.msg-menu button {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 14px; border: none; background: none;
+  font-size: 12px; color: #334155; cursor: pointer; transition: background 0.1s;
+  white-space: nowrap;
+}
+.msg-menu button:hover { background: #f1f5f9; }
+.msg-menu button i { width: 14px; text-align: center; color: #64748b; font-size: 11px; }
+
+/* ===== Inline edit ===== */
+.msg-edit-input {
+  width: 100%; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 8px;
+  font-size: 13px; outline: none; background: #fff; color: #1e293b;
+}
+.msg-edit-input:focus { border-color: var(--accent, #2563EB); }
+.msg-edit-cancel, .msg-edit-save {
+  padding: 3px 10px; border-radius: 6px; border: none;
+  font-size: 11px; cursor: pointer; font-weight: 500;
+}
+.msg-edit-cancel { background: #f1f5f9; color: #64748b; }
+.msg-edit-save { background: var(--accent, #2563EB); color: #fff; }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
@@ -126,3 +161,8 @@ body.dark #chat-main,
 body.dark #chat-main > div:first-child { background: #111827; border-color: #1f2937; }
 body.dark .chat-input { background: #1f2937; border-color: #374151; color: #e5e7eb; }
 body.dark .msg-bubble-in { background: #1f2937; color: #e5e7eb; }
+body.dark .msg-menu { background: #1f2937; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+body.dark .msg-menu button { color: #e5e7eb; }
+body.dark .msg-menu button:hover { background: #374151; }
+body.dark .msg-menu button i { color: #94a3b8; }
+body.dark .msg-edit-input { background: #374151; border-color: #4b5563; color: #e5e7eb; }

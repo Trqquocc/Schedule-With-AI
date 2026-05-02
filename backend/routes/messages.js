@@ -34,6 +34,21 @@ router.post("/", async (req, res) => {
   }
 });
 
+// PUT /api/messages/:id — edit own message
+router.put("/:id", async (req, res) => {
+  try {
+    const messageId = parseInt(req.params.id);
+    if (!messageId || isNaN(messageId)) {
+      return res.status(400).json({ success: false, message: "MessageID không hợp lệ" });
+    }
+    await svc.editMessage(messageId, req.userId, req.body.noiDung);
+    res.json({ success: true, message: "Đã cập nhật tin nhắn" });
+  } catch (err) {
+    const status = err.status || 500;
+    res.status(status).json({ success: false, message: err.message || "Lỗi server" });
+  }
+});
+
 // DELETE /api/messages/:id — soft delete own message
 router.delete("/:id", async (req, res) => {
   try {

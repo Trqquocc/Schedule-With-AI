@@ -18,19 +18,20 @@
 
       const av = me ? "" : `<div class="msg-avatar flex items-center justify-center" title="${ChatUtils.esc(rn || "")}">${ini}</div>`;
 
-      const delBtn = me && !del
-        ? `<button class="msg-del-btn flex items-center justify-center" onclick="ChatConversation.deleteMessage(${msg.MessageID})" title="Xoá"><i class="fas fa-times"></i></button>`
+      const menu = me && !del
+        ? `<div class="msg-menu-wrap"><button class="msg-menu-btn" onclick="ChatConversation.toggleMsgMenu(${msg.MessageID})"><i class="fas fa-ellipsis-v"></i></button><div class="msg-menu hidden" id="msg-menu-${msg.MessageID}"><button onclick="ChatConversation.startEdit(${msg.MessageID})"><i class="fas fa-pen"></i> Chỉnh sửa</button><button onclick="ChatConversation.recallMessage(${msg.MessageID})"><i class="fas fa-undo"></i> Thu hồi</button></div></div>`
         : "";
 
       const body = del
-        ? `<span class="text-xs" style="opacity:0.7">Tin nhắn đã bị xoá</span>`
+        ? `<span class="text-xs" style="opacity:0.7">Tin nhắn đã bị thu hồi</span>`
         : ChatUtils.esc(msg.NoiDung || "");
 
       const dir = me ? "flex-row-reverse" : "flex-row";
       const bClass = me ? "msg-bubble msg-bubble-out" : "msg-bubble msg-bubble-in";
       const tAlign = me ? "text-right" : "text-left";
+      const menuAlign = me ? "flex-row-reverse" : "flex-row";
 
-      return `<div class="flex ${dir} items-end gap-1.5" data-msg-id="${msg.MessageID}">${av}<div style="max-width:75%"><div class="${bClass}${del ? " msg-bubble-del" : ""}">${body}${delBtn}</div><div class="msg-ts ${tAlign}">${ts}</div></div></div>`;
+      return `<div class="flex ${dir} items-end gap-1.5" data-msg-id="${msg.MessageID}">${av}<div style="max-width:75%"><div class="flex ${menuAlign} items-center gap-1 msg-row-hover"><div class="${bClass}${del ? " msg-bubble-del" : ""}">${body}</div>${menu}</div><div class="msg-ts ${tAlign}">${ts}</div></div></div>`;
     },
 
     renderAll(messages) {

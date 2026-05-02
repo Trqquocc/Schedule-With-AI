@@ -126,4 +126,28 @@ async function deleteMessage(messageId, userId) {
   if (error) throw error;
 }
 
-module.exports = { sendMessage, getMessages, deleteMessage };
+async function editMessage(messageId, userId, noiDung) {
+  const trimmed = typeof noiDung === "string" ? noiDung.trim() : "";
+  if (!trimmed || trimmed.length > MAX_CONTENT_LENGTH) {
+    throw { status: 400, message: "Nội dung tin nhắn phải từ 1-2000 ký tự" };
+  }
+
+  const { data: msg, error: fetchErr } = await supabase
+    .from("Messages")
+    .select("MessageID, SenderID, DaXoa, ConversationID")
+    .eq("MessageID", messageId)
+    .single();
+
+  if (fetchErr || !msg) throw { status: 404, message: "Không tìm thấy tin nhắn" };
+  if (msg.DaXoa) throw { status: 400, message: "Không thể sửa tin nhắn đã thu hồi" };
+  if (msg.SenderID !== userId) throw { status: 403, message: "Không có quyền sửa tin nhắn này" };
+
+  const { error } = await supabase
+    .from("Messages")
+    .update({ NoiDung: trimmed })
+    .eq("MessageID", messageId);
+
+  if (error) throw error;
+}
+
+module.exports = { sendMessage, getMessages, deleteMessage, editMessage };
