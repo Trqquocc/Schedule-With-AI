@@ -27,13 +27,9 @@
      * @param {NodeList} tabs - all sibling tab buttons
      */
     switchTab(name, tabs) {
-      // Update tab button styles
+      // Toggle active class — CSS handles all visual styling
       tabs.forEach((t) => {
-        const isActive = t.dataset.tab === name;
-        t.classList.toggle("text-white", isActive);
-        t.classList.toggle("bg-blue-600", isActive);
-        t.classList.toggle("text-gray-700", !isActive);
-        t.classList.toggle("bg-gray-200", !isActive);
+        t.classList.toggle("active", t.dataset.tab === name);
       });
 
       // Show/hide view panels

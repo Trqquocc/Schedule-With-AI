@@ -243,6 +243,14 @@
       .querySelectorAll("#ai-ref-task-list .ai-ref-task-cb")
       .forEach((cb) => (cb.checked = true));
     updateSelectedCount();
+    // Notify about tasks with missing AI fields
+    const incomplete = state.tasks.filter((t) => missingAiFields(t).length > 0);
+    if (incomplete.length > 0) {
+      Utils.showToast?.(
+        `${incomplete.length} công việc thiếu thông tin — bấm vào thẻ để bổ sung hoặc AI sẽ tự sắp xếp`,
+        "warning"
+      );
+    }
   }
 
   function clearSelection() {
@@ -311,103 +319,76 @@
     return result.isConfirmed ? result.value : null;
   }
 
-  // Flag + highlight cards with incomplete AI attributes so the user can
-  // edit once and get good AI output long-term. Returns list of bad task ids.
-  function findSelectedWithMissing() {
-    const bad = [];
-    for (const id of state.selected) {
-      const t = state.tasks.find(
-        (x) => (x.MaCongViec || x.ID || x.id) === id
-      );
-      if (t && missingAiFields(t).length > 0) bad.push({ id, task: t });
+  // Show warning when user selects a task missing AI fields.
+  // Returns true if task should stay selected, false to uncheck.
+  async function promptMissingFieldsOnSelect(taskId, task) {
+    const missing = missingAiFields(task);
+    if (missing.length === 0) return true;
+
+    const title = task.TieuDe || "Công việc";
+    const fieldBadges = missing
+      .map(
+        (f) =>
+          `<span style="display:inline-block;margin:2px 4px;padding:2px 8px;
+                        font-size:11px;font-weight:500;border-radius:999px;
+                        background:rgba(255,159,10,0.15);color:#b25e00;
+                        border:1px solid rgba(255,159,10,0.35)">
+             <i class="fas fa-circle-exclamation" style="font-size:9px;margin-right:3px"></i>${esc(f)}
+           </span>`
+      )
+      .join("");
+
+    if (!window.Swal) {
+      return window.confirm(`"${title}" thiếu: ${missing.join(", ")}. Vẫn chọn?`);
     }
-    return bad;
+
+    const r = await Swal.fire({
+      icon: "warning",
+      title: "Công việc thiếu thông tin",
+      html: `
+        <div style="text-align:left;font-size:13px;line-height:1.5">
+          <div style="padding:10px;border-radius:8px;background:var(--bg-card-alt, #f8fafc);
+                      border:1px solid var(--border, #e5e7eb);margin-bottom:10px">
+            <div style="font-weight:600;font-size:14px;color:var(--text-primary);margin-bottom:6px">
+              "${esc(title)}" chưa có:
+            </div>
+            <div>${fieldBadges}</div>
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);line-height:1.4">
+            Bổ sung thông tin giúp AI xếp lịch chính xác hơn,
+            hoặc vẫn chọn để AI tự sắp xếp với thông tin mặc định.
+          </p>
+        </div>`,
+      width: 420,
+      confirmButtonText: '<i class="fas fa-pen-to-square" style="margin-right:4px"></i> Bổ sung ngay',
+      showCancelButton: true,
+      cancelButtonText: '<i class="fas fa-check" style="margin-right:4px"></i> Vẫn chọn',
+      confirmButtonColor: "#2563EB",
+      cancelButtonColor: "#f59e0b",
+      reverseButtons: true,
+      allowOutsideClick: true,
+    });
+
+    if (r.isConfirmed) {
+      if (window.AITaskEdit) {
+        window.AITaskEdit.open(task, (updated) => {
+          Object.assign(task, updated);
+          state.selected.add(taskId);
+          renderTasks();
+        });
+      }
+      return false;
+    }
+    // "Vẫn chọn" button
+    if (r.dismiss === Swal.DismissReason.cancel) return true;
+    // Dismissed (outside click / Escape) — don't select
+    return false;
   }
 
   async function triggerSuggest() {
     if (state.selected.size === 0) {
       Utils.showToast?.("Chọn ít nhất 1 công việc", "warning");
       return;
-    }
-
-    // Block + educate user about missing AI-critical fields.
-    const missing = findSelectedWithMissing();
-    if (missing.length > 0) {
-      // Visually flash the first problematic card so user knows where to click.
-      const firstBad = document.querySelector(
-        `.ai-ref-card[data-task-id="${missing[0].id}"]`
-      );
-      firstBad?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      firstBad?.classList.add("flash-warn");
-      setTimeout(() => firstBad?.classList.remove("flash-warn"), 1600);
-
-      const rows = missing
-        .slice(0, 6)
-        .map((m) => {
-          const fields = missingAiFields(m.task)
-            .map(
-              (f) =>
-                `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;
-                              font-size:11px;font-weight:500;border-radius:999px;
-                              background:rgba(255,159,10,0.15);color:#b25e00;
-                              border:1px solid rgba(255,159,10,0.35)">
-                   <i class="fas fa-circle-exclamation" style="font-size:9px;margin-right:3px"></i>${esc(f)}
-                 </span>`
-            )
-            .join("");
-          return `
-            <div style="padding:8px 10px;border-radius:8px;background:var(--bg-card);
-                        border:1px solid var(--border);margin-bottom:6px">
-              <div style="font-weight:600;font-size:13px;color:var(--text-primary);
-                          margin-bottom:4px;
-                          white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                ${esc(m.task.TieuDe || "Công việc")}
-              </div>
-              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">
-                Thiếu thông tin:
-              </div>
-              <div>${fields}</div>
-            </div>`;
-        })
-        .join("");
-      const more =
-        missing.length > 6
-          ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted);text-align:center">
-               …và ${missing.length - 6} công việc khác cũng thiếu thông tin
-             </div>`
-          : "";
-      const r = await (window.Swal?.fire({
-        icon: "warning",
-        title: `${missing.length} công việc thiếu thông tin`,
-        html: `
-          <div style="text-align:left;font-size:13px;line-height:1.5">
-            <p style="margin-bottom:10px;color:var(--text-primary)">
-              Các công việc bên dưới chưa đủ
-              <strong>Độ phức tạp · Độ tập trung · Thời điểm phù hợp</strong>.
-              Bạn vẫn muốn thêm chúng vào danh sách để AI tạo lịch chứ?
-            </p>
-            <div style="max-height:240px;overflow-y:auto;padding:2px;
-                        border-radius:10px;background:var(--bg-card-alt)">
-              <div style="padding:8px">${rows}${more}</div>
-            </div>
-            <p style="margin-top:10px;padding:8px 10px;border-radius:8px;
-                      background:rgba(255,159,10,0.10);
-                      color:#b25e00;font-size:12px;line-height:1.45">
-              <i class="fas fa-triangle-exclamation" style="margin-right:4px"></i>
-              Tiếp tục có thể làm <strong>giảm độ chính xác</strong> của lịch
-              trình AI tạo. Khuyến nghị bấm thẻ công việc bên trái để bổ sung
-              thông tin trước.
-            </p>
-          </div>`,
-        width: 560,
-        confirmButtonText: "Tôi sẽ chỉnh trước",
-        showCancelButton: true,
-        cancelButtonText: "Cứ tiếp tục với thông tin hiện có",
-        confirmButtonColor: "#2563EB",
-        cancelButtonColor: "#ff9f0a",
-        reverseButtons: true,
-      }) ?? Promise.resolve({ isConfirmed: true }));
-      if (r.isConfirmed) return;
     }
 
     const range = await promptDateRange();
@@ -630,11 +611,28 @@
     const rejectAllBtn = $("ai-ref-reject-all-btn");
     if (!host || !suggestBtn) return;
 
-    // Checkbox toggle — card body click is handled inside wireCardDragAndClick.
-    host.addEventListener("change", (e) => {
+    // Checkbox toggle — show missing-field warning when selecting a task.
+    host.addEventListener("change", async (e) => {
       const cb = e.target.closest(".ai-ref-task-cb");
       if (!cb) return;
-      toggleTask(cb.dataset.taskId, cb.checked);
+      const taskId = parseInt(cb.dataset.taskId, 10);
+
+      if (cb.checked) {
+        const task = state.tasks.find(
+          (t) => (t.MaCongViec || t.ID || t.id) === taskId
+        );
+        if (task && missingAiFields(task).length > 0) {
+          const keep = await promptMissingFieldsOnSelect(taskId, task);
+          if (!keep) {
+            cb.checked = false;
+            updateSelectedCount();
+            return;
+          }
+        }
+        toggleTask(taskId, true);
+      } else {
+        toggleTask(taskId, false);
+      }
     });
     // Stop propagation on checkbox/grip so clicks there don't open the modal.
     host.addEventListener("click", (e) => {
