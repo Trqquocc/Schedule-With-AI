@@ -91,15 +91,9 @@ router.get("/", async (req, res) => {
     const totalMinutes = allTasks.reduce((s, t) => s + (t.ThoiGianUocTinh || 0), 0);
     const doneMinutes = allTasks.filter((t) => t.TrangThaiThucHien === 2).reduce((s, t) => s + (t.ThoiGianUocTinh || 0), 0);
 
-    // Streak: consecutive days with completed tasks
-    const sortedDays = Object.keys(dailyMap).sort().reverse();
-    let streak = 0;
-    const todayStr = new Date().toISOString().split("T")[0];
-    for (let i = 0; i < sortedDays.length; i++) {
-      const expected = new Date(new Date(todayStr).getTime() - i * 86400000).toISOString().split("T")[0];
-      if (sortedDays[i] === expected && dailyMap[expected].completed > 0) streak++;
-      else break;
-    }
+    // Unified streak from gamification service (tasks + habits + schedule)
+    const { computeStreak } = require("../services/gamification-service");
+    const streak = await computeStreak(userId);
 
     res.json({
       success: true,

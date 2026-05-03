@@ -144,6 +144,7 @@ router.post("/login", async (req, res) => {
           email: user.Email,
           hoten: user.HoTen,
           luongTheoGio: user.LuongTheoGio || 0,
+          equippedBadge: user.EquippedBadge || null,
         },
       },
     });
@@ -166,7 +167,7 @@ router.get("/verify", async (req, res) => {
 
     const { data: user, error } = await supabase
       .from("Users")
-      .select("UserID, Username, Email, HoTen, LuongTheoGio")
+      .select("UserID, Username, Email, HoTen, LuongTheoGio, AvatarUrl, EquippedBadge")
       .eq("UserID", decoded.userId)
       .single();
 
@@ -176,7 +177,17 @@ router.get("/verify", async (req, res) => {
 
     res.json({
       success: true,
-      data: { user },
+      data: {
+        user: {
+          id: user.UserID,
+          username: user.Username,
+          email: user.Email,
+          hoten: user.HoTen,
+          luongTheoGio: user.LuongTheoGio || 0,
+          avatarUrl: user.AvatarUrl || null,
+          equippedBadge: user.EquippedBadge || null,
+        },
+      },
     });
   } catch (error) {
     res

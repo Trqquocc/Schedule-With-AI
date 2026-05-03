@@ -81,8 +81,8 @@ router.get("/", async (req, res) => {
     const { data, error } = await supabase
       .from("Friends")
       .select(`FriendshipID, RequesterID, ReceiverID, NgayTao,
-        Requester:Users!Friends_RequesterID_fkey(UserID, HoTen, Email, AvatarUrl),
-        Receiver:Users!Friends_ReceiverID_fkey(UserID, HoTen, Email, AvatarUrl)`)
+        Requester:Users!Friends_RequesterID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge),
+        Receiver:Users!Friends_ReceiverID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
       .eq("TrangThai", "accepted")
       .or(`RequesterID.eq.${userId},ReceiverID.eq.${userId}`)
       .order("NgayTao", { ascending: false });
@@ -97,9 +97,26 @@ router.get("/", async (req, res) => {
         HoTen: friend.HoTen,
         Email: friend.Email,
         AvatarUrl: friend.AvatarUrl,
+        EquippedBadge: friend.EquippedBadge || null,
         NgayTao: f.NgayTao,
       };
     });
+
+    // Enrich with gamification data (streak, level)
+    const friendIds = friends.map((f) => f.UserID);
+    if (friendIds.length > 0) {
+      const { data: gamRows } = await supabase
+        .from("UserGamification")
+        .select("UserID, Level, XP, Streak")
+        .in("UserID", friendIds);
+      const gamMap = Object.fromEntries((gamRows || []).map((g) => [g.UserID, g]));
+      friends.forEach((f) => {
+        const g = gamMap[f.UserID];
+        f.Level = g?.Level || 1;
+        f.XP = g?.XP || 0;
+        f.Streak = g?.Streak || 0;
+      });
+    }
 
     return res.json({ success: true, data: friends });
   } catch (err) {
@@ -116,7 +133,7 @@ router.get("/requests", async (req, res) => {
     const { data, error } = await supabase
       .from("Friends")
       .select(`FriendshipID, NgayTao,
-        Requester:Users!Friends_RequesterID_fkey(UserID, HoTen, Email, AvatarUrl)`)
+        Requester:Users!Friends_RequesterID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
       .eq("ReceiverID", userId)
       .eq("TrangThai", "pending")
       .order("NgayTao", { ascending: false });
@@ -137,7 +154,7 @@ router.get("/sent", async (req, res) => {
     const { data, error } = await supabase
       .from("Friends")
       .select(`FriendshipID, NgayTao,
-        Receiver:Users!Friends_ReceiverID_fkey(UserID, HoTen, Email, AvatarUrl)`)
+        Receiver:Users!Friends_ReceiverID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
       .eq("RequesterID", userId)
       .eq("TrangThai", "pending")
       .order("NgayTao", { ascending: false });
@@ -239,7 +256,7 @@ router.get("/search", async (req, res) => {
 
     const { data, error } = await supabase
       .from("Users")
-      .select("UserID, HoTen, Email, AvatarUrl")
+      .select("UserID, HoTen, Email, AvatarUrl, EquippedBadge")
       .neq("UserID", userId)
       .or(`HoTen.ilike.%${safeQ}%,Email.ilike.%${safeQ}%`)
       .limit(10);

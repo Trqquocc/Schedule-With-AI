@@ -71,6 +71,7 @@
         HoTen: m.Users?.HoTen || m.HoTen || "",
         Email: m.Users?.Email || m.Email || "",
         AvatarUrl: m.Users?.AvatarUrl || m.AvatarUrl || "",
+        EquippedBadge: m.Users?.EquippedBadge || m.EquippedBadge || null,
         VaiTro: m.VaiTro,
         NgayThamGia: m.NgayThamGia,
       }));
@@ -210,7 +211,13 @@
           method: "PUT",
           body: JSON.stringify({ trangThai: newStatus }),
         });
-        await this.load(this.current.GroupID);
+        const task = this.tasks.find((t) => t.GroupTaskID === taskId);
+        if (task) {
+          task.TrangThai = newStatus;
+          this._render();
+        } else {
+          await this.load(this.current.GroupID);
+        }
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 

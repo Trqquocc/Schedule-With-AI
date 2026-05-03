@@ -15,11 +15,14 @@ async function buildDirectDisplayNames(directConvIds, currentUserId) {
   const otherUserIds = [...new Set(others.map((o) => o.UserID))];
   const { data: users } = await supabase
     .from("Users")
-    .select("UserID, HoTen")
+    .select("UserID, HoTen, EquippedBadge")
     .in("UserID", otherUserIds);
 
-  const userNameMap = users ? Object.fromEntries(users.map((u) => [u.UserID, u.HoTen])) : {};
-  return Object.fromEntries(others.map((o) => [o.ConversationID, userNameMap[o.UserID] || "Unknown"]));
+  const userMap = users ? Object.fromEntries(users.map((u) => [u.UserID, u])) : {};
+  return Object.fromEntries(others.map((o) => {
+    const u = userMap[o.UserID];
+    return [o.ConversationID, { name: u?.HoTen || "Unknown", equippedBadge: u?.EquippedBadge || null }];
+  }));
 }
 
 // Builds a map of GroupID -> TenNhom for group conversations

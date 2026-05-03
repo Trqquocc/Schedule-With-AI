@@ -208,10 +208,12 @@
       const userEmail = user.email || "";
       const avatarLetter = userName.charAt(0).toUpperCase();
 
+      window.BadgeDisplay?.storeMyBadge(user.equippedBadge || user.EquippedBadge);
+      const badgeHtml = window.BadgeDisplay?.inline(user.equippedBadge || user.EquippedBadge, 12) || "";
       document
         .querySelectorAll(".user-name, [data-user-name], #nav-user-name")
         .forEach((el) => {
-          el.textContent = userName;
+          el.innerHTML = userName + badgeHtml;
         });
 
       document

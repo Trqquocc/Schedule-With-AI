@@ -30,17 +30,22 @@ async function listConversations(userId) {
     buildGroupDisplayNames(groupIds),
   ]);
 
-  return convs.map((c) => ({
-    conversationId: c.ConversationID,
-    type: c.LoaiHoiThoai,
-    displayName:
-      c.LoaiHoiThoai === "direct"
-        ? directNameMap[c.ConversationID] || "Unknown"
-        : groupNameMap[c.GroupID] || "Group",
-    lastMessage: c.TinNhanCuoi,
-    lastMessageAt: c.ThoiGianCuoi,
-    isRead: readMap[c.ConversationID] !== false,
-  }));
+  return convs.map((c) => {
+    const direct = directNameMap[c.ConversationID];
+    return {
+      conversationId: c.ConversationID,
+      type: c.LoaiHoiThoai,
+      displayName:
+        c.LoaiHoiThoai === "direct"
+          ? (direct?.name || "Unknown")
+          : groupNameMap[c.GroupID] || "Group",
+      equippedBadge:
+        c.LoaiHoiThoai === "direct" ? (direct?.equippedBadge || null) : null,
+      lastMessage: c.TinNhanCuoi,
+      lastMessageAt: c.ThoiGianCuoi,
+      isRead: readMap[c.ConversationID] !== false,
+    };
+  });
 }
 
 async function getOrCreateDirect(userId, targetUserId) {

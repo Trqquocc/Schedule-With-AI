@@ -87,7 +87,7 @@
           <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-50">
             ${avatar(m.HoTen || m.Email, 8)}
             <div class="flex-1 min-w-0">
-              <div class="text-xs font-semibold text-slate-800 truncate">${esc(m.HoTen || "Người dùng")}</div>
+              <div class="text-xs font-semibold text-slate-800 truncate">${esc(m.HoTen || "Người dùng")}${window.BadgeDisplay?.inline(m.EquippedBadge, 10) || ""}</div>
               <div class="text-xs text-slate-400 truncate">${esc(m.Email || "")}</div>
             </div>
             <span class="role-badge ${roleClass}">${roleLabel}</span>

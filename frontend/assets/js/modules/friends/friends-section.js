@@ -7,6 +7,8 @@
     requests: [],
     sent: [],
     initialized: false,
+    _lastLoadTime: 0,
+    _CACHE_TTL: 15000,
 
     _authHeader() {
       const token = localStorage.getItem("auth_token");
@@ -21,7 +23,11 @@
     },
 
     async init() {
-      if (this.initialized) return;
+      if (this.initialized) {
+        if (Date.now() - this._lastLoadTime < this._CACHE_TTL) return;
+        await this.refresh();
+        return;
+      }
       this.initialized = true;
       this._bindEvents();
       await this.refresh();
@@ -36,6 +42,7 @@
 
     async refresh() {
       await Promise.all([this.loadFriends(), this.loadRequests(), this.loadSent()]);
+      this._lastLoadTime = Date.now();
     },
 
     // --- Friends list ---
@@ -62,20 +69,39 @@
       container.innerHTML = this.friends.map((f) => this._friendRow(f)).join("");
     },
 
+    _badge(id) { return window.BadgeDisplay?.inline(id, 12) || ""; },
+
+    _avatarImg(url, name, size) {
+      const sz = size || 40;
+      const ini = (name || "?")[0].toUpperCase();
+      if (url) {
+        return `<img src="${url}" alt="" class="rounded-full flex-shrink-0 object-cover" style="width:${sz}px;height:${sz}px"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="rounded-full flex-shrink-0 items-center justify-center text-white text-sm font-bold" style="display:none;width:${sz}px;height:${sz}px;background:var(--accent,#2563EB)">${ini}</div>`;
+      }
+      return `<div class="rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold" style="width:${sz}px;height:${sz}px;background:var(--accent,#2563EB)">${ini}</div>`;
+    },
+
     _friendRow(f) {
-      const initial = (f.HoTen || f.Email || "?")[0].toUpperCase();
-      const avatar = f.AvatarUrl
-        ? `<div class="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-cover bg-center" style="background-image:url(${f.AvatarUrl})"></div>`
-        : `<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold" style="background:var(--accent, #2563EB)">${initial}</div>`;
+      const streakHtml = f.Streak > 0
+        ? `<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;color:var(--text-primary,#1d1d1f);font-weight:600;letter-spacing:-0.12px"><i class="fas fa-fire" style="font-size:10px;color:var(--apple-blue,#0071e3)"></i>${f.Streak}</span>`
+        : "";
+      const levelHtml = `<span style="font-size:11px;color:rgba(0,0,0,0.48);letter-spacing:-0.12px">Lv.${f.Level || 1}</span>`;
       return `
-        <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition">
-          ${avatar}
+        <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--bg-card-alt,#f5f5f7);transition:all .15s"
+          onmouseover="this.style.boxShadow='rgba(0,0,0,0.22) 3px 5px 30px 0px'" onmouseout="this.style.boxShadow='none'">
+          ${this._avatarImg(f.AvatarUrl, f.HoTen || f.Email, 40)}
           <div class="flex-1 min-w-0">
-            <div class="font-semibold text-sm text-slate-800 truncate">${f.HoTen || "Người dùng"}</div>
-            <div class="text-xs text-slate-500 truncate">${f.Email || ""}</div>
+            <div class="font-semibold text-sm truncate" style="color:var(--text-primary,#1e293b)">${f.HoTen || "Người dùng"}${this._badge(f.EquippedBadge)}</div>
+            <div class="flex items-center gap-2 mt-0.5">
+              ${levelHtml}
+              ${streakHtml}
+              <span class="text-xs truncate" style="color:var(--text-muted,#94a3b8)">${f.Email || ""}</span>
+            </div>
           </div>
           <button onclick="FriendsSection.unfriend(${f.FriendshipID})"
-            class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 transition">
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition" style="border-color:var(--border,#e2e8f0);color:var(--text-muted,#94a3b8)"
+            onmouseover="this.style.color='#dc2626';this.style.borderColor='#fecaca'" onmouseout="this.style.color='';this.style.borderColor=''">
             Huỷ kết bạn
           </button>
         </div>`;
@@ -104,16 +130,12 @@
 
       list.innerHTML = this.requests.map((r) => {
         const u = r.Requester;
-        const initial = (u?.HoTen || u?.Email || "?")[0].toUpperCase();
-        const avatar = u?.AvatarUrl
-          ? `<div class="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-cover bg-center" style="background-image:url(${u.AvatarUrl})"></div>`
-          : `<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold" style="background:var(--accent, #2563EB)">${initial}</div>`;
         return `
-          <div class="flex items-center gap-3 p-3 rounded-xl" style="background:#eff6ff;border:1px solid #bfdbfe">
-            ${avatar}
+          <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--bg-card-alt,#f5f5f7)">
+            ${this._avatarImg(u?.AvatarUrl, u?.HoTen || u?.Email, 40)}
             <div class="flex-1 min-w-0">
-              <div class="font-semibold text-sm text-slate-800 truncate">${u?.HoTen || "Người dùng"}</div>
-              <div class="text-xs text-slate-500 truncate">${u?.Email || ""}</div>
+              <div class="font-semibold text-sm truncate" style="color:var(--text-primary,#1e293b)">${u?.HoTen || "Người dùng"}${this._badge(u?.EquippedBadge)}</div>
+              <div class="text-xs truncate" style="color:var(--text-muted,#94a3b8)">${u?.Email || ""}</div>
             </div>
             <div class="flex gap-2">
               <button onclick="FriendsSection.acceptRequest(${r.FriendshipID})"
@@ -145,15 +167,14 @@
 
       list.innerHTML = this.sent.map((s) => {
         const u = s.Receiver;
-        const initial = (u?.HoTen || u?.Email || "?")[0].toUpperCase();
         return `
-          <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold" style="background:#94a3b8">${initial}</div>
+          <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--bg-card-alt,#f5f5f7)">
+            ${this._avatarImg(u?.AvatarUrl, u?.HoTen || u?.Email, 40)}
             <div class="flex-1 min-w-0">
-              <div class="font-semibold text-sm text-slate-800 truncate">${u?.HoTen || "Người dùng"}</div>
-              <div class="text-xs text-slate-500 truncate">${u?.Email || ""}</div>
+              <div class="font-semibold text-sm truncate" style="color:var(--text-primary,#1e293b)">${u?.HoTen || "Người dùng"}${this._badge(u?.EquippedBadge)}</div>
+              <div class="text-xs truncate" style="color:var(--text-muted,#94a3b8)">${u?.Email || ""}</div>
             </div>
-            <span class="text-xs text-amber-600 font-medium">Chờ phản hồi</span>
+            <span class="text-xs font-medium" style="color:#d97706">Chờ phản hồi</span>
             <button onclick="FriendsSection.cancelRequest(${s.FriendshipID})"
               class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-500 hover:text-red-600 transition">
               Huỷ
@@ -192,10 +213,6 @@
         ]);
 
         container.innerHTML = results.map((u) => {
-          const initial = (u.HoTen || u.Email || "?")[0].toUpperCase();
-          const avatar = u.AvatarUrl
-            ? `<div class="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-cover bg-center" style="background-image:url(${u.AvatarUrl})"></div>`
-            : `<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold" style="background:#94a3b8">${initial}</div>`;
 
           let actionHtml;
           if (friendIds.has(u.UserID)) {
@@ -207,11 +224,11 @@
           }
 
           return `
-            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-              ${avatar}
+            <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--bg-card-alt,#f5f5f7)">
+              ${this._avatarImg(u.AvatarUrl, u.HoTen || u.Email, 40)}
               <div class="flex-1 min-w-0">
-                <div class="font-semibold text-sm text-slate-800 truncate">${u.HoTen || "Người dùng"}</div>
-                <div class="text-xs text-slate-500 truncate">${u.Email || ""}</div>
+                <div class="font-semibold text-sm truncate" style="color:var(--text-primary,#1e293b)">${u.HoTen || "Người dùng"}${this._badge(u.EquippedBadge)}</div>
+                <div class="text-xs truncate" style="color:var(--text-muted,#94a3b8)">${u.Email || ""}</div>
               </div>
               ${actionHtml}
             </div>`;

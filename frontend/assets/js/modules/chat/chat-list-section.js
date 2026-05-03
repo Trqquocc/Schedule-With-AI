@@ -7,6 +7,8 @@
     _conversations: [],
     _activeId: null,
     _initialized: false,
+    _lastLoadTime: 0,
+    _CACHE_TTL: 15000,
 
     _authHeader() {
       const token = localStorage.getItem("auth_token");
@@ -21,7 +23,14 @@
     },
 
     async init() {
-      if (this._initialized) return;
+      if (this._initialized) {
+        if (Date.now() - this._lastLoadTime < this._CACHE_TTL) {
+          this._renderConversations();
+          return;
+        }
+        await this.loadConversations();
+        return;
+      }
       this._initialized = true;
       await ChatRealtimeClient.init();
       this._bindEvents();
@@ -51,6 +60,7 @@
       try {
         const json = await this._api("/api/conversations");
         this._conversations = json.data || [];
+        this._lastLoadTime = Date.now();
       } catch (_) {
         this._conversations = [];
       }
@@ -91,7 +101,8 @@
         : "background:var(--accent,#2563EB)";
       const avContent = isGroup ? `<i class="fas fa-users" style="font-size:14px"></i>` : ini;
 
-      return `<div class="ci-wrap flex items-center gap-2.5 px-3.5 py-2.5" data-conv-id="${id}" onclick="ChatListSection.selectConversation(${id})"><div class="ci-avatar flex items-center justify-center" style="${avBg}">${avContent}</div><div class="flex-1 min-w-0"><div class="ci-name">${name}</div><div class="ci-last">${last}</div></div><div class="flex flex-col items-end gap-1 flex-shrink-0"><span class="ci-time">${time}</span>${unread}</div></div>`;
+      const bdg = window.BadgeDisplay?.inline(conv.equippedBadge, 11) || "";
+      return `<div class="ci-wrap flex items-center gap-2.5 px-3.5 py-2.5" data-conv-id="${id}" onclick="ChatListSection.selectConversation(${id})"><div class="ci-avatar flex items-center justify-center" style="${avBg}">${avContent}</div><div class="flex-1 min-w-0"><div class="ci-name">${name}${bdg}</div><div class="ci-last">${last}</div></div><div class="flex flex-col items-end gap-1 flex-shrink-0"><span class="ci-time">${time}</span>${unread}</div></div>`;
     },
 
     async selectConversation(id) {

@@ -92,7 +92,7 @@ async function getGroupDetail(groupId, userId) {
 
   const { data: members, error: mErr } = await supabase
     .from("GroupMembers")
-    .select(`MemberID, VaiTro, NgayThamGia, Users(UserID, HoTen, Email, AvatarUrl)`)
+    .select(`MemberID, VaiTro, NgayThamGia, Users(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
     .eq("GroupID", groupId);
 
   if (mErr) throw mErr;
