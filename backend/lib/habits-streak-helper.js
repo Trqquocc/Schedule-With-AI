@@ -22,12 +22,18 @@ async function recalculateStreak(habitId) {
     .order("NgayHoanThanh", { ascending: false })
     .limit(366);
 
-  if (error || !logs) return 0;
+  if (error || !logs || logs.length === 0) return 0;
 
   const logSet = new Set(logs.map((l) => l.NgayHoanThanh));
+  const todayStr = today.toISOString().split("T")[0];
 
   let streak = 0;
   const cursor = new Date(today);
+
+  // If today not completed, start counting from yesterday
+  if (!logSet.has(todayStr)) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
 
   while (true) {
     const dateStr = cursor.toISOString().split("T")[0];

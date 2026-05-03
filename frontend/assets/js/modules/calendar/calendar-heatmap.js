@@ -152,24 +152,48 @@ window.CalendarHeatmap = {
     wrapper.appendChild(outerFlex);
     container.appendChild(wrapper);
 
-    // Legend row
+    // Legend row — binary mode (habits) or gradient mode (stats)
     const legend = document.createElement("div");
     legend.style.cssText =
-      "display:flex;align-items:center;gap:4px;margin-top:8px;justify-content:flex-end;";
-    const legendLabel = document.createElement("span");
-    legendLabel.style.cssText = "font-size:10px;color:#94a3b8;margin-right:4px;";
-    legendLabel.textContent = "Ít";
-    legend.appendChild(legendLabel);
-    scale.forEach((color) => {
-      const sq = document.createElement("div");
-      sq.style.cssText =
-        `width:${cellSize}px;height:${cellSize}px;border-radius:2px;background:${color};`;
-      legend.appendChild(sq);
-    });
-    const moreLbl = document.createElement("span");
-    moreLbl.style.cssText = "font-size:10px;color:#94a3b8;margin-left:4px;";
-    moreLbl.textContent = "Nhiều";
-    legend.appendChild(moreLbl);
+      "display:flex;align-items:center;gap:6px;margin-top:8px;justify-content:flex-end;";
+
+    if (options.binaryMode) {
+      // Simple two-state legend for habits
+      const items = [
+        { color: scale[0], label: "Chưa hoàn thành" },
+        { color: scale[scale.length - 1], label: "Đã hoàn thành" },
+      ];
+      items.forEach(({ color, label }) => {
+        const sq = document.createElement("div");
+        sq.style.cssText =
+          `width:${cellSize}px;height:${cellSize}px;border-radius:2px;background:${color};flex-shrink:0;`;
+        const lbl = document.createElement("span");
+        lbl.style.cssText = "font-size:10px;color:#94a3b8;";
+        lbl.textContent = label;
+        legend.appendChild(sq);
+        legend.appendChild(lbl);
+        // Spacer between pairs
+        const spacer = document.createElement("span");
+        spacer.style.cssText = "width:8px;";
+        legend.appendChild(spacer);
+      });
+    } else {
+      // Gradient legend for stats
+      const legendLabel = document.createElement("span");
+      legendLabel.style.cssText = "font-size:10px;color:#94a3b8;margin-right:4px;";
+      legendLabel.textContent = "Ít";
+      legend.appendChild(legendLabel);
+      scale.forEach((color) => {
+        const sq = document.createElement("div");
+        sq.style.cssText =
+          `width:${cellSize}px;height:${cellSize}px;border-radius:2px;background:${color};`;
+        legend.appendChild(sq);
+      });
+      const moreLbl = document.createElement("span");
+      moreLbl.style.cssText = "font-size:10px;color:#94a3b8;margin-left:4px;";
+      moreLbl.textContent = "Nhiều";
+      legend.appendChild(moreLbl);
+    }
     container.appendChild(legend);
   },
 

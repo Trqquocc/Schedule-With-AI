@@ -239,7 +239,7 @@ router.post("/:id/log", async (req, res) => {
     }
 
     const { data: habit, error: habitErr } = await supabase
-      .from("Habits").select("HabitID")
+      .from("Habits").select("HabitID, TenThoiQuen, BieuTuong")
       .eq("HabitID", habitId).eq("UserID", userId).single();
 
     if (habitErr || !habit) {
@@ -261,6 +261,26 @@ router.post("/:id/log", async (req, res) => {
     const streak = await recalculateStreak(habitId);
     await supabase.from("Habits").update({ Streak: streak }).eq("HabitID", habitId);
 
+    // Sync with LichTrinh: mark matching schedule event as completed
+    const startOfDay = `${date}T00:00:00`;
+    const endOfDay = `${date}T23:59:59`;
+    const { data: scheduleEvents } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh")
+      .eq("UserID", userId)
+      .eq("DaHoanThanh", false)
+      .ilike("TieuDe", `%${habit.TenThoiQuen}%`)
+      .gte("GioBatDau", startOfDay)
+      .lte("GioBatDau", endOfDay);
+
+    if (scheduleEvents?.length > 0) {
+      const ids = scheduleEvents.map((e) => e.MaLichTrinh);
+      await supabase
+        .from("LichTrinh")
+        .update({ DaHoanThanh: true })
+        .in("MaLichTrinh", ids);
+    }
+
     res.json({ success: true, data: { streak } });
   } catch (err) {
     console.error("Lỗi POST /habits/:id/log:", err);
@@ -280,7 +300,7 @@ router.delete("/:id/log/:date", async (req, res) => {
     }
 
     const { data: habit, error: habitErr } = await supabase
-      .from("Habits").select("HabitID")
+      .from("Habits").select("HabitID, TenThoiQuen")
       .eq("HabitID", habitId).eq("UserID", userId).single();
 
     if (habitErr || !habit) {
@@ -297,6 +317,26 @@ router.delete("/:id/log/:date", async (req, res) => {
 
     const streak = await recalculateStreak(habitId);
     await supabase.from("Habits").update({ Streak: streak }).eq("HabitID", habitId);
+
+    // Reverse sync: unmark matching schedule events
+    const startOfDay = `${date}T00:00:00`;
+    const endOfDay = `${date}T23:59:59`;
+    const { data: scheduleEvents } = await supabase
+      .from("LichTrinh")
+      .select("MaLichTrinh")
+      .eq("UserID", userId)
+      .eq("DaHoanThanh", true)
+      .ilike("TieuDe", `%${habit.TenThoiQuen}%`)
+      .gte("GioBatDau", startOfDay)
+      .lte("GioBatDau", endOfDay);
+
+    if (scheduleEvents?.length > 0) {
+      const ids = scheduleEvents.map((e) => e.MaLichTrinh);
+      await supabase
+        .from("LichTrinh")
+        .update({ DaHoanThanh: false })
+        .in("MaLichTrinh", ids);
+    }
 
     res.json({ success: true, data: { streak } });
   } catch (err) {
