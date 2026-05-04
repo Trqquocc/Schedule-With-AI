@@ -14,12 +14,12 @@ const { getClientForUser } = require('./google-calendar-client');
  * @returns {object} Google Calendar event body
  */
 function buildEventResource(row) {
-  const startIso = row.ThoiGianBatDau
-    ? new Date(row.ThoiGianBatDau).toISOString()
+  const startIso = row.GioBatDau
+    ? new Date(row.GioBatDau).toISOString()
     : new Date().toISOString();
 
-  const endIso = row.ThoiGianKetThuc
-    ? new Date(row.ThoiGianKetThuc).toISOString()
+  const endIso = row.GioKetThuc
+    ? new Date(row.GioKetThuc).toISOString()
     : new Date(new Date(startIso).getTime() + 60 * 60 * 1000).toISOString();
 
   return {
@@ -106,8 +106,8 @@ async function syncWeek(userId) {
     .from('LichTrinh')
     .select('*')
     .eq('MaNguoiDung', userId)
-    .gte('ThoiGianBatDau', monday.toISOString())
-    .lte('ThoiGianBatDau', sunday.toISOString());
+    .gte('GioBatDau', monday.toISOString())
+    .lte('GioBatDau', sunday.toISOString());
 
   if (error) throw new Error(`DB query failed: ${error.message}`);
   if (!events || events.length === 0) return { synced: 0, errors: 0 };
