@@ -17,30 +17,48 @@ const {
 } = require("../services/ai-schedule-service");
 const { buildGeminiPrompt } = require("../services/ai-prompt-service");
 
-/** POST /api/ai/suggest-schedule */
+/** POST /api/ai/suggest-schedule — supports SSE streaming via Accept: text/event-stream */
 async function suggestSchedule(req, res) {
+  const useSSE = req.headers.accept === "text/event-stream";
+
+  function sendSSE(event, data) {
+    if (!useSSE) return;
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  }
+
   try {
     const userId = req.userId;
     const { tasks: taskIds, startDate, endDate, options = {} } = req.body;
     const additionalInstructions = req.body.additionalInstructions || "";
 
     if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
+      if (useSSE) { res.writeHead(400, { "Content-Type": "text/event-stream" }); sendSSE("error", { message: "Vui lòng chọn ít nhất một công việc" }); return res.end(); }
       return res.status(400).json({ success: false, message: "Vui lòng chọn ít nhất một công việc" });
     }
     if (!startDate || !endDate) {
+      if (useSSE) { res.writeHead(400, { "Content-Type": "text/event-stream" }); sendSSE("error", { message: "Vui lòng chọn khoảng thời gian" }); return res.end(); }
       return res.status(400).json({ success: false, message: "Vui lòng chọn khoảng thời gian" });
+    }
+
+    if (useSSE) {
+      res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
+      sendSSE("status", { step: "loading_tasks" });
     }
 
     const taskDetails = await getTaskDetailsFromDatabase(taskIds, userId);
     if (taskDetails.length === 0) {
+      if (useSSE) { sendSSE("error", { message: "Không tìm thấy công việc được chọn" }); return res.end(); }
       return res.status(404).json({ success: false, message: "Không tìm thấy công việc được chọn" });
     }
 
     let existingEvents = [];
     if (options.avoidConflict) {
+      if (useSSE) sendSSE("status", { step: "checking_conflicts" });
       try { existingEvents = await getExistingEvents(userId, startDate, endDate); }
       catch (_) { existingEvents = []; }
     }
+
+    if (useSSE) sendSSE("status", { step: "generating_schedule" });
 
     let aiResult;
     let mode = "simulation";
@@ -52,6 +70,7 @@ async function suggestSchedule(req, res) {
         mode = "gemini";
       } catch (aiError) {
         console.error("Gemini AI failed:", aiError.message);
+        if (useSSE) sendSSE("status", { step: "fallback_simulation" });
         aiResult = await generateSimulatedScheduleWithInstructions(taskDetails, startDate, endDate, options, existingEvents, additionalInstructions);
         mode = "simulation_fallback";
       }
@@ -63,7 +82,7 @@ async function suggestSchedule(req, res) {
       throw new Error("Invalid response format from AI");
     }
 
-    res.json({
+    const payload = {
       success: true,
       data: {
         suggestions: aiResult.suggestions.map((s) => ({
@@ -82,9 +101,20 @@ async function suggestSchedule(req, res) {
         mode,
       },
       message: mode === "gemini" ? "AI đã tạo lịch trình thành công" : "Đã tạo lịch trình (chế độ mô phỏng)",
-    });
+    };
+
+    if (useSSE) {
+      sendSSE("result", payload);
+      res.end();
+    } else {
+      res.json(payload);
+    }
   } catch (error) {
     console.error("AI processing failed:", error);
+    if (useSSE) {
+      sendSSE("error", { message: "Lỗi xử lý AI", error: process.env.NODE_ENV === "development" ? error.message : undefined });
+      return res.end();
+    }
     res.status(500).json({
       success: false,
       message: "Lỗi xử lý AI",
