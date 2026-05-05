@@ -43,7 +43,7 @@ router.post("/register", async (req, res) => {
         Email: email,
         HoTen: hoten || username,
         NgayTao: new Date().toISOString(),
-        LuongTheoGio: 29000,
+        LuongTheoGio: 0,
       })
       .select("MaNguoiDung, Username, Email, HoTen")
       .single();
