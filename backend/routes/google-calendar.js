@@ -64,6 +64,19 @@ router.get('/callback', requireConfig, async (req, res) => {
 
   try {
     await handleCallback(code, userId);
+
+    // Auto pull events from Google Calendar on first connect
+    try {
+      const { pullEventsFromGoogle } = require('../lib/google-calendar-sync');
+      if (typeof pullEventsFromGoogle === 'function') {
+        await pullEventsFromGoogle(userId);
+      } else {
+        await syncWeek(userId);
+      }
+    } catch (pullErr) {
+      console.error('Auto pull GCal events failed:', pullErr.message);
+    }
+
     res.redirect('/index.html#connections?gc_connected=1');
   } catch (err) {
     console.error('Google callback error:', err.message);
@@ -99,9 +112,22 @@ router.get('/status', authenticateToken, async (req, res) => {
 });
 
 // ── POST /api/google-calendar/disconnect ─────────────────────────────────────
-// Removes the user's Google Calendar connection from DB.
+// Revokes Google token then removes the user's connection from DB.
 router.post('/disconnect', authenticateToken, async (req, res) => {
   try {
+    // Revoke token with Google before deleting row
+    try {
+      const { getClientForUser } = require('../lib/google-calendar-client');
+      const { client } = await getClientForUser(req.userId);
+      const creds = client.credentials;
+      const tokenToRevoke = creds.access_token || creds.refresh_token;
+      if (tokenToRevoke) {
+        await client.revokeToken(tokenToRevoke);
+      }
+    } catch (revokeErr) {
+      console.warn('Token revoke failed (proceeding with disconnect):', revokeErr.message);
+    }
+
     const { error } = await supabase
       .from('KetNoiGoogleCalendar')
       .delete()

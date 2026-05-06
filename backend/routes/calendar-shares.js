@@ -62,6 +62,14 @@ router.post("/invite", async (req, res) => {
       throw insertErr;
     }
 
+    // Notify recipient via Telegram
+    try {
+      const { sendMessageToUser } = require("../telegram/bot");
+      const { data: owner } = await supabase.from("NguoiDung").select("HoTen").eq("MaNguoiDung", ownerId).single();
+      const ownerName = owner?.HoTen || "Ai đó";
+      await sendMessageToUser(sharedWithId, `📅 <b>${ownerName}</b> đã chia sẻ lịch với bạn (quyền: ${permission}).`);
+    } catch (_) {}
+
     return res.json({ success: true, data: share });
   } catch (err) {
     console.error("[calendar-shares] invite error:", err);
