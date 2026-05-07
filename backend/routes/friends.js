@@ -185,6 +185,13 @@ router.put("/:id/accept", async (req, res) => {
     if (error || !data) {
       return res.status(404).json({ success: false, message: "Không tìm thấy lời mời" });
     }
+
+    // Auto create 1-1 conversation
+    try {
+      const { getOrCreateDirect } = require("../services/conversation-service");
+      await getOrCreateDirect(userId, data.NguoiGui);
+    } catch (_) {}
+
     return res.json({ success: true, message: "Đã chấp nhận lời mời" });
   } catch (err) {
     console.error("[friends] accept error:", err);
