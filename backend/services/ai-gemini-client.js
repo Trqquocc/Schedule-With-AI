@@ -17,10 +17,14 @@ let genAI = null;
 try {
   const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "") {
+  const apiKey =
+    (process.env.GEMINI_API_KEY_SCHEDULE_SUGGEST || "").trim() ||
+    (process.env.GEMINI_API_KEY || "").trim();
+
+  if (apiKey) {
     console.log("Initializing Gemini AI...");
 
-    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    genAI = new GoogleGenerativeAI(apiKey);
 
     geminiModel = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
@@ -35,7 +39,7 @@ try {
     geminiAvailable = true;
     console.log("Gemini AI initialized successfully with model: gemini-2.5-flash");
   } else {
-    console.warn("GEMINI_API_KEY is missing or empty in .env file");
+    console.warn("GEMINI_API_KEY_SCHEDULE_SUGGEST / GEMINI_API_KEY is missing or empty in .env file");
     console.log("AI will run in simulation mode");
   }
 } catch (error) {
