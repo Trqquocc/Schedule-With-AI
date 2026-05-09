@@ -210,6 +210,22 @@ async function createEvent(userId, body) {
       .eq("MaNguoiDung", userId);
   }
 
+  // Auto push to Google Calendar if connected
+  try {
+    const { data: gcConn } = await supabase
+      .from("KetNoiGoogleCalendar")
+      .select("TrangThaiKetNoi")
+      .eq("MaNguoiDung", userId)
+      .maybeSingle();
+    if (gcConn?.TrangThaiKetNoi) {
+      const { syncEventToGoogle } = require("../lib/google-calendar-sync");
+      const eventRow = { MaLichTrinh: result.MaLichTrinh, TieuDe: title, GioBatDau: start, GioKetThuc: end, GhiChu: note };
+      await syncEventToGoogle(userId, eventRow, "create");
+    }
+  } catch (e) {
+    console.error("[calendar] auto GCal push failed:", e.message);
+  }
+
   return result.MaLichTrinh;
 }
 
