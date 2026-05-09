@@ -30,8 +30,8 @@ async function getEvents(userId) {
 
   const { data: records, error } = await supabase
     .from("LichTrinh")
-    .select("*, CongViec(TieuDe, MucDoUuTien, MauSac, LoaiCongViec(TenLoai))")
-    .or(`UserID.eq.${userId}`)
+    .select("*, CongViec(TieuDe, MucDoUuTien, LoaiCongViec(TenLoai))")
+    .eq("MaNguoiDung", userId)
     .gte("GioBatDau", thirtyDaysAgo)
     .order("GioBatDau", { ascending: false });
 
@@ -41,7 +41,7 @@ async function getEvents(userId) {
   }
 
   return (records || [])
-    .filter((ev) => ev.UserID === userId || ev.CongViec?.UserID === userId)
+    .filter((ev) => ev.MaNguoiDung === userId || ev.CongViec?.MaNguoiDung === userId)
     .map((ev) => {
       const priorityColor = ev.CongViec?.MucDoUuTien
         ? PRIORITY_COLORS[ev.CongViec.MucDoUuTien] || "#3788d8"
@@ -53,7 +53,7 @@ async function getEvents(userId) {
         GioBatDau: ev.GioBatDau,
         GioKetThuc: ev.GioKetThuc,
         GhiChu: ev.GhiChu,
-        MauSac: ev.CongViec?.MauSac || priorityColor,
+        MauSac: priorityColor,
         DaHoanThanh: ev.DaHoanThanh,
         MucDoUuTien: ev.CongViec?.MucDoUuTien,
         TenLoai: ev.CongViec?.LoaiCongViec?.TenLoai || null,
@@ -74,7 +74,7 @@ async function getEventsInRange(userId, start, end) {
   const { data: records, error } = await supabase
     .from("LichTrinh")
     .select("*, CongViec(TieuDe, MoTa, MucDoUuTien)")
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .gte("GioBatDau", start)
     .lte("GioBatDau", end)
     .order("GioBatDau", { ascending: true });
@@ -122,7 +122,7 @@ async function getAiEvents(userId) {
   const { data: records, error } = await supabase
     .from("LichTrinh")
     .select("*, CongViec(TieuDe, MoTa, MucDoUuTien)")
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .eq("AI_DeXuat", true)
     .order("GioBatDau", { ascending: true });
 
@@ -184,7 +184,7 @@ async function createEvent(userId, body) {
   const { data: result, error } = await supabase
     .from("LichTrinh")
     .insert({
-      UserID: userId,
+      MaNguoiDung: userId,
       MaCongViec: taskId || null,
       TieuDe: title,
       GioBatDau: new Date(start).toISOString(),
@@ -207,7 +207,7 @@ async function createEvent(userId, body) {
       .from("CongViec")
       .update({ TrangThaiThucHien: 1 })
       .eq("MaCongViec", taskId)
-      .eq("UserID", userId);
+      .eq("MaNguoiDung", userId);
   }
 
   return result.MaLichTrinh;
@@ -240,7 +240,7 @@ async function updateEvent(eventId, userId, body) {
     .from("LichTrinh")
     .update(updateData)
     .eq("MaLichTrinh", eventId)
-    .eq("UserID", userId);
+    .eq("MaNguoiDung", userId);
 
   if (error) {
     console.error("[updateEvent] Supabase error:", error.message);
@@ -265,7 +265,7 @@ async function deleteEvent(eventId, userId) {
     .from("LichTrinh")
     .delete()
     .eq("MaLichTrinh", eventId)
-    .eq("UserID", userId);
+    .eq("MaNguoiDung", userId);
 }
 
 module.exports = {

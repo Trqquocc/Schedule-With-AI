@@ -31,9 +31,9 @@ const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 /** GET /api/users/priority-colors */
 async function getPriorityColors(userId) {
   const { data: row, error } = await supabase
-    .from("Users")
+    .from("NguoiDung")
     .select("PriorityColors")
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (error) {
@@ -64,16 +64,16 @@ async function updatePriorityColors(userId, payload) {
   }
 
   const { data: existingRow } = await supabase
-    .from("Users")
+    .from("NguoiDung")
     .select("PriorityColors")
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .single();
   const merged = { ...DEFAULT_PRIORITY_COLORS, ...(existingRow?.PriorityColors || {}), ...cleaned };
 
   const { error: updateErr } = await supabase
-    .from("Users")
+    .from("NguoiDung")
     .update({ PriorityColors: merged })
-    .eq("UserID", userId);
+    .eq("MaNguoiDung", userId);
 
   if (updateErr) {
     if (updateErr.code === "42703" || /PriorityColors/.test(updateErr.message || "")) {
@@ -89,9 +89,9 @@ async function updatePriorityColors(userId, payload) {
 /** GET /api/users/profile */
 async function getProfile(userId) {
   const { data, error } = await supabase
-    .from("Users")
-    .select("UserID, Username, Email, HoTen, HocVan, AvatarUrl")
-    .eq("UserID", userId)
+    .from("NguoiDung")
+    .select("MaNguoiDung, Username, Email, HoTen, HocVan, AvatarUrl")
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (error || !data) {
@@ -102,7 +102,7 @@ async function getProfile(userId) {
   return {
     usedFallback: false,
     data: {
-      id: data.UserID,
+      id: data.MaNguoiDung,
       username: data.Username,
       email: data.Email,
       hoten: data.HoTen,
@@ -115,9 +115,9 @@ async function getProfile(userId) {
 /** GET /api/users/:id */
 async function getUser(userId) {
   const { data: user, error } = await supabase
-    .from("Users")
-    .select("UserID, Username, Email, HoTen, HocVan, AvatarUrl")
-    .eq("UserID", userId)
+    .from("NguoiDung")
+    .select("MaNguoiDung, Username, Email, HoTen, HocVan, AvatarUrl")
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (error || !user) {
@@ -126,7 +126,7 @@ async function getUser(userId) {
   }
 
   return {
-    id: user.UserID,
+    id: user.MaNguoiDung,
     username: user.Username,
     email: user.Email,
     hoten: user.HoTen,
@@ -155,10 +155,10 @@ async function updateUser(userId, body) {
   }
 
   const { data: updated, error } = await supabase
-    .from("Users")
+    .from("NguoiDung")
     .update(updatePayload)
-    .eq("UserID", userId)
-    .select("UserID, Username, Email, HoTen, HocVan, AvatarUrl");
+    .eq("MaNguoiDung", userId)
+    .select("MaNguoiDung, Username, Email, HoTen, HocVan, AvatarUrl");
 
   if (error || !updated || updated.length === 0) {
     console.error("[updateUser] userId:", userId, "error:", error?.message);
@@ -167,7 +167,7 @@ async function updateUser(userId, body) {
 
   const u = updated[0];
   return {
-    id: u.UserID,
+    id: u.MaNguoiDung,
     username: u.Username,
     email: u.Email,
     hoten: u.HoTen,
@@ -178,7 +178,7 @@ async function updateUser(userId, body) {
 
 /** DELETE /api/users/:id */
 async function deleteUser(userId) {
-  const { error } = await supabase.from("Users").delete().eq("UserID", userId);
+  const { error } = await supabase.from("NguoiDung").delete().eq("MaNguoiDung", userId);
   if (error) throw { status: 404, message: "User not found" };
 }
 
@@ -193,9 +193,9 @@ async function changePassword(userId, body) {
   }
 
   const { data: user, error: loadErr } = await supabase
-    .from("Users")
-    .select("UserID, Password")
-    .eq("UserID", userId)
+    .from("NguoiDung")
+    .select("MaNguoiDung, Password")
+    .eq("MaNguoiDung", userId)
     .single();
   if (loadErr || !user) throw { status: 404, message: "Không tìm thấy user" };
 
@@ -204,9 +204,9 @@ async function changePassword(userId, body) {
 
   const hashed = await bcrypt.hash(String(newPassword), 12);
   const { error: updErr } = await supabase
-    .from("Users")
+    .from("NguoiDung")
     .update({ Password: hashed })
-    .eq("UserID", userId);
+    .eq("MaNguoiDung", userId);
   if (updErr) {
     console.error("password update error:", updErr);
     throw { status: 500, message: "Không đổi được mật khẩu" };
@@ -235,15 +235,30 @@ async function uploadAvatar(userId, dataUrl) {
   const ext = mime === "image/jpeg" ? "jpg" : mime === "image/webp" ? "webp" : "png";
   const storagePath = `${userId}/${Date.now()}.${ext}`;
 
-  const { error: upErr } = await supabase.storage
+  let { error: upErr } = await supabase.storage
     .from(AVATAR_BUCKET)
     .upload(storagePath, buf, { contentType: mime, cacheControl: "3600", upsert: true });
 
+  if (upErr && /bucket/i.test(upErr.message || "")) {
+    const { createClient } = require("@supabase/supabase-js");
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) {
+      throw { status: 503, message: 'Bucket "avatars" chưa tồn tại. Tạo bucket public "avatars" trong Supabase Dashboard → Storage, hoặc thêm SUPABASE_SERVICE_ROLE_KEY vào .env để tự động tạo.' };
+    }
+    const admin = createClient(process.env.SUPABASE_URL, serviceKey);
+    const { error: bucketErr } = await admin.storage.createBucket(AVATAR_BUCKET, { public: true, fileSizeLimit: MAX_AVATAR_BYTES });
+    if (bucketErr && !/already/i.test(bucketErr.message || "")) {
+      console.error("createBucket:", bucketErr);
+      throw { status: 503, message: "Không tạo được bucket avatars: " + (bucketErr.message || "") };
+    }
+    const retry = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .upload(storagePath, buf, { contentType: mime, cacheControl: "3600", upsert: true });
+    upErr = retry.error;
+  }
+
   if (upErr) {
     console.error("avatar upload:", upErr);
-    if (/bucket/i.test(upErr.message || "")) {
-      throw { status: 503, message: 'Chưa có bucket "avatars" trên Supabase Storage — tạo bucket public cùng tên.' };
-    }
     throw { status: 500, message: "Upload thất bại" };
   }
 
@@ -252,9 +267,9 @@ async function uploadAvatar(userId, dataUrl) {
   if (!publicUrl) throw { status: 500, message: "Không lấy được URL công khai" };
 
   const { error: saveErr } = await supabase
-    .from("Users")
+    .from("NguoiDung")
     .update({ AvatarUrl: publicUrl })
-    .eq("UserID", userId);
+    .eq("MaNguoiDung", userId);
   if (saveErr) {
     console.error("avatar save:", saveErr);
     throw { status: 500, message: "Không lưu được AvatarUrl" };

@@ -67,11 +67,11 @@
       const R = window.GroupDetailRender;
       const g = this.current;
       const members = (this.current.members || []).map((m) => ({
-        UserID: m.Users?.UserID || m.UserID,
-        HoTen: m.Users?.HoTen || m.HoTen || "",
-        Email: m.Users?.Email || m.Email || "",
-        AvatarUrl: m.Users?.AvatarUrl || m.AvatarUrl || "",
-        EquippedBadge: m.Users?.EquippedBadge || m.EquippedBadge || null,
+        MaNguoiDung: m.NguoiDung?.MaNguoiDung || m.MaNguoiDung,
+        HoTen: m.NguoiDung?.HoTen || m.HoTen || "",
+        Email: m.NguoiDung?.Email || m.Email || "",
+        AvatarUrl: m.NguoiDung?.AvatarUrl || m.AvatarUrl || "",
+        EquippedBadge: m.NguoiDung?.EquippedBadge || m.EquippedBadge || null,
         VaiTro: m.VaiTro,
         NgayThamGia: m.NgayThamGia,
       }));
@@ -107,8 +107,8 @@
       try {
         const friendsRes = await this._api("/api/friends");
         const friends = friendsRes.data || [];
-        const memberIds = new Set((this.current.members || []).map((m) => m.Users?.UserID || m.UserID));
-        const available = friends.filter((f) => !memberIds.has(f.UserID));
+        const memberIds = new Set((this.current.members || []).map((m) => m.NguoiDung?.MaNguoiDung || m.MaNguoiDung));
+        const available = friends.filter((f) => !memberIds.has(f.MaNguoiDung));
 
         if (!available.length) {
           list.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">Không có bạn bè nào để thêm</p>`;
@@ -118,7 +118,7 @@
           const initial = (f.HoTen || f.Email || "?")[0].toUpperCase();
           return `
             <div class="add-member-item flex items-center gap-2 p-2 rounded-xl cursor-pointer hover:bg-slate-100 transition"
-              onclick="GroupDetailSection.addMemberById(${f.UserID}, '${(f.HoTen || "").replace(/'/g, "\\'")}')">
+              onclick="GroupDetailSection.addMemberById(${f.MaNguoiDung}, '${(f.HoTen || "").replace(/'/g, "\\'")}')">
               <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                 style="background:var(--accent,#2563EB)">${initial}</div>
               <div class="flex-1 min-w-0">
@@ -137,22 +137,44 @@
 
     async addMemberById(userId, name) {
       try {
-        await this._api(`/api/groups/${this.current.GroupID}/members`, {
+        await this._api(`/api/groups/${this.current.MaNhom}/members`, {
           method: "POST",
           body: JSON.stringify({ userId }),
         });
         Utils?.showToast?.(`Đã thêm ${name}!`, "success");
-        await this.load(this.current.GroupID);
+        await this.load(this.current.MaNhom);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
+    },
+
+    async addByEmail() {
+      const input = document.getElementById("add-member-email");
+      const result = document.getElementById("add-member-email-result");
+      if (!input) return;
+      const email = input.value.trim();
+      if (!email) { input.focus(); return; }
+
+      if (result) result.innerHTML = `<p class="text-xs text-slate-400 py-1">Đang thêm...</p>`;
+      try {
+        const res = await this._api(`/api/groups/${this.current.MaNhom}/members`, {
+          method: "POST",
+          body: JSON.stringify({ email }),
+        });
+        Utils?.showToast?.(res.message || "Đã thêm!", "success");
+        input.value = "";
+        if (result) result.innerHTML = "";
+        await this.load(this.current.MaNhom);
+      } catch (err) {
+        if (result) result.innerHTML = `<p class="text-xs text-red-500 py-1">${err.message}</p>`;
+      }
     },
 
     async removeMember(userId, name) {
       const ok = await Utils?.confirmDanger?.(`Xoá "${name}" khỏi nhóm?`, "Xoá thành viên");
       if (!ok) return;
       try {
-        await this._api(`/api/groups/${this.current.GroupID}/members/${userId}`, { method: "DELETE" });
+        await this._api(`/api/groups/${this.current.MaNhom}/members/${userId}`, { method: "DELETE" });
         Utils?.showToast?.("Đã xoá thành viên", "info");
-        await this.load(this.current.GroupID);
+        await this.load(this.current.MaNhom);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
@@ -173,7 +195,7 @@
         await this._api("/api/group-tasks", {
           method: "POST",
           body: JSON.stringify({
-            groupId: this.current.GroupID,
+            groupId: this.current.MaNhom,
             tieuDe: title,
             moTa: desc || undefined,
             assignedTo: parseInt(assignedTo, 10),
@@ -183,14 +205,14 @@
         });
         this.hideAddTask();
         Utils?.showToast?.("Đã tạo công việc!", "success");
-        await this.load(this.current.GroupID);
+        await this.load(this.current.MaNhom);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
     _getFilteredTasks() {
       return this.tasks.filter((t) => {
         if (this._statusFilter !== "all" && t.TrangThai !== this._statusFilter) return false;
-        if (this._assigneeFilter !== "all" && String(t.AssignedTo) !== String(this._assigneeFilter)) return false;
+        if (this._assigneeFilter !== "all" && String(t.NguoiNhan) !== String(this._assigneeFilter)) return false;
         return true;
       });
     },
@@ -211,18 +233,18 @@
           method: "PUT",
           body: JSON.stringify({ trangThai: newStatus }),
         });
-        const task = this.tasks.find((t) => t.GroupTaskID === taskId);
+        const task = this.tasks.find((t) => t.MaCongViecNhom === taskId);
         if (task) {
           task.TrangThai = newStatus;
           this._render();
         } else {
-          await this.load(this.current.GroupID);
+          await this.load(this.current.MaNhom);
         }
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
     showEditTask(taskId) {
-      const t = this.tasks.find((x) => x.GroupTaskID === taskId);
+      const t = this.tasks.find((x) => x.MaCongViecNhom === taskId);
       if (!t) return;
       const form = document.getElementById("edit-task-form");
       if (form) form.remove();
@@ -231,10 +253,10 @@
       if (!card) return;
 
       const members = (this.current.members || []).map((m) => ({
-        UserID: m.Users?.UserID || m.UserID,
-        HoTen: m.Users?.HoTen || m.HoTen || "",
+        MaNguoiDung: m.NguoiDung?.MaNguoiDung || m.MaNguoiDung,
+        HoTen: m.NguoiDung?.HoTen || m.HoTen || "",
       }));
-      const memberOpts = members.map((m) => `<option value="${m.UserID}" ${m.UserID === t.AssignedTo ? "selected" : ""}>${m.HoTen}</option>`).join("");
+      const memberOpts = members.map((m) => `<option value="${m.MaNguoiDung}" ${m.MaNguoiDung === t.NguoiNhan ? "selected" : ""}>${m.HoTen}</option>`).join("");
       const deadlineVal = t.HanChot ? t.HanChot.slice(0, 10) : "";
 
       card.insertAdjacentHTML("afterend", `
@@ -272,7 +294,7 @@
           }),
         });
         Utils?.showToast?.("Đã cập nhật!", "success");
-        await this.load(this.current.GroupID);
+        await this.load(this.current.MaNhom);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
 
@@ -282,7 +304,7 @@
       try {
         await this._api(`/api/group-tasks/${taskId}`, { method: "DELETE" });
         Utils?.showToast?.("Đã xoá công việc", "info");
-        await this.load(this.current.GroupID);
+        await this.load(this.current.MaNhom);
       } catch (err) { Utils?.showToast?.(err.message, "error"); }
     },
   };

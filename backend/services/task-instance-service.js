@@ -1,6 +1,6 @@
 /**
  * task-instance-service.js
- * Pure business logic for task_instances table — no req/res.
+ * Pure business logic for LichCongViec table (was task_instances) — no req/res.
  * Used by task-instance-controller.js.
  */
 
@@ -64,15 +64,15 @@ function buildEventShape(instance, task) {
     : "#60A5FA";
 
   return {
-    id: instance.id,
-    task_id: instance.task_id || null,
-    title: instance.title || task?.TieuDe || "Untitled",
-    start: instance.start_at,
-    end: instance.end_at,
-    start_at: instance.start_at,
-    end_at: instance.end_at,
-    status: instance.status,
-    is_ai_suggested: instance.is_ai_suggested,
+    id: instance.MaLich,
+    task_id: instance.MaCongViec || null,
+    title: instance.TieuDe || task?.TieuDe || "Untitled",
+    start: instance.GioBatDau,
+    end: instance.GioKetThuc,
+    start_at: instance.GioBatDau,
+    end_at: instance.GioKetThuc,
+    status: instance.TrangThai,
+    is_ai_suggested: instance.AI_DeXuat,
     is_fixed: task?.CoThoiGianCoDinh || false,
     priority: task?.MucDoUuTien || null,
     category: task?.MaLoai || null,
@@ -80,16 +80,16 @@ function buildEventShape(instance, task) {
     backgroundColor: priorityColor,
     borderColor: priorityColor,
     textColor: "#FFFFFF",
-    note: instance.note || "",
-    created_at: instance.created_at,
-    updated_at: instance.updated_at,
+    note: instance.GhiChu || "",
+    created_at: instance.NgayTao,
+    updated_at: instance.NgayCapNhat,
     extendedProps: {
-      instanceId: instance.id,
-      taskId: instance.task_id || null,
-      note: instance.note || "",
-      completed: instance.status === "completed",
-      cancelled: instance.status === "cancelled",
-      aiSuggested: instance.is_ai_suggested,
+      instanceId: instance.MaLich,
+      taskId: instance.MaCongViec || null,
+      note: instance.GhiChu || "",
+      completed: instance.TrangThai === "completed",
+      cancelled: instance.TrangThai === "cancelled",
+      aiSuggested: instance.AI_DeXuat,
       priority: task?.MucDoUuTien || null,
       description: task?.MoTa || "",
       isFixed: task?.CoThoiGianCoDinh || false,
@@ -136,34 +136,34 @@ async function createInstance(userId, body) {
       .from("CongViec")
       .select("MaCongViec, TieuDe, MoTa, MucDoUuTien, MaLoai, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LoaiLuong, CauHinhCa")
       .eq("MaCongViec", parsedTaskId)
-      .eq("UserID", numericUserId)
+      .eq("MaNguoiDung", numericUserId)
       .single();
 
     if (taskErr || !t) {
       // Diagnostic log for debugging ownership mismatches
       const { data: anyTask } = await supabase
         .from("CongViec")
-        .select("MaCongViec, UserID")
+        .select("MaCongViec, MaNguoiDung")
         .eq("MaCongViec", parsedTaskId)
         .single();
       console.error("[instances] Task lookup failed:", { parsedTaskId, userId, numericUserId, taskErr });
-      console.error("[instances] Task without UserID filter:", anyTask);
+      console.error("[instances] Task without MaNguoiDung filter:", anyTask);
       throw { status: 404, message: "Task not found or not owned by user" };
     }
     taskRow = t;
   }
 
   let { data: instance, error: insertErr } = await supabase
-    .from("task_instances")
+    .from("LichCongViec")
     .insert({
-      task_id: parsedTaskId,
-      user_id: numericUserId,
-      start_at: parsedStart,
-      end_at: parsedEnd,
-      title: title || null,
-      note: note || null,
-      status: "scheduled",
-      is_ai_suggested: is_ai_suggested === true,
+      MaCongViec: parsedTaskId,
+      MaNguoiDung: numericUserId,
+      GioBatDau: parsedStart,
+      GioKetThuc: parsedEnd,
+      TieuDe: title || null,
+      GhiChu: note || null,
+      TrangThai: "scheduled",
+      AI_DeXuat: is_ai_suggested === true,
     })
     .select()
     .single();
@@ -173,7 +173,7 @@ async function createInstance(userId, body) {
       warnInstancesTableMissing();
       throw { status: 503, migration: true, message: "Feature not available — migration pending. Run migrations/001_add_task_instances.sql" };
     }
-    console.error("Error creating task_instance:", insertErr);
+    console.error("Error creating LichCongViec:", insertErr);
     throw { status: 500, message: "Failed to create instance", devDetail: insertErr.message };
   }
 
@@ -181,11 +181,11 @@ async function createInstance(userId, body) {
   if (taskRow?.LoaiLuong === "part_time" && Array.isArray(taskRow.CauHinhCa)) {
     const shiftName = matchShift(parsedStart, taskRow.CauHinhCa);
     if (shiftName) {
-      const meta = { ...(instance.meta || {}), shift_name: shiftName };
+      const meta = { ...(instance.DuLieuPhu || {}), shift_name: shiftName };
       const { data: updated } = await supabase
-        .from("task_instances")
-        .update({ meta, updated_at: new Date().toISOString() })
-        .eq("id", instance.id)
+        .from("LichCongViec")
+        .update({ DuLieuPhu: meta, NgayCapNhat: new Date().toISOString() })
+        .eq("MaLich", instance.MaLich)
         .select()
         .single();
       if (updated) instance = updated;
@@ -203,18 +203,18 @@ async function listInstances(userId, query) {
   const { task_id, start, end, status } = query || {};
 
   let dbQuery = supabase
-    .from("task_instances")
+    .from("LichCongViec")
     .select("*")
-    .eq("user_id", userId)
-    .order("start_at", { ascending: true });
+    .eq("MaNguoiDung", userId)
+    .order("GioBatDau", { ascending: true });
 
   if (task_id) {
     const tid = parseInt(task_id, 10);
-    if (!isNaN(tid) && tid > 0) dbQuery = dbQuery.eq("task_id", tid);
+    if (!isNaN(tid) && tid > 0) dbQuery = dbQuery.eq("MaCongViec", tid);
   }
-  if (start) dbQuery = dbQuery.gte("start_at", new Date(start).toISOString());
-  if (end)   dbQuery = dbQuery.lte("start_at", new Date(end).toISOString());
-  if (status && VALID_STATUSES.has(status)) dbQuery = dbQuery.eq("status", status);
+  if (start) dbQuery = dbQuery.gte("GioBatDau", new Date(start).toISOString());
+  if (end)   dbQuery = dbQuery.lte("GioBatDau", new Date(end).toISOString());
+  if (status && VALID_STATUSES.has(status)) dbQuery = dbQuery.eq("TrangThai", status);
 
   const { data: instances, error } = await dbQuery;
 
@@ -223,11 +223,11 @@ async function listInstances(userId, query) {
       warnInstancesTableMissing();
       return { data: [], _fallback: "lichTrinh" };
     }
-    console.error("Error fetching task_instances:", error);
+    console.error("Error fetching LichCongViec:", error);
     throw { status: 500, message: "Failed to load instances" };
   }
 
-  const taskIds = [...new Set((instances || []).map((i) => i.task_id).filter(Boolean))];
+  const taskIds = [...new Set((instances || []).map((i) => i.MaCongViec).filter(Boolean))];
   let taskMap = {};
 
   if (taskIds.length > 0) {
@@ -235,30 +235,30 @@ async function listInstances(userId, query) {
       .from("CongViec")
       .select("MaCongViec, TieuDe, MoTa, MucDoUuTien, MaLoai, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh")
       .in("MaCongViec", taskIds)
-      .eq("UserID", userId);
+      .eq("MaNguoiDung", userId);
 
     (tasks || []).forEach((t) => { taskMap[t.MaCongViec] = t; });
   }
 
   const events = (instances || []).map((inst) =>
-    buildEventShape(inst, inst.task_id ? taskMap[inst.task_id] : null)
+    buildEventShape(inst, inst.MaCongViec ? taskMap[inst.MaCongViec] : null)
   );
 
   return { data: events };
 }
 
 /**
- * Update an instance's mutable fields (start_at, end_at, status, note, title).
+ * Update an instance's mutable fields (GioBatDau, GioKetThuc, TrangThai, GhiChu, TieuDe).
  * Never touches the parent CongViec row.
  */
 async function updateInstance(instanceId, userId, body) {
   const { start_at, end_at, status, note, title } = body;
 
   const { data: existing, error: fetchErr } = await supabase
-    .from("task_instances")
-    .select("id, start_at, end_at, status, task_id, meta")
-    .eq("id", instanceId)
-    .eq("user_id", userId)
+    .from("LichCongViec")
+    .select("MaLich, GioBatDau, GioKetThuc, TrangThai, MaCongViec, DuLieuPhu")
+    .eq("MaLich", instanceId)
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (fetchErr && isInstancesTableMissing(fetchErr)) {
@@ -270,22 +270,22 @@ async function updateInstance(instanceId, userId, body) {
     throw { status: 404, message: "Instance not found" };
   }
 
-  const updateData = { updated_at: new Date().toISOString() };
+  const updateData = { NgayCapNhat: new Date().toISOString() };
 
   if (start_at !== undefined) {
     const parsed = parseTimestamp(start_at);
     if (!parsed) throw { status: 400, message: "Invalid start_at" };
-    updateData.start_at = parsed;
+    updateData.GioBatDau = parsed;
   }
 
   if (end_at !== undefined) {
     const parsed = parseTimestamp(end_at);
     if (!parsed) throw { status: 400, message: "Invalid end_at" };
-    updateData.end_at = parsed;
+    updateData.GioKetThuc = parsed;
   }
 
-  const finalStart = updateData.start_at || existing.start_at;
-  const finalEnd   = updateData.end_at   || existing.end_at;
+  const finalStart = updateData.GioBatDau || existing.GioBatDau;
+  const finalEnd   = updateData.GioKetThuc || existing.GioKetThuc;
   if (new Date(finalEnd) <= new Date(finalStart)) {
     throw { status: 400, message: "end_at must be after start_at" };
   }
@@ -294,44 +294,44 @@ async function updateInstance(instanceId, userId, body) {
     if (!VALID_STATUSES.has(status)) {
       throw { status: 400, message: `status must be one of: ${[...VALID_STATUSES].join(", ")}` };
     }
-    updateData.status = status;
+    updateData.TrangThai = status;
   }
 
-  if (note !== undefined) updateData.note = note;
-  if (title !== undefined) updateData.title = title;
+  if (note !== undefined) updateData.GhiChu = note;
+  if (title !== undefined) updateData.TieuDe = title;
 
   let { data: updated, error: updateErr } = await supabase
-    .from("task_instances")
+    .from("LichCongViec")
     .update(updateData)
-    .eq("id", instanceId)
-    .eq("user_id", userId)
+    .eq("MaLich", instanceId)
+    .eq("MaNguoiDung", userId)
     .select()
     .single();
 
   if (updateErr) {
-    console.error("Error updating task_instance:", updateErr);
+    console.error("Error updating LichCongViec:", updateErr);
     throw { status: 500, message: "Failed to update instance" };
   }
 
-  // Shift re-match when start_at changed and parent task is part_time
-  if (updateData.start_at && updated?.task_id) {
+  // Shift re-match when GioBatDau changed and parent task is part_time
+  if (updateData.GioBatDau && updated?.MaCongViec) {
     const { data: parent } = await supabase
       .from("CongViec")
       .select("LoaiLuong, CauHinhCa")
-      .eq("MaCongViec", updated.task_id)
-      .eq("UserID", userId)
+      .eq("MaCongViec", updated.MaCongViec)
+      .eq("MaNguoiDung", userId)
       .single();
     if (parent?.LoaiLuong === "part_time" && Array.isArray(parent.CauHinhCa)) {
-      const shiftName = matchShift(updated.start_at, parent.CauHinhCa);
-      const baseMeta = updated.meta || {};
+      const shiftName = matchShift(updated.GioBatDau, parent.CauHinhCa);
+      const baseMeta = updated.DuLieuPhu || {};
       const nextMeta = shiftName
         ? { ...baseMeta, shift_name: shiftName }
         : (() => { const { shift_name, ...rest } = baseMeta; return rest; })();
       const { data: reupdated } = await supabase
-        .from("task_instances")
-        .update({ meta: nextMeta, updated_at: new Date().toISOString() })
-        .eq("id", instanceId)
-        .eq("user_id", userId)
+        .from("LichCongViec")
+        .update({ DuLieuPhu: nextMeta, NgayCapNhat: new Date().toISOString() })
+        .eq("MaLich", instanceId)
+        .eq("MaNguoiDung", userId)
         .select()
         .single();
       if (reupdated) updated = reupdated;
@@ -344,10 +344,10 @@ async function updateInstance(instanceId, userId, body) {
 /** Delete a single task instance. Throws 404 if not found or not owned. */
 async function deleteInstance(instanceId, userId) {
   const { data: existing, error: fetchErr } = await supabase
-    .from("task_instances")
-    .select("id")
-    .eq("id", instanceId)
-    .eq("user_id", userId)
+    .from("LichCongViec")
+    .select("MaLich")
+    .eq("MaLich", instanceId)
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (fetchErr && isInstancesTableMissing(fetchErr)) {
@@ -360,13 +360,13 @@ async function deleteInstance(instanceId, userId) {
   }
 
   const { error: deleteErr } = await supabase
-    .from("task_instances")
+    .from("LichCongViec")
     .delete()
-    .eq("id", instanceId)
-    .eq("user_id", userId);
+    .eq("MaLich", instanceId)
+    .eq("MaNguoiDung", userId);
 
   if (deleteErr) {
-    console.error("Error deleting task_instance:", deleteErr);
+    console.error("Error deleting LichCongViec:", deleteErr);
     throw { status: 500, message: "Failed to delete instance" };
   }
 }

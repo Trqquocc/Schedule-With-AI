@@ -14,6 +14,9 @@
     initialized: false,
     eventListeners: [],
     _tasksCache: [],
+    _lastLoadTime: 0,
+    _loadingPromise: null,
+    _CACHE_TTL: 15000,
     _sortCtrl: null,
     _sortState: { criterion: null, direction: "asc" },
     showSuccessOverlayTimeout: null,
@@ -71,24 +74,38 @@
     // Data loading
     // ----------------------------------------------------------------
 
-    async loadTasks() {
-      try {
-        if (typeof Utils === "undefined") {
-          throw new Error("Utils module not available");
-        }
-        const result = await Utils.makeRequest("/api/tasks", "GET");
-        const tasks = result.data || [];
-        this._tasksCache = tasks;
-        this.renderTasks(tasks);
-        this.mountSortControls();
-      } catch (err) {
-        console.error("Error loading tasks:", err);
-        this.showErrorState();
+    async loadTasks(force = false) {
+      if (!force && this._tasksCache.length > 0 && Date.now() - this._lastLoadTime < this._CACHE_TTL) {
+        this.renderTasks(this._tasksCache);
+        return;
       }
+
+      if (this._loadingPromise) return this._loadingPromise;
+
+      this._loadingPromise = (async () => {
+        try {
+          if (typeof Utils === "undefined") {
+            throw new Error("Utils module not available");
+          }
+          const result = await Utils.makeRequest("/api/tasks", "GET");
+          const tasks = result.data || [];
+          this._tasksCache = tasks;
+          this._lastLoadTime = Date.now();
+          this.renderTasks(tasks);
+          this.mountSortControls();
+        } catch (err) {
+          console.error("Error loading tasks:", err);
+          this.showErrorState();
+        } finally {
+          this._loadingPromise = null;
+        }
+      })();
+
+      return this._loadingPromise;
     },
 
     reload() {
-      this.loadTasks();
+      this.loadTasks(true);
     },
 
     // ----------------------------------------------------------------
@@ -235,7 +252,7 @@
 
     checkAndReload() {
       const ws = document.getElementById("work-section");
-      if (ws && ws.classList.contains("active")) this.loadTasks();
+      if (ws && ws.classList.contains("active")) this.loadTasks(true);
     },
   };
 
@@ -243,37 +260,14 @@
   // Document-level event listeners
   // ------------------------------------------------------------------
 
-  document.addEventListener("work-tab-activated", () => {
-    if (window.WorkManager) window.WorkManager.loadTasks();
-  });
-
-  document.addEventListener("section-changed", (e) => {
-    if (e.detail && e.detail.section === "work") {
-      setTimeout(() => {
-        if (window.WorkManager) window.WorkManager.loadTasks();
-      }, 300);
-    }
-  });
-
   document.addEventListener("taskCreated", () => {
-    setTimeout(() => { if (window.WorkManager) window.WorkManager.loadTasks(); }, 500);
+    if (window.WorkManager) window.WorkManager.loadTasks(true);
   });
   document.addEventListener("taskUpdated", () => {
-    setTimeout(() => { if (window.WorkManager) window.WorkManager.loadTasks(); }, 500);
+    if (window.WorkManager) window.WorkManager.loadTasks(true);
   });
   document.addEventListener("taskDeleted", () => {
-    setTimeout(() => { if (window.WorkManager) window.WorkManager.loadTasks(); }, 500);
-  });
-
-  document.addEventListener("DOMContentLoaded", () => {
-    setTimeout(() => {
-      const ws = document.getElementById("work-section");
-      if (!ws || !ws.classList.contains("active")) return;
-      const WM = window.WorkManager;
-      if (!WM) return;
-      if (!WM.initialized) WM.init();
-      else WM.loadTasks();
-    }, 1000);
+    if (window.WorkManager) window.WorkManager.loadTasks(true);
   });
 
   console.log("Work Manager Core v1.0 ready");

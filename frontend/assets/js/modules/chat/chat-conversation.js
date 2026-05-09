@@ -43,16 +43,25 @@
         document.getElementById("chat-empty-state")?.classList.remove("hidden");
       });
 
-      // Close message menus on click outside
+      // Header menu toggle
+      document.getElementById("chat-header-menu-btn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.getElementById("chat-header-menu")?.classList.toggle("hidden");
+      });
+
+      // Close all menus on click outside
       document.addEventListener("click", (e) => {
         if (!e.target.closest(".msg-menu-wrap")) this._closeMsgMenus();
+        if (!e.target.closest("#chat-header-menu-btn")) {
+          document.getElementById("chat-header-menu")?.classList.add("hidden");
+        }
       });
 
       // Wire realtime → append incoming messages
       ChatRealtimeClient.onMessage((msg) => this.onNewMessage(msg));
     },
 
-    async loadConversation(conversationId, displayName, subtitle) {
+    async loadConversation(conversationId, displayName, subtitle, avatarUrl) {
       this._convId = conversationId;
 
       // Show active panel
@@ -62,8 +71,14 @@
       // Update header
       document.getElementById("chat-header-name").textContent = displayName || "Cuộc trò chuyện";
       document.getElementById("chat-header-sub").textContent = subtitle || "";
-      document.getElementById("chat-header-avatar").textContent =
-        (displayName || "?")[0].toUpperCase();
+      const avEl = document.getElementById("chat-header-avatar");
+      if (avEl) {
+        if (avatarUrl) {
+          avEl.innerHTML = `<img src="${avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.remove();this.parentElement.textContent='${(displayName || "?")[0].toUpperCase()}'">`;
+        } else {
+          avEl.textContent = (displayName || "?")[0].toUpperCase();
+        }
+      }
 
       // Loading placeholder
       const inner = document.getElementById("messages-inner");
@@ -86,7 +101,7 @@
       if (before) url += `&before=${encodeURIComponent(before)}`;
       const json = await this._api(url);
       const msgs = json.data || [];
-      ChatMessageRenderer.renderAll(msgs);
+      ChatMessageRenderer.renderAll(msgs, conversationId);
       this._scrollToBottom();
     },
 
@@ -110,8 +125,8 @@
           body: JSON.stringify({ conversationId: this._convId, noiDung: text }),
         });
         const realMsg = json.data || {
-          MessageID: tempId, NoiDung: text,
-          SenderID: ChatMessageRenderer.currentUserId,
+          MaTinNhan: tempId, NoiDung: text,
+          NguoiGui: ChatMessageRenderer.currentUserId,
           NgayGui: new Date().toISOString(),
         };
         document.querySelector(`[data-msg-id="${tempId}"]`)?.outerHTML === undefined
@@ -132,9 +147,8 @@
     },
 
     onNewMessage(msg) {
-      if (!msg || String(msg.ConversationID) !== String(this._convId)) return;
-      // Skip own messages already shown via optimistic UI
-      if (String(msg.SenderID) === String(ChatMessageRenderer.currentUserId)) return;
+      if (!msg || String(msg.MaHoiThoai) !== String(this._convId)) return;
+      if (String(msg.NguoiGui) === String(ChatMessageRenderer.currentUserId)) return;
 
       const inner = document.getElementById("messages-inner");
       if (!inner) return;
@@ -142,6 +156,7 @@
       inner.insertAdjacentHTML("beforeend", ChatMessageRenderer.buildBubble(msg));
       this._scrollToBottom();
       window.ChatListSection?.refresh();
+      window.RealtimeBadgeWatcher?.playNotificationSound();
     },
 
     toggleMsgMenu(id) {
@@ -204,6 +219,17 @@
       } catch (e) {
         Utils?.showToast?.("Không thể thu hồi: " + e.message, "error");
       }
+    },
+
+    async clearChat() {
+      document.getElementById("chat-header-menu")?.classList.add("hidden");
+      if (!this._convId) return;
+      const ok = await Utils?.confirmDanger?.("Xoá toàn bộ tin nhắn trong đoạn chat này? Chỉ xoá phía bạn, người khác vẫn thấy bình thường.", "Xoá đoạn chat");
+      if (!ok) return;
+      localStorage.setItem(ChatMessageRenderer.getClearKey(this._convId), new Date().toISOString());
+      const inner = document.getElementById("messages-inner");
+      if (inner) inner.innerHTML = `<p class="text-xs text-center text-slate-400 py-8">Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>`;
+      Utils?.showToast?.("Đã xoá đoạn chat", "info");
     },
 
     _scrollToBottom() {

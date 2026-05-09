@@ -24,7 +24,7 @@ router.post("/", async (req, res) => {
 // GET / — list my groups
 router.get("/", async (req, res) => {
   try {
-    const data = await svc.listMyGroups(req.userId);
+    const data = await svc.listMyNhomLamViec(req.userId);
     return res.json({ success: true, data });
   } catch (err) {
     return handleErr(res, err);
@@ -35,7 +35,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const groupId = parseInt(req.params.id, 10);
-    if (!groupId) return res.status(400).json({ success: false, message: "GroupID không hợp lệ" });
+    if (!groupId) return res.status(400).json({ success: false, message: "MaNhom không hợp lệ" });
     const data = await svc.getGroupDetail(groupId, req.userId);
     return res.json({ success: true, data });
   } catch (err) {
@@ -47,7 +47,7 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const groupId = parseInt(req.params.id, 10);
-    if (!groupId) return res.status(400).json({ success: false, message: "GroupID không hợp lệ" });
+    if (!groupId) return res.status(400).json({ success: false, message: "MaNhom không hợp lệ" });
     const data = await svc.updateGroup(groupId, req.userId, req.body);
     return res.json({ success: true, data });
   } catch (err) {
@@ -59,7 +59,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const groupId = parseInt(req.params.id, 10);
-    if (!groupId) return res.status(400).json({ success: false, message: "GroupID không hợp lệ" });
+    if (!groupId) return res.status(400).json({ success: false, message: "MaNhom không hợp lệ" });
     await svc.deleteGroup(groupId, req.userId);
     return res.json({ success: true, message: "Đã xóa nhóm" });
   } catch (err) {
@@ -67,14 +67,22 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// POST /:id/members — add member
+// POST /:id/members — add member (by userId or email)
 router.post("/:id/members", async (req, res) => {
   try {
     const groupId = parseInt(req.params.id, 10);
-    const targetUserId = parseInt(req.body.userId, 10);
-    if (!groupId || !targetUserId) {
-      return res.status(400).json({ success: false, message: "groupId và userId là bắt buộc" });
+    if (!groupId) return res.status(400).json({ success: false, message: "groupId không hợp lệ" });
+
+    const { userId, email } = req.body;
+
+    if (email) {
+      const user = await memberSvc.addMemberByEmail(groupId, req.userId, email);
+      return res.status(201).json({ success: true, message: `Đã thêm ${user.HoTen || user.Email}` });
     }
+
+    const targetUserId = parseInt(userId, 10);
+    if (!targetUserId) return res.status(400).json({ success: false, message: "userId hoặc email là bắt buộc" });
+
     await memberSvc.addMember(groupId, req.userId, targetUserId);
     return res.status(201).json({ success: true, message: "Đã thêm thành viên" });
   } catch (err) {

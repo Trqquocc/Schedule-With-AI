@@ -18,9 +18,9 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const { data: user, error } = await supabase
-      .from("Users")
-      .select("UserID, Username")
-      .eq("UserID", decoded.userId)
+      .from("NguoiDung")
+      .select("MaNguoiDung, Username")
+      .eq("MaNguoiDung", decoded.userId)
       .single();
 
     if (error || !user) {
@@ -31,7 +31,7 @@ const authenticateToken = async (req, res, next) => {
     }
 
     req.user = {
-      UserID: decoded.userId,
+      MaNguoiDung: decoded.userId,
       username: decoded.username,
     };
     req.userId = decoded.userId;

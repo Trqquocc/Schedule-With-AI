@@ -5,21 +5,32 @@
   window.ChatMessageRenderer = {
     currentUserId: null,
     _nameCache: {},
+    _avatarCache: {},
+
+    _buildAvatar(name, avatarUrl) {
+      const ini = (name || "?")[0].toUpperCase();
+      const title = ChatUtils.esc(name || "");
+      if (avatarUrl) {
+        return `<img src="${avatarUrl}" class="msg-avatar" title="${title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="msg-avatar msg-avatar-ini" style="display:none" title="${title}">${ini}</div>`;
+      }
+      return `<div class="msg-avatar msg-avatar-ini" title="${title}">${ini}</div>`;
+    },
 
     buildBubble(msg) {
-      if (msg.senderName && msg.SenderID) {
-        this._nameCache[String(msg.SenderID)] = msg.senderName;
-      }
-      const rn = msg.senderName || this._nameCache[String(msg.SenderID)] || null;
-      const me = String(msg.SenderID) === String(this.currentUserId);
+      const uid = String(msg.NguoiGui);
+      if (msg.senderName) this._nameCache[uid] = msg.senderName;
+      if (msg.senderAvatar) this._avatarCache[uid] = msg.senderAvatar;
+
+      const rn = msg.senderName || this._nameCache[uid] || null;
+      const avatarUrl = msg.senderAvatar || this._avatarCache[uid] || null;
+      const me = uid === String(this.currentUserId);
       const del = msg.DaXoa;
       const ts = ChatUtils.relativeTimeLong(msg.NgayGui ? new Date(msg.NgayGui) : new Date());
-      const ini = (rn || "?")[0].toUpperCase();
 
-      const av = me ? "" : `<div class="msg-avatar flex items-center justify-center" title="${ChatUtils.esc(rn || "")}">${ini}</div>`;
+      const av = this._buildAvatar(rn, avatarUrl);
 
       const menu = me && !del
-        ? `<div class="msg-menu-wrap"><button class="msg-menu-btn" onclick="ChatConversation.toggleMsgMenu(${msg.MessageID})"><i class="fas fa-ellipsis-v"></i></button><div class="msg-menu hidden" id="msg-menu-${msg.MessageID}"><button onclick="ChatConversation.startEdit(${msg.MessageID})"><i class="fas fa-pen"></i> Chỉnh sửa</button><button onclick="ChatConversation.recallMessage(${msg.MessageID})"><i class="fas fa-undo"></i> Thu hồi</button></div></div>`
+        ? `<div class="msg-menu-wrap"><button class="msg-menu-btn" onclick="ChatConversation.toggleMsgMenu(${msg.MaTinNhan})"><i class="fas fa-ellipsis-v"></i></button><div class="msg-menu hidden" id="msg-menu-${msg.MaTinNhan}"><button onclick="ChatConversation.startEdit(${msg.MaTinNhan})"><i class="fas fa-pen"></i> Chỉnh sửa</button><button onclick="ChatConversation.recallMessage(${msg.MaTinNhan})"><i class="fas fa-undo"></i> Thu hồi</button></div></div>`
         : "";
 
       const body = del
@@ -31,14 +42,22 @@
       const tAlign = me ? "text-right" : "text-left";
       const menuAlign = me ? "flex-row-reverse" : "flex-row";
 
-      return `<div class="flex ${dir} items-end gap-1.5" data-msg-id="${msg.MessageID}">${av}<div style="max-width:75%"><div class="flex ${menuAlign} items-center gap-1 msg-row-hover"><div class="${bClass}${del ? " msg-bubble-del" : ""}">${body}</div>${menu}</div><div class="msg-ts ${tAlign}">${ts}</div></div></div>`;
+      return `<div class="flex ${dir} items-end gap-1.5" data-msg-id="${msg.MaTinNhan}">${av}<div style="max-width:75%"><div class="flex ${menuAlign} items-center gap-1 msg-row-hover"><div class="${bClass}${del ? " msg-bubble-del" : ""}">${body}</div>${menu}</div><div class="msg-ts ${tAlign}">${ts}</div></div></div>`;
     },
 
-    renderAll(messages) {
+    getClearKey(convId) { return `chat_clear_${convId}`; },
+
+    renderAll(messages, conversationId) {
       const inner = document.getElementById("messages-inner");
       if (!inner) return;
 
-      if (!messages.length) {
+      // Filter out messages before "cleared at" timestamp
+      const clearTs = conversationId ? localStorage.getItem(this.getClearKey(conversationId)) : null;
+      const filtered = clearTs
+        ? messages.filter(m => m.NgayGui && new Date(m.NgayGui) > new Date(clearTs))
+        : messages;
+
+      if (!filtered.length) {
         inner.innerHTML = `<p class="text-xs text-center text-slate-400 py-8">Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>`;
         return;
       }
@@ -46,7 +65,7 @@
       let html = "";
       let lastDate = null;
 
-      messages.forEach((msg) => {
+      filtered.forEach((msg) => {
         const date = msg.NgayGui ? new Date(msg.NgayGui) : new Date();
         const dateStr = date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
         if (dateStr !== lastDate) {

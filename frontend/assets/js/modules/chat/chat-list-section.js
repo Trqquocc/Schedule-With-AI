@@ -88,7 +88,7 @@
     },
 
     _convItemHtml(conv) {
-      const id = conv.conversationId || conv.ConversationID;
+      const id = conv.conversationId || conv.MaHoiThoai;
       const name = ChatUtils.esc(conv.displayName || "Người dùng");
       const last = ChatUtils.esc(ChatUtils.truncate(conv.lastMessage || conv.TinNhanCuoi || "Chưa có tin nhắn", 36));
       const timeVal = conv.lastMessageAt || conv.ThoiGianCuoi;
@@ -96,10 +96,13 @@
       const isGroup = (conv.type || conv.LoaiHoiThoai) === "group";
       const unread = conv.isRead === false ? `<div class="ci-unread"></div>` : "";
       const ini = (conv.displayName || "?")[0].toUpperCase();
-      const avBg = isGroup
+      const hasAvatar = !isGroup && conv.avatarUrl;
+      const avBg = hasAvatar ? "" : (isGroup
         ? "background:linear-gradient(135deg,#2563EB,#1d4ed8)"
-        : "background:var(--accent,#2563EB)";
-      const avContent = isGroup ? `<i class="fas fa-users" style="font-size:14px"></i>` : ini;
+        : "background:var(--accent,#2563EB)");
+      const avContent = hasAvatar
+        ? `<img src="${conv.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.outerHTML='${ini}'">`
+        : (isGroup ? `<i class="fas fa-users" style="font-size:14px"></i>` : ini);
 
       const bdg = window.BadgeDisplay?.inline(conv.equippedBadge, 11) || "";
       return `<div class="ci-wrap flex items-center gap-2.5 px-3.5 py-2.5" data-conv-id="${id}" onclick="ChatListSection.selectConversation(${id})"><div class="ci-avatar flex items-center justify-center" style="${avBg}">${avContent}</div><div class="flex-1 min-w-0"><div class="ci-name">${name}${bdg}</div><div class="ci-last">${last}</div></div><div class="flex flex-col items-end gap-1 flex-shrink-0"><span class="ci-time">${time}</span>${unread}</div></div>`;
@@ -117,15 +120,16 @@
         document.getElementById("chat-sidebar")?.classList.add("hidden-mobile");
       }
 
-      const conv = this._conversations.find((c) => (c.conversationId || c.ConversationID) === id);
+      const conv = this._conversations.find((c) => (c.conversationId || c.MaHoiThoai) === id);
       const name = conv?.displayName || "Cuộc trò chuyện";
       const sub = (conv?.type || conv?.LoaiHoiThoai) === "group" ? "Nhóm" : "";
+      const avatarUrl = conv?.avatarUrl || null;
 
       // Mark read (fire-and-forget) and clear unread dot
       this._api(`/api/conversations/${id}/read`, { method: "PUT" }).catch(() => {});
       if (conv) { conv.isRead = true; this._renderConversations(); }
 
-      await ChatConversation.loadConversation(id, name, sub);
+      await ChatConversation.loadConversation(id, name, sub, avatarUrl);
     },
 
     async startDirectChat(userId) {
@@ -134,8 +138,8 @@
         const result = json.data;
         if (!result) throw new Error("Không tìm thấy cuộc trò chuyện");
         const conv = result.conversation || result;
-        const convId = conv.ConversationID || conv.conversationId;
-        if (!this._conversations.find((c) => (c.conversationId || c.ConversationID) === convId)) {
+        const convId = conv.MaHoiThoai || conv.conversationId;
+        if (!this._conversations.find((c) => (c.conversationId || c.MaHoiThoai) === convId)) {
           await this.loadConversations();
         }
         this.selectConversation(convId);
@@ -177,7 +181,7 @@
         return;
       }
       results.innerHTML = friends.map((f) => {
-        const uid = f.NguoiDungID || f.UserID;
+        const uid = f.NguoiDungID || f.MaNguoiDung;
         const ini = (f.HoTen || f.Email || "?")[0].toUpperCase();
         return `<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition" onclick="ChatListSection._pickFriend(${uid})">
           <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:var(--accent,#2563EB)">${ini}</div>

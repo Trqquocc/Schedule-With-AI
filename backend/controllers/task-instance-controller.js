@@ -1,6 +1,6 @@
 /**
  * task-instance-controller.js
- * Handles req/res for task_instances endpoints.
+ * Handles req/res for LichCongViec (task instances) endpoints.
  * Delegates business logic to task-instance-service.js.
  */
 

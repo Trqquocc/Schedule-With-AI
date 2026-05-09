@@ -36,8 +36,8 @@ module.exports = {
 
   async run({ supabase, getBot, logSent, alreadySent }) {
     const { data: users } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TrangThaiKetNoi, ThongBaoCuoiTuan")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TrangThaiKetNoi, ThongBaoCuoiTuan")
       .eq("TrangThaiKetNoi", true)
       .eq("ThongBaoCuoiTuan", true);
 
@@ -48,11 +48,11 @@ module.exports = {
     const bot = getBot();
 
     for (const u of users) {
-      if (await alreadySent(u.UserID, 0, "weekend", 24 * 60)) continue;
+      if (await alreadySent(u.MaNguoiDung, 0, "weekend", 24 * 60)) continue;
 
       const profile = await loadCategoryActivity(
         supabase,
-        u.UserID,
+        u.MaNguoiDung,
         fourteenDaysAgo.toISOString(),
         now.toISOString()
       );
@@ -61,10 +61,10 @@ module.exports = {
 
       const msg = renderMessage(profile, suggestions);
       try {
-        await bot.sendMessageToUser(u.UserID, msg);
-        await logSent(u.UserID, 0, "weekend");
+        await bot.sendMessageToUser(u.MaNguoiDung, msg);
+        await logSent(u.MaNguoiDung, 0, "weekend");
       } catch (err) {
-        console.error(`[weekend-ai] send failed user ${u.UserID}:`, err.message);
+        console.error(`[weekend-ai] send failed user ${u.MaNguoiDung}:`, err.message);
       }
     }
   },
@@ -76,7 +76,7 @@ async function loadCategoryActivity(supabase, userId, startIso, endIso) {
   const { data: rows } = await supabase
     .from("LichTrinh")
     .select("MaCongViec, GioBatDau, GioKetThuc, DaHoanThanh")
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .eq("DaHoanThanh", true)
     .gte("GioBatDau", startIso)
     .lte("GioBatDau", endIso);

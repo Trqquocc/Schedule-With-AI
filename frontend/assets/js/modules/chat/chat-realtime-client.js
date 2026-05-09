@@ -69,8 +69,8 @@
           {
             event: "INSERT",
             schema: "public",
-            table: "Messages",
-            filter: `ConversationID=eq.${conversationId}`,
+            table: "TinNhan",
+            filter: `MaHoiThoai=eq.${conversationId}`,
           },
           (payload) => {
             if (this._callback && payload.new) {

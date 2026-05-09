@@ -67,7 +67,6 @@
     if (window.StatsAdvancedCharts) {
       StatsAdvancedCharts.renderStreak(data.streak || 0);
       StatsAdvancedCharts.renderComparison(data.daily || []);
-      StatsAdvancedCharts.renderHeatmap(new Date().getFullYear());
     }
 
     window.StatsExport?.init?.();

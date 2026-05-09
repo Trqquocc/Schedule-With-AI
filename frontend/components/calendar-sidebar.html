@@ -160,6 +160,15 @@
       const container = document.getElementById("task-list");
       if (!container) return;
 
+      if (!window.Utils?.isLoggedIn()) {
+        container.innerHTML = `
+      <div class="text-center text-gray-500 py-8">
+        <i class="fas fa-lock text-2xl mb-3" style="color:rgba(0,0,0,0.15)"></i>
+        <p class="text-sm" style="color:rgba(0,0,0,0.4)">Đăng nhập để xem công việc</p>
+      </div>`;
+        return;
+      }
+
       mountSortControls();
 
       try {

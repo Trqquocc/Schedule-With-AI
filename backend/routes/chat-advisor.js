@@ -44,10 +44,10 @@ const CONTEXT_WINDOW = 20;  // last N turns sent to Gemini
 
 async function fetchHistory(userId, limit) {
   const { data, error } = await supabase
-    .from("ChatMessages")
-    .select("Id, Role, Content, ContextAttached, CreatedAt")
-    .eq("UserID", userId)
-    .order("CreatedAt", { ascending: false })
+    .from("TinNhanTuVan")
+    .select("MaTinNhan, VaiTro, NoiDung, DinhKemNguCanh, NgayTao")
+    .eq("MaNguoiDung", userId)
+    .order("NgayTao", { ascending: false })
     .limit(limit);
   if (error) throw error;
   return (data || []).reverse();
@@ -55,9 +55,9 @@ async function fetchHistory(userId, limit) {
 
 async function insertMessage(userId, role, content, contextAttached = null) {
   const { data, error } = await supabase
-    .from("ChatMessages")
-    .insert({ UserID: userId, Role: role, Content: content, ContextAttached: contextAttached })
-    .select("Id, CreatedAt")
+    .from("TinNhanTuVan")
+    .insert({ MaNguoiDung: userId, VaiTro: role, NoiDung: content, DinhKemNguCanh: contextAttached })
+    .select("MaTinNhan, NgayTao")
     .single();
   if (error) throw error;
   return data;
@@ -66,8 +66,8 @@ async function insertMessage(userId, role, content, contextAttached = null) {
 function toGeminiHistory(rows) {
   // Gemini expects: [{ role: 'user'|'model', parts: [{text}] }, ...]
   return rows.map((r) => ({
-    role: r.Role === "assistant" ? "model" : "user",
-    parts: [{ text: r.Content }],
+    role: r.VaiTro === "assistant" ? "model" : "user",
+    parts: [{ text: r.NoiDung }],
   }));
 }
 
@@ -75,7 +75,7 @@ function toGeminiHistory(rows) {
 
 router.get("/history", async (req, res) => {
   try {
-    const userId = req.user?.UserID ?? req.userId;
+    const userId = req.user?.MaNguoiDung ?? req.userId;
     const rows = await fetchHistory(userId, HISTORY_LIMIT);
     res.json({ success: true, data: rows });
   } catch (err) {
@@ -86,8 +86,8 @@ router.get("/history", async (req, res) => {
 
 router.delete("/history", async (req, res) => {
   try {
-    const userId = req.user?.UserID ?? req.userId;
-    await supabase.from("ChatMessages").delete().eq("UserID", userId);
+    const userId = req.user?.MaNguoiDung ?? req.userId;
+    await supabase.from("TinNhanTuVan").delete().eq("MaNguoiDung", userId);
     res.json({ success: true });
   } catch (err) {
     console.error("DELETE /chat-advisor/history:", err);
@@ -99,7 +99,7 @@ router.delete("/history", async (req, res) => {
 // Kept deliberately small so it doesn't blow the Gemini context window.
 router.get("/context-snapshot", async (req, res) => {
   try {
-    const userId = req.user?.UserID ?? req.userId;
+    const userId = req.user?.MaNguoiDung ?? req.userId;
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
 
@@ -107,14 +107,14 @@ router.get("/context-snapshot", async (req, res) => {
       supabase
         .from("CongViec")
         .select("TieuDe, MucDoUuTien, ThoiGianUocTinh, LoaiLuong")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .neq("TrangThaiThucHien", 2)
         .order("MucDoUuTien", { ascending: false })
         .limit(10),
       supabase
         .from("LichTrinh")
         .select("TieuDe, GioBatDau, GioKetThuc, DaHoanThanh")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .gte("GioBatDau", weekAgo.toISOString())
         .lte("GioBatDau", now.toISOString())
         .limit(100),
@@ -140,7 +140,7 @@ router.get("/context-snapshot", async (req, res) => {
 // Request: { message: string, attachContext?: object }
 // Events: `data: {"chunk":"..."}` for each chunk, then `data: {"done":true,"messageId":N}`.
 router.post("/stream", async (req, res) => {
-  const userId = req.user?.UserID ?? req.userId;
+  const userId = req.user?.MaNguoiDung ?? req.userId;
   const { message, attachContext } = req.body || {};
 
   if (!model) {
@@ -213,15 +213,15 @@ router.post("/stream", async (req, res) => {
             : finishReason === "RECITATION"
             ? "Gemini chặn vì phản hồi trích dẫn nội dung bản quyền."
             : `Stream bị ngắt: ${streamErr.message}`,
-        messageId: persisted?.Id ?? null,
+        messageId: persisted?.MaTinNhan ?? null,
       });
     } else if (finishReason === "MAX_TOKENS") {
       send({
         error: "Phản hồi bị cắt vì vượt giới hạn độ dài. Hỏi lại ngắn gọn hơn hoặc chia nhỏ câu hỏi.",
-        messageId: persisted?.Id ?? null,
+        messageId: persisted?.MaTinNhan ?? null,
       });
     } else {
-      send({ done: true, messageId: persisted?.Id ?? null });
+      send({ done: true, messageId: persisted?.MaTinNhan ?? null });
     }
     res.end();
   } catch (err) {

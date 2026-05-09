@@ -39,7 +39,7 @@ router.put("/:id", async (req, res) => {
   try {
     const messageId = parseInt(req.params.id);
     if (!messageId || isNaN(messageId)) {
-      return res.status(400).json({ success: false, message: "MessageID không hợp lệ" });
+      return res.status(400).json({ success: false, message: "MaTinNhan không hợp lệ" });
     }
     await svc.editMessage(messageId, req.userId, req.body.noiDung);
     res.json({ success: true, message: "Đã cập nhật tin nhắn" });
@@ -54,7 +54,7 @@ router.delete("/:id", async (req, res) => {
   try {
     const messageId = parseInt(req.params.id);
     if (!messageId || isNaN(messageId)) {
-      return res.status(400).json({ success: false, message: "MessageID không hợp lệ" });
+      return res.status(400).json({ success: false, message: "MaTinNhan không hợp lệ" });
     }
     await svc.deleteMessage(messageId, req.userId);
     res.json({ success: true, message: "Đã xóa tin nhắn" });

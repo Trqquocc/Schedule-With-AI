@@ -164,7 +164,7 @@
       <div class="ft-cal-mount mt-3" data-task-id="${g.task_id}"></div>`;
   }
 
-  function renderGroups(groups) {
+  function renderNhomLamViec(groups) {
     const box = document.getElementById("salary-groups");
     if (!box) return;
     if (!groups || groups.length === 0) {
@@ -211,7 +211,7 @@
         } else {
           _expandedGroups.add(id);
         }
-        renderGroups(_allGroups);
+        renderNhomLamViec(_allGroups);
         // Mount full-time calendar lazily after DOM updates
         if (_expandedGroups.has(id)) {
           const g = _allGroups.find((x) => x.task_id === id);
@@ -282,14 +282,14 @@
     const q = (document.getElementById("filter-search")?.value || "")
       .trim()
       .toLowerCase();
-    if (!q) return renderGroups(_allGroups);
+    if (!q) return renderNhomLamViec(_allGroups);
     const filtered = _allGroups.filter((g) => {
       if ((g.title || "").toLowerCase().includes(q)) return true;
       return (g.entries || []).some((e) =>
         (e.note || "").toLowerCase().includes(q)
       );
     });
-    renderGroups(filtered);
+    renderNhomLamViec(filtered);
   }
 
   // --- Export TXT (Phase 09 spec) ---------------------------------------

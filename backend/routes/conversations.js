@@ -28,7 +28,7 @@ router.get("/direct/:userId", async (req, res) => {
   try {
     const targetUserId = parseInt(req.params.userId);
     if (!targetUserId || isNaN(targetUserId)) {
-      return res.status(400).json({ success: false, message: "UserID không hợp lệ" });
+      return res.status(400).json({ success: false, message: "MaNguoiDung không hợp lệ" });
     }
     if (targetUserId === req.userId) {
       return res.status(400).json({ success: false, message: "Không thể tạo hội thoại với chính mình" });
@@ -46,7 +46,7 @@ router.get("/group/:groupId", async (req, res) => {
   try {
     const groupId = parseInt(req.params.groupId);
     if (!groupId || isNaN(groupId)) {
-      return res.status(400).json({ success: false, message: "GroupID không hợp lệ" });
+      return res.status(400).json({ success: false, message: "MaNhom không hợp lệ" });
     }
     const data = await svc.getGroupConversation(groupId, req.userId);
     res.json({ success: true, data });
@@ -61,7 +61,7 @@ router.put("/:id/read", async (req, res) => {
   try {
     const conversationId = parseInt(req.params.id);
     if (!conversationId || isNaN(conversationId)) {
-      return res.status(400).json({ success: false, message: "ConversationID không hợp lệ" });
+      return res.status(400).json({ success: false, message: "MaHoiThoai không hợp lệ" });
     }
     await svc.markAsRead(conversationId, req.userId);
     res.json({ success: true, message: "Đã đánh dấu đã đọc" });

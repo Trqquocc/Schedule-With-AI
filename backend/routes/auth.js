@@ -22,8 +22,8 @@ router.post("/register", async (req, res) => {
 
     // Kiểm tra trùng
     const { data: existing } = await supabase
-      .from("Users")
-      .select("UserID")
+      .from("NguoiDung")
+      .select("MaNguoiDung")
       .or(`Username.eq.${username},Email.eq.${email}`);
 
     if (existing && existing.length > 0) {
@@ -36,18 +36,16 @@ router.post("/register", async (req, res) => {
     // Tạo user
     const hashed = await bcrypt.hash(password, 12);
     const { data: newUser, error: insertError } = await supabase
-      .from("Users")
+      .from("NguoiDung")
       .insert({
         Username: username,
         Password: hashed,
         Email: email,
         HoTen: hoten || username,
-        CreatedDate: new Date().toISOString(),
         NgayTao: new Date().toISOString(),
         LuongTheoGio: 29000,
-        IsActive: true,
       })
-      .select("UserID, Username, Email, HoTen")
+      .select("MaNguoiDung, Username, Email, HoTen")
       .single();
 
     if (insertError) {
@@ -60,16 +58,16 @@ router.post("/register", async (req, res) => {
 
     // Tạo 4 danh mục mặc định
     const defaultCats = [
-      { UserID: newUser.UserID, TenLoai: "Công việc", MoTa: "Công việc hàng ngày" },
-      { UserID: newUser.UserID, TenLoai: "Cá nhân", MoTa: "Việc cá nhân" },
-      { UserID: newUser.UserID, TenLoai: "Học tập", MoTa: "Học tập và phát triển" },
-      { UserID: newUser.UserID, TenLoai: "Sức khỏe", MoTa: "Chăm sóc sức khỏe" },
+      { MaNguoiDung: newUser.MaNguoiDung, TenLoai: "Công việc", MoTa: "Công việc hàng ngày" },
+      { MaNguoiDung: newUser.MaNguoiDung, TenLoai: "Cá nhân", MoTa: "Việc cá nhân" },
+      { MaNguoiDung: newUser.MaNguoiDung, TenLoai: "Học tập", MoTa: "Học tập và phát triển" },
+      { MaNguoiDung: newUser.MaNguoiDung, TenLoai: "Sức khỏe", MoTa: "Chăm sóc sức khỏe" },
     ];
 
     await supabase.from("LoaiCongViec").insert(defaultCats);
 
     const token = jwt.sign(
-      { userId: newUser.UserID, username: newUser.Username },
+      { userId: newUser.MaNguoiDung, username: newUser.Username },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
@@ -80,7 +78,7 @@ router.post("/register", async (req, res) => {
       data: {
         token: token,
         user: {
-          id: newUser.UserID,
+          id: newUser.MaNguoiDung,
           username: newUser.Username,
           email: newUser.Email,
           hoten: newUser.HoTen || newUser.Username,
@@ -101,7 +99,7 @@ router.post("/login", async (req, res) => {
     const { username, password } = req.body;
 
     const { data: users, error } = await supabase
-      .from("Users")
+      .from("NguoiDung")
       .select("*")
       .or(`Username.eq.${username},Email.eq.${username}`);
 
@@ -123,12 +121,12 @@ router.post("/login", async (req, res) => {
 
     // Cập nhật LastLogin
     await supabase
-      .from("Users")
+      .from("NguoiDung")
       .update({ LastLogin: new Date().toISOString() })
-      .eq("UserID", user.UserID);
+      .eq("MaNguoiDung", user.MaNguoiDung);
 
     const token = jwt.sign(
-      { userId: user.UserID, username: user.Username },
+      { userId: user.MaNguoiDung, username: user.Username },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
@@ -139,7 +137,7 @@ router.post("/login", async (req, res) => {
       data: {
         token,
         user: {
-          id: user.UserID,
+          id: user.MaNguoiDung,
           username: user.Username,
           email: user.Email,
           hoten: user.HoTen,
@@ -166,9 +164,9 @@ router.get("/verify", async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const { data: user, error } = await supabase
-      .from("Users")
-      .select("UserID, Username, Email, HoTen, LuongTheoGio, AvatarUrl, EquippedBadge")
-      .eq("UserID", decoded.userId)
+      .from("NguoiDung")
+      .select("MaNguoiDung, Username, Email, HoTen, LuongTheoGio, AvatarUrl, EquippedBadge")
+      .eq("MaNguoiDung", decoded.userId)
       .single();
 
     if (error || !user) {
@@ -179,7 +177,7 @@ router.get("/verify", async (req, res) => {
       success: true,
       data: {
         user: {
-          id: user.UserID,
+          id: user.MaNguoiDung,
           username: user.Username,
           email: user.Email,
           hoten: user.HoTen,

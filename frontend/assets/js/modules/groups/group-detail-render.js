@@ -28,7 +28,10 @@
     return t.HanChot && t.TrangThai !== "completed" && t.TrangThai !== "cancelled" && new Date(t.HanChot) < new Date();
   }
 
-  function avatar(name, size = 7) {
+  function avatar(name, size = 7, avatarUrl = "") {
+    if (avatarUrl) {
+      return `<img src="${avatarUrl}" alt="" class="w-${size} h-${size} rounded-full object-cover flex-shrink-0" style="width:${size*4}px;height:${size*4}px;" onerror="this.outerHTML=this.dataset.fb" data-fb='<div class="w-${size} h-${size} rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:var(--accent,#2563EB)">${(name || "?")[0].toUpperCase()}</div>'>`;
+    }
     const ini = (name || "?")[0].toUpperCase();
     return `<div class="w-${size} h-${size} rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:var(--accent,#2563EB)">${ini}</div>`;
   }
@@ -47,7 +50,7 @@
               <h2 class="text-xl font-bold text-slate-800">${esc(g.TenNhom)}</h2>
               ${g.MoTa ? `<p class="text-sm text-slate-500 mt-0.5">${esc(g.MoTa)}</p>` : ""}
               <div class="flex gap-4 mt-2 text-xs text-slate-400">
-                <span><i class="fas fa-users mr-1"></i>${members.length}/${g.MaxMembers || 10} thành viên</span>
+                <span><i class="fas fa-users mr-1"></i>${members.length}/${g.SoThanhVienToiDa || 10} thành viên</span>
                 <span><i class="fas fa-calendar mr-1"></i>${new Date(g.NgayTao).toLocaleDateString("vi-VN")}</span>
               </div>
             </div>
@@ -62,7 +65,20 @@
       const addForm = canManage ? `
         <div id="add-member-form" class="hidden mb-3">
           <p class="text-xs text-slate-500 mb-2"><i class="fas fa-user-friends mr-1"></i>Chọn bạn bè để thêm vào nhóm</p>
-          <div id="add-member-friends-list" class="space-y-1 max-h-48 overflow-y-auto"></div>
+          <div id="add-member-friends-list" class="space-y-1 max-h-36 overflow-y-auto"></div>
+          <div class="mt-3 pt-3 border-t border-slate-100">
+            <p class="text-xs text-slate-500 mb-2"><i class="fas fa-envelope mr-1"></i>Hoặc thêm bằng email</p>
+            <div class="flex gap-2">
+              <input id="add-member-email" type="email" placeholder="email@example.com"
+                class="flex-1 text-xs px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-blue-400"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();GroupDetailSection.addByEmail()}">
+              <button onclick="GroupDetailSection.addByEmail()"
+                class="text-xs px-3 py-2 rounded-lg font-semibold text-white flex-shrink-0" style="background:var(--accent,#2563EB)">
+                <i class="fas fa-plus mr-1"></i>Thêm
+              </button>
+            </div>
+            <div id="add-member-email-result" class="mt-2"></div>
+          </div>
         </div>` : "";
       return `
         <div class="bg-white rounded-2xl border border-slate-200 p-5">
@@ -81,11 +97,11 @@
         const roleLabel = m.VaiTro === "owner" ? "Chủ nhóm" : m.VaiTro === "admin" ? "Quản trị" : "Thành viên";
         const roleClass = m.VaiTro === "owner" ? "role-owner" : m.VaiTro === "admin" ? "role-admin" : "role-member";
         const removeBtn = (canManage && m.VaiTro !== "owner")
-          ? `<button onclick="GroupDetailSection.removeMember(${m.UserID},'${esc(m.HoTen || m.Email || "")}')" class="text-xs text-slate-300 hover:text-red-500 transition"><i class="fas fa-times"></i></button>`
+          ? `<button onclick="GroupDetailSection.removeMember(${m.MaNguoiDung},'${esc(m.HoTen || m.Email || "")}')" class="text-xs text-slate-300 hover:text-red-500 transition"><i class="fas fa-times"></i></button>`
           : "";
         return `
           <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-50">
-            ${avatar(m.HoTen || m.Email, 8)}
+            ${avatar(m.HoTen || m.Email, 8, m.AvatarUrl)}
             <div class="flex-1 min-w-0">
               <div class="text-xs font-semibold text-slate-800 truncate">${esc(m.HoTen || "Người dùng")}${window.BadgeDisplay?.inline(m.EquippedBadge, 10) || ""}</div>
               <div class="text-xs text-slate-400 truncate">${esc(m.Email || "")}</div>
@@ -97,7 +113,7 @@
     },
 
     tasksPanel(members, filteredTasks, allTasks, statusFilter, assigneeFilter, canManage) {
-      const memberOpts = members.map((m) => `<option value="${m.UserID}">${esc(m.HoTen || m.Email)}</option>`).join("");
+      const memberOpts = members.map((m) => `<option value="${m.MaNguoiDung}">${esc(m.HoTen || m.Email)}</option>`).join("");
       return `
         <div class="bg-white rounded-2xl border border-slate-200 p-5">
           <div class="flex items-center justify-between mb-4">
@@ -152,7 +168,7 @@
       }).join("");
 
       const assigneeOpts = [`<option value="all">Tất cả thành viên</option>`]
-        .concat(members.map((m) => `<option value="${m.UserID}" ${String(af) === String(m.UserID) ? "selected" : ""}>${esc(m.HoTen || m.Email)}</option>`))
+        .concat(members.map((m) => `<option value="${m.MaNguoiDung}" ${String(af) === String(m.MaNguoiDung) ? "selected" : ""}>${esc(m.HoTen || m.Email)}</option>`))
         .join("");
 
       return `
@@ -217,12 +233,12 @@
 
         const actions = canManage ? `
           <div class="flex items-center gap-1 flex-shrink-0 ml-auto">
-            <button onclick="GroupDetailSection.showEditTask(${t.GroupTaskID})" class="gt-action-btn" title="Sửa"><i class="fas fa-pen"></i></button>
-            <button onclick="GroupDetailSection.deleteTask(${t.GroupTaskID})" class="gt-action-btn gt-action-danger" title="Xoá"><i class="fas fa-trash-alt"></i></button>
+            <button onclick="GroupDetailSection.showEditTask(${t.MaCongViecNhom})" class="gt-action-btn" title="Sửa"><i class="fas fa-pen"></i></button>
+            <button onclick="GroupDetailSection.deleteTask(${t.MaCongViecNhom})" class="gt-action-btn gt-action-danger" title="Xoá"><i class="fas fa-trash-alt"></i></button>
           </div>` : "";
 
         return `
-          <div class="gt-card ${done ? "gt-card-done" : ""} ${cancelled ? "gt-card-cancelled" : ""} ${od ? "gt-card-overdue" : ""}" data-task-id="${t.GroupTaskID}">
+          <div class="gt-card ${done ? "gt-card-done" : ""} ${cancelled ? "gt-card-cancelled" : ""} ${od ? "gt-card-overdue" : ""}" data-task-id="${t.MaCongViecNhom}">
             <div class="gt-card-prio" style="background:${prio[1]}"></div>
             <div class="flex-1 min-w-0">
               <div class="flex items-start gap-2">
@@ -239,7 +255,7 @@
                 <div class="gt-card-tag" style="background:${prio[2]};color:${prio[1]}"><span>${prio[0]}</span></div>
               </div>
               <div class="flex items-center gap-3 mt-2">
-                <select onchange="GroupDetailSection.changeStatus(${t.GroupTaskID},this.value)" class="gt-status-select" style="color:${sColor}">
+                <select onchange="GroupDetailSection.changeStatus(${t.MaCongViecNhom},this.value)" class="gt-status-select" style="color:${sColor}">
                   ${statusOpts}
                 </select>
                 ${t.SessionCount > 0 ? `<div class="flex items-center gap-2 flex-1"><div class="group-progress flex-1"><div class="group-progress-fill" style="width:${t.SessionPercent}%"></div></div><span class="text-xs font-semibold" style="color:${t.SessionPercent >= 100 ? "#15803d" : "#64748b"}">${t.SessionDone}/${t.SessionCount} buổi · ${t.SessionPercent}%</span></div>` : t.HasPersonalTask ? `<span class="text-xs text-slate-400"><i class="fas fa-calendar-plus mr-1"></i>Chưa lên lịch</span>` : ""}

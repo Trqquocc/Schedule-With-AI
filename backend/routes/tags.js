@@ -43,9 +43,9 @@ router.get("/", async (req, res) => {
     const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
 
     let query = supabase
-      .from("Tags")
-      .select("TagID, TenTag, MauSac")
-      .eq("UserID", userId)
+      .from("NhanDan")
+      .select("MaNhanDan, TenTag, MauSac")
+      .eq("MaNguoiDung", userId)
       .order("TenTag", { ascending: true });
 
     if (search) {
@@ -77,9 +77,9 @@ router.post("/", async (req, res) => {
     const mauSac = isValidColor(color) ? color : "#3B82F6";
 
     const { data, error } = await supabase
-      .from("Tags")
-      .insert({ UserID: userId, TenTag: tenTag, MauSac: mauSac })
-      .select("TagID, TenTag, MauSac")
+      .from("NhanDan")
+      .insert({ MaNguoiDung: userId, TenTag: tenTag, MauSac: mauSac })
+      .select("MaNhanDan, TenTag, MauSac")
       .single();
 
     if (error) {
@@ -100,8 +100,8 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const userId = req.userId;
-    const tagId = parseInt(req.params.id, 10);
-    if (isNaN(tagId)) {
+    const maNhanDan = parseInt(req.params.id, 10);
+    if (isNaN(maNhanDan)) {
       return res.status(400).json({ success: false, message: "ID không hợp lệ" });
     }
 
@@ -121,11 +121,11 @@ router.put("/:id", async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from("Tags")
+      .from("NhanDan")
       .update(updates)
-      .eq("TagID", tagId)
-      .eq("UserID", userId)
-      .select("TagID, TenTag, MauSac")
+      .eq("MaNhanDan", maNhanDan)
+      .eq("MaNguoiDung", userId)
+      .select("MaNhanDan, TenTag, MauSac")
       .maybeSingle();
 
     if (error) {
@@ -149,17 +149,17 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const userId = req.userId;
-    const tagId = parseInt(req.params.id, 10);
-    if (isNaN(tagId)) {
+    const maNhanDan = parseInt(req.params.id, 10);
+    if (isNaN(maNhanDan)) {
       return res.status(400).json({ success: false, message: "ID không hợp lệ" });
     }
 
     // Verify ownership before delete
     const { data: existing } = await supabase
-      .from("Tags")
-      .select("TagID")
-      .eq("TagID", tagId)
-      .eq("UserID", userId)
+      .from("NhanDan")
+      .select("MaNhanDan")
+      .eq("MaNhanDan", maNhanDan)
+      .eq("MaNguoiDung", userId)
       .maybeSingle();
 
     if (!existing) {
@@ -167,10 +167,10 @@ router.delete("/:id", async (req, res) => {
     }
 
     const { error } = await supabase
-      .from("Tags")
+      .from("NhanDan")
       .delete()
-      .eq("TagID", tagId)
-      .eq("UserID", userId);
+      .eq("MaNhanDan", maNhanDan)
+      .eq("MaNguoiDung", userId);
 
     if (error) {
       console.error("[tags] DELETE /:id:", error);

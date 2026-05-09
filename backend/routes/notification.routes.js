@@ -46,9 +46,9 @@ router.post("/connect-telegram", authenticateToken, async (req, res) => {
     if (!result.success) return res.status(400).json(result);
 
     const { data: connection, error } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TelegramChatId, TelegramUsername, TelegramFirstName, TrangThaiKetNoi, GioLichNgay, GioNhacNhiemVu, GioTongKetNgay")
-      .eq("UserID", userId)
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TelegramChatId, TelegramUsername, TelegramFirstName, TrangThaiKetNoi, GioLichNgay, GioNhacNhiemVu, GioTongKetNgay")
+      .eq("MaNguoiDung", userId)
       .single();
 
     if (error || !connection) {
@@ -167,9 +167,9 @@ router.post("/broadcast", authenticateToken, async (req, res) => {
 router.post("/disconnect", authenticateToken, async (req, res) => {
   try {
     await supabase
-      .from("TelegramConnections")
+      .from("KetNoiTelegram")
       .update({ TrangThaiKetNoi: false })
-      .eq("UserID", req.userId);
+      .eq("MaNguoiDung", req.userId);
 
     res.json({ success: true, message: "Đã ngắt kết nối Telegram" });
   } catch (error) {
@@ -192,7 +192,7 @@ router.post("/update-schedule-time", authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, message: "Không có dữ liệu cập nhật" });
     }
 
-    await supabase.from("TelegramConnections").update(updateData).eq("UserID", userId);
+    await supabase.from("KetNoiTelegram").update(updateData).eq("MaNguoiDung", userId);
 
     res.json({ success: true, message: "Đã cập nhật giờ thông báo" });
   } catch (error) {

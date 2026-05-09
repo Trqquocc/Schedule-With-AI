@@ -67,7 +67,7 @@ router.post("/complete-batch", async (req, res) => {
       .from("LichTrinh")
       .update({ DaHoanThanh: completed })
       .in("MaLichTrinh", ids)
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .select("MaLichTrinh");
 
     if (error) {
@@ -115,7 +115,7 @@ router.post("/complete-day", async (req, res) => {
     let q = supabase
       .from("LichTrinh")
       .update({ DaHoanThanh: completed })
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .gte("GioBatDau", startIso)
       .lt("GioBatDau", endIso);
 

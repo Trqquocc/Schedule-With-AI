@@ -36,13 +36,13 @@ const PRIORITY_COLORS = {
 // ---------------------------------------------------------------------------
 
 /** Sync TaskTags for a task: delete existing then insert new (max 5). */
-async function syncTaskTags(taskId, tagIds) {
-  if (!Array.isArray(tagIds)) return;
-  const validIds = tagIds.map((id) => parseInt(id, 10)).filter(Number.isFinite).slice(0, 5);
-  await supabase.from("TaskTags").delete().eq("MaCongViec", taskId);
+async function syncTaskTags(taskId, maNhanDans) {
+  if (!Array.isArray(maNhanDans)) return;
+  const validIds = maNhanDans.map((id) => parseInt(id, 10)).filter(Number.isFinite).slice(0, 5);
+  await supabase.from("CongViecNhanDan").delete().eq("MaCongViec", taskId);
   if (validIds.length > 0) {
-    const rows = validIds.map((tagId) => ({ MaCongViec: taskId, TagID: tagId }));
-    const { error } = await supabase.from("TaskTags").insert(rows);
+    const rows = validIds.map((maNhanDan) => ({ MaCongViec: taskId, MaNhanDan: maNhanDan }));
+    const { error } = await supabase.from("CongViecNhanDan").insert(rows);
     if (error) console.error("[tasks] syncTaskTags insert:", error.message);
   }
 }
@@ -53,13 +53,13 @@ async function syncTaskTags(taskId, tagIds) {
  */
 async function ensureDefaultCategory(userId) {
   const DEFAULT_NAME = "Chưa phân loại";
-  const { data: existing } = await supabase.from("LoaiCongViec").select("MaLoai").eq("UserID", userId).eq("TenLoai", DEFAULT_NAME).limit(1).maybeSingle();
+  const { data: existing } = await supabase.from("LoaiCongViec").select("MaLoai").eq("MaNguoiDung", userId).eq("TenLoai", DEFAULT_NAME).limit(1).maybeSingle();
   if (existing?.MaLoai) return existing.MaLoai;
 
-  const { data: anyCat } = await supabase.from("LoaiCongViec").select("MaLoai").eq("UserID", userId).order("MaLoai", { ascending: true }).limit(1).maybeSingle();
+  const { data: anyCat } = await supabase.from("LoaiCongViec").select("MaLoai").eq("MaNguoiDung", userId).order("MaLoai", { ascending: true }).limit(1).maybeSingle();
   if (anyCat?.MaLoai) return anyCat.MaLoai;
 
-  const { data: created, error } = await supabase.from("LoaiCongViec").insert({ UserID: userId, TenLoai: DEFAULT_NAME, MoTa: "Danh mục mặc định" }).select("MaLoai").single();
+  const { data: created, error } = await supabase.from("LoaiCongViec").insert({ MaNguoiDung: userId, TenLoai: DEFAULT_NAME, MoTa: "Danh mục mặc định" }).select("MaLoai").single();
   if (error) throw error;
   return created.MaLoai;
 }
@@ -104,7 +104,7 @@ async function createTask(userId, d) {
   if (!maLoai || Number.isNaN(maLoai)) maLoai = await ensureDefaultCategory(userId);
 
   const { data: createdTask, error } = await supabase.from("CongViec").insert({
-    UserID: userId, MaLoai: maLoai, TieuDe: d.TieuDe.trim(), MoTa: d.MoTa || "", Tag: d.Tag || "",
+    MaNguoiDung: userId, MaLoai: maLoai, TieuDe: d.TieuDe.trim(), MoTa: d.MoTa || "",
     CoThoiGianCoDinh: d.CoThoiGianCoDinh ? true : false, GioBatDauCoDinh: gioBatDauCoDinh, GioKetThucCoDinh: gioKetThucCoDinh,
     LapLai: d.LapLai || null, TrangThaiThucHien: 0, NgayTao: new Date().toISOString(),
     ThoiGianUocTinh: thoiGianUocTinh, MucDoUuTien: parseInt(d.MucDoUuTien) || 2,
@@ -119,7 +119,7 @@ async function createTask(userId, d) {
     throw { status: 500, message: "Lỗi server khi tạo công việc", devDetail: error.message };
   }
 
-  if (Array.isArray(d.tagIds) && d.tagIds.length > 0) await syncTaskTags(createdTask.MaCongViec, d.tagIds);
+  if (Array.isArray(d.maNhanDans) && d.maNhanDans.length > 0) await syncTaskTags(createdTask.MaCongViec, d.maNhanDans);
 
   return { ...createdTask, MauSac: PRIORITY_COLORS[createdTask.MucDoUuTien] || "#3B82F6", tags: [] };
 }
@@ -154,7 +154,6 @@ async function updateTask(taskId, userId, d) {
     }
     if (maLoai) updateData.MaLoai = maLoai;
   }
-  if (d.Tag !== undefined) updateData.Tag = d.Tag;
   if (d.ThoiGianUocTinh !== undefined) updateData.ThoiGianUocTinh = d.ThoiGianUocTinh;
   if (d.MucDoUuTien !== undefined) updateData.MucDoUuTien = d.MucDoUuTien;
   if (d.TrangThaiThucHien !== undefined) {
@@ -177,11 +176,11 @@ async function updateTask(taskId, userId, d) {
 
   if (Object.keys(updateData).length === 0) throw { status: 400, message: "Không có dữ liệu để cập nhật" };
 
-  const { data, error } = await supabase.from("CongViec").update(updateData).eq("MaCongViec", taskId).eq("UserID", userId).select();
+  const { data, error } = await supabase.from("CongViec").update(updateData).eq("MaCongViec", taskId).eq("MaNguoiDung", userId).select();
   if (error) { console.error("Lỗi cập nhật công việc:", error); throw { status: 500, message: "Lỗi server" }; }
   if (!data || data.length === 0) throw { status: 404, message: "Không tìm thấy công việc" };
 
-  if (Array.isArray(d.tagIds)) await syncTaskTags(parseInt(taskId, 10), d.tagIds);
+  if (Array.isArray(d.maNhanDans)) await syncTaskTags(parseInt(taskId, 10), d.maNhanDans);
 
   if (updateData.TrangThaiThucHien !== undefined) {
     const gtSync = require("./group-task-sync-service");

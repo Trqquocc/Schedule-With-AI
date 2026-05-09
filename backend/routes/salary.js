@@ -44,7 +44,7 @@ router.get("/", async (req, res) => {
     const { data: schedules, error: instErr } = await supabase
       .from("LichTrinh")
       .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, GhiChu, DaHoanThanh")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .eq("DaHoanThanh", true)
       .gte("GioKetThuc", start.toISOString())
       .lte("GioKetThuc", end.toISOString())
@@ -74,7 +74,7 @@ router.get("/", async (req, res) => {
           "MaCongViec, TieuDe, LuongTheoGio, LoaiLuong, LuongThang, CauHinhCa, NgayLamViec, NgayBatDauHopDong, NgayKetThucHopDong"
         )
         .in("MaCongViec", taskIds)
-        .eq("UserID", userId);
+        .eq("MaNguoiDung", userId);
       (tasks || []).forEach((t) => {
         taskMap[t.MaCongViec] = t;
       });

@@ -18,8 +18,8 @@ async function handleDaily(bot, msg) {
 
   try {
     const { data: conn } = await supabase
-      .from("TelegramConnections")
-      .select("UserID")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung")
       .eq("TelegramChatId", chatId.toString())
       .maybeSingle();
 
@@ -33,7 +33,7 @@ async function handleDaily(bot, msg) {
     const { data: events } = await supabase
       .from("LichTrinh")
       .select("MaLichTrinh, TieuDe, GioBatDau, GioKetThuc, DaHoanThanh")
-      .eq("UserID", conn.UserID)
+      .eq("MaNguoiDung", conn.MaNguoiDung)
       .gte("GioBatDau", startIso)
       .lte("GioBatDau", endIso)
       .order("GioBatDau", { ascending: true });
@@ -83,8 +83,8 @@ async function handleComplete(bot, query) {
 
   try {
     const { data: conn } = await supabase
-      .from("TelegramConnections")
-      .select("UserID")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung")
       .eq("TelegramChatId", chatId.toString())
       .maybeSingle();
 
@@ -97,7 +97,7 @@ async function handleComplete(bot, query) {
       .from("LichTrinh")
       .update({ DaHoanThanh: true })
       .eq("MaLichTrinh", id)
-      .eq("UserID", conn.UserID);
+      .eq("MaNguoiDung", conn.MaNguoiDung);
 
     if (error) throw error;
 

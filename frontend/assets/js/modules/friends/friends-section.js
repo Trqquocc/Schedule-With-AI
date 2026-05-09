@@ -83,10 +83,10 @@
     },
 
     _friendRow(f) {
-      const streakHtml = f.Streak > 0
-        ? `<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;color:var(--text-primary,#1d1d1f);font-weight:600;letter-spacing:-0.12px"><i class="fas fa-fire" style="font-size:10px;color:var(--apple-blue,#0071e3)"></i>${f.Streak}</span>`
+      const streakHtml = f.ChuoiNgay > 0
+        ? `<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px;color:var(--text-primary,#1d1d1f);font-weight:600;letter-spacing:-0.12px"><i class="fas fa-fire" style="font-size:10px;color:var(--apple-blue,#0071e3)"></i>${f.ChuoiNgay}</span>`
         : "";
-      const levelHtml = `<span style="font-size:11px;color:rgba(0,0,0,0.48);letter-spacing:-0.12px">Lv.${f.Level || 1}</span>`;
+      const levelHtml = `<span style="font-size:11px;color:rgba(0,0,0,0.48);letter-spacing:-0.12px">Lv.${f.CapDo || 1}</span>`;
       return `
         <div class="flex items-center gap-3 p-3 rounded-xl" style="background:var(--bg-card-alt,#f5f5f7);transition:all .15s"
           onmouseover="this.style.boxShadow='rgba(0,0,0,0.22) 3px 5px 30px 0px'" onmouseout="this.style.boxShadow='none'">
@@ -99,7 +99,7 @@
               <span class="text-xs truncate" style="color:var(--text-muted,#94a3b8)">${f.Email || ""}</span>
             </div>
           </div>
-          <button onclick="FriendsSection.unfriend(${f.FriendshipID})"
+          <button onclick="FriendsSection.unfriend(${f.MaKetBan})"
             class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition" style="border-color:var(--border,#e2e8f0);color:var(--text-muted,#94a3b8)"
             onmouseover="this.style.color='#dc2626';this.style.borderColor='#fecaca'" onmouseout="this.style.color='';this.style.borderColor=''">
             Huỷ kết bạn
@@ -138,9 +138,9 @@
               <div class="text-xs truncate" style="color:var(--text-muted,#94a3b8)">${u?.Email || ""}</div>
             </div>
             <div class="flex gap-2">
-              <button onclick="FriendsSection.acceptRequest(${r.FriendshipID})"
+              <button onclick="FriendsSection.acceptRequest(${r.MaKetBan})"
                 class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:#10b981">Chấp nhận</button>
-              <button onclick="FriendsSection.rejectRequest(${r.FriendshipID})"
+              <button onclick="FriendsSection.rejectRequest(${r.MaKetBan})"
                 class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-500">Từ chối</button>
             </div>
           </div>`;
@@ -175,7 +175,7 @@
               <div class="text-xs truncate" style="color:var(--text-muted,#94a3b8)">${u?.Email || ""}</div>
             </div>
             <span class="text-xs font-medium" style="color:#d97706">Chờ phản hồi</span>
-            <button onclick="FriendsSection.cancelRequest(${s.FriendshipID})"
+            <button onclick="FriendsSection.cancelRequest(${s.MaKetBan})"
               class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 text-slate-500 hover:text-red-600 transition">
               Huỷ
             </button>
@@ -206,18 +206,18 @@
           return;
         }
 
-        const friendIds = new Set(this.friends.map((f) => f.UserID));
+        const friendIds = new Set(this.friends.map((f) => f.MaNguoiDung));
         const pendingIds = new Set([
-          ...this.requests.map((r) => r.Requester?.UserID),
-          ...this.sent.map((s) => s.Receiver?.UserID),
+          ...this.requests.map((r) => r.Requester?.MaNguoiDung),
+          ...this.sent.map((s) => s.Receiver?.MaNguoiDung),
         ]);
 
         container.innerHTML = results.map((u) => {
 
           let actionHtml;
-          if (friendIds.has(u.UserID)) {
+          if (friendIds.has(u.MaNguoiDung)) {
             actionHtml = `<span class="text-xs text-green-600 font-medium"><i class="fas fa-check mr-1"></i>Bạn bè</span>`;
-          } else if (pendingIds.has(u.UserID)) {
+          } else if (pendingIds.has(u.MaNguoiDung)) {
             actionHtml = `<span class="text-xs text-amber-600 font-medium">Đã gửi lời mời</span>`;
           } else {
             actionHtml = `<button onclick="FriendsSection.sendRequest('${u.Email}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:var(--accent, #2563EB)"><i class="fas fa-user-plus mr-1"></i>Kết bạn</button>`;
@@ -243,7 +243,7 @@
     async sendRequest(email) {
       try {
         await this._api("/api/friends/request", { method: "POST", body: JSON.stringify({ email }) });
-        Utils?.showToast?.("Đã gửi lời mời kết bạn!", "success");
+        Utils?.showToast?.("Gửi lời mời kết bạn thành công!", "success");
         await this.refresh();
         this.search();
       } catch (err) {
@@ -254,7 +254,7 @@
     async acceptRequest(id) {
       try {
         await this._api(`/api/friends/${id}/accept`, { method: "PUT" });
-        Utils?.showToast?.("Đã chấp nhận!", "success");
+        Utils?.showToast?.("Chấp nhận kết bạn thành công!", "success");
         await this.refresh();
       } catch (err) {
         Utils?.showToast?.(err.message, "error");
@@ -264,7 +264,7 @@
     async rejectRequest(id) {
       try {
         await this._api(`/api/friends/${id}/reject`, { method: "PUT" });
-        Utils?.showToast?.("Đã từ chối", "info");
+        Utils?.showToast?.("Từ chối lời mời thành công!", "success");
         await this.refresh();
       } catch (err) {
         Utils?.showToast?.(err.message, "error");
@@ -274,7 +274,7 @@
     async cancelRequest(id) {
       try {
         await this._api(`/api/friends/${id}`, { method: "DELETE" });
-        Utils?.showToast?.("Đã huỷ lời mời", "info");
+        Utils?.showToast?.("Huỷ lời mời thành công!", "success");
         await this.refresh();
       } catch (err) {
         Utils?.showToast?.(err.message, "error");
@@ -286,7 +286,7 @@
       if (!ok) return;
       try {
         await this._api(`/api/friends/${id}`, { method: "DELETE" });
-        Utils?.showToast?.("Đã huỷ kết bạn", "info");
+        Utils?.showToast?.("Huỷ kết bạn thành công!", "success");
         await this.refresh();
       } catch (err) {
         Utils?.showToast?.(err.message, "error");

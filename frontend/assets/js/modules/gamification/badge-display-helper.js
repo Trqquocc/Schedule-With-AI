@@ -48,11 +48,11 @@
 
     _badgeName(badgeId) {
       const NAMES = {
-        first_task: "Tân binh", tasks_10: "Chiến binh", tasks_50: "Chuyên gia",
-        tasks_100: "Pro", tasks_500: "VIP Huyền thoại",
-        streak_3: "Lửa nhỏ", streak_7: "Bền bỉ", streak_14: "Kỷ luật thép", streak_30: "Siêu nhân",
-        priority_king: "Vua ưu tiên", early_bird: "Early Bird",
-        level_5: "Tay mơ", level_10: "Pro Player", level_15: "Cao thủ", level_20: "Grand Master",
+        first_task: "Khởi Đầu Vững Chắc", tasks_10: "Người Hành Động", tasks_50: "Chuyên Gia Hiệu Suất",
+        tasks_100: "Bậc Thầy Kỷ Luật", tasks_500: "Huyền Thoại",
+        streak_3: "Ngọn Lửa Đầu Tiên", streak_7: "Ý Chí Kiên Cường", streak_14: "Kỷ Luật Thép", streak_30: "Không Gì Cản Nổi",
+        priority_king: "Người Dẫn Đầu", early_bird: "Chinh Phục Bình Minh",
+        level_5: "Đang Tiến Bước", level_10: "Tầm Cao Mới", level_15: "Đỉnh Cao Phong Độ", level_20: "Bất Khả Chiến Bại",
       };
       return NAMES[badgeId] || badgeId;
     },

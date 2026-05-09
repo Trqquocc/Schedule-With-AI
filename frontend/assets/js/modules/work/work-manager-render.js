@@ -27,7 +27,7 @@
   }
 
   function groupBadgeHtml(task) {
-    if (!task.GroupTaskID) return "";
+    if (!task.MaCongViecNhom) return "";
     const name = task.GroupName || "Nhóm";
     let dl = "";
     if (task.GroupTaskDeadline) {
@@ -134,8 +134,8 @@
               <button type="button" class="action-btn-complete text-green-600 hover:text-green-900 mr-3" data-task-id="${taskId}" title="Hoàn thành">
                 <i class="fas fa-check"></i> Hoàn thành
               </button>
-              ${!task.GroupTaskID ? `<button type="button" class="action-btn-edit text-red-600 hover:text-red-900 mr-3" data-task-id="${taskId}" title="Sửa"><i class="fas fa-edit"></i> Sửa</button>` : ""}
-              ${!task.GroupTaskID ? `<button type="button" class="action-btn-delete text-red-600 hover:text-red-900" data-task-id="${taskId}" title="Xóa"><i class="fas fa-trash"></i> Xóa</button>` : ""}
+              ${!task.MaCongViecNhom ? `<button type="button" class="action-btn-edit text-red-600 hover:text-red-900 mr-3" data-task-id="${taskId}" title="Sửa"><i class="fas fa-edit"></i> Sửa</button>` : ""}
+              ${!task.MaCongViecNhom ? `<button type="button" class="action-btn-delete text-red-600 hover:text-red-900" data-task-id="${taskId}" title="Xóa"><i class="fas fa-trash"></i> Xóa</button>` : ""}
             </td>
           </tr>`;
       });
@@ -207,8 +207,8 @@
               <button type="button" class="action-btn-reopen text-yellow-600 hover:text-yellow-900 mr-3" data-task-id="${taskId}" title="Mở lại">
                 <i class="fas fa-undo"></i> Mở lại
               </button>
-              ${!task.GroupTaskID ? `<button type="button" class="action-btn-edit text-red-600 hover:text-red-900 mr-3" data-task-id="${taskId}" title="Sửa"><i class="fas fa-edit"></i> Sửa</button>` : ""}
-              ${!task.GroupTaskID ? `<button type="button" class="action-btn-delete text-red-600 hover:text-red-900" data-task-id="${taskId}" title="Xóa"><i class="fas fa-trash"></i> Xóa</button>` : ""}
+              ${!task.MaCongViecNhom ? `<button type="button" class="action-btn-edit text-red-600 hover:text-red-900 mr-3" data-task-id="${taskId}" title="Sửa"><i class="fas fa-edit"></i> Sửa</button>` : ""}
+              ${!task.MaCongViecNhom ? `<button type="button" class="action-btn-delete text-red-600 hover:text-red-900" data-task-id="${taskId}" title="Xóa"><i class="fas fa-trash"></i> Xóa</button>` : ""}
             </td>
           </tr>`;
       });

@@ -50,8 +50,8 @@ async function handleCreate(bot, msg, text) {
 
   try {
     const { data: conn } = await supabase
-      .from("TelegramConnections")
-      .select("UserID")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung")
       .eq("TelegramChatId", chatId.toString())
       .maybeSingle();
     if (!conn) {
@@ -68,7 +68,7 @@ async function handleCreate(bot, msg, text) {
       return;
     }
 
-    const defaultCat = await ensureDefaultCategory(conn.UserID);
+    const defaultCat = await ensureDefaultCategory(conn.MaNguoiDung);
 
     const start = parsed.startIso ? new Date(parsed.startIso) : null;
     const durationMin = Number(parsed.durationMin) || 30;
@@ -83,7 +83,7 @@ async function handleCreate(bot, msg, text) {
     const { data: created, error: taskErr } = await supabase
       .from("CongViec")
       .insert({
-        UserID: conn.UserID,
+        MaNguoiDung: conn.MaNguoiDung,
         MaLoai: defaultCat,
         TieuDe: parsed.title.slice(0, 120),
         MoTa: description,
@@ -103,7 +103,7 @@ async function handleCreate(bot, msg, text) {
 
     if (start && end) {
       await supabase.from("LichTrinh").insert({
-        UserID: conn.UserID,
+        MaNguoiDung: conn.MaNguoiDung,
         MaCongViec: created.MaCongViec,
         TieuDe: created.TieuDe,
         GioBatDau: start.toISOString(),
@@ -155,13 +155,13 @@ async function ensureDefaultCategory(userId) {
   const { data: existing } = await supabase
     .from("LoaiCongViec")
     .select("MaLoai")
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .limit(1);
   if (existing?.length) return existing[0].MaLoai;
 
   const { data: created, error } = await supabase
     .from("LoaiCongViec")
-    .insert({ UserID: userId, TenLoai: "Khác", MoTa: "Danh mục mặc định" })
+    .insert({ MaNguoiDung: userId, TenLoai: "Khác", MoTa: "Danh mục mặc định" })
     .select("MaLoai")
     .single();
   if (error) throw error;

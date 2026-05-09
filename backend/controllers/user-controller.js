@@ -9,7 +9,7 @@ const userService = require("../services/user-service");
 /** GET /api/users/priority-colors */
 async function getPriorityColors(req, res) {
   try {
-    const result = await userService.getPriorityColors(req.user.UserID);
+    const result = await userService.getPriorityColors(req.user.MaNguoiDung);
     const response = { success: true, data: result.data };
     if (result._fallback) response._fallback = result._fallback;
     res.json(response);
@@ -22,7 +22,7 @@ async function getPriorityColors(req, res) {
 /** PUT /api/users/priority-colors */
 async function updatePriorityColors(req, res) {
   try {
-    const merged = await userService.updatePriorityColors(req.user.UserID, req.body || {});
+    const merged = await userService.updatePriorityColors(req.user.MaNguoiDung, req.body || {});
     res.json({ success: true, data: merged });
   } catch (err) {
     console.error("PUT /priority-colors:", err);
@@ -33,7 +33,7 @@ async function updatePriorityColors(req, res) {
 /** GET /api/users/profile */
 async function getProfile(req, res) {
   try {
-    const result = await userService.getProfile(req.user.UserID);
+    const result = await userService.getProfile(req.user.MaNguoiDung);
     const response = { success: true, data: result.data };
     if (result.usedFallback) response._fallback = "missing-columns";
     res.json(response);
@@ -47,7 +47,7 @@ async function getProfile(req, res) {
 async function getUser(req, res) {
   try {
     const userId = parseInt(req.params.id);
-    const currentUserId = req.user.UserID;
+    const currentUserId = req.user.MaNguoiDung;
     if (userId !== currentUserId && currentUserId !== 1) {
       return res.status(403).json({ message: "Không có quyền truy cập" });
     }
@@ -63,7 +63,7 @@ async function getUser(req, res) {
 async function updateUser(req, res) {
   try {
     const userId = parseInt(req.params.id);
-    const currentUserId = req.user.UserID;
+    const currentUserId = req.user.MaNguoiDung;
     if (userId !== currentUserId && currentUserId !== 1) {
       return res.status(403).json({ message: "Không có quyền cập nhật thông tin này" });
     }
@@ -80,7 +80,7 @@ async function updateUser(req, res) {
 async function deleteUser(req, res) {
   try {
     const userId = parseInt(req.params.id);
-    const currentUserId = req.user.UserID;
+    const currentUserId = req.user.MaNguoiDung;
     if (userId !== currentUserId && currentUserId !== 1) {
       return res.status(403).json({ message: "Không có quyền xóa tài khoản này" });
     }
@@ -97,7 +97,7 @@ async function deleteUser(req, res) {
 async function changePassword(req, res) {
   try {
     const userId = parseInt(req.params.id, 10);
-    const currentUserId = req.user.UserID;
+    const currentUserId = req.user.MaNguoiDung;
     if (userId !== currentUserId) {
       return res.status(403).json({ message: "Không có quyền đổi mật khẩu người khác" });
     }
@@ -112,7 +112,7 @@ async function changePassword(req, res) {
 /** POST /api/users/avatar */
 async function uploadAvatar(req, res) {
   try {
-    const publicUrl = await userService.uploadAvatar(req.user.UserID, req.body?.dataUrl);
+    const publicUrl = await userService.uploadAvatar(req.user.MaNguoiDung, req.body?.dataUrl);
     res.json({ success: true, data: { avatarUrl: publicUrl } });
   } catch (err) {
     console.error("POST /users/avatar:", err);

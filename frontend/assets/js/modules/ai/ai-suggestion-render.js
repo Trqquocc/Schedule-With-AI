@@ -185,6 +185,11 @@
       </div>`;
 
     modalBody.innerHTML = previewHTML;
+
+    // Hide the original form footer so only preview action buttons show
+    const modalFooter = modal.querySelector(".ai-modal-footer");
+    if (modalFooter) modalFooter.style.display = "none";
+
     this.setupPreviewEventListeners(originalFormData, suggestions);
   };
 
@@ -230,13 +235,20 @@
     const modalBody = modal.querySelector(".ai-modal-body");
     if (!modalBody) { this.showError("Không thể reset form"); return; }
 
+    // Restore the original form footer
+    const modalFooter = modal.querySelector(".ai-modal-footer");
+    if (modalFooter) modalFooter.style.display = "flex";
+
     delete modalBody.dataset.originalFormData;
     delete modalBody.dataset.suggestions;
 
     modalBody.innerHTML = `
       <form id="aiSuggestionForm">
-        <div class="form-section">
-          <div class="section-title"><i class="fas fa-calendar-alt"></i><span>Chọn Khoảng Thời Gian</span></div>
+        <div class="ai-form-card">
+          <div class="ai-form-card-header">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Khoảng Thời Gian</span>
+          </div>
           <div class="date-range-grid">
             <div class="form-group">
               <label class="form-label">Từ ngày</label>
@@ -249,9 +261,10 @@
           </div>
         </div>
 
-        <div class="form-section">
-          <div class="section-header">
-            <div class="section-title"><i class="fas fa-tasks"></i><span>Chọn Công Việc</span></div>
+        <div class="ai-form-card">
+          <div class="ai-form-card-header">
+            <i class="fas fa-tasks"></i>
+            <span>Chọn Công Việc</span>
             <button type="button" class="btn-select-all" id="selectAllTasksBtn">
               <i class="fas fa-check-double"></i><span>Chọn tất cả</span>
             </button>
@@ -268,8 +281,11 @@
           </div>
         </div>
 
-        <div class="form-section">
-          <div class="section-title"><i class="fas fa-sliders-h"></i><span>Tùy Chọn AI</span></div>
+        <div class="ai-form-card">
+          <div class="ai-form-card-header">
+            <i class="fas fa-sliders-h"></i>
+            <span>Tuỳ Chọn AI</span>
+          </div>
           <div class="ai-options-grid">
             <label class="ai-option">
               <input type="checkbox" id="aiOptionAvoidConflict" checked />

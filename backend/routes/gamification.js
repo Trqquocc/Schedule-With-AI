@@ -36,13 +36,13 @@ router.post("/refresh", async (req, res) => {
     const { supabase } = require("../config/database");
 
     const { data: existing } = await supabase
-      .from("UserGamification")
-      .select("LastXPUpdate")
-      .eq("UserID", req.userId)
+      .from("ThanhTich")
+      .select("LanCapNhatCuoi")
+      .eq("MaNguoiDung", req.userId)
       .single();
 
-    if (existing?.LastXPUpdate) {
-      const elapsedMs = Date.now() - new Date(existing.LastXPUpdate).getTime();
+    if (existing?.LanCapNhatCuoi) {
+      const elapsedMs = Date.now() - new Date(existing.LanCapNhatCuoi).getTime();
       if (elapsedMs < 60 * 1000) {
         return res.status(429).json({
           success: false,
@@ -69,12 +69,12 @@ router.put("/equip-badge", async (req, res) => {
     if (badgeId) {
       // Verify user actually earned this badge
       const { data: gam } = await supabase
-        .from("UserGamification")
-        .select("Badges")
-        .eq("UserID", req.userId)
+        .from("ThanhTich")
+        .select("HuyHieu")
+        .eq("MaNguoiDung", req.userId)
         .single();
 
-      const earned = (gam?.Badges || []).map((b) => b.id);
+      const earned = (gam?.HuyHieu || []).map((b) => b.id);
       if (!earned.includes(badgeId)) {
         return res.status(400).json({
           success: false,
@@ -84,9 +84,9 @@ router.put("/equip-badge", async (req, res) => {
     }
 
     const { error } = await supabase
-      .from("Users")
+      .from("NguoiDung")
       .update({ EquippedBadge: badgeId || null })
-      .eq("UserID", req.userId);
+      .eq("MaNguoiDung", req.userId);
 
     if (error) throw error;
 

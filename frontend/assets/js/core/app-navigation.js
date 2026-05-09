@@ -185,7 +185,7 @@
         return;
       }
 
-      // If section content already loaded, just update size
+      // If section content already loaded, re-init manager (uses cache) instead of reloading HTML
       if (container._sectionLoaded && container.children.length > 0) {
         if (sectionName === 'schedule' && window.CalendarModule?.calendar) {
           requestAnimationFrame(() => {
@@ -204,6 +204,7 @@
             window.AIModule.calendar.updateSize();
           });
         }
+        this._reinitSectionManager(sectionName);
         return;
       }
       container._sectionLoaded = true;
@@ -214,52 +215,47 @@
         return;
       }
 
-      if (window.ModalManager) {
-        setTimeout(() => {
-          if (window.ModalManager.reinitializeEventHandlers) {
-            ModalManager.reinitializeEventHandlers();
-          }
-        }, 100);
+      if (window.ModalManager?.reinitializeEventHandlers) {
+        ModalManager.reinitializeEventHandlers();
       }
 
-      if (window.App && window.App.updateUserInfo) {
-        setTimeout(() => window.App.updateUserInfo(), 100);
+      if (window.App?.updateUserInfo) {
+        window.App.updateUserInfo();
       }
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         if (sectionName === "schedule" && window.CalendarModule) {
-          CalendarModule.refreshEvents && CalendarModule.refreshEvents();
-          CalendarModule.refreshDragDrop && CalendarModule.refreshDragDrop();
+          CalendarModule.refreshEvents?.();
+          CalendarModule.refreshDragDrop?.();
         } else if (sectionName === "work") {
-          const workEvent = new CustomEvent("work-tab-activated");
-          document.dispatchEvent(workEvent);
-
-          if (window.WorkManager) {
-            if (!WorkManager.initialized && WorkManager.init) {
-              WorkManager.init();
-            } else if (WorkManager.loadTasks) {
-              WorkManager.loadTasks();
-            }
-          }
-
-          if (CalendarModule && CalendarModule.setupNativeDragDrop) {
+          if (window.CalendarModule?.setupNativeDragDrop) {
             setTimeout(() => {
               CalendarModule.setupNativeDragDrop();
               CalendarModule.setupExternalDraggable();
-            }, 800);
+            }, 300);
           }
         } else if (sectionName === "ai" && window.AIModule) {
-          AIModule.refreshSuggestions && AIModule.refreshSuggestions();
-
+          AIModule.refreshSuggestions?.();
           if (AIModule.restoreCalendar) {
-            setTimeout(() => {
-              AIModule.restoreCalendar();
-            }, 200);
+            requestAnimationFrame(() => AIModule.restoreCalendar());
           }
         }
-      }, 200);
+      });
 
       window.scrollTo(0, 0);
+    },
+
+    _reinitSectionManager(sectionName) {
+      const managers = {
+        work: () => window.WorkManager?.init(),
+        groups: () => window.GroupListSection?.init(),
+        chat: () => window.ChatListSection?.init(),
+        friends: () => window.FriendsSection?.init(),
+        habits: () => window.HabitsSection?.init(),
+        salary: () => window.SalaryManager?.init(),
+        notifications: () => window.ConnectionsSection?.init(),
+      };
+      if (managers[sectionName]) managers[sectionName]();
     },
 
     async refreshCurrentSection() {

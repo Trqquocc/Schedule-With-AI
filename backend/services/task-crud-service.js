@@ -58,7 +58,7 @@ async function listTasks(userId, query) {
   let dbQuery = supabase
     .from("CongViec")
     .select("*, LoaiCongViec(TenLoai)")
-    .eq("UserID", userId);
+    .eq("MaNguoiDung", userId);
 
   if (status) {
     const statusNumber = STATUS_MAP[status.toLowerCase()];
@@ -74,13 +74,13 @@ async function listTasks(userId, query) {
 
   if (taskIds.length > 0) {
     const { data: taskTagRows } = await supabase
-      .from("TaskTags")
-      .select("MaCongViec, Tags(TagID, TenTag, MauSac)")
+      .from("CongViecNhanDan")
+      .select("MaCongViec, NhanDan(MaNhanDan, TenTag, MauSac)")
       .in("MaCongViec", taskIds);
     if (taskTagRows) {
       for (const row of taskTagRows) {
         if (!taskTagsMap[row.MaCongViec]) taskTagsMap[row.MaCongViec] = [];
-        if (row.Tags) taskTagsMap[row.MaCongViec].push(row.Tags);
+        if (row.NhanDan) taskTagsMap[row.MaCongViec].push(row.NhanDan);
       }
     }
   }
@@ -90,11 +90,10 @@ async function listTasks(userId, query) {
 
   return (tasks || []).map((task) => ({
     ID: task.MaCongViec,
-    UserID: task.UserID,
+    MaNguoiDung: task.MaNguoiDung,
     MaLoai: task.MaLoai,
     TieuDe: task.TieuDe,
     MoTa: task.MoTa,
-    Tag: task.Tag,
     CoThoiGianCoDinh: task.CoThoiGianCoDinh,
     GioBatDauCoDinh: task.GioBatDauCoDinh,
     GioKetThucCoDinh: task.GioKetThucCoDinh,
@@ -110,7 +109,7 @@ async function listTasks(userId, query) {
     MauSac: PRIORITY_COLORS[task.MucDoUuTien] || "#3B82F6",
     TenLoai: task.LoaiCongViec?.TenLoai || null,
     tags: taskTagsMap[task.MaCongViec] || [],
-    GroupTaskID: groupInfoMap.get(task.MaCongViec)?.GroupTaskID || null,
+    MaCongViecNhom: groupInfoMap.get(task.MaCongViec)?.MaCongViecNhom || null,
     GroupName: groupInfoMap.get(task.MaCongViec)?.GroupName || null,
     GroupTaskDeadline: groupInfoMap.get(task.MaCongViec)?.Deadline || null,
     ...mapSalaryFields(task),
@@ -123,7 +122,7 @@ async function getTask(taskId, userId) {
     .from("CongViec")
     .select("*")
     .eq("MaCongViec", taskId)
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (error || !task) throw { status: 404, message: "Không tìm thấy công việc" };
@@ -147,13 +146,13 @@ async function getFullTimeCategory(userId) {
 async function deleteTask(taskId, userId, force) {
   const { data: task } = await supabase
     .from("CongViec")
-    .select("TieuDe, GroupTaskID")
+    .select("TieuDe, MaCongViecNhom")
     .eq("MaCongViec", taskId)
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (!task) throw { status: 404, message: "Không tìm thấy công việc hoặc không có quyền" };
-  if (task.GroupTaskID) throw { status: 400, message: "Không thể xoá công việc liên kết nhóm. Hãy xoá từ nhóm." };
+  if (task.MaCongViecNhom) throw { status: 400, message: "Không thể xoá công việc liên kết nhóm. Hãy xoá từ nhóm." };
 
   const { count: scheduleCount } = await supabase
     .from("LichTrinh")
@@ -161,7 +160,7 @@ async function deleteTask(taskId, userId, force) {
     .eq("MaCongViec", taskId);
 
   if (!scheduleCount || scheduleCount === 0) {
-    await supabase.from("CongViec").delete().eq("MaCongViec", taskId).eq("UserID", userId);
+    await supabase.from("CongViec").delete().eq("MaCongViec", taskId).eq("MaNguoiDung", userId);
     return { deleted: true, scheduleCount: 0 };
   }
 
@@ -176,7 +175,7 @@ async function deleteTask(taskId, userId, force) {
   }
 
   await supabase.from("LichTrinh").delete().eq("MaCongViec", taskId);
-  await supabase.from("CongViec").delete().eq("MaCongViec", taskId).eq("UserID", userId);
+  await supabase.from("CongViec").delete().eq("MaCongViec", taskId).eq("MaNguoiDung", userId);
   return { deleted: true, scheduleCount };
 }
 

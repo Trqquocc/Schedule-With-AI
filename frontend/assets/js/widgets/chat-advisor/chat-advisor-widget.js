@@ -202,7 +202,7 @@
         renderMsg("assistant", "Chào bạn 👋 Hôm nay bạn muốn mình giúp gì về công việc?");
         return;
       }
-      for (const m of res.data) renderMsg(m.Role, m.Content);
+      for (const m of res.data) renderMsg(m.VaiTro, m.NoiDung);
       scrollToBottom();
     } catch (err) {
       console.warn("[cadv] history load failed:", err.message);

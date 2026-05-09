@@ -5,6 +5,7 @@
   ></div>
 
   <div class="modal-content">
+    <!-- Header -->
     <div class="ai-modal-header">
       <div class="modal-header-left">
         <div class="modal-icon">
@@ -23,12 +24,14 @@
       </button>
     </div>
 
+    <!-- Body -->
     <div class="ai-modal-body">
       <form id="aiSuggestionForm">
-        <div class="form-section">
-          <div class="section-title">
+        <!-- Date range section -->
+        <div class="ai-form-card">
+          <div class="ai-form-card-header">
             <i class="fas fa-calendar-alt"></i>
-            <span>Chọn Khoảng Thời Gian</span>
+            <span>Khoảng Thời Gian</span>
           </div>
           <div class="date-range-grid">
             <div class="form-group">
@@ -42,12 +45,11 @@
           </div>
         </div>
 
-        <div class="form-section">
-          <div class="section-header">
-            <div class="section-title">
-              <i class="fas fa-tasks"></i>
-              <span>Chọn Công Việc</span>
-            </div>
+        <!-- Task selection section -->
+        <div class="ai-form-card">
+          <div class="ai-form-card-header">
+            <i class="fas fa-tasks"></i>
+            <span>Chọn Công Việc</span>
             <button type="button" class="btn-select-all" id="selectAllTasksBtn">
               <i class="fas fa-check-double"></i>
               <span>Chọn tất cả</span>
@@ -70,10 +72,11 @@
           </div>
         </div>
 
-        <div class="form-section">
-          <div class="section-title">
+        <!-- AI options section -->
+        <div class="ai-form-card">
+          <div class="ai-form-card-header">
             <i class="fas fa-sliders-h"></i>
-            <span>Tùy Chọn AI</span>
+            <span>Tuỳ Chọn AI</span>
           </div>
 
           <div class="ai-options-grid">
@@ -120,6 +123,7 @@
       </form>
     </div>
 
+    <!-- Footer -->
     <div class="ai-modal-footer">
       <button
         type="button"

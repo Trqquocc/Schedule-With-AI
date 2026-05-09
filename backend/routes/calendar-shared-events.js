@@ -29,9 +29,9 @@ router.get("/shared-events", async (req, res) => {
 
     // Step 1: Get accepted shares where current user is the recipient
     const { data: shares, error: sharesErr } = await supabase
-      .from("CalendarShares")
-      .select(`ShareID, Permission, OwnerID, Users!CalendarShares_OwnerID_fkey(HoTen, Email)`)
-      .eq("SharedWithID", userId)
+      .from("ChiaSeLich")
+      .select(`MaChiaSe, QuyenHan, MaChuSoHuu, NguoiDung!ChiaSeLich_MaChuSoHuu_fkey(HoTen, Email)`)
+      .eq("NguoiDuocChiaSe", userId)
       .eq("TrangThai", "accepted");
 
     if (sharesErr) throw sharesErr;
@@ -42,15 +42,15 @@ router.get("/shared-events", async (req, res) => {
     // Step 2: Build owner lookup map { ownerId: { HoTen, Permission } }
     const ownerMap = {};
     const ownerIds = shares.map((s) => {
-      ownerMap[s.OwnerID] = { hoTen: s.Users?.HoTen || s.Users?.Email || "Người dùng", permission: s.Permission };
-      return s.OwnerID;
+      ownerMap[s.MaChuSoHuu] = { hoTen: s.NguoiDung?.HoTen || s.NguoiDung?.Email || "Người dùng", permission: s.QuyenHan };
+      return s.MaChuSoHuu;
     });
 
     // Step 3: Query LichTrinh for those owners in date range
     const { data: records, error: lichErr } = await supabase
       .from("LichTrinh")
-      .select("*, CongViec(TieuDe, MucDoUuTien, MauSac)")
-      .in("UserID", ownerIds)
+      .select("*, CongViec(TieuDe, MucDoUuTien)")
+      .in("MaNguoiDung", ownerIds)
       .gte("GioBatDau", from)
       .lte("GioBatDau", to)
       .order("GioBatDau", { ascending: true });
@@ -59,11 +59,11 @@ router.get("/shared-events", async (req, res) => {
 
     // Step 4: Format for FullCalendar, annotate with owner info
     const events = (records || []).map((ev) => {
-      const owner = ownerMap[ev.UserID] || { hoTen: "Ẩn danh", permission: "viewer" };
+      const owner = ownerMap[ev.MaNguoiDung] || { hoTen: "Ẩn danh", permission: "viewer" };
       const priorityColor = ev.CongViec?.MucDoUuTien
         ? PRIORITY_COLORS[ev.CongViec.MucDoUuTien] || "#94a3b8"
         : "#94a3b8";
-      const color = ev.CongViec?.MauSac || priorityColor;
+      const color = priorityColor;
 
       return {
         id: `shared-${ev.MaLichTrinh}`,
@@ -81,7 +81,7 @@ router.get("/shared-events", async (req, res) => {
           permission: owner.permission,
           completed: ev.DaHoanThanh || false,
           priority: ev.CongViec?.MucDoUuTien || 2,
-          ownerId: ev.UserID,
+          ownerId: ev.MaNguoiDung,
         },
       };
     });

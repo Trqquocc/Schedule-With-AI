@@ -216,7 +216,7 @@
     }
     state.items = res.data.items || [];
     state.warnings = res.data.warnings || [];
-    state.groups = buildGroups(state.items);
+    state.groups = buildNhomLamViec(state.items);
     hideStatus();
     renderItems();
   }
@@ -227,7 +227,7 @@
   function groupKey(it) {
     return (it.courseCode || "").trim() || (it.title || "").trim().toLowerCase();
   }
-  function buildGroups(items) {
+  function buildNhomLamViec(items) {
     const byKey = new Map();
     for (const it of items) {
       const k = groupKey(it);
@@ -250,7 +250,7 @@
   }
 
   // Rebuild flat items[] from groups (used by Apply path which passes items).
-  function flattenGroups(groups) {
+  function flattenNhomLamViec(groups) {
     const out = [];
     for (const g of groups) {
       for (const s of g.sessions) {

@@ -22,8 +22,8 @@ router.post("/invite", async (req, res) => {
 
     // Look up recipient — use generic error to avoid user enumeration
     const { data: targetUser, error: userErr } = await supabase
-      .from("Users")
-      .select("UserID")
+      .from("NguoiDung")
+      .select("MaNguoiDung")
       .eq("Email", email.trim().toLowerCase())
       .single();
 
@@ -31,7 +31,7 @@ router.post("/invite", async (req, res) => {
       return res.status(400).json({ success: false, message: "Không thể gửi lời mời" });
     }
 
-    const sharedWithId = targetUser.UserID;
+    const sharedWithId = targetUser.MaNguoiDung;
 
     if (sharedWithId === ownerId) {
       return res.status(400).json({ success: false, message: "Không thể chia sẻ với chính mình" });
@@ -39,19 +39,19 @@ router.post("/invite", async (req, res) => {
 
     // Check max shares limit
     const { count, error: countErr } = await supabase
-      .from("CalendarShares")
-      .select("ShareID", { count: "exact", head: true })
-      .eq("OwnerID", ownerId);
+      .from("ChiaSeLich")
+      .select("MaChiaSe", { count: "exact", head: true })
+      .eq("MaChuSoHuu", ownerId);
 
     if (countErr) throw countErr;
     if (count >= MAX_SHARES_PER_OWNER) {
       return res.status(400).json({ success: false, message: `Chỉ được chia sẻ tối đa ${MAX_SHARES_PER_OWNER} người` });
     }
 
-    // Insert — conflict on UNIQUE(OwnerID, SharedWithID) returns error
+    // Insert — conflict on UNIQUE(MaChuSoHuu, NguoiDuocChiaSe) returns error
     const { data: share, error: insertErr } = await supabase
-      .from("CalendarShares")
-      .insert({ OwnerID: ownerId, SharedWithID: sharedWithId, Permission: permission })
+      .from("ChiaSeLich")
+      .insert({ MaChuSoHuu: ownerId, NguoiDuocChiaSe: sharedWithId, QuyenHan: permission })
       .select()
       .single();
 
@@ -76,18 +76,18 @@ router.get("/", async (req, res) => {
 
     // Shares I sent (as owner), all statuses except rejected for display
     const { data: sent, error: sentErr } = await supabase
-      .from("CalendarShares")
-      .select(`ShareID, Permission, TrangThai, NgayTao, SharedWithID, Users!CalendarShares_SharedWithID_fkey(HoTen, Email)`)
-      .eq("OwnerID", userId)
+      .from("ChiaSeLich")
+      .select(`MaChiaSe, QuyenHan, TrangThai, NgayTao, NguoiDuocChiaSe, NguoiDung!ChiaSeLich_NguoiDuocChiaSe_fkey(HoTen, Email)`)
+      .eq("MaChuSoHuu", userId)
       .neq("TrangThai", "rejected");
 
     if (sentErr) throw sentErr;
 
     // Shares I received (accepted only)
     const { data: received, error: recvErr } = await supabase
-      .from("CalendarShares")
-      .select(`ShareID, Permission, TrangThai, NgayTao, OwnerID, Users!CalendarShares_OwnerID_fkey(HoTen, Email)`)
-      .eq("SharedWithID", userId)
+      .from("ChiaSeLich")
+      .select(`MaChiaSe, QuyenHan, TrangThai, NgayTao, MaChuSoHuu, NguoiDung!ChiaSeLich_MaChuSoHuu_fkey(HoTen, Email)`)
+      .eq("NguoiDuocChiaSe", userId)
       .eq("TrangThai", "accepted");
 
     if (recvErr) throw recvErr;
@@ -105,9 +105,9 @@ router.get("/invitations", async (req, res) => {
     const userId = req.userId;
 
     const { data, error } = await supabase
-      .from("CalendarShares")
-      .select(`ShareID, Permission, NgayTao, OwnerID, Users!CalendarShares_OwnerID_fkey(HoTen, Email)`)
-      .eq("SharedWithID", userId)
+      .from("ChiaSeLich")
+      .select(`MaChiaSe, QuyenHan, NgayTao, MaChuSoHuu, NguoiDung!ChiaSeLich_MaChuSoHuu_fkey(HoTen, Email)`)
+      .eq("NguoiDuocChiaSe", userId)
       .eq("TrangThai", "pending");
 
     if (error) throw error;
@@ -129,19 +129,19 @@ router.put("/:id/accept", async (req, res) => {
 
     // Verify ownership and status
     const { data: share, error: findErr } = await supabase
-      .from("CalendarShares")
-      .select("ShareID, TrangThai, SharedWithID")
-      .eq("ShareID", shareId)
+      .from("ChiaSeLich")
+      .select("MaChiaSe, TrangThai, NguoiDuocChiaSe")
+      .eq("MaChiaSe", shareId)
       .single();
 
     if (findErr || !share) return res.status(404).json({ success: false, message: "Không tìm thấy lời mời" });
-    if (share.SharedWithID !== userId) return res.status(403).json({ success: false, message: "Không có quyền" });
+    if (share.NguoiDuocChiaSe !== userId) return res.status(403).json({ success: false, message: "Không có quyền" });
     if (share.TrangThai !== "pending") return res.status(400).json({ success: false, message: "Lời mời đã xử lý" });
 
     const { data: updated, error: updateErr } = await supabase
-      .from("CalendarShares")
+      .from("ChiaSeLich")
       .update({ TrangThai: "accepted", NgayCapNhat: new Date().toISOString() })
-      .eq("ShareID", shareId)
+      .eq("MaChiaSe", shareId)
       .select()
       .single();
 
@@ -163,19 +163,19 @@ router.put("/:id/reject", async (req, res) => {
     if (isNaN(shareId)) return res.status(400).json({ success: false, message: "ID không hợp lệ" });
 
     const { data: share, error: findErr } = await supabase
-      .from("CalendarShares")
-      .select("ShareID, TrangThai, SharedWithID")
-      .eq("ShareID", shareId)
+      .from("ChiaSeLich")
+      .select("MaChiaSe, TrangThai, NguoiDuocChiaSe")
+      .eq("MaChiaSe", shareId)
       .single();
 
     if (findErr || !share) return res.status(404).json({ success: false, message: "Không tìm thấy lời mời" });
-    if (share.SharedWithID !== userId) return res.status(403).json({ success: false, message: "Không có quyền" });
+    if (share.NguoiDuocChiaSe !== userId) return res.status(403).json({ success: false, message: "Không có quyền" });
     if (share.TrangThai !== "pending") return res.status(400).json({ success: false, message: "Lời mời đã xử lý" });
 
     const { data: updated, error: updateErr } = await supabase
-      .from("CalendarShares")
+      .from("ChiaSeLich")
       .update({ TrangThai: "rejected", NgayCapNhat: new Date().toISOString() })
-      .eq("ShareID", shareId)
+      .eq("MaChiaSe", shareId)
       .select()
       .single();
 
@@ -197,22 +197,22 @@ router.delete("/:id", async (req, res) => {
     if (isNaN(shareId)) return res.status(400).json({ success: false, message: "ID không hợp lệ" });
 
     const { data: share, error: findErr } = await supabase
-      .from("CalendarShares")
-      .select("ShareID, OwnerID, SharedWithID")
-      .eq("ShareID", shareId)
+      .from("ChiaSeLich")
+      .select("MaChiaSe, MaChuSoHuu, NguoiDuocChiaSe")
+      .eq("MaChiaSe", shareId)
       .single();
 
     if (findErr || !share) return res.status(404).json({ success: false, message: "Không tìm thấy" });
 
     // Must be owner or recipient
-    if (share.OwnerID !== userId && share.SharedWithID !== userId) {
+    if (share.MaChuSoHuu !== userId && share.NguoiDuocChiaSe !== userId) {
       return res.status(403).json({ success: false, message: "Không có quyền" });
     }
 
     const { error: delErr } = await supabase
-      .from("CalendarShares")
+      .from("ChiaSeLich")
       .delete()
-      .eq("ShareID", shareId);
+      .eq("MaChiaSe", shareId);
 
     if (delErr) throw delErr;
 

@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
     const { data, error } = await supabase
       .from("LoaiCongViec")
       .select("MaLoai, TenLoai, MoTa")
-      .eq("UserID", req.userId);
+      .eq("MaNguoiDung", req.userId);
 
     if (error) {
       console.error("Lỗi tải danh mục:", error);
@@ -58,7 +58,7 @@ router.post("/", async (req, res) => {
     const { data, error } = await supabase
       .from("LoaiCongViec")
       .insert({
-        UserID: req.userId,
+        MaNguoiDung: req.userId,
         TenLoai: TenLoai,
         MoTa: MoTa || "",
       })
@@ -86,7 +86,7 @@ router.put("/:id", async (req, res) => {
       .from("LoaiCongViec")
       .update({ TenLoai, MoTa: MoTa || "" })
       .eq("MaLoai", req.params.id)
-      .eq("UserID", req.userId);
+      .eq("MaNguoiDung", req.userId);
 
     res.json({ success: true, message: "Cập nhật thành công" });
   } catch (error) {
@@ -102,7 +102,7 @@ router.delete("/:id", async (req, res) => {
       .from("LoaiCongViec")
       .delete()
       .eq("MaLoai", req.params.id)
-      .eq("UserID", req.userId);
+      .eq("MaNguoiDung", req.userId);
 
     res.json({ success: true, message: "Xóa danh mục thành công" });
   } catch (error) {

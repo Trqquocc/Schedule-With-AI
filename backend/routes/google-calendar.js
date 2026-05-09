@@ -76,9 +76,9 @@ router.get('/callback', requireConfig, async (req, res) => {
 router.get('/status', authenticateToken, async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('GoogleCalendarConnections')
+      .from('KetNoiGoogleCalendar')
       .select('GoogleEmail, TrangThaiKetNoi, NgayKetNoi, NgayCapNhat')
-      .eq('UserID', req.userId)
+      .eq('MaNguoiDung', req.userId)
       .single();
 
     if (error || !data) {
@@ -103,9 +103,9 @@ router.get('/status', authenticateToken, async (req, res) => {
 router.post('/disconnect', authenticateToken, async (req, res) => {
   try {
     const { error } = await supabase
-      .from('GoogleCalendarConnections')
+      .from('KetNoiGoogleCalendar')
       .delete()
-      .eq('UserID', req.userId);
+      .eq('MaNguoiDung', req.userId);
 
     if (error) throw new Error(error.message);
 

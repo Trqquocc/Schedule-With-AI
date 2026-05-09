@@ -8,8 +8,8 @@ module.exports = {
 
   async run({ supabase, getBot, logSent, alreadySent }) {
     const { data: users } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TrangThaiKetNoi, ThongBaoTuan")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TrangThaiKetNoi, ThongBaoTuan")
       .eq("TrangThaiKetNoi", true)
       .eq("ThongBaoTuan", true);
 
@@ -22,12 +22,12 @@ module.exports = {
 
     for (const u of users) {
       // Ensure only one weekly digest per 24h (cron safety net).
-      if (await alreadySent(u.UserID, 0, "weekly", 24 * 60)) continue;
+      if (await alreadySent(u.MaNguoiDung, 0, "weekly", 24 * 60)) continue;
 
       const { data: rows } = await supabase
         .from("LichTrinh")
         .select("MaLichTrinh, DaHoanThanh, GioBatDau, GioKetThuc, TieuDe")
-        .eq("UserID", u.UserID)
+        .eq("MaNguoiDung", u.MaNguoiDung)
         .gte("GioBatDau", sevenDaysAgo.toISOString())
         .lte("GioBatDau", now.toISOString());
 
@@ -59,10 +59,10 @@ module.exports = {
           : "🌱 Tuần tới cố thêm chút nữa nhé.");
 
       try {
-        await bot.sendMessageToUser(u.UserID, msg);
-        await logSent(u.UserID, 0, "weekly");
+        await bot.sendMessageToUser(u.MaNguoiDung, msg);
+        await logSent(u.MaNguoiDung, 0, "weekly");
       } catch (err) {
-        console.error(`[weekly] send failed user ${u.UserID}:`, err.message);
+        console.error(`[weekly] send failed user ${u.MaNguoiDung}:`, err.message);
       }
     }
   },

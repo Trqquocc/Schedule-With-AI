@@ -17,8 +17,8 @@ module.exports = {
     const dom = today.getDate();
 
     const { data: users } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TrangThaiKetNoi, ThongBaoLuong, NgayNhanLuong")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TrangThaiKetNoi, ThongBaoLuong, NgayNhanLuong")
       .eq("TrangThaiKetNoi", true)
       .eq("ThongBaoLuong", true)
       .eq("NgayNhanLuong", dom);
@@ -35,20 +35,20 @@ module.exports = {
     const bot = getBot();
 
     for (const u of users) {
-      if (await alreadySent(u.UserID, 0, "salary", 20 * 60)) continue;
+      if (await alreadySent(u.MaNguoiDung, 0, "salary", 20 * 60)) continue;
 
       const { data: done } = await supabase
         .from("LichTrinh")
         .select("MaCongViec, GioBatDau, GioKetThuc")
-        .eq("UserID", u.UserID)
+        .eq("MaNguoiDung", u.MaNguoiDung)
         .eq("DaHoanThanh", true)
         .gte("GioKetThuc", startAt.toISOString())
         .lte("GioKetThuc", endAt.toISOString())
         .not("MaCongViec", "is", null);
 
       if (!done?.length) {
-        await safeSend(bot, u.UserID, noEarningsMsg(startAt, endAt));
-        await logSent(u.UserID, 0, "salary");
+        await safeSend(bot, u.MaNguoiDung, noEarningsMsg(startAt, endAt));
+        await logSent(u.MaNguoiDung, 0, "salary");
         continue;
       }
 
@@ -57,7 +57,7 @@ module.exports = {
         .from("CongViec")
         .select("MaCongViec, TieuDe, LuongTheoGio")
         .in("MaCongViec", taskIds)
-        .eq("UserID", u.UserID);
+        .eq("MaNguoiDung", u.MaNguoiDung);
 
       const taskMap = new Map((tasks || []).map((t) => [t.MaCongViec, t]));
 
@@ -73,8 +73,8 @@ module.exports = {
       }
 
       if (perJob.size === 0) {
-        await safeSend(bot, u.UserID, noEarningsMsg(startAt, endAt));
-        await logSent(u.UserID, 0, "salary");
+        await safeSend(bot, u.MaNguoiDung, noEarningsMsg(startAt, endAt));
+        await logSent(u.MaNguoiDung, 0, "salary");
         continue;
       }
 
@@ -91,8 +91,8 @@ module.exports = {
         lines.join("\n") +
         `\n\n<b>Tổng: ${fmtVND(total)}</b>`;
 
-      await safeSend(bot, u.UserID, msg);
-      await logSent(u.UserID, 0, "salary");
+      await safeSend(bot, u.MaNguoiDung, msg);
+      await logSent(u.MaNguoiDung, 0, "salary");
     }
   },
 };

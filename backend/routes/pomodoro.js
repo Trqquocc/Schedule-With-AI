@@ -10,7 +10,7 @@ const { supabase } = require("../config/database");
 
 // Helper: extract userId from request (auth middleware sets req.user or req.userId)
 function getUserId(req) {
-  return req.user?.UserID ?? req.userId;
+  return req.user?.MaNguoiDung ?? req.userId;
 }
 
 // Helper: start of today in UTC (ISO string)
@@ -37,7 +37,7 @@ router.post("/sessions", async (req, res) => {
     }
 
     const row = {
-      UserID: userId,
+      MaNguoiDung: userId,
       ThoiLuongPhut: durationMinutes,
       DaHoanThanh: completed === true,
       LoaiPhien: sessionType,
@@ -49,9 +49,9 @@ router.post("/sessions", async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from("PomodoroSessions")
+      .from("PhienPomodoro")
       .insert(row)
-      .select("SessionID, BatDau")
+      .select("MaPhien, BatDau")
       .single();
 
     if (error) throw error;
@@ -71,9 +71,9 @@ router.get("/sessions", async (req, res) => {
     const { taskId } = req.query;
 
     let query = supabase
-      .from("PomodoroSessions")
-      .select("SessionID, MaCongViec, BatDau, ThoiLuongPhut, DaHoanThanh, LoaiPhien")
-      .eq("UserID", userId)
+      .from("PhienPomodoro")
+      .select("MaPhien, MaCongViec, BatDau, ThoiLuongPhut, DaHoanThanh, LoaiPhien")
+      .eq("MaNguoiDung", userId)
       .order("BatDau", { ascending: false })
       .limit(50);
 
@@ -104,15 +104,15 @@ router.get("/stats", async (req, res) => {
     // Run today query and all-time count in parallel
     const [todayResult, allTimeResult] = await Promise.all([
       supabase
-        .from("PomodoroSessions")
+        .from("PhienPomodoro")
         .select("ThoiLuongPhut, LoaiPhien")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .eq("DaHoanThanh", true)
         .gte("BatDau", todayStart),
       supabase
-        .from("PomodoroSessions")
-        .select("SessionID", { count: "exact", head: true })
-        .eq("UserID", userId),
+        .from("PhienPomodoro")
+        .select("MaPhien", { count: "exact", head: true })
+        .eq("MaNguoiDung", userId),
     ]);
 
     if (todayResult.error) throw todayResult.error;

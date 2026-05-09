@@ -17,23 +17,23 @@ router.post("/request", async (req, res) => {
     }
 
     const { data: target, error: userErr } = await supabase
-      .from("Users")
-      .select("UserID")
+      .from("NguoiDung")
+      .select("MaNguoiDung")
       .eq("Email", email.trim().toLowerCase())
       .single();
 
     if (userErr || !target) {
       return res.status(404).json({ success: false, message: "Không tìm thấy người dùng" });
     }
-    if (target.UserID === requesterId) {
+    if (target.MaNguoiDung === requesterId) {
       return res.status(400).json({ success: false, message: "Không thể kết bạn với chính mình" });
     }
 
     // Check existing friendship in either direction
     const { data: existing } = await supabase
-      .from("Friends")
-      .select("FriendshipID, TrangThai, RequesterID")
-      .or(`and(RequesterID.eq.${requesterId},ReceiverID.eq.${target.UserID}),and(RequesterID.eq.${target.UserID},ReceiverID.eq.${requesterId})`);
+      .from("BanBe")
+      .select("MaKetBan, TrangThai, NguoiGui")
+      .or(`and(NguoiGui.eq.${requesterId},NguoiNhan.eq.${target.MaNguoiDung}),and(NguoiGui.eq.${target.MaNguoiDung},NguoiNhan.eq.${requesterId})`);
 
     if (existing && existing.length > 0) {
       const f = existing[0];
@@ -44,24 +44,24 @@ router.post("/request", async (req, res) => {
         return res.status(400).json({ success: false, message: "Lời mời đã được gửi trước đó" });
       }
       // rejected — allow re-request by updating
-      await supabase.from("Friends").update({ TrangThai: "pending", RequesterID: requesterId, ReceiverID: target.UserID, NgayCapNhat: new Date().toISOString() }).eq("FriendshipID", f.FriendshipID);
+      await supabase.from("BanBe").update({ TrangThai: "pending", NguoiGui: requesterId, NguoiNhan: target.MaNguoiDung, NgayCapNhat: new Date().toISOString() }).eq("MaKetBan", f.MaKetBan); // f.MaKetBan from select above
       return res.json({ success: true, message: "Đã gửi lời mời kết bạn" });
     }
 
     // Check limit
     const { count } = await supabase
-      .from("Friends")
-      .select("FriendshipID", { count: "exact", head: true })
+      .from("BanBe")
+      .select("MaKetBan", { count: "exact", head: true })
       .eq("TrangThai", "accepted")
-      .or(`RequesterID.eq.${requesterId},ReceiverID.eq.${requesterId}`);
+      .or(`NguoiGui.eq.${requesterId},NguoiNhan.eq.${requesterId}`);
 
     if (count >= MAX_FRIENDS) {
       return res.status(400).json({ success: false, message: `Tối đa ${MAX_FRIENDS} bạn bè` });
     }
 
-    const { error: insertErr } = await supabase.from("Friends").insert({
-      RequesterID: requesterId,
-      ReceiverID: target.UserID,
+    const { error: insertErr } = await supabase.from("BanBe").insert({
+      NguoiGui: requesterId,
+      NguoiNhan: target.MaNguoiDung,
       TrangThai: "pending",
     });
 
@@ -79,21 +79,21 @@ router.get("/", async (req, res) => {
     const userId = req.userId;
 
     const { data, error } = await supabase
-      .from("Friends")
-      .select(`FriendshipID, RequesterID, ReceiverID, NgayTao,
-        Requester:Users!Friends_RequesterID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge),
-        Receiver:Users!Friends_ReceiverID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
+      .from("BanBe")
+      .select(`MaKetBan, NguoiGui, NguoiNhan, NgayTao,
+        Requester:NguoiDung!BanBe_NguoiGui_fkey(MaNguoiDung, HoTen, Email, AvatarUrl, EquippedBadge),
+        Receiver:NguoiDung!BanBe_NguoiNhan_fkey(MaNguoiDung, HoTen, Email, AvatarUrl, EquippedBadge)`)
       .eq("TrangThai", "accepted")
-      .or(`RequesterID.eq.${userId},ReceiverID.eq.${userId}`)
+      .or(`NguoiGui.eq.${userId},NguoiNhan.eq.${userId}`)
       .order("NgayTao", { ascending: false });
 
     if (error) throw error;
 
     const friends = (data || []).map((f) => {
-      const friend = f.RequesterID === userId ? f.Receiver : f.Requester;
+      const friend = f.NguoiGui === userId ? f.Receiver : f.Requester;
       return {
-        FriendshipID: f.FriendshipID,
-        UserID: friend.UserID,
+        MaKetBan: f.MaKetBan,
+        MaNguoiDung: friend.MaNguoiDung,
         HoTen: friend.HoTen,
         Email: friend.Email,
         AvatarUrl: friend.AvatarUrl,
@@ -103,18 +103,18 @@ router.get("/", async (req, res) => {
     });
 
     // Enrich with gamification data (streak, level)
-    const friendIds = friends.map((f) => f.UserID);
+    const friendIds = friends.map((f) => f.MaNguoiDung);
     if (friendIds.length > 0) {
       const { data: gamRows } = await supabase
-        .from("UserGamification")
-        .select("UserID, Level, XP, Streak")
-        .in("UserID", friendIds);
-      const gamMap = Object.fromEntries((gamRows || []).map((g) => [g.UserID, g]));
+        .from("ThanhTich")
+        .select("MaNguoiDung, CapDo, DiemKinhNghiem, ChuoiNgay")
+        .in("MaNguoiDung", friendIds);
+      const gamMap = Object.fromEntries((gamRows || []).map((g) => [g.MaNguoiDung, g]));
       friends.forEach((f) => {
-        const g = gamMap[f.UserID];
-        f.Level = g?.Level || 1;
-        f.XP = g?.XP || 0;
-        f.Streak = g?.Streak || 0;
+        const g = gamMap[f.MaNguoiDung];
+        f.Level = g?.CapDo || 1;
+        f.XP = g?.DiemKinhNghiem || 0;
+        f.Streak = g?.ChuoiNgay || 0;
       });
     }
 
@@ -131,10 +131,10 @@ router.get("/requests", async (req, res) => {
     const userId = req.userId;
 
     const { data, error } = await supabase
-      .from("Friends")
-      .select(`FriendshipID, NgayTao,
-        Requester:Users!Friends_RequesterID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
-      .eq("ReceiverID", userId)
+      .from("BanBe")
+      .select(`MaKetBan, NgayTao,
+        Requester:NguoiDung!BanBe_NguoiGui_fkey(MaNguoiDung, HoTen, Email, AvatarUrl, EquippedBadge)`)
+      .eq("NguoiNhan", userId)
       .eq("TrangThai", "pending")
       .order("NgayTao", { ascending: false });
 
@@ -152,10 +152,10 @@ router.get("/sent", async (req, res) => {
     const userId = req.userId;
 
     const { data, error } = await supabase
-      .from("Friends")
-      .select(`FriendshipID, NgayTao,
-        Receiver:Users!Friends_ReceiverID_fkey(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
-      .eq("RequesterID", userId)
+      .from("BanBe")
+      .select(`MaKetBan, NgayTao,
+        Receiver:NguoiDung!BanBe_NguoiNhan_fkey(MaNguoiDung, HoTen, Email, AvatarUrl, EquippedBadge)`)
+      .eq("NguoiGui", userId)
       .eq("TrangThai", "pending")
       .order("NgayTao", { ascending: false });
 
@@ -174,10 +174,10 @@ router.put("/:id/accept", async (req, res) => {
     const friendshipId = parseInt(req.params.id, 10);
 
     const { data, error } = await supabase
-      .from("Friends")
+      .from("BanBe")
       .update({ TrangThai: "accepted", NgayCapNhat: new Date().toISOString() })
-      .eq("FriendshipID", friendshipId)
-      .eq("ReceiverID", userId)
+      .eq("MaKetBan", friendshipId)
+      .eq("NguoiNhan", userId)
       .eq("TrangThai", "pending")
       .select()
       .single();
@@ -199,10 +199,10 @@ router.put("/:id/reject", async (req, res) => {
     const friendshipId = parseInt(req.params.id, 10);
 
     const { data, error } = await supabase
-      .from("Friends")
+      .from("BanBe")
       .update({ TrangThai: "rejected", NgayCapNhat: new Date().toISOString() })
-      .eq("FriendshipID", friendshipId)
-      .eq("ReceiverID", userId)
+      .eq("MaKetBan", friendshipId)
+      .eq("NguoiNhan", userId)
       .eq("TrangThai", "pending")
       .select()
       .single();
@@ -224,10 +224,10 @@ router.delete("/:id", async (req, res) => {
     const friendshipId = parseInt(req.params.id, 10);
 
     const { data, error } = await supabase
-      .from("Friends")
+      .from("BanBe")
       .delete()
-      .eq("FriendshipID", friendshipId)
-      .or(`RequesterID.eq.${userId},ReceiverID.eq.${userId}`)
+      .eq("MaKetBan", friendshipId)
+      .or(`NguoiGui.eq.${userId},NguoiNhan.eq.${userId}`)
       .select()
       .single();
 
@@ -255,9 +255,9 @@ router.get("/search", async (req, res) => {
     const safeQ = q.replace(/[%_\\]/g, "\\$&");
 
     const { data, error } = await supabase
-      .from("Users")
-      .select("UserID, HoTen, Email, AvatarUrl, EquippedBadge")
-      .neq("UserID", userId)
+      .from("NguoiDung")
+      .select("MaNguoiDung, HoTen, Email, AvatarUrl, EquippedBadge")
+      .neq("MaNguoiDung", userId)
       .or(`HoTen.ilike.%${safeQ}%,Email.ilike.%${safeQ}%`)
       .limit(10);
 

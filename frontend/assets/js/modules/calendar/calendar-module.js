@@ -44,10 +44,9 @@
       const events = await this.loadEvents();
       this.renderCalendar(events);
 
-      setTimeout(() => { this.initializeNavbarEvents(); }, 200);
+      requestAnimationFrame(() => this.initializeNavbarEvents());
 
-      // Defensive re-mount: first render sometimes misses extendedProps.subtasks
-      // (FC copies events on init before batch-fetch mutations propagate visually).
+      // Defensive re-mount for subtask chips after init
       setTimeout(() => this.refreshEventsInPlace().catch(() => {}), 400);
     },
 
@@ -147,13 +146,13 @@
         eventReceive: (info) => { this._handleEventReceive?.(info); },
 
         eventDrop: async (info) => {
-          if (!window.Utils?.isLoggedIn()) { info.revert(); return; }
+          if (!window.Utils?.isLoggedIn()) return; // demo: allow drag without saving
           if (this._handleEventUpdate) await this._handleEventUpdate(info);
           else info.revert();
         },
 
         eventResize: async (info) => {
-          if (!window.Utils?.isLoggedIn()) { info.revert(); return; }
+          if (!window.Utils?.isLoggedIn()) return; // demo: allow resize without saving
           if (this._handleEventUpdate) await this._handleEventUpdate(info);
           else info.revert();
         },

@@ -29,7 +29,7 @@ async function assertFullTimeTaskOwned(userId, taskId) {
     .from("CongViec")
     .select("MaCongViec, LoaiLuong")
     .eq("MaCongViec", taskId)
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .single();
   if (error || !data) return { ok: false, status: 404, message: "Không tìm thấy công việc" };
   if (data.LoaiLuong !== "full_time") {
@@ -51,7 +51,7 @@ router.get("/", async (req, res) => {
     let q = supabase
       .from("DieuChinhLuong")
       .select("MaDieuChinh, MaCongViec, Thang, SoTien, LyDo, NgayTao")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .order("NgayTao", { ascending: false });
 
     if (taskId) {
@@ -110,7 +110,7 @@ router.post("/", async (req, res) => {
       .from("DieuChinhLuong")
       .insert({
         MaCongViec: taskId,
-        UserID: userId,
+        MaNguoiDung: userId,
         Thang,
         SoTien: delta,
         LyDo: LyDo || null,
@@ -160,7 +160,7 @@ router.put("/:id", async (req, res) => {
       .from("DieuChinhLuong")
       .update(updates)
       .eq("MaDieuChinh", id)
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .select();
     if (error) {
       console.error("[adjustments] update failed:", error);
@@ -185,7 +185,7 @@ router.delete("/:id", async (req, res) => {
       .from("DieuChinhLuong")
       .delete()
       .eq("MaDieuChinh", id)
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .select("MaDieuChinh");
     if (error) {
       console.error("[adjustments] delete failed:", error);

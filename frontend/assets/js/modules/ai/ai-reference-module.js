@@ -24,6 +24,7 @@
     tasks: [],           // pending CongViec rows
     selected: new Set(), // selected task MaCongViec (number)
     proposals: [],       // current unaccepted proposals from AI
+    lastRequest: null,   // last API request params for regenerate/edit
     tasksLoaded: false,
     toolbarBound: false,
     eventClickPatched: false,
@@ -427,6 +428,12 @@
       const dropped = res.data?.stats?.droppedForConflict || 0;
       clearProposalsOnCalendar();
       state.proposals = proposals;
+      state.lastRequest = {
+        taskIds: Array.from(state.selected),
+        dateStart: range.dateStart,
+        dateEnd: range.dateEnd,
+        additionalInstructions: range.additionalInstructions,
+      };
       renderProposalsOnCalendar(proposals);
       showProposalBar(proposals.length, dropped);
     } catch (err) {
@@ -595,7 +602,62 @@
   function rejectAll() {
     state.proposals.forEach((p) => clearProposalById(p.taskId));
     state.proposals = [];
+    state.lastRequest = null;
     updateProposalBar();
+    hideEditPanel();
+  }
+
+  // ----- Regenerate / Edit --------------------------------------------------
+
+  async function regenerate(extraInstructions) {
+    if (!state.lastRequest) {
+      Utils.showToast?.("Chưa có yêu cầu trước đó — hãy tạo gợi ý mới", "warning");
+      return;
+    }
+    const payload = { ...state.lastRequest };
+    if (extraInstructions) payload.additionalInstructions = extraInstructions;
+
+    const btn = $("ai-ref-regenerate-btn") || $("ai-ref-send-edit-btn");
+    const origHtml = btn?.innerHTML;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...'; }
+
+    try {
+      const res = await Utils.makeRequest("/api/ai-reference/suggest-schedule", "POST", payload);
+      if (!res.success) throw new Error(res.message || "AI từ chối");
+      const proposals = res.data?.proposals || [];
+      if (proposals.length === 0) {
+        Utils.showToast?.("AI không tìm được lịch phù hợp — thử chỉnh sửa yêu cầu", "warning");
+        return;
+      }
+      const dropped = res.data?.stats?.droppedForConflict || 0;
+      clearProposalsOnCalendar();
+      state.proposals = proposals;
+      state.lastRequest = payload;
+      renderProposalsOnCalendar(proposals);
+      showProposalBar(proposals.length, dropped);
+      // Hide edit panel if open
+      const editPanel = $("ai-ref-edit-panel");
+      if (editPanel) { editPanel.classList.add("hidden"); editPanel.style.display = ""; }
+    } catch (err) {
+      console.error("[ai-ref] regenerate:", err);
+      Utils.showToast?.(err.message || "Lỗi tạo lại", "error");
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+    }
+  }
+
+  function showEditPanel() {
+    const panel = $("ai-ref-edit-panel");
+    if (!panel) return;
+    panel.classList.remove("hidden");
+    panel.style.display = "block";
+    const textarea = $("ai-ref-edit-instructions");
+    if (textarea) { textarea.value = state.lastRequest?.additionalInstructions || ""; textarea.focus(); }
+  }
+
+  function hideEditPanel() {
+    const panel = $("ai-ref-edit-panel");
+    if (panel) { panel.classList.add("hidden"); panel.style.display = ""; }
   }
 
   // ----- Bind toolbar (idempotent) -----------------------------------------
@@ -647,6 +709,16 @@
     clearBtn?.addEventListener("click", clearSelection);
     acceptAllBtn?.addEventListener("click", acceptAll);
     rejectAllBtn?.addEventListener("click", rejectAll);
+
+    // Regenerate + Edit buttons
+    $("ai-ref-regenerate-btn")?.addEventListener("click", () => regenerate());
+    $("ai-ref-edit-btn")?.addEventListener("click", showEditPanel);
+    $("ai-ref-cancel-edit-btn")?.addEventListener("click", hideEditPanel);
+    $("ai-ref-send-edit-btn")?.addEventListener("click", () => {
+      const instructions = $("ai-ref-edit-instructions")?.value?.trim();
+      if (!instructions) { Utils.showToast?.("Nhập hướng dẫn chỉnh sửa", "warning"); return; }
+      regenerate(instructions);
+    });
 
     state.toolbarBound = true;
   }

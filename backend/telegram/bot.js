@@ -58,7 +58,7 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
 
   try {
     const { data } = await supabase
-      .from("TelegramConnections")
+      .from("KetNoiTelegram")
       .select("TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
       .eq("TelegramChatId", chatId.toString())
       .single();
@@ -106,8 +106,8 @@ bot.onText(/\/status/, async (msg) => {
   const chatId = msg.chat.id;
   try {
     const { data } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TelegramChatId, TelegramUsername, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY, NgayKetNoi")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TelegramChatId, TelegramUsername, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY, NgayKetNoi")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
@@ -133,8 +133,8 @@ bot.onText(/\/settings/, async (msg) => {
   const chatId = msg.chat.id;
   try {
     const { data } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
@@ -168,8 +168,8 @@ bot.on("callback_query", async (query) => {
 
   try {
     const { data: conn } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
@@ -188,7 +188,7 @@ bot.on("callback_query", async (query) => {
     else if (action === "toggle_events") updateData.ThongBaoSuKien = !conn.ThongBaoSuKien;
     else if (action === "toggle_ai") updateData.ThongBaoGoiY = !conn.ThongBaoGoiY;
 
-    await supabase.from("TelegramConnections").update(updateData).eq("UserID", conn.UserID);
+    await supabase.from("KetNoiTelegram").update(updateData).eq("MaNguoiDung", conn.MaNguoiDung);
 
     const keyboard = {
       inline_keyboard: [
@@ -211,8 +211,8 @@ bot.onText(/\/disconnect/, async (msg) => {
   const chatId = msg.chat.id;
   try {
     const { data } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TrangThaiKetNoi")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TrangThaiKetNoi")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
@@ -226,7 +226,7 @@ bot.onText(/\/disconnect/, async (msg) => {
       return;
     }
 
-    await supabase.from("TelegramConnections").update({ TrangThaiKetNoi: false }).eq("UserID", data.UserID);
+    await supabase.from("KetNoiTelegram").update({ TrangThaiKetNoi: false }).eq("MaNguoiDung", data.MaNguoiDung);
     await bot.sendMessage(chatId, "✅ Đã ngắt kết nối.\n\nVào website để kết nối lại khi cần.");
   } catch (error) {
     console.error("❌ Error disconnecting:", error);
@@ -239,8 +239,8 @@ bot.onText(/\/schedule/, async (msg) => {
   const chatId = msg.chat.id;
   try {
     const { data: conn } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TrangThaiKetNoi")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TrangThaiKetNoi")
       .eq("TelegramChatId", chatId.toString())
       .single();
 
@@ -249,7 +249,7 @@ bot.onText(/\/schedule/, async (msg) => {
       return;
     }
 
-    await sendTodaySchedule(conn.UserID, chatId);
+    await sendTodaySchedule(conn.MaNguoiDung, chatId);
   } catch (error) {
     console.error("❌ Error getting schedule:", error);
     await bot.sendMessage(chatId, "❌ Lỗi lấy lịch trình.");
@@ -267,15 +267,15 @@ async function verifyToken(token, userId) {
   }
 
   try {
-    await supabase.from("TelegramConnections").upsert({
-      UserID: userId,
+    await supabase.from("KetNoiTelegram").upsert({
+      MaNguoiDung: userId,
       TelegramChatId: connection.chatId.toString(),
       TelegramUsername: connection.username || null,
       TelegramFirstName: connection.firstName || null,
       TrangThaiKetNoi: true,
       ThongBaoNhiemVu: true,
       NgayKetNoi: new Date().toISOString(),
-    }, { onConflict: "UserID" });
+    }, { onConflict: "MaNguoiDung" });
 
     pendingConnections.delete(token);
 
@@ -295,16 +295,16 @@ async function verifyToken(token, userId) {
 async function sendMessageToUser(userId, message, options = {}) {
   try {
     const { data } = await supabase
-      .from("TelegramConnections")
+      .from("KetNoiTelegram")
       .select("TelegramChatId, TrangThaiKetNoi")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .single();
 
     if (!data || !data.TrangThaiKetNoi) return { success: false, message: "User chưa kết nối Telegram" };
 
     await bot.sendMessage(data.TelegramChatId, message, { parse_mode: "HTML", ...options });
 
-    await supabase.from("TelegramConnections").update({ NgayCapNhat: new Date().toISOString() }).eq("UserID", userId);
+    await supabase.from("KetNoiTelegram").update({ NgayCapNhat: new Date().toISOString() }).eq("MaNguoiDung", userId);
 
     return { success: true };
   } catch (error) {
@@ -338,9 +338,9 @@ async function sendTodaySchedule(userId, chatId) {
       .from("LichTrinh")
       .select(
         "MaLichTrinh, TieuDe, GhiChu, GioBatDau, GioKetThuc, DaHoanThanh, " +
-        "CongViec(TieuDe, MoTa, Tag, MucDoUuTien)"
+        "CongViec(TieuDe, MoTa, MucDoUuTien)"
       )
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .gte("GioBatDau", todayStart.toISOString())
       .lte("GioBatDau", todayEnd.toISOString())
       .order("GioBatDau", { ascending: true });
@@ -385,7 +385,6 @@ async function sendTodaySchedule(userId, chatId) {
     let message = `📅 <b>Lịch trình ${todayLabel}</b>\n`;
     message += `<i>${total} công việc • đã xong ${doneCount}/${total}</i>\n\n`;
 
-    // Tag: dạng "#a, #b" — tách theo dấu phẩy, bỏ khoảng trắng, chuẩn hoá có/không "#".
     const fmtTags = (raw) => {
       if (!raw || !String(raw).trim()) return "";
       return String(raw)
@@ -440,11 +439,11 @@ async function autoConnectUser(code, chatId, username, firstName) {
     const userId = pending.userId;
 
     // Xóa chat_id cũ nếu đã tồn tại
-    await supabase.from("TelegramConnections").delete().eq("TelegramChatId", chatId.toString()).neq("UserID", userId);
+    await supabase.from("KetNoiTelegram").delete().eq("TelegramChatId", chatId.toString()).neq("MaNguoiDung", userId);
 
     // Upsert connection
-    await supabase.from("TelegramConnections").upsert({
-      UserID: userId,
+    await supabase.from("KetNoiTelegram").upsert({
+      MaNguoiDung: userId,
       TelegramChatId: chatId.toString(),
       TelegramUsername: username || null,
       TelegramFirstName: firstName || null,
@@ -452,7 +451,7 @@ async function autoConnectUser(code, chatId, username, firstName) {
       ThongBaoNhiemVu: true,
       NgayKetNoi: new Date().toISOString(),
       NgayCapNhat: new Date().toISOString(),
-    }, { onConflict: "UserID" });
+    }, { onConflict: "MaNguoiDung" });
 
     await bot.sendMessage(chatId,
       `🎉 <b>Chào mừng ${firstName}!</b>\n\n` +
@@ -486,8 +485,8 @@ async function autoConnectUser(code, chatId, username, firstName) {
 async function broadcastMessage(message, options = {}) {
   try {
     const { data: users } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TelegramChatId")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TelegramChatId")
       .eq("TrangThaiKetNoi", true);
 
     let successCount = 0, failCount = 0;
@@ -496,7 +495,7 @@ async function broadcastMessage(message, options = {}) {
         await bot.sendMessage(user.TelegramChatId, message, { parse_mode: "HTML", ...options });
         successCount++;
       } catch (error) {
-        console.error(`❌ Failed for user ${user.UserID}:`, error.message);
+        console.error(`❌ Failed for user ${user.MaNguoiDung}:`, error.message);
         failCount++;
       }
     }
@@ -511,9 +510,9 @@ async function broadcastMessage(message, options = {}) {
 async function isUserConnected(userId) {
   try {
     const { data } = await supabase
-      .from("TelegramConnections")
+      .from("KetNoiTelegram")
       .select("TrangThaiKetNoi")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .single();
     return data?.TrangThaiKetNoi === true;
   } catch {

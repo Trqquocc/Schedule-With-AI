@@ -15,6 +15,10 @@ window.HabitsSection = {
             "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"],
   VDAYS: ["T2","T3","T4","T5","T6","T7","CN"],
 
+  _toDateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  },
+
   async init() {
     if (this._initialized) { this.renderTodayList(); return; }
     this._initialized = true;
@@ -22,7 +26,7 @@ window.HabitsSection = {
     this.renderTodayList();
     this.bindEvents();
     if (this.habits.length > 0) {
-      this.selectedHabitId = this.habits[0].HabitID;
+      this.selectedHabitId = this.habits[0].MaThoiQuen;
       this._renderHabitSelector();
       await this._loadAndRenderAll();
     }
@@ -58,7 +62,7 @@ window.HabitsSection = {
   _buildHabitRow(h) {
     const row = document.createElement("div");
     row.className = "habit-row" + (h.completedToday ? " done" : "");
-    row.dataset.habitId = h.HabitID;
+    row.dataset.habitId = h.MaThoiQuen;
 
     const cb = document.createElement("input");
     cb.type = "checkbox"; cb.className = "habit-checkbox";
@@ -67,7 +71,7 @@ window.HabitsSection = {
     cb.addEventListener("change", async (e) => {
       e.stopPropagation();
       if (!window.Utils?.requireAuth()) { cb.checked = !cb.checked; return; }
-      await this.toggleHabit(h.HabitID, new Date().toISOString().split("T")[0], cb.checked);
+      await this.toggleHabit(h.MaThoiQuen, this._toDateStr(new Date()), cb.checked);
     });
 
     const icon = document.createElement("span");
@@ -92,15 +96,15 @@ window.HabitsSection = {
     const delBtn = document.createElement("button");
     delBtn.className = "habit-action-btn delete"; delBtn.title = "Xóa";
     delBtn.innerHTML = '<i class="fas fa-trash"></i>';
-    delBtn.addEventListener("click", async (e) => { e.stopPropagation(); await this.deleteHabit(h.HabitID); });
+    delBtn.addEventListener("click", async (e) => { e.stopPropagation(); await this.deleteHabit(h.MaThoiQuen); });
     actions.appendChild(editBtn); actions.appendChild(delBtn);
 
     row.appendChild(cb); row.appendChild(icon); row.appendChild(name);
     row.appendChild(streak); row.appendChild(actions);
 
     row.addEventListener("click", async () => {
-      if (this.selectedHabitId !== h.HabitID) {
-        this.selectedHabitId = h.HabitID;
+      if (this.selectedHabitId !== h.MaThoiQuen) {
+        this.selectedHabitId = h.MaThoiQuen;
         this._renderHabitSelector();
         await this._loadAndRenderAll();
       }
@@ -118,7 +122,7 @@ window.HabitsSection = {
         const r = await fetch(`/api/habits/${habitId}/log/${date}`, { method: "DELETE", headers: this._authHeader() });
         const j = await r.json(); if (j.success) streak = j.data?.streak ?? 0;
       }
-      const habit = this.habits.find((h) => h.HabitID === habitId);
+      const habit = this.habits.find((h) => h.MaThoiQuen === habitId);
       if (habit) { habit.completedToday = completed; habit.Streak = streak; }
       this.renderTodayList();
       if (this.selectedHabitId === habitId) await this._loadAndRenderAll();
@@ -131,7 +135,7 @@ window.HabitsSection = {
     await Promise.all([this._fetchHeatmapData(), this._fetchUnifiedStreak()]);
     this._renderStats();
     this._renderMonthCalendar();
-    this._renderHeatmap();
+    this._renderStatistics();
   },
 
   _unifiedStreak: 0,
@@ -159,32 +163,40 @@ window.HabitsSection = {
   _renderStats() {
     const container = document.getElementById("habit-stats-row");
     if (!container) return;
-    const habit = this.habits.find((h) => h.HabitID === this.selectedHabitId);
+    const habit = this.habits.find((h) => h.MaThoiQuen === this.selectedHabitId);
     if (!habit) { container.style.display = "none"; return; }
 
-    const today = new Date().toISOString().split("T")[0];
-    const completed = this._heatmapData.filter((d) => d.completed).length;
-    const pastDays = this._heatmapData.filter((d) => d.date <= today).length;
-    const rate = pastDays > 0 ? Math.round((completed / pastDays) * 100) : 0;
-
     const now = new Date();
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    const monthDone = this._heatmapData.filter((d) => d.completed && d.date >= monthStart).length;
+    const todayStr = this._toDateStr(now);
+    const completedSet = new Set(this._heatmapData.filter(d => d.completed).map(d => d.date));
+    const pastDays = this._heatmapData.filter(d => d.date <= todayStr).length;
+    const rate = pastDays > 0 ? Math.round((completedSet.size / pastDays) * 100) : 0;
 
-    // Compute longest streak from data
-    let longest = 0, cur = 0;
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const monthDone = this._heatmapData.filter(d => d.completed && d.date >= monthStart).length;
+
+    // Compute current streak from heatmap data (today not done = 0)
+    let currentStreak = 0;
+    if (completedSet.has(todayStr)) {
+      const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      while (completedSet.has(this._toDateStr(cursor))) {
+        currentStreak++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+    }
+
+    // Longest streak in displayed year
+    let longest = 0, run = 0;
     const sorted = [...this._heatmapData].sort((a, b) => a.date.localeCompare(b.date));
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i].completed) {
-        cur++;
-        if (cur > longest) longest = cur;
-      } else { cur = 0; }
+    for (const d of sorted) {
+      if (d.completed) { run++; if (run > longest) longest = run; }
+      else run = 0;
     }
 
     container.style.display = "grid";
     container.innerHTML = `
-      <div class="hb-stat-card"><div class="hb-stat-value">${this._unifiedStreak}</div><div class="hb-stat-label">Chuỗi tổng</div></div>
-      <div class="hb-stat-card"><div class="hb-stat-value">${habit.Streak || 0}</div><div class="hb-stat-label">Chuỗi thói quen</div></div>
+      <div class="hb-stat-card"><div class="hb-stat-value">${currentStreak}</div><div class="hb-stat-label">Chuỗi hiện tại</div></div>
+      <div class="hb-stat-card"><div class="hb-stat-value">${longest}</div><div class="hb-stat-label">Dài nhất</div></div>
       <div class="hb-stat-card"><div class="hb-stat-value">${monthDone}</div><div class="hb-stat-label">Tháng này</div></div>
       <div class="hb-stat-card"><div class="hb-stat-value">${rate}%</div><div class="hb-stat-label">Tỷ lệ năm</div></div>`;
   },
@@ -200,22 +212,23 @@ window.HabitsSection = {
     const completedSet = new Set(
       this._heatmapData.filter((d) => d.completed).map((d) => d.date)
     );
-    const today = new Date().toISOString().split("T")[0];
+    const today = this._toDateStr(new Date());
 
     const firstDay = new Date(this.currentMonthYear, this.currentMonth, 1);
     const daysInMonth = new Date(this.currentMonthYear, this.currentMonth + 1, 0).getDate();
-    const startDow = (firstDay.getDay() + 6) % 7; // Mon=0
+    const startDow = (firstDay.getDay() + 6) % 7;
 
     let html = this.VDAYS.map((d) => `<div class="hb-month-header">${d}</div>`).join("");
 
-    // Empty cells before first day
     for (let i = 0; i < startDow; i++) html += `<div class="hb-day-cell empty"></div>`;
 
+    let completedCount = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${this.currentMonthYear}-${String(this.currentMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const isToday = dateStr === today;
       const isFuture = dateStr > today;
       const isDone = completedSet.has(dateStr);
+      if (isDone) completedCount++;
       const isMissed = !isDone && !isFuture && !isToday;
 
       let cls = "hb-day-cell";
@@ -229,11 +242,29 @@ window.HabitsSection = {
 
     grid.innerHTML = html;
     grid.className = "hb-month-grid";
+
+    const todayObj = new Date();
+    const isCurrentMonth = this.currentMonthYear === todayObj.getFullYear() && this.currentMonth === todayObj.getMonth();
+    const isFutureMonth = this.currentMonthYear > todayObj.getFullYear() ||
+      (this.currentMonthYear === todayObj.getFullYear() && this.currentMonth > todayObj.getMonth());
+    const totalDays = isFutureMonth ? 0 : (isCurrentMonth ? todayObj.getDate() : daysInMonth);
+    const rate = totalDays > 0 ? Math.round((completedCount / totalDays) * 100) : 0;
+
+    const summaryEl = document.getElementById("habit-month-summary");
+    if (summaryEl) {
+      if (isFutureMonth || !this.selectedHabitId) {
+        summaryEl.innerHTML = "";
+      } else {
+        summaryEl.innerHTML = `
+          <div class="hb-month-progress-bar"><div class="hb-month-progress-fill" style="width:${rate}%"></div></div>
+          <span class="hb-month-progress-text">${completedCount}/${totalDays}</span>`;
+      }
+    }
   },
 
-  // ── Yearly heatmap ──
+  // ── Statistics — year progress + weekly activity grid ──
 
-  _renderHeatmap() {
+  _renderStatistics() {
     const container = document.getElementById("habit-heatmap");
     if (!container) return;
     const yearLabel = document.getElementById("heatmap-year-label");
@@ -244,22 +275,100 @@ window.HabitsSection = {
       return;
     }
 
-    const today = new Date().toISOString().split("T")[0];
-    const data = this._heatmapData.map((d) => ({
-      date: d.date,
-      value: d.completed ? 1 : (d.date <= today ? 0 : null),
-    }));
+    const today = new Date();
+    const todayStr = this._toDateStr(today);
+    const curYear = today.getFullYear();
+    const completedSet = new Set(this._heatmapData.filter(d => d.completed).map(d => d.date));
 
-    const habit = this.habits.find((h) => h.HabitID === this.selectedHabitId);
-    window.CalendarHeatmap?.render("habit-heatmap", data, {
-      year: this.currentYear,
-      binaryMode: true,
-      tooltipFn: (date, value) => {
-        const name = habit ? habit.TenThoiQuen : "Thói quen";
-        if (value === null) return `${date}: Chưa đến`;
-        return `${date} — ${name}: ${value === 1 ? "✓ Hoàn thành" : "✗ Bỏ lỡ"}`;
-      },
-    });
+    const yearCompleted = completedSet.size;
+    const yearPastDays = this._heatmapData.filter(d => d.date <= todayStr).length;
+    const yearRate = yearPastDays > 0 ? Math.round((yearCompleted / yearPastDays) * 100) : 0;
+
+    let html = "";
+
+    // Year completion bar
+    html += `<div class="hb-stats-block">
+      <div class="hb-stats-block-label">Hoàn thành trong năm</div>
+      <div class="hb-year-bar-bg"><div class="hb-year-bar-fill" style="width:${yearRate}%"></div></div>
+      <div class="hb-year-bar-info">
+        <span>${yearCompleted} / ${yearPastDays} ngày</span>
+        <span class="hb-year-bar-pct">${yearRate}%</span>
+      </div>
+    </div>`;
+
+    // Compute stats for summary panel
+    let currentStreak = 0;
+    if (completedSet.has(todayStr)) {
+      const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      while (completedSet.has(this._toDateStr(cursor))) {
+        currentStreak++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+    }
+    let longest = 0, run = 0;
+    const sorted = [...this._heatmapData].sort((a, b) => a.date.localeCompare(b.date));
+    for (const d of sorted) {
+      if (d.completed) { run++; if (run > longest) longest = run; }
+      else run = 0;
+    }
+
+    // Weekly activity grid — last 10 weeks
+    const endDate = this.currentYear === curYear ? new Date(today) : new Date(this.currentYear, 11, 31);
+    const endDow = (endDate.getDay() + 6) % 7;
+    const lastMonday = new Date(endDate);
+    lastMonday.setDate(lastMonday.getDate() - endDow);
+    const numWeeks = 10;
+    let bestWeek = 0;
+
+    html += `<div class="hb-stats-block">
+      <div class="hb-stats-block-label">Hoạt động theo ngày</div>`;
+
+    html += `<div class="hb-week-row">
+      <span class="hb-week-label"></span>
+      <div class="hb-week-cells">${this.VDAYS.map(d => `<span class="hb-week-day-label">${d}</span>`).join("")}</div>
+      <span class="hb-week-count"></span>
+    </div>`;
+
+    for (let w = numWeeks - 1; w >= 0; w--) {
+      const weekStart = new Date(lastMonday);
+      weekStart.setDate(weekStart.getDate() - w * 7);
+      let weekDone = 0, weekTotal = 0, cellsHtml = "";
+
+      for (let d = 0; d < 7; d++) {
+        const cellDate = new Date(weekStart);
+        cellDate.setDate(cellDate.getDate() + d);
+        const dateStr = this._toDateStr(cellDate);
+        const isFuture = dateStr > todayStr;
+        const isOutOfYear = cellDate.getFullYear() !== this.currentYear;
+
+        if (isFuture || isOutOfYear) {
+          cellsHtml += '<div class="hb-week-cell empty"></div>';
+        } else {
+          const isDone = completedSet.has(dateStr);
+          if (isDone) weekDone++;
+          weekTotal++;
+          cellsHtml += `<div class="hb-week-cell${isDone ? " done" : ""}" title="${dateStr}"></div>`;
+        }
+      }
+      if (weekDone > bestWeek) bestWeek = weekDone;
+
+      const label = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
+      html += `<div class="hb-week-row">
+        <span class="hb-week-label">${label}</span>
+        <div class="hb-week-cells">${cellsHtml}</div>
+        <span class="hb-week-count">${weekDone}/${weekTotal}</span>
+      </div>`;
+    }
+
+    html += `<div class="hb-summary-row">
+        <div class="hb-summary-item"><div class="hb-summary-value">${yearCompleted}</div><div class="hb-summary-label">Hoàn thành</div></div>
+        <div class="hb-summary-item"><div class="hb-summary-value">${currentStreak}</div><div class="hb-summary-label">Chuỗi</div></div>
+        <div class="hb-summary-item"><div class="hb-summary-value">${longest}</div><div class="hb-summary-label">Dài nhất</div></div>
+        <div class="hb-summary-item"><div class="hb-summary-value">${bestWeek}/7</div><div class="hb-summary-label">Tuần tốt nhất</div></div>
+      </div>
+    </div>`;
+
+    container.innerHTML = html;
   },
 
   // ── Habit selector ──
@@ -270,13 +379,13 @@ window.HabitsSection = {
     el.innerHTML = "";
     this.habits.forEach((h) => {
       const btn = document.createElement("button");
-      btn.className = "habit-select-btn" + (h.HabitID === this.selectedHabitId ? " active" : "");
+      btn.className = "habit-select-btn" + (h.MaThoiQuen === this.selectedHabitId ? " active" : "");
       const ic = h.BieuTuong || "fas fa-bullseye";
       const iconHtml = (ic.startsWith("fas ") || ic.startsWith("far ") || ic.startsWith("fab "))
         ? `<i class="${ic}"></i>` : ic;
       btn.innerHTML = `${iconHtml} ${h.TenThoiQuen}`;
       btn.addEventListener("click", async () => {
-        this.selectedHabitId = h.HabitID;
+        this.selectedHabitId = h.MaThoiQuen;
         this._renderHabitSelector();
         await this._loadAndRenderAll();
       });
@@ -359,7 +468,7 @@ window.HabitsSection = {
       const name = document.getElementById("hm-name")?.value?.trim();
       if (!name) { document.getElementById("hm-name")?.focus(); return; }
       saveBtn.disabled = true; saveBtn.textContent = "Đang lưu...";
-      await this.saveHabit({ name, icon: selectedIcon, frequency: "daily", target: 1 }, habit?.HabitID);
+      await this.saveHabit({ name, icon: selectedIcon, frequency: "daily", target: 1 }, habit?.MaThoiQuen);
       overlay.remove();
     };
     footer.appendChild(cancelBtn); footer.appendChild(saveBtn);
@@ -381,8 +490,8 @@ window.HabitsSection = {
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
       await this.loadHabits(); this.renderTodayList(); this._renderHabitSelector();
-      if (!habitId && json.data?.HabitID) {
-        this.selectedHabitId = json.data.HabitID;
+      if (!habitId && json.data?.MaThoiQuen) {
+        this.selectedHabitId = json.data.MaThoiQuen;
         this._renderHabitSelector(); await this._loadAndRenderAll();
       } else if (habitId && this.selectedHabitId === habitId) { await this._loadAndRenderAll(); }
     } catch (err) { console.error("saveHabit:", err); Utils?.alert?.(err.message, "Lỗi", "error"); }
@@ -395,7 +504,7 @@ window.HabitsSection = {
       const json = await res.json(); if (!json.success) throw new Error(json.message);
       await this.loadHabits(); this.renderTodayList(); this._renderHabitSelector();
       if (this.selectedHabitId === id) {
-        this.selectedHabitId = this.habits.length > 0 ? this.habits[0].HabitID : null;
+        this.selectedHabitId = this.habits.length > 0 ? this.habits[0].MaThoiQuen : null;
         this._renderHabitSelector(); await this._loadAndRenderAll();
       }
     } catch (err) { console.error("deleteHabit:", err); }

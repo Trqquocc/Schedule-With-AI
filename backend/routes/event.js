@@ -7,7 +7,7 @@ router.use(authenticateToken);
 
 router.get("/events", async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     console.log(`Fetching events for user: ${userId}`);
 
     const pool = await dbPoolPromise;
@@ -16,7 +16,7 @@ router.get("/events", async (req, res) => {
         SELECT 
           lt.MaLichTrinh AS ID,
           lt.MaCongViec,
-          lt.UserID,
+          lt.MaNguoiDung,
           lt.GioBatDau AS ThoiGianBatDau,
           lt.GioKetThuc AS ThoiGianKetThuc,
           lt.DaHoanThanh,
@@ -26,11 +26,10 @@ router.get("/events", async (req, res) => {
           cv.TieuDe,
           cv.MoTa,
           cv.NgayTao AS CongViecNgayTao,
-          cv.MauSac AS MaMau
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
         LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
-        WHERE lt.UserID = @userId AND lt.AI_DeXuat = 0
+        WHERE lt.MaNguoiDung = @userId AND lt.AI_DeXuat = 0
         ORDER BY lt.GioBatDau ASC
       `);
 
@@ -49,8 +48,8 @@ router.get("/events", async (req, res) => {
           : null,
         ThoiGianBatDau: ev.ThoiGianBatDau,
         ThoiGianKetThuc: ev.ThoiGianKetThuc,
-        backgroundColor: ev.MauSac || "#3788d8",
-        MaMau: ev.MauSac || "#3788d8",
+        backgroundColor: "#3788d8",
+        MaMau: "#3788d8",
         extendedProps: {
           note: ev.GhiChu || "",
           completed: ev.DaHoanThanh || false,
@@ -80,7 +79,7 @@ router.get("/events", async (req, res) => {
 
 router.post("/events", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const {
       MaCongViec,
       GioBatDau,
@@ -110,7 +109,7 @@ router.post("/events", authenticateToken, async (req, res) => {
 
     const result = await pool
       .request()
-      .input("UserID", sql.Int, userId)
+      .input("MaNguoiDung", sql.Int, userId)
       .input("MaCongViec", sql.Int, MaCongViec)
       .input("GioBatDau", sql.DateTime, startDate)
       .input("GioKetThuc", sql.DateTime, endDate)
@@ -118,12 +117,12 @@ router.post("/events", authenticateToken, async (req, res) => {
       .input("AI_DeXuat", sql.Bit, AI_DeXuat)
       .input("NgayTao", sql.DateTime, new Date()).query(`
         INSERT INTO LichTrinh (
-          MaCongViec, UserID, GioBatDau, GioKetThuc, 
+          MaCongViec, MaNguoiDung, GioBatDau, GioKetThuc, 
           DaHoanThanh, GhiChu, AI_DeXuat, NgayTao
         ) 
         OUTPUT INSERTED.MaLichTrinh
         VALUES (
-          @MaCongViec, @UserID, @GioBatDau, @GioKetThuc, 
+          @MaCongViec, @MaNguoiDung, @GioBatDau, @GioKetThuc, 
           0, @GhiChu, @AI_DeXuat, @NgayTao
         )
       `);
@@ -132,10 +131,10 @@ router.post("/events", authenticateToken, async (req, res) => {
       await pool
         .request()
         .input("MaCongViec", sql.Int, MaCongViec)
-        .input("UserID", sql.Int, userId).query(`
+        .input("MaNguoiDung", sql.Int, userId).query(`
           UPDATE CongViec
           SET TrangThaiThucHien = 1
-          WHERE MaCongViec = @MaCongViec AND UserID = @UserID
+          WHERE MaCongViec = @MaCongViec AND MaNguoiDung = @MaNguoiDung
         `);
     }
 
@@ -158,7 +157,7 @@ router.post("/events", authenticateToken, async (req, res) => {
 
 router.put("/events/:id", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const eventId = req.params.id;
     const {
       ThoiGianBatDau,
@@ -178,27 +177,27 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
     await pool
       .request()
       .input("MaLichTrinh", sql.Int, eventId)
-      .input("UserID", sql.Int, userId)
+      .input("MaNguoiDung", sql.Int, userId)
       .input("GioBatDau", sql.DateTime, startDate)
       .input("GioKetThuc", sql.DateTime, endDate)
       .input("DaHoanThanh", sql.Bit, completedValue)
       .input("GhiChu", sql.NVarChar, GhiChu || null).query(`
         UPDATE LichTrinh
-        SET 
+        SET
           GioBatDau = COALESCE(@GioBatDau, GioBatDau),
           GioKetThuc = COALESCE(@GioKetThuc, GioKetThuc),
           DaHoanThanh = COALESCE(@DaHoanThanh, DaHoanThanh),
           GhiChu = COALESCE(@GhiChu, GhiChu)
-        WHERE MaLichTrinh = @MaLichTrinh AND UserID = @UserID
+        WHERE MaLichTrinh = @MaLichTrinh AND MaNguoiDung = @MaNguoiDung
       `);
 
     if (DaHoanThanh !== undefined) {
       const eventResult = await pool
         .request()
         .input("MaLichTrinh", sql.Int, eventId)
-        .input("UserID", sql.Int, userId).query(`
-          SELECT MaCongViec FROM LichTrinh 
-          WHERE MaLichTrinh = @MaLichTrinh AND UserID = @UserID
+        .input("MaNguoiDung", sql.Int, userId).query(`
+          SELECT MaCongViec FROM LichTrinh
+          WHERE MaLichTrinh = @MaLichTrinh AND MaNguoiDung = @MaNguoiDung
         `);
 
       const MaCongViec = eventResult.recordset[0]?.MaCongViec;
@@ -208,10 +207,10 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
           .request()
           .input("MaCongViec", sql.Int, MaCongViec)
           .input("TrangThaiThucHien", sql.TinyInt, completedValue ? 2 : 1)
-          .input("UserID", sql.Int, userId).query(`
+          .input("MaNguoiDung", sql.Int, userId).query(`
             UPDATE CongViec
             SET TrangThaiThucHien = @TrangThaiThucHien
-            WHERE MaCongViec = @MaCongViec AND UserID = @UserID
+            WHERE MaCongViec = @MaCongViec AND MaNguoiDung = @MaNguoiDung
           `);
       }
     }
@@ -232,7 +231,7 @@ router.put("/events/:id", authenticateToken, async (req, res) => {
 
 router.delete("/events/:id", async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const eventId = req.params.id;
 
     const pool = await dbPoolPromise;
@@ -241,8 +240,8 @@ router.delete("/events/:id", async (req, res) => {
       .request()
       .input("id", sql.Int, eventId)
       .input("userId", sql.Int, userId).query(`
-        SELECT MaCongViec FROM LichTrinh 
-        WHERE MaLichTrinh = @id AND UserID = @userId
+        SELECT MaCongViec FROM LichTrinh
+        WHERE MaLichTrinh = @id AND MaNguoiDung = @userId
       `);
 
     const MaCongViec = eventResult.recordset[0]?.MaCongViec;
@@ -252,17 +251,17 @@ router.delete("/events/:id", async (req, res) => {
       .input("id", sql.Int, eventId)
       .input("userId", sql.Int, userId)
       .query(
-        "DELETE FROM LichTrinh WHERE MaLichTrinh = @id AND UserID = @userId",
+        "DELETE FROM LichTrinh WHERE MaLichTrinh = @id AND MaNguoiDung = @userId",
       );
 
     if (MaCongViec) {
       await pool
         .request()
         .input("MaCongViec", sql.Int, MaCongViec)
-        .input("UserID", sql.Int, userId).query(`
+        .input("MaNguoiDung", sql.Int, userId).query(`
           UPDATE CongViec
           SET TrangThaiThucHien = 0
-          WHERE MaCongViec = @MaCongViec AND UserID = @UserID
+          WHERE MaCongViec = @MaCongViec AND MaNguoiDung = @MaNguoiDung
         `);
     }
 
@@ -282,7 +281,7 @@ router.delete("/events/:id", async (req, res) => {
 
 router.get("/range", async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const { start, end } = req.query;
 
     const pool = await dbPoolPromise;
@@ -302,7 +301,7 @@ router.get("/range", async (req, res) => {
         SELECT 
           lt.MaLichTrinh,
           lt.MaCongViec,
-          lt.UserID,
+          lt.MaNguoiDung,
           lt.GioBatDau,
           lt.GioKetThuc,
           lt.DaHoanThanh,
@@ -312,11 +311,10 @@ router.get("/range", async (req, res) => {
           cv.TieuDe,
           cv.MoTa,
           cv.NgayTao AS CongViecNgayTao,
-          cv.MauSac
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
         LEFT JOIN LoaiCongViec lc ON cv.MaLoai = lc.MaLoai
-        WHERE lt.UserID = @userId AND lt.AI_DeXuat = 0
+        WHERE lt.MaNguoiDung = @userId AND lt.AI_DeXuat = 0
         AND lt.GioBatDau >= @start 
         AND lt.GioBatDau <= @end
         ORDER BY lt.GioBatDau ASC
@@ -339,7 +337,7 @@ router.get("/range", async (req, res) => {
 
 router.get("/ai-events", async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     console.log(` Fetching AI events for user: ${userId}`);
 
     const pool = await dbPoolPromise;
@@ -348,7 +346,7 @@ router.get("/ai-events", async (req, res) => {
         SELECT 
           lt.MaLichTrinh AS ID,
           lt.MaCongViec,
-          lt.UserID,
+          lt.MaNguoiDung,
           lt.GioBatDau AS ThoiGianBatDau,
           lt.GioKetThuc AS ThoiGianKetThuc,
           lt.DaHoanThanh,
@@ -358,11 +356,11 @@ router.get("/ai-events", async (req, res) => {
           cv.TieuDe,
           cv.MoTa,
           cv.NgayTao AS CongViecNgayTao,
-          cv.MauSac AS Color,
+          
           cv.MucDoUuTien
         FROM LichTrinh lt
         LEFT JOIN CongViec cv ON lt.MaCongViec = cv.MaCongViec
-        WHERE lt.UserID = @userId 
+        WHERE lt.MaNguoiDung = @userId 
           AND lt.AI_DeXuat = 1
         ORDER BY lt.GioBatDau ASC
       `);

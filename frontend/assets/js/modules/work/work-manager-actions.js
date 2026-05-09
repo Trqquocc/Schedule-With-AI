@@ -102,13 +102,13 @@
 
       this.triggerSidebarRefresh();
       if (window.GroupDetailSection?.current) {
-        window.GroupDetailSection.load(window.GroupDetailSection.current.GroupID);
+        window.GroupDetailSection.load(window.GroupDetailSection.current.MaNhom);
       }
 
       if (!silent) {
         const msg = completed ? "Đã hoàn thành công việc" : "Đã mở lại công việc";
         this.showSuccessOverlay(msg);
-        await this.loadTasks();
+        await this.loadTasks(true);
       }
     } catch (err) {
       console.error("Error updating task:", err);
@@ -142,7 +142,7 @@
         const result = await Utils.makeRequest(`/api/tasks/${taskId}`, "DELETE");
         if (result.success) {
           if (!silent) Utils?.showToast?.("Đã xóa công việc thành công", "success");
-          if (!silent) await this.loadTasks();
+          if (!silent) await this.loadTasks(true);
           document.dispatchEvent(new CustomEvent("taskDeleted", { detail: { taskId } }));
           this.triggerSidebarRefresh();
         } else {
@@ -178,7 +178,7 @@
           row.style.animation = "fadeOut 0.3s ease-out forwards";
           setTimeout(() => row.remove(), 300);
         }
-        await this.loadTasks();
+        await this.loadTasks(true);
         document.dispatchEvent(new CustomEvent("taskDeleted", { detail: { taskId } }));
       } else if (result.requireConfirmation) {
         const force = await Swal.fire({
@@ -196,7 +196,7 @@
           const forceResult = await Utils.makeRequest(`/api/tasks/${taskId}?force=true`, "DELETE");
           if (forceResult.success) {
             await Swal.fire({ title: "Đã xóa!", text: forceResult.message || "Công việc đã được xóa thành công.", icon: "success", timer: 2000, showConfirmButton: false });
-            await this.loadTasks();
+            await this.loadTasks(true);
             document.dispatchEvent(new CustomEvent("taskDeleted", { detail: { taskId } }));
           } else {
             throw new Error(forceResult.message || "Xóa thất bại");
@@ -255,7 +255,7 @@
     if (!await Utils.confirm(`Đánh dấu ${pending.length} công việc là đã hoàn thành?`)) return;
     await Promise.all(pending.map((id) => this.updateTaskStatus(id, true, { silent: true })));
     Utils?.showToast?.(`Đã hoàn thành ${pending.length} công việc`, "success");
-    await this.loadTasks();
+    await this.loadTasks(true);
     this.updateBulkBar();
   };
 
@@ -265,7 +265,7 @@
     if (!await Utils.confirm(`Khôi phục ${completed.length} công việc về danh sách đang làm?`)) return;
     await Promise.all(completed.map((id) => this.updateTaskStatus(id, false, { silent: true })));
     Utils?.showToast?.(`Đã khôi phục ${completed.length} công việc`, "success");
-    await this.loadTasks();
+    await this.loadTasks(true);
     this.updateBulkBar();
   };
 
@@ -275,7 +275,7 @@
     if (!await Utils.confirmDanger(`Xoá ${ids.length} công việc? Hành động không thể khôi phục.`, "Xoá hàng loạt")) return;
     await Promise.all(ids.map((id) => this.deleteTask(id, { silent: true })));
     Utils?.showToast?.(`Đã xoá ${ids.length} công việc`, "success");
-    await this.loadTasks();
+    await this.loadTasks(true);
     this.updateBulkBar();
   };
 

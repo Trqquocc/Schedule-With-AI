@@ -14,8 +14,8 @@ module.exports = {
 
     // 1) Pull all opt-in users + their custom minutes.
     const { data: prefs, error: prefErr } = await supabase
-      .from("TelegramConnections")
-      .select("UserID, TelegramChatId, TrangThaiKetNoi, ThongBao15Phut, PhutNhacTruoc")
+      .from("KetNoiTelegram")
+      .select("MaNguoiDung, TelegramChatId, TrangThaiKetNoi, ThongBao15Phut, PhutNhacTruoc")
       .eq("TrangThaiKetNoi", true)
       .eq("ThongBao15Phut", true);
 
@@ -25,7 +25,7 @@ module.exports = {
     }
     if (!prefs?.length) return;
 
-    const prefMap = new Map(prefs.map((p) => [p.UserID, p]));
+    const prefMap = new Map(prefs.map((p) => [p.MaNguoiDung, p]));
     const minutesList = prefs.map((p) => Number(p.PhutNhacTruoc) || 15);
     const minM = Math.min(...minutesList);
     const maxM = Math.max(...minutesList);
@@ -36,8 +36,8 @@ module.exports = {
 
     const { data: events, error } = await supabase
       .from("LichTrinh")
-      .select("MaLichTrinh, UserID, MaCongViec, TieuDe, GioBatDau, GioKetThuc, DaHoanThanh")
-      .in("UserID", prefs.map((p) => p.UserID))
+      .select("MaLichTrinh, MaNguoiDung, MaCongViec, TieuDe, GioBatDau, GioKetThuc, DaHoanThanh")
+      .in("MaNguoiDung", prefs.map((p) => p.MaNguoiDung))
       .gte("GioBatDau", windowStart)
       .lte("GioBatDau", windowEnd)
       .eq("DaHoanThanh", false);
@@ -51,7 +51,7 @@ module.exports = {
     const bot = getBot();
 
     for (const ev of events) {
-      const p = prefMap.get(ev.UserID);
+      const p = prefMap.get(ev.MaNguoiDung);
       if (!p) continue;
 
       // 3) Match per-user offset: only fire when (start - now) ≈ user's M.
@@ -60,7 +60,7 @@ module.exports = {
       if (diffMin < M - 1 || diffMin > M + 1) continue;
 
       // Dedup against multi-tick overlap.
-      if (await alreadySent(ev.UserID, ev.MaLichTrinh, "15min", 60)) continue;
+      if (await alreadySent(ev.MaNguoiDung, ev.MaLichTrinh, "15min", 60)) continue;
 
       const start = new Date(ev.GioBatDau);
       const hhmm = start.toLocaleTimeString("vi-VN", {
@@ -76,10 +76,10 @@ module.exports = {
         `Dùng /daily để xem và đánh dấu hoàn thành.`;
 
       try {
-        await bot.sendMessageToUser(ev.UserID, msg);
-        await logSent(ev.UserID, ev.MaLichTrinh, "15min");
+        await bot.sendMessageToUser(ev.MaNguoiDung, msg);
+        await logSent(ev.MaNguoiDung, ev.MaLichTrinh, "15min");
       } catch (err) {
-        console.error(`[15min] send failed user ${ev.UserID}:`, err.message);
+        console.error(`[15min] send failed user ${ev.MaNguoiDung}:`, err.message);
       }
     }
   },

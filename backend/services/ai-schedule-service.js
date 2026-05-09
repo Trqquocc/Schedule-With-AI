@@ -31,9 +31,9 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
     if (!taskIds || taskIds.length === 0) return [];
     const { data: tasks, error } = await supabase
       .from("CongViec")
-      .select("MaCongViec, TieuDe, ThoiGianUocTinh, MucDoUuTien, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop, MauSac")
+      .select("MaCongViec, TieuDe, ThoiGianUocTinh, MucDoUuTien, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop")
       .in("MaCongViec", taskIds)
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .eq("TrangThaiThucHien", 0);
     if (error) { console.error("Error fetching task details:", error); return []; }
     return (tasks || []).map((task) => ({
@@ -44,7 +44,7 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
       complexity: task.MucDoPhucTap || 2,
       focusLevel: task.MucDoTapTrung || 2,
       suitableTime: TIME_MAP[task.ThoiDiemThichHop] || "anytime",
-      color: task.MauSac || getColorByPriority(task.MucDoUuTien || 2),
+      color: getColorByPriority(task.MucDoUuTien || 2),
     }));
   } catch (error) {
     console.error("Error fetching task details:", error);
@@ -58,7 +58,7 @@ async function getExistingEvents(userId, startDate, endDate) {
     const { data: records, error } = await supabase
       .from("LichTrinh")
       .select("MaLichTrinh, GioBatDau, GioKetThuc, AI_DeXuat, CongViec(TieuDe, MucDoUuTien)")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .gte("GioBatDau", new Date(startDate).toISOString())
       .lte("GioBatDau", new Date(endDate).toISOString())
       .order("GioBatDau", { ascending: true });
@@ -256,7 +256,7 @@ async function generateSimulatedScheduleWithInstructions(
 /** Delete old AI suggestions and insert new ones into LichTrinh. */
 async function saveAiSuggestions(userId, suggestions) {
   const { data: deletedData } = await supabase
-    .from("LichTrinh").delete().eq("UserID", userId).eq("AI_DeXuat", true).select("MaLichTrinh");
+    .from("LichTrinh").delete().eq("MaNguoiDung", userId).eq("AI_DeXuat", true).select("MaLichTrinh");
   const deletedCount = deletedData?.length || 0;
 
   const savedIds = [];
@@ -267,13 +267,13 @@ async function saveAiSuggestions(userId, suggestions) {
     const { data: existing } = await supabase
       .from("LichTrinh").select("MaLichTrinh")
       .eq("MaCongViec", s.taskId).eq("GioBatDau", start.toISOString())
-      .eq("UserID", userId).eq("AI_DeXuat", true).limit(1);
+      .eq("MaNguoiDung", userId).eq("AI_DeXuat", true).limit(1);
 
     if (existing && existing.length > 0) { savedIds.push(existing[0].MaLichTrinh); continue; }
 
     const { data: result } = await supabase
       .from("LichTrinh")
-      .insert({ MaCongViec: s.taskId, GioBatDau: start.toISOString(), GioKetThuc: end.toISOString(), GhiChu: s.reason || "Được đề xuất bởi AI", AI_DeXuat: true, UserID: userId })
+      .insert({ MaCongViec: s.taskId, GioBatDau: start.toISOString(), GioKetThuc: end.toISOString(), GhiChu: s.reason || "Được đề xuất bởi AI", AI_DeXuat: true, MaNguoiDung: userId })
       .select("MaLichTrinh").single();
     if (result) savedIds.push(result.MaLichTrinh);
   }
@@ -281,7 +281,7 @@ async function saveAiSuggestions(userId, suggestions) {
   // Track proposal (optional table — ignore errors)
   try {
     const summaryContent = suggestions.map((s, i) => `${i + 1}. ${s.title || "Công việc"} - ${s.durationMinutes || 60} phút`).join("\n");
-    await supabase.from("PhienAIDeXuat").insert({ UserID: userId, NgayDeXuat: new Date().toISOString(), NoiDungYeuCau: `AI Proposal:\n${summaryContent}`, DaApDung: true, ThoiGianApDung: new Date().toISOString() });
+    await supabase.from("PhienAIDeXuat").insert({ MaNguoiDung: userId, NgayDeXuat: new Date().toISOString(), NoiDungYeuCau: `AI Proposal:\n${summaryContent}`, DaApDung: true, ThoiGianApDung: new Date().toISOString() });
   } catch (e) { console.warn("Could not track AI proposal:", e.message); }
 
   return { savedIds, deletedCount };

@@ -76,10 +76,15 @@ body:has(main#chat-section.section.active) #main-app .flex-1.overflow-auto {
 #message-area::-webkit-scrollbar { width: 5px; }
 #message-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
 
-.msg-avatar {
+img.msg-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  object-fit: cover;
+}
+.msg-avatar-ini {
   width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
   background: #e2e8f0; color: #64748b;
   font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
 }
 .msg-bubble {
   padding: 9px 13px; border-radius: 16px;

@@ -24,11 +24,11 @@ class ScheduleUpdater {
       this.stopAllJobs();
 
       const { data: users, error } = await supabase
-        .from("TelegramConnections")
-        .select("UserID, GioNhacNhiemVu, GioLichNgay, GioTongKetNgay, ThongBaoNhiemVu")
+        .from("KetNoiTelegram")
+        .select("MaNguoiDung, GioNhacNhiemVu, GioLichNgay, GioTongKetNgay, ThongBaoNhiemVu")
         .eq("TrangThaiKetNoi", true)
         .eq("ThongBaoNhiemVu", true)
-        .order("UserID");
+        .order("MaNguoiDung");
 
       if (error) throw error;
 
@@ -66,13 +66,13 @@ class ScheduleUpdater {
       }
     });
 
-    this.createJobsFromGroups(schedulesByTime);
+    this.createJobsFromNhomLamViec(schedulesByTime);
   }
 
   /**
    * Tạo cron jobs từ các nhóm đã phân loại
    */
-  createJobsFromGroups(schedulesByTime) {
+  createJobsFromNhomLamViec(schedulesByTime) {
     schedulesByTime.morning.forEach((users, cronTime) => {
       this.createJob(`morning-${cronTime}`, cronTime, async () => {
         await this.sendSchedulesForUsers(users, "morning");
@@ -116,9 +116,9 @@ class ScheduleUpdater {
   async updateUserSchedule(userId) {
     try {
       const { data: user, error } = await supabase
-        .from("TelegramConnections")
+        .from("KetNoiTelegram")
         .select("GioNhacNhiemVu, GioLichNgay, GioTongKetNgay, ThongBaoNhiemVu, TrangThaiKetNoi")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .single();
 
       if (error || !user) {
@@ -165,9 +165,9 @@ class ScheduleUpdater {
   async sendSchedulesForUsers(users, timeOfDay) {
     for (const user of users) {
       try {
-        await this.sendScheduleToUser(user.UserID, timeOfDay);
+        await this.sendScheduleToUser(user.MaNguoiDung, timeOfDay);
       } catch (error) {
-        console.error(` Error for user ${user.UserID}:`, error.message);
+        console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
       }
     }
   }
@@ -175,9 +175,9 @@ class ScheduleUpdater {
   async sendRemindersForUsers(users) {
     for (const user of users) {
       try {
-        await this.sendReminderToUser(user.UserID);
+        await this.sendReminderToUser(user.MaNguoiDung);
       } catch (error) {
-        console.error(` Error for user ${user.UserID}:`, error.message);
+        console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
       }
     }
   }
@@ -185,9 +185,9 @@ class ScheduleUpdater {
   async sendSummariesForUsers(users) {
     for (const user of users) {
       try {
-        await this.sendSummaryToUser(user.UserID);
+        await this.sendSummaryToUser(user.MaNguoiDung);
       } catch (error) {
-        console.error(` Error for user ${user.UserID}:`, error.message);
+        console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
       }
     }
   }
@@ -205,8 +205,8 @@ class ScheduleUpdater {
 
       const { data: tasks, error: tasksError } = await supabase
         .from("CongViec")
-        .select("TieuDe, MoTa, GioBatDauCoDinh, TrangThai")
-        .eq("UserID", userId)
+        .select("TieuDe, MoTa, GioBatDauCoDinh, TrangThaiThucHien")
+        .eq("MaNguoiDung", userId)
         .gte("GioBatDauCoDinh", startOfDay.toISOString())
         .lte("GioBatDauCoDinh", endOfDay.toISOString())
         .order("GioBatDauCoDinh");
@@ -219,9 +219,9 @@ class ScheduleUpdater {
       }
 
       const { data: connection, error: connError } = await supabase
-        .from("TelegramConnections")
+        .from("KetNoiTelegram")
         .select("TelegramChatId")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .eq("TrangThaiKetNoi", true)
         .single();
 
@@ -241,8 +241,8 @@ class ScheduleUpdater {
           minute: "2-digit",
         });
         let statusEmoji = "⏳";
-        if (task.TrangThai === "completed") statusEmoji = "✅";
-        if (task.TrangThai === "in_progress") statusEmoji = "🔄";
+        if (task.TrangThaiThucHien === 2) statusEmoji = "✅";
+        if (task.TrangThaiThucHien === 1) statusEmoji = "🔄";
 
         message += `${index + 1}. ${statusEmoji} <b>${task.TieuDe}</b>\n`;
         message += `   ⏰ ${startTime}\n`;
@@ -271,18 +271,18 @@ class ScheduleUpdater {
       const { data: tasks, error: tasksError } = await supabase
         .from("CongViec")
         .select("TieuDe, GioBatDauCoDinh")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .gte("GioBatDauCoDinh", now.toISOString())
         .lte("GioBatDauCoDinh", endOfDay.toISOString())
-        .neq("TrangThai", "completed")
+        .neq("TrangThaiThucHien", 2)
         .order("GioBatDauCoDinh");
 
       if (tasksError) throw tasksError;
 
       const { data: connection, error: connError } = await supabase
-        .from("TelegramConnections")
+        .from("KetNoiTelegram")
         .select("TelegramChatId")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .eq("TrangThaiKetNoi", true)
         .single();
 
@@ -333,17 +333,17 @@ class ScheduleUpdater {
 
       const { data: tasks, error: tasksError } = await supabase
         .from("CongViec")
-        .select("TrangThai")
-        .eq("UserID", userId)
+        .select("TrangThaiThucHien")
+        .eq("MaNguoiDung", userId)
         .gte("GioBatDauCoDinh", startOfDay.toISOString())
         .lte("GioBatDauCoDinh", endOfDay.toISOString());
 
       if (tasksError) throw tasksError;
 
       const { data: connection, error: connError } = await supabase
-        .from("TelegramConnections")
+        .from("KetNoiTelegram")
         .select("TelegramChatId")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .eq("TrangThaiKetNoi", true)
         .single();
 
@@ -361,9 +361,9 @@ class ScheduleUpdater {
       }
 
       const total = tasks.length;
-      const completed = tasks.filter((t) => t.TrangThai === "completed").length;
-      const inProgress = tasks.filter((t) => t.TrangThai === "in_progress").length;
-      const notStarted = tasks.filter((t) => !t.TrangThai || t.TrangThai === "pending").length;
+      const completed = tasks.filter((t) => t.TrangThaiThucHien === 2).length;
+      const inProgress = tasks.filter((t) => t.TrangThaiThucHien === 1).length;
+      const notStarted = tasks.filter((t) => t.TrangThaiThucHien === 0 || t.TrangThaiThucHien == null).length;
 
       let message = "🌆 <b>Tổng kết ngày hôm nay</b>\n\n";
       message += `📊 Tổng số: <b>${total}</b> công việc\n`;
@@ -398,9 +398,9 @@ class ScheduleUpdater {
   async sendNoTasksMessage(userId, timeOfDay) {
     try {
       const { data: connection, error } = await supabase
-        .from("TelegramConnections")
+        .from("KetNoiTelegram")
         .select("TelegramChatId")
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .eq("TrangThaiKetNoi", true)
         .single();
 

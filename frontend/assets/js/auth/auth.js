@@ -98,13 +98,13 @@ if (typeof window === "undefined") {
       const pool = await dbPoolPromise;
       const result = await pool.request().input("userId", sql.Int, userId)
         .query(`
-          SELECT [MaCongViec], [UserID], [MaLoai], [TieuDe], [MoTa], [Tag],
+          SELECT [MaCongViec], [MaNguoiDung], [MaLoai], [TieuDe], [MoTa], [REMOVED],
               [CoThoiGianCoDinh], [GioBatDauCoDinh], [GioKetThuc],
               [DanhGiaThucHien], [GhiChu], [TrangThaiThucHien], [NgayTao],
               [ThoiGianUocTinh], [MucDoPhucTap], [MucDoTapTrung],
               [ThoiDiemThichHop], [LuongTheoGio]
           FROM [CongViec]
-          WHERE [UserID] = @userId
+          WHERE [MaNguoiDung] = @userId
         `);
 
       res.json({

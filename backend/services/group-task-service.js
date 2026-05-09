@@ -25,11 +25,11 @@ async function createTask(actorId, { groupId, assignedTo, tieuDe, moTa, mucDoUuT
 
   const now = new Date().toISOString();
   const { data, error } = await supabase
-    .from("GroupTasks")
+    .from("CongViecNhom")
     .insert({
-      GroupID: groupId,
-      AssignedTo: assignedTo,
-      AssignedBy: actorId,
+      MaNhom: groupId,
+      NguoiNhan: assignedTo,
+      NguoiGiao: actorId,
       TieuDe: tieuDe,
       MoTa: moTa || null,
       TrangThai: "pending",
@@ -43,7 +43,7 @@ async function createTask(actorId, { groupId, assignedTo, tieuDe, moTa, mucDoUuT
 
   if (error) throw error;
 
-  const { data: grp } = await supabase.from("Groups").select("TenNhom").eq("GroupID", groupId).maybeSingle();
+  const { data: grp } = await supabase.from("NhomLamViec").select("TenNhom").eq("MaNhom", groupId).maybeSingle();
   await sync.createPersonalTaskForGroupTask(data, grp?.TenNhom || "Nhóm");
 
   return data;
@@ -57,17 +57,28 @@ async function listTasks(actorId, groupId) {
   if (!role) throw { status: 403, message: "Bạn không phải thành viên nhóm này" };
 
   const { data, error } = await supabase
-    .from("GroupTasks")
-    .select(`*, Assignee:Users!GroupTasks_AssignedTo_fkey(UserID, HoTen, AvatarUrl)`)
-    .eq("GroupID", groupId)
+    .from("CongViecNhom")
+    .select("*")
+    .eq("MaNhom", groupId)
     .order("NgayTao", { ascending: false });
 
   if (error) throw error;
 
-  const gtIds = (data || []).map((t) => t.GroupTaskID);
+  // Manual join for assignee names
+  const assigneeIds = [...new Set((data || []).map(t => t.NguoiNhan).filter(Boolean))];
+  if (assigneeIds.length > 0) {
+    const { data: users } = await supabase.from("NguoiDung").select("MaNguoiDung, HoTen, AvatarUrl").in("MaNguoiDung", assigneeIds);
+    const uMap = {};
+    (users || []).forEach(u => { uMap[u.MaNguoiDung] = u; });
+    for (const t of data || []) {
+      t.Assignee = uMap[t.NguoiNhan] || null;
+    }
+  }
+
+  const gtIds = (data || []).map((t) => t.MaCongViecNhom);
   const progressMap = await sync.getSessionProgress(gtIds);
   for (const t of data || []) {
-    const p = progressMap.get(t.GroupTaskID);
+    const p = progressMap.get(t.MaCongViecNhom);
     t.SessionCount = p?.total || 0;
     t.SessionDone = p?.done || 0;
     t.SessionPercent = p?.percent || 0;
@@ -79,18 +90,18 @@ async function listTasks(actorId, groupId) {
 
 async function updateTask(taskId, actorId, patch) {
   const { data: task, error: fetchErr } = await supabase
-    .from("GroupTasks")
+    .from("CongViecNhom")
     .select("*")
-    .eq("GroupTaskID", taskId)
+    .eq("MaCongViecNhom", taskId)
     .single();
 
   if (fetchErr || !task) throw { status: 404, message: "Không tìm thấy nhiệm vụ" };
 
-  const actorRole = await getMemberRole(task.GroupID, actorId);
+  const actorRole = await getMemberRole(task.MaNhom, actorId);
   if (!actorRole) throw { status: 403, message: "Bạn không phải thành viên nhóm này" };
 
   const isPrivileged = actorRole === "owner" || actorRole === "admin";
-  const isAssignee = task.AssignedTo === actorId;
+  const isAssignee = task.NguoiNhan === actorId;
 
   if (!isPrivileged && !isAssignee) throw { status: 403, message: "Không có quyền cập nhật nhiệm vụ này" };
 
@@ -121,16 +132,16 @@ async function updateTask(taskId, actorId, patch) {
     if (patch.hanChot !== undefined) update.HanChot = patch.hanChot || null;
     if (patch.assignedTo !== undefined) {
       const newAssignee = parseInt(patch.assignedTo, 10);
-      const assigneeRole = await getMemberRole(task.GroupID, newAssignee);
+      const assigneeRole = await getMemberRole(task.MaNhom, newAssignee);
       if (!assigneeRole) throw { status: 400, message: "Người được giao phải là thành viên nhóm" };
-      update.AssignedTo = newAssignee;
+      update.NguoiNhan = newAssignee;
     }
   }
 
   const { data, error } = await supabase
-    .from("GroupTasks")
+    .from("CongViecNhom")
     .update(update)
-    .eq("GroupTaskID", taskId)
+    .eq("MaCongViecNhom", taskId)
     .select()
     .single();
 
@@ -145,19 +156,19 @@ async function updateTask(taskId, actorId, patch) {
 
 async function deleteTask(taskId, actorId) {
   const { data: task, error: fetchErr } = await supabase
-    .from("GroupTasks")
-    .select("GroupID")
-    .eq("GroupTaskID", taskId)
+    .from("CongViecNhom")
+    .select("MaNhom")
+    .eq("MaCongViecNhom", taskId)
     .single();
 
   if (fetchErr || !task) throw { status: 404, message: "Không tìm thấy nhiệm vụ" };
 
-  const allowed = await isOwnerOrAdmin(task.GroupID, actorId);
+  const allowed = await isOwnerOrAdmin(task.MaNhom, actorId);
   if (!allowed) throw { status: 403, message: "Chỉ chủ nhóm/admin được xóa nhiệm vụ" };
 
-  await supabase.from("CongViec").update({ TrangThaiThucHien: 3 }).eq("GroupTaskID", taskId);
+  await supabase.from("CongViec").update({ TrangThaiThucHien: 3 }).eq("MaCongViecNhom", taskId);
 
-  const { error } = await supabase.from("GroupTasks").delete().eq("GroupTaskID", taskId);
+  const { error } = await supabase.from("CongViecNhom").delete().eq("MaCongViecNhom", taskId);
   if (error) throw error;
 }
 
@@ -168,29 +179,39 @@ async function getProgress(actorId, groupId) {
   const role = await getMemberRole(groupId, actorId);
   if (!role) throw { status: 403, message: "Bạn không phải thành viên nhóm này" };
 
-  const { data: members, error: mErr } = await supabase
-    .from("GroupMembers")
-    .select(`UserID, Users(HoTen)`)
-    .eq("GroupID", groupId);
+  const { data: membersRaw, error: mErr } = await supabase
+    .from("ThanhVienNhom")
+    .select("MaNguoiDung")
+    .eq("MaNhom", groupId);
 
   if (mErr) throw mErr;
 
+  const userIds = (membersRaw || []).map(m => m.MaNguoiDung).filter(Boolean);
+  let userMap = {};
+  if (userIds.length > 0) {
+    const { data: users } = await supabase
+      .from("NguoiDung")
+      .select("MaNguoiDung, HoTen")
+      .in("MaNguoiDung", userIds);
+    (users || []).forEach(u => { userMap[u.MaNguoiDung] = u; });
+  }
+
   const { data: tasks, error: tErr } = await supabase
-    .from("GroupTasks")
-    .select("AssignedTo, TrangThai")
-    .eq("GroupID", groupId);
+    .from("CongViecNhom")
+    .select("NguoiNhan, TrangThai")
+    .eq("MaNhom", groupId);
 
   if (tErr) throw tErr;
 
   const statsMap = {};
-  (members || []).forEach(({ UserID, Users }) => {
-    statsMap[UserID] = { userId: UserID, hoTen: Users?.HoTen || "", total: 0, completed: 0 };
+  (membersRaw || []).forEach(({ MaNguoiDung }) => {
+    statsMap[MaNguoiDung] = { userId: MaNguoiDung, hoTen: userMap[MaNguoiDung]?.HoTen || "", total: 0, completed: 0 };
   });
 
-  (tasks || []).forEach(({ AssignedTo, TrangThai }) => {
-    if (!statsMap[AssignedTo]) return;
-    statsMap[AssignedTo].total += 1;
-    if (TrangThai === "completed") statsMap[AssignedTo].completed += 1;
+  (tasks || []).forEach(({ NguoiNhan, TrangThai }) => {
+    if (!statsMap[NguoiNhan]) return;
+    statsMap[NguoiNhan].total += 1;
+    if (TrangThai === "completed") statsMap[NguoiNhan].completed += 1;
   });
 
   const result = Object.values(statsMap).map((s) => ({
@@ -202,10 +223,10 @@ async function getProgress(actorId, groupId) {
 }
 
 async function getMyCalendarTasks(userId) {
-  const { data, error } = await supabase
-    .from("GroupTasks")
-    .select(`*, Groups(GroupID, TenNhom), Assignee:Users!GroupTasks_AssignedTo_fkey(HoTen)`)
-    .eq("AssignedTo", userId)
+  const { data: rawTasks, error } = await supabase
+    .from("CongViecNhom")
+    .select("*")
+    .eq("NguoiNhan", userId)
     .not("HanChot", "is", null)
     .neq("TrangThai", "cancelled")
     .neq("TrangThai", "completed")
@@ -213,13 +234,27 @@ async function getMyCalendarTasks(userId) {
 
   if (error) throw error;
 
+  // Manual join for group names
+  const groupIds = [...new Set((rawTasks || []).map(t => t.MaNhom).filter(Boolean))];
+  let groupMap = {};
+  if (groupIds.length > 0) {
+    const { data: groups } = await supabase.from("NhomLamViec").select("MaNhom, TenNhom").in("MaNhom", groupIds);
+    (groups || []).forEach(g => { groupMap[g.MaNhom] = g; });
+  }
+
+  const data = (rawTasks || []).map(t => ({
+    ...t,
+    NhomLamViec: groupMap[t.MaNhom] || null,
+    Assignee: { HoTen: "" },
+  }));
+
   const PRIO_COLORS = { 1: "#F87171", 2: "#60A5FA", 3: "#FBBF24", 4: "#94a3b8" };
 
   return (data || []).map((t) => {
     const color = PRIO_COLORS[t.MucDoUuTien] || "#60A5FA";
     const deadline = new Date(t.HanChot);
     return {
-      id: `gt-${t.GroupTaskID}`,
+      id: `gt-${t.MaCongViecNhom}`,
       title: t.TieuDe,
       start: deadline.toISOString().slice(0, 10),
       allDay: true,
@@ -229,9 +264,9 @@ async function getMyCalendarTasks(userId) {
       classNames: ["group-task-event"],
       extendedProps: {
         isGroupTask: true,
-        groupTaskId: t.GroupTaskID,
-        groupId: t.GroupID,
-        groupName: t.Groups?.TenNhom || "",
+        groupTaskId: t.MaCongViecNhom,
+        groupId: t.MaNhom,
+        groupName: t.NhomLamViec?.TenNhom || "",
         description: t.MoTa || "",
         priority: t.MucDoUuTien || 2,
         status: t.TrangThai,

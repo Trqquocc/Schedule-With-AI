@@ -552,7 +552,7 @@
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalBtnText;
         if (window.GroupDetailSection?.current) {
-          window.GroupDetailSection.load(window.GroupDetailSection.current.GroupID);
+          window.GroupDetailSection.load(window.GroupDetailSection.current.MaNhom);
         }
         setTimeout(() => { document.getElementById("eventDetailModal")?.remove(); }, 600);
       } else {

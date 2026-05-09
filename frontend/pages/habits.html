@@ -28,7 +28,6 @@
   <!-- ── Today's check-in card ── -->
   <div class="hb-card" style="margin-bottom:24px;">
     <div class="hb-card-header">
-      <span style="font-size:16px;">☀️</span>
       <span class="hb-card-title">Hôm nay</span>
       <span id="habit-today-date" style="font-size:12px;color:var(--text-muted,#94a3b8);margin-left:4px;"></span>
     </div>
@@ -45,7 +44,6 @@
   <!-- ── Monthly calendar view ── -->
   <div class="hb-card" style="margin-bottom:20px;">
     <div class="hb-card-header">
-      <span style="font-size:16px;">📅</span>
       <span class="hb-card-title">Tháng này</span>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
         <button id="month-prev" class="year-nav-btn" title="Tháng trước"><i class="fas fa-chevron-left"></i></button>
@@ -55,17 +53,18 @@
     </div>
     <!-- Habit selector pills -->
     <div id="habit-selector-row" style="padding:12px 20px 0;display:flex;flex-wrap:wrap;gap:8px;min-height:36px;"></div>
+    <!-- Month progress summary -->
+    <div id="habit-month-summary" class="hb-month-summary"></div>
     <!-- Monthly calendar grid -->
-    <div style="padding:12px 20px 20px;">
+    <div style="padding:4px 20px 20px;">
       <div id="habit-month-grid"></div>
     </div>
   </div>
 
-  <!-- ── Yearly heatmap ── -->
+  <!-- ── Statistics ── -->
   <div class="hb-card">
     <div class="hb-card-header">
-      <span style="font-size:16px;">📊</span>
-      <span class="hb-card-title">Tổng quan năm</span>
+      <span class="hb-card-title">Thống kê</span>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
         <button id="heatmap-prev-year" class="year-nav-btn" title="Năm trước"><i class="fas fa-chevron-left"></i></button>
         <span id="heatmap-year-label" style="font-size:13px;font-weight:600;min-width:44px;text-align:center;" class="hb-text-primary"></span>
@@ -73,7 +72,7 @@
       </div>
     </div>
     <div style="padding:12px 20px 20px;">
-      <div id="habit-heatmap" class="heatmap-wrapper">
+      <div id="habit-heatmap">
         <p style="text-align:center;color:var(--text-muted,#94a3b8);font-size:13px;padding:24px;">
           Chưa có dữ liệu. Thêm thói quen để bắt đầu.
         </p>

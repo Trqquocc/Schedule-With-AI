@@ -125,8 +125,8 @@ async function getAiEvents(req, res) {
     const userId = req.userId;
     const { data: records, error } = await supabase
       .from("LichTrinh")
-      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, GhiChu, AI_DeXuat, CongViec(TieuDe, MucDoUuTien, MauSac)")
-      .eq("UserID", userId).eq("AI_DeXuat", true).order("GioBatDau", { ascending: false });
+      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, GhiChu, AI_DeXuat, CongViec(TieuDe, MucDoUuTien)")
+      .eq("MaNguoiDung", userId).eq("AI_DeXuat", true).order("GioBatDau", { ascending: false });
 
     if (error) {
       console.error("Error fetching AI events:", error);
@@ -146,7 +146,7 @@ async function getAiEvents(req, res) {
       GioBatDau: ev.GioBatDau,
       GioKetThuc: ev.GioKetThuc,
       GhiChu: ev.GhiChu || "Được AI tối ưu",
-      Color: ev.CongViec?.MauSac || getColorByPriority(ev.CongViec?.MucDoUuTien || 2),
+      Color: getColorByPriority(ev.CongViec?.MucDoUuTien || 2),
       priority: ev.CongViec?.MucDoUuTien,
       AI_DeXuat: ev.AI_DeXuat,
     }));
@@ -174,9 +174,9 @@ async function clearOldSuggestions(req, res) {
   try {
     const userId = req.userId;
     const { data: countData } = await supabase
-      .from("LichTrinh").select("MaLichTrinh", { count: "exact" }).eq("UserID", userId).eq("AI_DeXuat", true);
+      .from("LichTrinh").select("MaLichTrinh", { count: "exact" }).eq("MaNguoiDung", userId).eq("AI_DeXuat", true);
     const oldCount = countData?.length || 0;
-    await supabase.from("LichTrinh").delete().eq("UserID", userId).eq("AI_DeXuat", true);
+    await supabase.from("LichTrinh").delete().eq("MaNguoiDung", userId).eq("AI_DeXuat", true);
     res.json({ success: true, clearedCount: oldCount, message: `Đã xóa ${oldCount} lịch trình AI cũ` });
   } catch (error) {
     console.error("Error clearing old AI suggestions:", error);
@@ -190,13 +190,13 @@ async function getEventsAi(req, res) {
     const userId = req.userId;
     const { data: records, error } = await supabase
       .from("LichTrinh")
-      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, GhiChu, CongViec!inner(TieuDe, MucDoUuTien, MauSac)")
-      .eq("UserID", userId).eq("AI_DeXuat", true).order("GioBatDau", { ascending: false });
+      .select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, GhiChu, CongViec!inner(TieuDe, MucDoUuTien)")
+      .eq("MaNguoiDung", userId).eq("AI_DeXuat", true).order("GioBatDau", { ascending: false });
     if (error) { console.error("Lỗi lấy lịch AI:", error); return res.status(500).json({ success: false, message: error.message }); }
     const events = (records || []).map((ev) => ({
       MaLichTrinh: ev.MaLichTrinh, MaCongViec: ev.MaCongViec, TieuDe: ev.CongViec?.TieuDe,
       GioBatDau: ev.GioBatDau, GioKetThuc: ev.GioKetThuc, GhiChu: ev.GhiChu || "AI đề xuất",
-      Color: ev.CongViec?.MauSac || getColorByPriority(ev.CongViec?.MucDoUuTien || 2),
+      Color: getColorByPriority(ev.CongViec?.MucDoUuTien || 2),
       priority: ev.CongViec?.MucDoUuTien, AI_DeXuat: 1,
     }));
     res.json({ success: true, data: events });
@@ -207,8 +207,8 @@ async function getEventsAi(req, res) {
 async function debugAiEvents(req, res) {
   try {
     const userId = req.userId;
-    const { data: countData } = await supabase.from("LichTrinh").select("MaLichTrinh", { count: "exact" }).eq("UserID", userId).eq("AI_DeXuat", true);
-    const { data: detailData } = await supabase.from("LichTrinh").select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat, CongViec(TieuDe, UserID)").eq("UserID", userId).eq("AI_DeXuat", true).order("GioBatDau", { ascending: false });
+    const { data: countData } = await supabase.from("LichTrinh").select("MaLichTrinh", { count: "exact" }).eq("MaNguoiDung", userId).eq("AI_DeXuat", true);
+    const { data: detailData } = await supabase.from("LichTrinh").select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat, CongViec(TieuDe, MaNguoiDung)").eq("MaNguoiDung", userId).eq("AI_DeXuat", true).order("GioBatDau", { ascending: false });
     res.json({ success: true, debug: { totalAIEvents: countData?.length || 0, events: detailData || [], queryConditions: { userId, AI_DeXuat: true } } });
   } catch (error) { console.error("Debug error:", error); res.status(500).json({ success: false, message: error.message }); }
 }
@@ -217,8 +217,8 @@ async function debugAiEvents(req, res) {
 async function testDatabaseAi(req, res) {
   try {
     const userId = req.userId;
-    const { data: allEvents } = await supabase.from("LichTrinh").select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat, UserID").eq("UserID", userId).order("GioBatDau", { ascending: false });
-    const { data: recentEvents } = await supabase.from("LichTrinh").select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat").eq("UserID", userId).order("MaLichTrinh", { ascending: false }).limit(10);
+    const { data: allEvents } = await supabase.from("LichTrinh").select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat, MaNguoiDung").eq("MaNguoiDung", userId).order("GioBatDau", { ascending: false });
+    const { data: recentEvents } = await supabase.from("LichTrinh").select("MaLichTrinh, MaCongViec, GioBatDau, GioKetThuc, AI_DeXuat").eq("MaNguoiDung", userId).order("MaLichTrinh", { ascending: false }).limit(10);
     res.json({ success: true, data: { totalEvents: (allEvents || []).length, allEvents: allEvents || [], recentEvents: recentEvents || [], userInfo: { userId, hasAIEvents: (allEvents || []).some((e) => e.AI_DeXuat === true) } } });
   } catch (error) { console.error("Test database error:", error); res.status(500).json({ success: false, message: error.message }); }
 }

@@ -5,7 +5,7 @@
 // This file just schedules them and provides the shared ctx.
 //
 // Cron semantics are all Asia/Ho_Chi_Minh. Every run is idempotent per day
-// via TelegramReminderLog (see migration 008).
+// via NhatKyNhacNho (was TelegramReminderLog, see migration 008).
 
 const cron = require("node-cron");
 const { supabase } = require("../config/database");
@@ -28,11 +28,11 @@ const jobs = new Map();
 
 async function logSent(userId, taskId, kind) {
   try {
-    await supabase.from("TelegramReminderLog").insert({
-      UserID: userId,
-      TaskID: taskId ?? 0,
-      Kind: kind,
-      SentAt: new Date().toISOString(),
+    await supabase.from("NhatKyNhacNho").insert({
+      MaNguoiDung: userId,
+      MaCongViec: taskId ?? 0,
+      LoaiNhacNho: kind,
+      ThoiGianGui: new Date().toISOString(),
     });
   } catch (err) {
     console.error(`[reminder/${kind}] log insert failed:`, err.message);
@@ -42,12 +42,12 @@ async function logSent(userId, taskId, kind) {
 async function alreadySent(userId, taskId, kind, sinceMinutes = 60) {
   const since = new Date(Date.now() - sinceMinutes * 60 * 1000).toISOString();
   const { data } = await supabase
-    .from("TelegramReminderLog")
+    .from("NhatKyNhacNho")
     .select("Id")
-    .eq("UserID", userId)
-    .eq("TaskID", taskId ?? 0)
-    .eq("Kind", kind)
-    .gte("SentAt", since)
+    .eq("MaNguoiDung", userId)
+    .eq("MaCongViec", taskId ?? 0)
+    .eq("LoaiNhacNho", kind)
+    .gte("ThoiGianGui", since)
     .limit(1);
   return Array.isArray(data) && data.length > 0;
 }

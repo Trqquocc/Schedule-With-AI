@@ -359,7 +359,7 @@
         if (window.loadUserTasks) window.loadUserTasks(true);
         this.triggerSidebarRefresh();
         if (window.GroupDetailSection?.current) {
-          window.GroupDetailSection.load(window.GroupDetailSection.current.GroupID);
+          window.GroupDetailSection.load(window.GroupDetailSection.current.MaNhom);
         }
       } else {
         throw new Error(res.message || "Lỗi thêm vào lịch");

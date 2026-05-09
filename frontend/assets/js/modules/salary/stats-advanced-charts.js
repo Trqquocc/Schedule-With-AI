@@ -100,67 +100,6 @@
     });
   }
 
-  // ─── Heatmap ────────────────────────────────────────────────────────────────
-
-  /** CSS-grid fallback when CalendarHeatmap is not available. */
-  function buildFallbackHeatmap(container, entries) {
-    container.innerHTML = "";
-    const grid = document.createElement("div");
-    grid.style.cssText = "display:flex;flex-wrap:wrap;gap:2px;";
-    entries.forEach((e) => {
-      const cell = document.createElement("div");
-      cell.title = `${e.date}: ${e.completed}/${e.total}`;
-      const v = e.value;
-      let bg;
-      if (v === null || v === undefined || e.total === 0) bg = isDark() ? "#1e293b" : "#e2e8f0";
-      else if (v < 0.25) bg = "#bbf7d0";
-      else if (v < 0.5) bg = "#4ade80";
-      else if (v < 0.75) bg = "#16a34a";
-      else bg = "#14532d";
-      cell.style.cssText = `width:10px;height:10px;border-radius:2px;background:${bg};flex-shrink:0;`;
-      grid.appendChild(cell);
-    });
-    container.appendChild(grid);
-  }
-
-  /** Populate year selector once, then fetch + render heatmap for given year. */
-  async function renderHeatmap(year) {
-    const containerId = "stats-heatmap";
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const sel = document.getElementById("heatmap-year-select");
-    if (sel && sel.options.length === 0) {
-      const cur = new Date().getFullYear();
-      for (let y = cur; y >= cur - 3; y--) {
-        const opt = document.createElement("option");
-        opt.value = y; opt.textContent = y;
-        sel.appendChild(opt);
-      }
-      sel.value = year || cur;
-      sel.addEventListener("change", () => renderHeatmap(parseInt(sel.value)));
-    }
-
-    const token = localStorage.getItem("auth_token");
-    if (!token) return;
-
-    try {
-      const res = await fetch(`/api/statistics/heatmap?year=${year || new Date().getFullYear()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Heatmap fetch failed");
-      const json = await res.json();
-      const data = json.success ? json.data : [];
-      if (window.CalendarHeatmap) {
-        CalendarHeatmap.render(containerId, data, { year });
-      } else {
-        buildFallbackHeatmap(container, data);
-      }
-    } catch (err) {
-      console.error("StatsAdvancedCharts.renderHeatmap:", err);
-    }
-  }
-
   // ─── Toggle binding (event delegation) ─────────────────────────────────────
 
   document.addEventListener("click", function (e) {
@@ -176,5 +115,5 @@
     if (comparisonChart) { comparisonChart.destroy(); comparisonChart = null; }
   }
 
-  window.StatsAdvancedCharts = { renderStreak, renderComparison, renderHeatmap, destroy };
+  window.StatsAdvancedCharts = { renderStreak, renderComparison, destroy };
 })();

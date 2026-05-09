@@ -119,7 +119,7 @@ async function findOverlappingFullTime(
   let query = supabase
     .from("CongViec")
     .select('"MaCongViec","TieuDe","NgayBatDauHopDong","NgayKetThucHopDong"')
-    .eq("UserID", userId)
+    .eq("MaNguoiDung", userId)
     .eq("LoaiLuong", "full_time")
     .neq("TrangThaiThucHien", 3); // exclude cancelled
 
@@ -160,7 +160,7 @@ async function findFullTimeCategory(userId) {
   const { data: cats } = await supabase
     .from("LoaiCongViec")
     .select("MaLoai, TenLoai")
-    .eq("UserID", userId);
+    .eq("MaNguoiDung", userId);
 
   if (!cats) return null;
 

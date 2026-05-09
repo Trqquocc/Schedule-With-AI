@@ -144,9 +144,9 @@ window.CalendarShareManager = {
           <div class="font-semibold text-sm truncate" style="color:#1e293b">${s.Users?.HoTen || "Người dùng"}</div>
           <div class="text-xs truncate" style="color:#64748b">${s.Users?.Email || ""}</div>
         </div>
-        <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:#eff6ff;color:#2563EB">${permLabel(s.Permission)}</span>
+        <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:#eff6ff;color:#2563EB">${permLabel(s.QuyenHan)}</span>
         <span class="text-xs" style="color:#94a3b8">${statusLabel(s.TrangThai)}</span>
-        <button onclick="CalendarShareManager.revokeShare(${s.ShareID})"
+        <button onclick="CalendarShareManager.revokeShare(${s.MaChiaSe})"
           class="w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
           style="color:#ef4444" title="Thu hồi">
           <i class="fas fa-times text-xs"></i>
@@ -157,12 +157,12 @@ window.CalendarShareManager = {
       <div class="share-invitation-row">
         <div class="flex-1 min-w-0">
           <div class="font-semibold text-sm" style="color:#1e293b">${inv.Users?.HoTen || "Người dùng"}</div>
-          <div class="text-xs" style="color:#64748b">${inv.Users?.Email || ""} · ${permLabel(inv.Permission)}</div>
+          <div class="text-xs" style="color:#64748b">${inv.Users?.Email || ""} · ${permLabel(inv.QuyenHan)}</div>
         </div>
         <div class="flex gap-2">
-          <button onclick="CalendarShareManager.acceptInvitation(${inv.ShareID})"
+          <button onclick="CalendarShareManager.acceptInvitation(${inv.MaChiaSe})"
             class="px-3 py-1 rounded-lg text-xs font-semibold text-white" style="background:#10b981">Chấp nhận</button>
-          <button onclick="CalendarShareManager.rejectInvitation(${inv.ShareID})"
+          <button onclick="CalendarShareManager.rejectInvitation(${inv.MaChiaSe})"
             class="px-3 py-1 rounded-lg text-xs font-semibold border" style="border-color:#e2e8f0;color:#64748b">Từ chối</button>
         </div>
       </div>`).join("") || "";
@@ -177,8 +177,8 @@ window.CalendarShareManager = {
           <div class="font-semibold text-sm truncate" style="color:#1e293b">${r.Users?.HoTen || "Người dùng"}</div>
           <div class="text-xs truncate" style="color:#64748b">${r.Users?.Email || ""}</div>
         </div>
-        <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:#dcfce7;color:#16a34a">${permLabel(r.Permission)}</span>
-        <button onclick="CalendarShareManager.revokeShare(${r.ShareID})"
+        <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:#dcfce7;color:#16a34a">${permLabel(r.QuyenHan)}</span>
+        <button onclick="CalendarShareManager.revokeShare(${r.MaChiaSe})"
           class="px-3 py-1 rounded-lg text-xs font-semibold border" style="border-color:#e2e8f0;color:#64748b" title="Rời khỏi">
           Rời
         </button>

@@ -170,6 +170,7 @@ a:hover { text-decoration: underline; }
   width: 100%;
   min-height: 100vh;
   background: var(--bg-app);
+  position: relative;
 }
 .section.active { display: block; }
 
@@ -493,17 +494,7 @@ body.dark .text-blue-700, body.dark .text-blue-800   { color: #0a84ff !important
 body.dark .text-yellow-700, body.dark .text-yellow-800 { color: #ff9f0a !important; }
 body.dark .text-red-700, body.dark .text-red-800     { color: #ff453a !important; }
 
-/* Settings modal user card gradient (dark) */
-body.dark .from-blue-50   { --tw-gradient-from: rgba(10, 132, 255, 0.12) !important; }
-body.dark .to-indigo-50   { --tw-gradient-to: rgba(94, 92, 230, 0.12) !important; }
-body.dark .border-blue-100 { border-color: rgba(10, 132, 255, 0.24) !important; }
-
-body.dark #openProfileBtn:hover,
-body.dark #modalLogoutBtn:hover { background: rgba(255, 255, 255, 0.06) !important; }
-body.dark #openNotificationBtn:hover { background: rgba(10, 132, 255, 0.12) !important; }
-body.dark #settingsModal .rounded-lg[style*="f8fafc"] {
-  background: var(--bg-card-alt) !important;
-}
+/* Settings modal dark overrides (handled inline in sidebar.html) */
 
 /* Task sidebar items dark mode */
 body.dark .task-item {
@@ -609,3 +600,10 @@ body.dark #task-list { background: transparent; }
 .shadow, .shadow-md, .shadow-lg {
   box-shadow: var(--shadow-lg) !important;
 }
+
+/* Login-required overlay for guest sections */
+.login-required-overlay { position:absolute;inset:0;background:var(--bg-app, #f5f5f7);z-index:10; }
+body.dark .login-required-overlay { background:var(--bg-app, #1c1c1e); }
+body.dark .login-required-overlay h3 { color:#f5f5f7 !important; }
+body.dark .login-required-overlay p { color:rgba(255,255,255,0.48) !important; }
+body.dark .login-required-overlay i.fa-lock { color:rgba(255,255,255,0.12) !important; }

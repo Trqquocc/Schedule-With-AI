@@ -1,6 +1,7 @@
 /**
  * event-subtasks.js
  * REST endpoints for subtasks (minitasks) stacked inside a calendar event (LichTrinh).
+ * Table: CongViecPhu (was event_subtasks)
  *
  * Routes:
  *   GET    /api/event-subtasks?event_id=X   — list subtasks for an event
@@ -25,7 +26,7 @@ function isTableMissing(err) {
   return (
     err.code === "PGRST205" ||
     err.code === "42P01" ||
-    (err.message && /event_subtasks/i.test(err.message))
+    (err.message && /CongViecPhu/i.test(err.message))
   );
 }
 
@@ -34,22 +35,22 @@ function isTableMissing(err) {
 // (used for batch display on calendar events).
 router.get("/", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const eventIdRaw = req.query.event_id;
     const eventId = eventIdRaw !== undefined ? parseInt(eventIdRaw, 10) : null;
 
     let q = supabase
-      .from("event_subtasks")
+      .from("CongViecPhu")
       .select("*")
-      .eq("user_id", userId)
-      .order("position", { ascending: true })
-      .order("created_at", { ascending: true });
+      .eq("MaNguoiDung", userId)
+      .order("ViTri", { ascending: true })
+      .order("NgayTao", { ascending: true });
 
     if (eventIdRaw !== undefined) {
       if (!eventId || isNaN(eventId)) {
         return res.status(400).json({ success: false, message: "event_id không hợp lệ" });
       }
-      q = q.eq("event_id", eventId);
+      q = q.eq("MaLichTrinh", eventId);
     }
 
     const { data, error } = await q;
@@ -73,7 +74,7 @@ router.get("/", authenticateToken, async (req, res) => {
 // -------- POST --------
 router.post("/", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const { event_id, title, start_at, end_at, note, position } = req.body || {};
     const eventId = parseInt(event_id, 10);
     if (!eventId) return res.status(400).json({ success: false, message: "event_id là bắt buộc" });
@@ -95,7 +96,7 @@ router.post("/", authenticateToken, async (req, res) => {
         .from("LichTrinh")
         .select("GioBatDau, GioKetThuc")
         .eq("MaLichTrinh", eventId)
-        .eq("UserID", userId)
+        .eq("MaNguoiDung", userId)
         .single();
       if (parent?.GioBatDau && parent?.GioKetThuc) {
         const evS = new Date(parent.GioBatDau).getTime();
@@ -110,15 +111,15 @@ router.post("/", authenticateToken, async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from("event_subtasks")
+      .from("CongViecPhu")
       .insert({
-        event_id: eventId,
-        user_id: userId,
-        title: String(title).trim(),
-        start_at: sAt,
-        end_at: eAt,
-        note: note || null,
-        position: Number.isFinite(position) ? position : 0,
+        MaLichTrinh: eventId,
+        MaNguoiDung: userId,
+        TieuDe: String(title).trim(),
+        GioBatDau: sAt,
+        GioKetThuc: eAt,
+        GhiChu: note || null,
+        ViTri: Number.isFinite(position) ? position : 0,
       })
       .select()
       .single();
@@ -143,32 +144,32 @@ router.post("/", authenticateToken, async (req, res) => {
 // -------- PATCH --------
 router.patch("/:id", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const id = parseInt(req.params.id, 10);
     if (!id) return res.status(400).json({ success: false, message: "id không hợp lệ" });
 
-    const upd = { updated_at: new Date().toISOString() };
+    const upd = { NgayCapNhat: new Date().toISOString() };
     const { title, start_at, end_at, note, is_done, position } = req.body || {};
-    if (title !== undefined) upd.title = String(title).trim();
+    if (title !== undefined) upd.TieuDe = String(title).trim();
     if (start_at !== undefined) {
       const v = parseTs(start_at);
       if (start_at && !v) return res.status(400).json({ success: false, message: "start_at không hợp lệ" });
-      upd.start_at = v;
+      upd.GioBatDau = v;
     }
     if (end_at !== undefined) {
       const v = parseTs(end_at);
       if (end_at && !v) return res.status(400).json({ success: false, message: "end_at không hợp lệ" });
-      upd.end_at = v;
+      upd.GioKetThuc = v;
     }
-    if (note !== undefined) upd.note = note || null;
-    if (is_done !== undefined) upd.is_done = !!is_done;
-    if (position !== undefined && Number.isFinite(position)) upd.position = position;
+    if (note !== undefined) upd.GhiChu = note || null;
+    if (is_done !== undefined) upd.DaHoanThanh = !!is_done;
+    if (position !== undefined && Number.isFinite(position)) upd.ViTri = position;
 
     const { data, error } = await supabase
-      .from("event_subtasks")
+      .from("CongViecPhu")
       .update(upd)
-      .eq("id", id)
-      .eq("user_id", userId)
+      .eq("MaCongViecPhu", id)
+      .eq("MaNguoiDung", userId)
       .select()
       .single();
 
@@ -192,15 +193,15 @@ router.patch("/:id", authenticateToken, async (req, res) => {
 // -------- DELETE --------
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.UserID;
+    const userId = req.user.MaNguoiDung;
     const id = parseInt(req.params.id, 10);
     if (!id) return res.status(400).json({ success: false, message: "id không hợp lệ" });
 
     const { error } = await supabase
-      .from("event_subtasks")
+      .from("CongViecPhu")
       .delete()
-      .eq("id", id)
-      .eq("user_id", userId);
+      .eq("MaCongViecPhu", id)
+      .eq("MaNguoiDung", userId);
 
     if (error) {
       if (isTableMissing(error)) {

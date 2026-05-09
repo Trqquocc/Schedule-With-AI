@@ -33,11 +33,11 @@ window.TagInputWidget = (function () {
 
   function pillHtml(tag) {
     const fg = contrastColor(tag.MauSac || "#3B82F6");
-    return `<span class="tag-input-pill" data-tag-id="${tag.TagID}"
+    return `<span class="tag-input-pill" data-tag-id="${tag.MaNhanDan}"
       style="background:${tag.MauSac};color:${fg}"
       title="${escHtml(tag.TenTag)}">
       ${escHtml(tag.TenTag)}
-      <span class="tag-remove" data-remove-id="${tag.TagID}" aria-label="Xóa tag">×</span>
+      <span class="tag-remove" data-remove-id="${tag.MaNhanDan}" aria-label="Xóa tag">×</span>
     </span>`;
   }
 
@@ -70,7 +70,7 @@ window.TagInputWidget = (function () {
     const onChange = typeof options.onChange === "function" ? options.onChange : () => {};
 
     // State
-    let selectedTags = []; // [{TagID, TenTag, MauSac}]
+    let selectedTags = []; // [{MaNhanDan, TenTag, MauSac}]
 
     // Build DOM
     container.style.position = "relative";
@@ -96,7 +96,7 @@ window.TagInputWidget = (function () {
       const btn = e.target.closest("[data-remove-id]");
       if (!btn) return;
       const id = parseInt(btn.dataset.removeId, 10);
-      selectedTags = selectedTags.filter((t) => t.TagID !== id);
+      selectedTags = selectedTags.filter((t) => t.MaNhanDan !== id);
       renderPills();
       onChange(getSelectedIds());
     });
@@ -110,7 +110,7 @@ window.TagInputWidget = (function () {
         const res = await apiFetch(url);
         if (!res.success) return;
         const filtered = (res.data || []).filter(
-          (t) => !selectedTags.find((s) => s.TagID === t.TagID)
+          (t) => !selectedTags.find((s) => s.MaNhanDan === t.MaNhanDan)
         );
         renderDropdown(filtered, query);
       } catch (_) {
@@ -137,7 +137,7 @@ window.TagInputWidget = (function () {
         // Try to match existing dropdown item first
         const firstItem = dropdown.querySelector(".tag-autocomplete-item[data-tag-id]");
         if (firstItem) {
-          selectTagById(parseInt(firstItem.dataset.tagId, 10), firstItem.dataset.tagName, firstItem.dataset.tagColor);
+          selectTagById(parseInt(firstItem.dataset.maNhanDan, 10), firstItem.dataset.tagName, firstItem.dataset.tagColor);
         } else {
           // Create new tag inline
           await createAndAddTag(q);
@@ -176,7 +176,7 @@ window.TagInputWidget = (function () {
       let html = tags
         .map(
           (t) =>
-            `<div class="tag-autocomplete-item" data-tag-id="${t.TagID}"
+            `<div class="tag-autocomplete-item" data-tag-id="${t.MaNhanDan}"
               data-tag-name="${escHtml(t.TenTag)}" data-tag-color="${escHtml(t.MauSac || "#3B82F6")}">
               <span class="tag-color-dot" style="background:${t.MauSac || "#3B82F6"}"></span>
               ${escHtml(t.TenTag)}
@@ -198,7 +198,7 @@ window.TagInputWidget = (function () {
         el.addEventListener("mousedown", (e) => {
           e.preventDefault();
           selectTagById(
-            parseInt(el.dataset.tagId, 10),
+            parseInt(el.dataset.maNhanDan, 10),
             el.dataset.tagName,
             el.dataset.tagColor
           );
@@ -219,7 +219,7 @@ window.TagInputWidget = (function () {
     }
 
     function selectTagById(id, name, color) {
-      if (selectedTags.find((t) => t.TagID === id)) {
+      if (selectedTags.find((t) => t.MaNhanDan === id)) {
         field.value = "";
         hideDropdown();
         return;
@@ -229,7 +229,7 @@ window.TagInputWidget = (function () {
         hideDropdown();
         return;
       }
-      selectedTags.push({ TagID: id, TenTag: name, MauSac: color || "#3B82F6" });
+      selectedTags.push({ MaNhanDan: id, TenTag: name, MauSac: color || "#3B82F6" });
       field.value = "";
       hideDropdown();
       renderPills();
@@ -246,14 +246,14 @@ window.TagInputWidget = (function () {
           body: JSON.stringify({ name: trimmed, color: "#3B82F6" }),
         });
         if (res.success && res.data) {
-          selectTagById(res.data.TagID, res.data.TenTag, res.data.MauSac);
+          selectTagById(res.data.MaNhanDan, res.data.TenTag, res.data.MauSac);
         } else if (res.success === false && res.message && res.message.includes("tồn tại")) {
           // Tag exists — fetch it and select
           const search = await apiFetch(`/api/tags?search=${encodeURIComponent(trimmed)}`);
           const found = (search.data || []).find(
             (t) => t.TenTag.toLowerCase() === trimmed.toLowerCase()
           );
-          if (found) selectTagById(found.TagID, found.TenTag, found.MauSac);
+          if (found) selectTagById(found.MaNhanDan, found.TenTag, found.MauSac);
         }
       } catch (err) {
         console.error("[TagInputWidget] createAndAddTag:", err);
@@ -261,14 +261,14 @@ window.TagInputWidget = (function () {
     }
 
     function getSelectedIds() {
-      return selectedTags.map((t) => t.TagID);
+      return selectedTags.map((t) => t.MaNhanDan);
     }
 
     function setTags(tagsArray) {
       selectedTags = (tagsArray || [])
-        .filter((t) => t && t.TagID)
+        .filter((t) => t && t.MaNhanDan)
         .slice(0, maxTags)
-        .map((t) => ({ TagID: t.TagID, TenTag: t.TenTag, MauSac: t.MauSac || "#3B82F6" }));
+        .map((t) => ({ MaNhanDan: t.MaNhanDan, TenTag: t.TenTag, MauSac: t.MauSac || "#3B82F6" }));
       renderPills();
     }
 

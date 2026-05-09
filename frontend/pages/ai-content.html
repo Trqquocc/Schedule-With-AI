@@ -1,8 +1,33 @@
 <style>
   /* ===== AI-reference page — token-driven polish (per DESIGN.md) ===== */
+
+  /* --- Sidebar --- */
+  #ai-ref-sidebar {
+    background: var(--bg-card, #fff);
+    border-right: 1px solid var(--border, #e2e8f0);
+  }
+  .ai-ref-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+  }
+  .ai-ref-header h3 {
+    font-size: 15px; font-weight: 700; letter-spacing: -0.3px;
+    color: var(--text-primary); display: flex; align-items: center; gap: 8px;
+  }
+  .ai-ref-header .ai-ref-desc {
+    font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;
+  }
+
+  /* Action row */
+  .ai-ref-actions {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 10px; font-size: 12px;
+  }
+
+  /* Icon button */
   .ai-ref-section .ai-icon-btn {
-    width:32px; height:32px; display:flex; align-items:center; justify-content:center;
-    border-radius: var(--radius-sm);
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm, 8px);
     background: transparent; color: var(--text-secondary);
     border: 1px solid var(--border); cursor: pointer;
     transition: background .15s ease, color .15s ease;
@@ -10,45 +35,55 @@
   .ai-ref-section .ai-icon-btn:hover {
     background: var(--bg-card-hover); color: var(--text-primary);
   }
+
+  /* Chip button */
   .ai-ref-section .ai-chip-btn {
-    padding:5px 10px; font-size:12px; font-weight:500;
-    border-radius: var(--radius-sm); background: var(--bg-card);
+    padding: 5px 10px; font-size: 11px; font-weight: 600;
+    border-radius: var(--radius-sm, 8px); background: var(--bg-card-alt, #f1f5f9);
     color: var(--text-secondary); border: 1px solid var(--border);
-    cursor: pointer;
+    cursor: pointer; transition: all .15s ease;
   }
   .ai-ref-section .ai-chip-btn:hover {
     background: var(--bg-card-hover); color: var(--text-primary);
+    border-color: var(--accent);
   }
+
+  /* View switcher buttons */
   .ai-ref-section .ai-view-btn {
-    padding:6px 12px; font-size:13px; font-weight:500;
-    border-radius: calc(var(--radius-sm) - 2px);
+    padding: 5px 12px; font-size: 12px; font-weight: 600;
+    border-radius: 6px;
     background: transparent; color: var(--text-muted);
     border: 0; cursor: pointer;
+    transition: all .15s ease;
   }
   .ai-ref-section .ai-view-btn.active,
   .ai-ref-section .ai-view-btn:hover {
-    background: var(--bg-card); color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    background: var(--bg-card, #fff); color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   }
-  #ai-ref-suggest-btn:hover { background: var(--accent-hover) !important; }
 
-  /* Task card */
+  /* Suggest button hover */
+  #ai-ref-suggest-btn { transition: all .2s ease; }
+  #ai-ref-suggest-btn:hover { filter: brightness(1.08); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+  #ai-ref-suggest-btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; box-shadow: none; }
+
+  /* --- Task card --- */
   .ai-ref-card {
     position: relative;
     display: grid;
     grid-template-columns: 18px 18px 1fr;
     gap: 8px; align-items: flex-start;
     padding: 10px 12px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, #e5e7eb);
     border-left: 3px solid var(--accent);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-sm, 8px);
     cursor: pointer;
     transition: border-color .15s ease, box-shadow .15s ease, transform .08s ease;
   }
   .ai-ref-card:hover {
     border-color: var(--accent);
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   }
   .ai-ref-card.dragging { opacity: 0.5; transform: scale(0.98); }
   .ai-ref-card.needs-attention { border-color: rgba(255,159,10,0.5); }
@@ -60,75 +95,118 @@
     30%     { background: rgba(255,159,10,0.12); border-color: #ff9f0a; }
   }
   .ai-ref-card .ai-card-grip {
-    color: var(--text-muted); cursor: grab; font-size: 12px;
+    color: var(--text-muted); cursor: grab; font-size: 11px;
     padding: 2px 0;
   }
   .ai-ref-card .ai-ref-task-cb {
     margin-top: 3px; cursor: pointer;
+    accent-color: var(--accent, #2563EB);
   }
   .ai-ref-card .ai-card-body { min-width: 0; }
   .ai-ref-card .ai-card-title-row {
     display: flex; align-items: center; gap: 6px;
   }
   .ai-ref-card .ai-card-dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
   }
   .ai-ref-card .ai-card-title {
-    font-size: 14px; font-weight: 600; color: var(--text-primary);
+    font-size: 13px; font-weight: 600; color: var(--text-primary);
     letter-spacing: -0.2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     flex: 1; min-width: 0;
   }
   .ai-ref-card .ai-card-warn {
-    color: #ff9f0a; font-size: 12px; flex-shrink: 0;
+    color: #ff9f0a; font-size: 11px; flex-shrink: 0;
   }
   .ai-ref-card .ai-card-chips {
-    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+    display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px;
   }
   .ai-ref-card .ai-card-chip {
     display: inline-flex; align-items: center; gap: 3px;
-    padding: 2px 7px; font-size: 11px; font-weight: 500;
-    border-radius: calc(var(--radius-sm) - 2px);
-    background: var(--bg-card-alt); color: var(--text-secondary);
+    padding: 1px 6px; font-size: 10px; font-weight: 500;
+    border-radius: 4px;
+    background: var(--bg-card-alt, #f1f5f9); color: var(--text-muted);
     letter-spacing: -0.1px;
   }
-  .ai-ref-card .ai-card-chip i { font-size: 10px; }
+  .ai-ref-card .ai-card-chip i { font-size: 9px; }
+
+  /* --- Priority legend bar --- */
+  .ai-priority-legend {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 20px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    background: var(--bg-card-alt, #fafbfc);
+    flex-shrink: 0;
+  }
+  .ai-priority-legend span.legend-label {
+    font-size: 10px; color: var(--text-muted, #94a3b8);
+    font-weight: 600; letter-spacing: 0.5px;
+  }
+  .ai-priority-legend .legend-item {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ai-priority-legend .legend-dot {
+    width: 7px; height: 7px; border-radius: 50%; display: inline-block;
+  }
+  .ai-priority-legend .legend-text {
+    font-size: 10px; color: var(--text-secondary, #64748b);
+  }
+
+  /* --- Proposal bar --- */
+  #ai-ref-proposal-bar {
+    transition: all .3s ease;
+  }
+  #ai-ref-proposal-bar .proposal-action-btn {
+    padding: 6px 14px; font-size: 12px; font-weight: 600;
+    border-radius: var(--radius-sm, 8px); cursor: pointer;
+    transition: all .15s ease; display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid transparent;
+  }
+  .proposal-btn-accept { background: #10b981; color: #fff; }
+  .proposal-btn-accept:hover { background: #059669; }
+  .proposal-btn-edit { background: var(--bg-card, #fff); color: var(--accent); border-color: var(--border) !important; }
+  .proposal-btn-edit:hover { background: var(--bg-card-hover); }
+  .proposal-btn-regen { background: var(--bg-card, #fff); color: var(--text-primary); border-color: var(--border) !important; }
+  .proposal-btn-regen:hover { background: var(--bg-card-hover); }
+  .proposal-btn-reject { background: #fff5f5; color: #dc2626; border-color: #fecaca !important; }
+  .proposal-btn-reject:hover { background: #fee2e2; }
 </style>
 
 <div class="flex h-full ai-ref-section" style="background:var(--bg-app); color:var(--text-primary);">
-  <!-- Sidebar: task pool, rendered as clickable cards -->
+  <!-- Sidebar: task pool -->
   <div id="ai-ref-sidebar"
     class="flex flex-col flex-shrink-0"
-    style="width:288px; background:var(--bg-card); border-right:1px solid var(--border); height:100%; min-height:0;">
-    <div style="padding:16px 18px; border-bottom:1px solid var(--border); flex-shrink:0;">
+    style="width:280px; height:100%; min-height:0;">
+
+    <!-- Header -->
+    <div class="ai-ref-header" style="flex-shrink:0;">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-        <h3 style="font-size:17px; font-weight:600; letter-spacing:-0.374px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+        <h3>
           <i class="fas fa-list-check" style="color:var(--accent);"></i>Công việc
         </h3>
-        <button id="ai-ref-refresh-btn"
-          class="ai-icon-btn"
-          title="Tải lại">
-          <i class="fas fa-sync-alt"></i>
+        <button id="ai-ref-refresh-btn" class="ai-icon-btn" title="Tải lại danh sách">
+          <i class="fas fa-sync-alt" style="font-size:12px;"></i>
         </button>
       </div>
-      <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
-        Bấm vào thẻ để tinh chỉnh · tick chọn để AI sắp lịch
+      <p class="ai-ref-desc">
+        Bấm thẻ để chỉnh sửa · Tick chọn để AI sắp lịch
       </p>
-      <div style="margin-top:10px; display:flex; align-items:center; gap:6px; font-size:13px;">
+      <div class="ai-ref-actions">
         <button id="ai-ref-select-all-btn" class="ai-chip-btn" title="Chọn tất cả">
           <i class="fas fa-check-double"></i> Tất cả
         </button>
         <button id="ai-ref-clear-sel-btn" class="ai-chip-btn" title="Bỏ chọn">
           Bỏ chọn
         </button>
-        <span style="margin-left:auto; font-weight:600; color:var(--accent);">
+        <span style="margin-left:auto; font-weight:700; color:var(--accent); font-size:12px;">
           <span id="ai-ref-selected-count">0</span> đã chọn
         </span>
       </div>
     </div>
 
+    <!-- Task list -->
     <div id="ai-ref-task-list"
-      style="flex:1; overflow-y:auto; overflow-x:hidden; padding:14px; min-height:0; display:flex; flex-direction:column; gap:10px;">
+      style="flex:1; overflow-y:auto; overflow-x:hidden; padding:12px; min-height:0; display:flex; flex-direction:column; gap:8px;">
       <div class="text-center text-sm" style="color:var(--text-muted); padding:30px 0;">
         <div class="animate-pulse">Đang tải công việc...</div>
       </div>
@@ -139,44 +217,48 @@
   <div class="flex-1 flex flex-col min-w-0" style="background:var(--bg-app);">
 
     <!-- Toolbar -->
-    <nav class="ai-toolbar" style="background:var(--bg-card); border-bottom:1px solid var(--border); padding:12px 20px; flex-shrink:0;">
-      <div class="flex items-center justify-between gap-4">
+    <nav class="ai-toolbar" style="background:var(--bg-card, #fff); border-bottom:1px solid var(--border, #e2e8f0); padding:10px 20px; flex-shrink:0;">
+      <div class="flex items-center justify-between gap-3 flex-nowrap min-w-0">
 
-        <!-- Left: brand + date nav -->
+        <!-- Left: brand icon + date nav + title -->
         <div class="flex items-center gap-3">
-          <div style="width:36px; height:36px; border-radius:var(--radius-sm); background:var(--accent-light); color:var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            <i class="fas fa-robot"></i>
+          <div style="width:34px; height:34px; border-radius:10px; background:var(--accent, #2563EB); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fas fa-robot text-white" style="font-size:14px;"></i>
           </div>
 
           <div class="flex items-center gap-1">
-            <button id="ai-cal-prev-btn" class="ai-icon-btn" title="Tháng trước">
-              <i class="fas fa-chevron-left text-xs"></i>
+            <button id="ai-cal-prev-btn" class="ai-icon-btn" title="Trước"
+              style="width:30px; height:30px;">
+              <i class="fas fa-chevron-left" style="font-size:11px;"></i>
             </button>
             <button id="ai-cal-today-btn"
-              style="padding:6px 12px; font-size:14px; font-weight:600; border-radius:var(--radius-sm); background:transparent; color:var(--accent); border:1px solid var(--border); cursor:pointer;">
+              style="padding:5px 12px; font-size:13px; font-weight:600; border-radius:var(--radius-sm, 8px); background:transparent; color:var(--accent); border:none; cursor:pointer; transition:background .15s;"
+              onmouseover="this.style.background='#eff6ff'"
+              onmouseout="this.style.background='transparent'">
               Hôm nay
             </button>
-            <button id="ai-cal-next-btn" class="ai-icon-btn" title="Tháng sau">
-              <i class="fas fa-chevron-right text-xs"></i>
+            <button id="ai-cal-next-btn" class="ai-icon-btn" title="Sau"
+              style="width:30px; height:30px;">
+              <i class="fas fa-chevron-right" style="font-size:11px;"></i>
             </button>
           </div>
 
           <h2 id="ai-calendar-title"
-            style="font-size:18px; font-weight:600; letter-spacing:-0.374px; color:var(--text-primary); min-width:180px;">
+            style="font-size:15px; font-weight:700; letter-spacing:-0.3px; color:var(--text-primary); min-width:160px; white-space:nowrap;">
             Tháng
           </h2>
         </div>
 
-        <!-- Right: AI actions + view switcher -->
-        <div class="flex items-center gap-2">
+        <!-- Right: AI action + view switcher -->
+        <div class="flex items-center gap-2 flex-shrink-0">
           <button id="ai-ref-suggest-btn"
             title="Gợi ý lịch trình bằng AI"
-            style="display:flex; align-items:center; gap:8px; padding:8px 15px; font-size:15px; font-weight:500; color:#ffffff; background:var(--accent); border:1px solid transparent; border-radius:var(--radius-sm); letter-spacing:-0.374px; cursor:pointer;">
-            <i class="fas fa-wand-magic-sparkles"></i>
+            style="display:flex; align-items:center; gap:7px; padding:7px 16px; font-size:13px; font-weight:600; color:#ffffff; background:var(--accent, #2563EB); border:none; border-radius:var(--radius-sm, 8px); letter-spacing:-0.2px; cursor:pointer;">
+            <i class="fas fa-wand-magic-sparkles" style="font-size:12px;"></i>
             <span>Lập lịch tự động</span>
           </button>
 
-          <div style="display:flex; align-items:center; gap:2px; padding:3px; border-radius:var(--radius-sm); background:var(--bg-card-alt); margin-left:8px;">
+          <div style="display:flex; align-items:center; gap:1px; padding:3px; border-radius:var(--radius-sm, 8px); background:var(--bg-card-alt, #f1f5f9); margin-left:4px;">
             <button id="ai-cal-day-view" data-view="timeGridDay" class="ai-view-btn">Ngày</button>
             <button id="ai-cal-week-view" data-view="timeGridWeek" class="ai-view-btn active">Tuần</button>
             <button id="ai-cal-month-view" data-view="dayGridMonth" class="ai-view-btn">Tháng</button>
@@ -186,34 +268,73 @@
       </div>
     </nav>
 
+    <!-- Priority legend -->
+    <div class="ai-priority-legend">
+      <span class="legend-label">Ưu tiên:</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#34D399"></span><span class="legend-text">Thấp</span></span>
+      <span class="legend-item"><span class="legend-dot" style="background:#60A5FA"></span><span class="legend-text">TB</span></span>
+      <span class="legend-item"><span class="legend-dot" style="background:#FBBF24"></span><span class="legend-text">Cao</span></span>
+      <span class="legend-item"><span class="legend-dot" style="background:#F87171"></span><span class="legend-text">Rất cao</span></span>
+    </div>
+
     <!-- Pending proposals action bar -->
     <div id="ai-ref-proposal-bar"
       class="hidden"
-      style="align-items:center; justify-content:space-between; gap:12px; padding:10px 20px; border-bottom:1px solid var(--border); background:var(--accent-light);">
-      <span style="font-size:14px; color:var(--accent); font-weight:500;">
-        <i class="fas fa-sparkles" style="margin-right:6px;"></i>
+      style="align-items:center; justify-content:space-between; gap:12px; padding:10px 20px; border-bottom:1px solid var(--border); background:var(--accent-light, #eff6ff);">
+      <span style="font-size:13px; color:var(--accent); font-weight:600;">
+        <i class="fas fa-sparkles" style="margin-right:5px;"></i>
         <strong id="ai-ref-proposal-count">0</strong> đề xuất chờ xác nhận
       </span>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button id="ai-ref-accept-all-btn"
-          style="padding:6px 12px; font-size:13px; font-weight:500; color:#ffffff; background:var(--accent); border:1px solid transparent; border-radius:var(--radius-sm); cursor:pointer;">
-          <i class="fas fa-check" style="margin-right:4px;"></i> Chấp nhận tất cả
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button id="ai-ref-accept-all-btn" class="proposal-action-btn proposal-btn-accept">
+          <i class="fas fa-check"></i> Chấp nhận
         </button>
-        <button id="ai-ref-reject-all-btn"
-          style="padding:6px 12px; font-size:13px; font-weight:500; border:1px solid var(--border); background:var(--bg-card); color:var(--text-primary); border-radius:var(--radius-sm); cursor:pointer;">
-          Bỏ tất cả
+        <button id="ai-ref-edit-btn" class="proposal-action-btn proposal-btn-edit">
+          <i class="fas fa-pen"></i> Chỉnh sửa
+        </button>
+        <button id="ai-ref-regenerate-btn" class="proposal-action-btn proposal-btn-regen">
+          <i class="fas fa-rotate"></i> Tạo lại
+        </button>
+        <button id="ai-ref-reject-all-btn" class="proposal-action-btn proposal-btn-reject">
+          <i class="fas fa-xmark"></i> Huỷ
         </button>
       </div>
     </div>
 
+    <!-- Edit instructions panel -->
+    <div id="ai-ref-edit-panel" class="hidden"
+      style="padding:12px 20px; border-bottom:1px solid var(--border); background:var(--bg-card-alt);">
+      <div style="display:flex; align-items:flex-start; gap:12px;">
+        <div style="flex:1;">
+          <label style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:block;">
+            <i class="fas fa-comment-dots" style="margin-right:4px; color:var(--accent);"></i>
+            Hướng dẫn chỉnh sửa cho AI
+          </label>
+          <textarea id="ai-ref-edit-instructions"
+            placeholder="Ví dụ: Chuyển các công việc sang buổi sáng, giảm thời gian xuống 45 phút, tránh xếp vào thứ 6..."
+            style="width:100%; height:64px; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm, 8px); font-size:12px; resize:vertical; background:var(--bg-input, #fff); color:var(--text-primary);"></textarea>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; padding-top:20px;">
+          <button id="ai-ref-send-edit-btn"
+            style="padding:7px 16px; font-size:12px; font-weight:700; color:#fff; background:var(--accent); border:none; border-radius:var(--radius-sm, 8px); cursor:pointer; white-space:nowrap;">
+            <i class="fas fa-paper-plane" style="margin-right:4px;"></i> Gửi lại
+          </button>
+          <button id="ai-ref-cancel-edit-btn"
+            style="padding:7px 16px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--bg-card); color:var(--text-secondary); border-radius:var(--radius-sm, 8px); cursor:pointer; white-space:nowrap;">
+            Huỷ
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Calendar -->
-    <div id="ai-calendar" class="flex-1 overflow-hidden">
+    <div id="ai-calendar" class="flex-1 overflow-hidden" style="min-height:0;">
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-            style="border-color:var(--ai-ref-primary)"></div>
-          <p class="text-lg font-medium text-gray-500">Đang tải lịch trình AI...</p>
-          <p class="text-sm mt-2 text-gray-400">Chọn công việc bên trái rồi bấm "Lập lịch tự động"</p>
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 mx-auto mb-3"
+            style="border-color:var(--accent, #2563EB)"></div>
+          <p class="text-sm font-semibold" style="color:var(--text-secondary)">Đang tải lịch trình AI...</p>
+          <p class="text-xs mt-1" style="color:var(--text-muted)">Chọn công việc bên trái rồi bấm "Lập lịch tự động"</p>
         </div>
       </div>
     </div>

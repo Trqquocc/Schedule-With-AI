@@ -278,48 +278,107 @@
   #sidebar-container .hover\:text-gray-700:hover { color: #f1f5f9 !important; }
   #sidebar-container .hover\:text-red-600:hover { color: #f87171 !important; }
 
-  /* ═══════ Settings Modal ═══════ */
+  /* ═══════ Settings Modal — Apple Design System ═══════ */
   #settingsModal { position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px; }
   #settingsModal.hidden { display:none !important; }
-  #settingsModal .sm-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px); }
-  #settingsModal .sm-panel { position:relative;width:400px;max-width:100%;max-height:calc(100vh - 3rem);background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);display:flex;flex-direction:column;overflow:hidden;animation:smSlideUp .25s ease; }
-  #settingsModal .sm-header { background:var(--accent-header, linear-gradient(135deg,#2563EB,#1d4ed8));padding:20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+  #settingsModal .sm-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.48);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px); }
+  #settingsModal .sm-panel { position:relative;width:380px;max-width:100%;max-height:calc(100vh - 3rem);background:#ffffff;border-radius:12px;box-shadow:rgba(0,0,0,0.22) 3px 5px 30px 0px;display:flex;flex-direction:column;overflow:hidden;animation:smSlideUp .25s cubic-bezier(.4,0,.2,1); }
+
+  /* Header */
+  #settingsModal .sm-header { padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
   #settingsModal .sm-user { display:flex;align-items:center;gap:12px; }
-  #settingsModal .sm-avatar { width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0; }
+  #settingsModal .sm-avatar { width:48px;height:48px;border-radius:50%;background:var(--accent,#0071e3);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#fff;flex-shrink:0;letter-spacing:-0.28px; }
   #settingsModal .sm-user-info { min-width:0; }
-  #settingsModal .settings-user-name { color:#fff;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-  #settingsModal .settings-user-email { color:rgba(255,255,255,0.7);font-size:11px;margin-top:2px; }
-  #settingsModal .sm-close { width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.15);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.8);font-size:12px;transition:background .2s;padding:0 !important; }
-  #settingsModal .sm-close:hover { background:rgba(255,255,255,0.25); }
-  #settingsModal .sm-body { padding:16px;overflow-y:auto;flex:1; }
-  #settingsModal .sm-section-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:8px;padding-left:2px; }
-  #settingsModal .sm-card { background:#f8fafc;border-radius:12px;padding:14px;border:1px solid #e2e8f0;margin-bottom:10px; }
+  #settingsModal .settings-user-name { color:#1d1d1f;font-size:17px;font-weight:600;letter-spacing:-0.374px;line-height:1.24;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  #settingsModal .settings-user-email { color:rgba(0,0,0,0.48);font-size:12px;letter-spacing:-0.12px;margin-top:2px; }
+  #settingsModal .sm-close { width:28px;height:28px;border-radius:50%;background:#f5f5f7;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,0.48);font-size:11px;transition:background .2s;padding:0 !important; }
+  #settingsModal .sm-close:hover { background:#e8e8ed;color:rgba(0,0,0,0.8); }
+
+  /* Body */
+  #settingsModal .sm-body { padding:20px 24px;overflow-y:auto;flex:1; }
+  #settingsModal .sm-section-label { font-size:12px;font-weight:600;letter-spacing:-0.12px;color:rgba(0,0,0,0.48);margin-bottom:8px;padding-left:0; }
+  #settingsModal .sm-card { background:#f5f5f7;border-radius:8px;padding:14px 16px;border:none;margin-bottom:8px; }
   #settingsModal .sm-row { display:flex;align-items:center;justify-content:space-between; }
   #settingsModal .sm-row-left { display:flex;align-items:center;gap:10px; }
-  #settingsModal .sm-icon { width:28px;height:28px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;color:var(--accent,#2563EB);font-size:12px;flex-shrink:0;text-align:center;line-height:28px; }
-  #settingsModal .sm-label { font-size:13px;font-weight:600;color:#1e293b; }
-  #settingsModal .sm-desc { font-size:11px;color:#94a3b8;margin-top:1px; }
-  #settingsModal .sm-toggle { position:relative;width:42px;height:24px;border-radius:12px;background:#cbd5e1;border:none;cursor:pointer;transition:background .3s;flex-shrink:0;padding:0 !important; }
-  #settingsModal .sm-toggle-thumb { position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:transform .3s; }
-  #settingsModal .sm-color-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
-  #settingsModal .sm-color-grid button { width:100% !important;height:38px !important;border-radius:10px !important;border:none !important;cursor:pointer !important;position:relative !important;transition:transform .15s,box-shadow .15s !important;padding:0 !important;display:block !important; }
-  #settingsModal .sm-color-grid button:hover { transform:scale(1.05); }
-  #settingsModal .sm-color-grid button.active { outline:2.5px solid currentColor;outline-offset:3px;box-shadow:0 2px 10px rgba(0,0,0,0.15); }
-  #settingsModal .sm-color-grid button .swatch-name { position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,0.4); }
-  #settingsModal .sm-color-grid button .swatch-check { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,0.4); }
-  #settingsModal .sm-footer { padding:12px 16px;border-top:1px solid #e2e8f0;flex-shrink:0; }
-  #settingsModal .sm-logout-btn { width:100%;padding:10px 16px;border-radius:10px;border:1.5px solid #fecaca;background:#fff5f5;cursor:pointer;transition:all .2s;color:#dc2626;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px; }
-  #settingsModal .sm-logout-btn:hover { background:#fee2e2;border-color:#f87171; }
-  body.dark #settingsModal .sm-panel { background:#1e293b; }
-  body.dark #settingsModal .sm-section-label { color:#475569; }
-  body.dark #settingsModal .sm-card { background:#162032;border-color:#334155; }
-  body.dark #settingsModal .sm-label { color:#f1f5f9; }
-  body.dark #settingsModal .sm-desc { color:#64748b; }
-  body.dark #settingsModal .sm-icon { background:#1e3a5f; }
-  body.dark #settingsModal .sm-footer { border-color:#334155; }
-  body.dark #settingsModal .sm-logout-btn { background:rgba(220,38,38,0.08);border-color:rgba(248,113,113,0.3); }
-  body.dark #settingsModal .sm-logout-btn:hover { background:rgba(220,38,38,0.15);border-color:#f87171; }
-  @keyframes smSlideUp { from{opacity:0;transform:translateY(20px) scale(0.96)} to{opacity:1;transform:none} }
+  #settingsModal .sm-icon { width:28px;height:28px;border-radius:8px;background:var(--accent,#0071e3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;text-align:center;line-height:28px; }
+  #settingsModal .sm-label { font-size:14px;font-weight:600;color:#1d1d1f;letter-spacing:-0.224px;line-height:1.29; }
+  #settingsModal .sm-desc { font-size:12px;color:rgba(0,0,0,0.48);margin-top:1px;letter-spacing:-0.12px; }
+
+  /* Toggle */
+  #settingsModal .sm-toggle { position:relative;width:42px;height:24px;border-radius:12px;background:#d1d1d6;border:none;cursor:pointer;transition:background .3s;flex-shrink:0;padding:0 !important; }
+  #settingsModal .sm-toggle-thumb { position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);transition:transform .3s cubic-bezier(.4,0,.2,1); }
+
+  /* Color Grid — square swatches with labels */
+  #settingsModal .sm-color-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:6px; }
+  #settingsModal .sm-color-grid button { width:100% !important;height:auto !important;aspect-ratio:auto !important;border-radius:8px !important;border:2px solid transparent !important;cursor:pointer !important;position:relative !important;transition:all .15s !important;padding:10px 4px 6px !important;display:flex !important;flex-direction:column !important;align-items:center !important;gap:4px !important; }
+  #settingsModal .sm-color-grid button:hover { transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.12); }
+  #settingsModal .sm-color-grid button.selected { border-color:currentColor !important;box-shadow:0 0 0 1px currentColor; }
+  #settingsModal .sm-color-grid button .swatch-dot { width:24px;height:24px;border-radius:50%;background:currentColor;flex-shrink:0; }
+  #settingsModal .sm-color-grid button .swatch-check { position:absolute;top:8px;left:50%;transform:translateX(-50%);color:#fff;font-size:10px;text-shadow:0 1px 2px rgba(0,0,0,0.3); }
+  #settingsModal .sm-color-grid button .swatch-name { font-size:9px;font-weight:600;color:rgba(0,0,0,0.5);letter-spacing:-0.06px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block; }
+  #settingsModal .sm-save-accent { display:block;width:100%;margin-top:10px;padding:8px 0;border-radius:8px;border:none;background:var(--accent,#0071e3);color:#fff;font-size:13px;font-weight:600;letter-spacing:-0.12px;cursor:pointer;transition:opacity .2s;opacity:0.4;pointer-events:none; }
+  #settingsModal .sm-save-accent.active { opacity:1;pointer-events:auto; }
+  #settingsModal .sm-save-accent.active:hover { opacity:0.85; }
+
+  /* Footer */
+  #settingsModal .sm-footer { padding:16px 24px 24px;flex-shrink:0; }
+  #settingsModal .sm-logout-btn { width:100%;padding:10px 16px;border-radius:8px;border:none;background:#f5f5f7;cursor:pointer;transition:all .2s;color:#ff3b30;font-size:14px;font-weight:600;letter-spacing:-0.224px;display:flex;align-items:center;justify-content:center;gap:8px; }
+  #settingsModal .sm-logout-btn:hover { background:#ffe5e5;color:#d70015; }
+
+  /* Clickable card */
+  #settingsModal .sm-card-btn { cursor:pointer;border:none;width:100%;text-align:left;transition:background .15s; }
+  #settingsModal .sm-card-btn:hover { background:#ebebf0; }
+
+  /* ── Dark Mode ── */
+  body.dark #settingsModal .sm-panel { background:#1c1c1e; }
+  body.dark #settingsModal .settings-user-name { color:#f5f5f7; }
+  body.dark #settingsModal .settings-user-email { color:rgba(255,255,255,0.48); }
+  body.dark #settingsModal .sm-close { background:#2c2c2e;color:rgba(255,255,255,0.48); }
+  body.dark #settingsModal .sm-close:hover { background:#3a3a3c;color:rgba(255,255,255,0.8); }
+  body.dark #settingsModal .sm-section-label { color:rgba(255,255,255,0.48); }
+  body.dark #settingsModal .sm-card { background:#2c2c2e; }
+  body.dark #settingsModal .sm-label { color:#f5f5f7; }
+  body.dark #settingsModal .sm-desc { color:rgba(255,255,255,0.48); }
+  body.dark #settingsModal .sm-toggle { background:#48484a; }
+  body.dark #settingsModal .sm-logout-btn { background:#2c2c2e;color:#ff453a; }
+  body.dark #settingsModal .sm-logout-btn:hover { background:rgba(255,59,48,0.12);color:#ff6961; }
+  body.dark #settingsModal .sm-color-grid button.selected { border-color:currentColor !important; }
+  body.dark #settingsModal .sm-color-grid button .swatch-name { color:rgba(255,255,255,0.5); }
+  body.dark #settingsModal .sm-card-btn:hover { background:#3a3a3c; }
+  body.dark #settingsModal .fa-chevron-right,
+  body.dark #settingsModal .fa-arrow-up-right-from-square { color:rgba(255,255,255,0.2) !important; }
+
+  @keyframes smSlideUp { from{opacity:0;transform:translateY(12px) scale(0.98)} to{opacity:1;transform:none} }
+
+  /* ═══════ Guide Modal ═══════ */
+  #guideModal { position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px; }
+  #guideModal.hidden { display:none !important; }
+  .gm-panel { position:relative;width:520px;max-width:100%;max-height:calc(100vh - 3rem);background:#fff;border-radius:12px;box-shadow:rgba(0,0,0,0.22) 3px 5px 30px 0px;display:flex;flex-direction:column;overflow:hidden;animation:smSlideUp .25s cubic-bezier(.4,0,.2,1); }
+  .gm-header { padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,0.06); }
+  .gm-title { font-size:17px;font-weight:600;color:#1d1d1f;letter-spacing:-0.374px;margin:0; }
+  .gm-body { padding:20px 24px;overflow-y:auto;flex:1; }
+
+  .gm-section { display:flex;gap:14px;padding:16px 0;border-bottom:1px solid rgba(0,0,0,0.05); }
+  .gm-section:last-child { border-bottom:none; }
+  .gm-section-icon { width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0; }
+  .gm-section-content h3 { font-size:15px;font-weight:600;color:#1d1d1f;letter-spacing:-0.224px;margin:0 0 6px; }
+  .gm-section-content ul { margin:0;padding:0 0 0 16px;list-style:none; }
+  .gm-section-content li { font-size:13px;color:rgba(0,0,0,0.6);line-height:1.6;letter-spacing:-0.12px;position:relative;padding-left:4px; }
+  .gm-section-content li::before { content:"•";position:absolute;left:-12px;color:rgba(0,0,0,0.25); }
+  .gm-section-content li b { font-weight:600;color:rgba(0,0,0,0.8); }
+
+  .gm-warning { background:#fff5f5;border-radius:10px;padding:16px !important;margin-top:4px;border:none !important; }
+
+  /* Dark */
+  body.dark .gm-panel { background:#1c1c1e; }
+  body.dark .gm-header { border-color:rgba(255,255,255,0.08); }
+  body.dark .gm-title { color:#f5f5f7; }
+  body.dark .gm-section { border-color:rgba(255,255,255,0.06); }
+  body.dark .gm-section-content h3 { color:#f5f5f7; }
+  body.dark .gm-section-content li { color:rgba(255,255,255,0.56); }
+  body.dark .gm-section-content li::before { color:rgba(255,255,255,0.2); }
+  body.dark .gm-section-content li b { color:rgba(255,255,255,0.8); }
+  body.dark .gm-warning { background:rgba(255,59,48,0.08); }
 </style>
 
 <aside
@@ -380,7 +439,6 @@
         type="button"
         class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
         data-section="friends"
-        style="position:relative"
       >
         <i class="fas fa-user-friends"></i>
         <span>Bạn bè</span>
@@ -398,7 +456,6 @@
         type="button"
         class="nav-btn w-full flex items-center gap-3 text-sm rounded-lg px-4 py-3"
         data-section="chat"
-        style="position:relative"
       >
         <i class="fas fa-comments"></i>
         <span>Tin nhắn</span>
@@ -418,7 +475,7 @@
   <!-- User Info Bottom -->
   <div style="border-top:1px solid #334155;padding-top:16px;margin-top:16px;">
     <!-- Profile area (shown when authenticated) -->
-    <div id="sidebarProfileBtn" class="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all hover:opacity-80" style="background:#0f172a;" title="Cập nhật hồ sơ">
+    <div id="sidebarProfileBtn" class="items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all hover:opacity-80" style="display:none;background:#0f172a;" title="Cập nhật hồ sơ">
       <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden" style="background:var(--accent, #2563EB)" id="sidebarAvatarContainer">
         <span class="avatar-letter">?</span>
       </div>
@@ -430,8 +487,8 @@
     <div class="mt-2 space-y-1">
       <button
         id="settingsBtn"
-        class="w-full text-left text-xs flex items-center gap-2 px-3 py-2 rounded-lg transition-all"
-        style="color:#64748b;"
+        class="w-full text-left text-xs items-center gap-2 px-3 py-2 rounded-lg transition-all"
+        style="display:none;color:#64748b;"
         onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='#cbd5e1';"
         onmouseout="this.style.background='transparent';this.style.color='#64748b';"
       >
@@ -463,18 +520,19 @@
           <div class="settings-user-email">email@example.com</div>
         </div>
       </div>
-      <button class="sm-close" id="closeSettingsModal"><i class="fas fa-times"></i></button>
+      <button class="sm-close" id="closeSettingsModal"><i class="fas fa-xmark"></i></button>
     </div>
 
     <div class="sm-body">
+      <!-- Appearance -->
       <div class="sm-section-label">Giao diện</div>
 
       <div class="sm-card sm-row">
         <div class="sm-row-left">
-          <i class="fas fa-moon sm-icon"></i>
+          <div class="sm-icon"><i class="fas fa-moon"></i></div>
           <div>
             <div class="sm-label">Chế độ tối</div>
-            <div class="sm-desc">Bảo vệ mắt, giảm ánh sáng xanh</div>
+            <div class="sm-desc">Giảm ánh sáng xanh, bảo vệ mắt</div>
           </div>
         </div>
         <button class="sm-toggle" id="sidebarThemeToggle" onclick="if(window.ThemeManager){ThemeManager.toggle();updateSidebarThemeToggle();}">
@@ -483,58 +541,299 @@
       </div>
 
       <div class="sm-card">
-        <div class="sm-row-left" style="margin-bottom:12px">
-          <i class="fas fa-palette sm-icon"></i>
-          <div>
-            <div class="sm-label">Màu chủ đạo</div>
-            <div class="sm-desc">Tuỳ chỉnh màu giao diện</div>
+        <div class="sm-row" style="margin-bottom:12px">
+          <div class="sm-row-left">
+            <div class="sm-icon"><i class="fas fa-palette"></i></div>
+            <div>
+              <div class="sm-label">Màu chủ đạo</div>
+              <div class="sm-desc">Chọn màu rồi nhấn Lưu để áp dụng</div>
+            </div>
           </div>
         </div>
         <div class="sm-color-grid" id="accentColorGrid"></div>
+        <button class="sm-save-accent" id="saveAccentBtn">
+          <i class="fas fa-check"></i> Lưu màu
+        </button>
+      </div>
+
+      <!-- Support -->
+      <div class="sm-section-label" style="margin-top:12px">Hỗ trợ</div>
+
+      <button class="sm-card sm-row sm-card-btn" id="openGuideBtn">
+        <div class="sm-row-left">
+          <div class="sm-icon" style="background:#30d158"><i class="fas fa-book-open"></i></div>
+          <div>
+            <div class="sm-label">Hướng dẫn sử dụng</div>
+            <div class="sm-desc">Tìm hiểu cách sử dụng tất cả tính năng</div>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right" style="color:rgba(0,0,0,0.2);font-size:11px"></i>
+      </button>
+
+      <!-- App info -->
+      <div class="sm-section-label" style="margin-top:12px">Thông tin</div>
+      <div class="sm-card">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(0,0,0,0.4);letter-spacing:-0.12px">
+          <span>Phiên bản</span><span style="font-weight:600;color:rgba(0,0,0,0.6)">1.0.0</span>
+        </div>
       </div>
     </div>
 
     <div class="sm-footer">
       <button class="sm-logout-btn" id="modalLogoutBtn">
-        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+        <i class="fas fa-arrow-right-from-bracket"></i> Đăng xuất
       </button>
     </div>
   </div>
 </div>
 
+<!-- ═══════ USER GUIDE MODAL ═══════ -->
+<div id="guideModal" class="modal hidden">
+  <div class="sm-overlay" onclick="document.getElementById('guideModal').classList.add('hidden')"></div>
+  <div class="gm-panel">
+    <div class="gm-header">
+      <h2 class="gm-title">Hướng dẫn sử dụng</h2>
+      <button class="sm-close" onclick="document.getElementById('guideModal').classList.add('hidden')"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="gm-body">
+
+      <!-- 1. Lịch trình -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#0071e3"><i class="far fa-calendar-alt"></i></div>
+        <div class="gm-section-content">
+          <h3>Lịch trình</h3>
+          <ul>
+            <li>Xem lịch theo <b>ngày / tuần / tháng</b> — nhấn nút chuyển đổi trên thanh công cụ</li>
+            <li><b>Kéo thả</b> công việc từ sidebar vào lịch để lên lịch nhanh</li>
+            <li>Kéo sự kiện để <b>thay đổi thời gian</b>, kéo cạnh dưới để điều chỉnh thời lượng</li>
+            <li>Click vào sự kiện để xem chi tiết, đánh dấu hoàn thành, hoặc xoá</li>
+            <li>Sự kiện được tô màu theo <b>mức ưu tiên</b> — dễ nhận biết việc quan trọng</li>
+            <li>Hỗ trợ đồng bộ hai chiều với <b>Google Calendar</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 2. Công việc -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#ff9f0a"><i class="far fa-clipboard"></i></div>
+        <div class="gm-section-content">
+          <h3>Công việc</h3>
+          <ul>
+            <li>Tạo công việc với <b>tên, mô tả, mức ưu tiên, thời gian ước tính</b></li>
+            <li>Phân loại bằng <b>danh mục</b> và <b>tag</b> tuỳ chỉnh</li>
+            <li>Lọc và sắp xếp theo trạng thái, ưu tiên, hoặc danh mục</li>
+            <li>Đánh dấu hoàn thành hoặc xoá trực tiếp từ bảng công việc</li>
+            <li>Nhập lịch từ <b>ảnh chụp thời khoá biểu</b> (OCR) — nhấn nút "Import lịch"</li>
+            <li>Tuỳ chỉnh màu sắc ưu tiên trong <b>Priority Manager</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 3. Tham khảo AI -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#af52de"><i class="fas fa-magic"></i></div>
+        <div class="gm-section-content">
+          <h3>Tham khảo AI</h3>
+          <ul>
+            <li>AI tự động <b>sắp xếp lịch trình</b> dựa trên ưu tiên và thời gian rảnh</li>
+            <li>Xem gợi ý, <b>chấp nhận hoặc từ chối</b> từng sự kiện AI đề xuất</li>
+            <li>Nhập lịch từ <b>ảnh chụp</b> — AI nhận diện và tạo công việc tự động</li>
+            <li>Sử dụng <b>AI Chat Advisor</b> (nút chat góc phải) để hỏi đáp, tư vấn lịch trình</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 4. Thống kê & Lương -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#30d158"><i class="fas fa-chart-line"></i></div>
+        <div class="gm-section-content">
+          <h3>Thống kê & Lương</h3>
+          <ul>
+            <li>Xem <b>biểu đồ năng suất</b> theo ngày, tuần, tháng</li>
+            <li>Phân tích thời gian theo <b>danh mục</b> và <b>mức ưu tiên</b></li>
+            <li>Theo dõi tỷ lệ hoàn thành và thời gian làm việc thực tế</li>
+            <li>Tính <b>lương part-time</b> — chọn khoảng ngày, thêm ca làm, xem tổng thu nhập</li>
+            <li>Tab <b>Thành tích</b> — xem huy hiệu, chuỗi ngày, trang bị badge hiển thị</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 5. Thói quen -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#34c759"><i class="fas fa-leaf"></i></div>
+        <div class="gm-section-content">
+          <h3>Thói quen</h3>
+          <ul>
+            <li>Tạo thói quen hàng ngày — check-in mỗi ngày để duy trì <b>chuỗi</b></li>
+            <li>Chuỗi chỉ tính khi <b>hôm nay đã check-in</b> — bỏ lỡ một ngày thì chuỗi về 0</li>
+            <li>Xem lịch sử hoàn thành theo <b>tháng dạng lưới</b> với thanh tiến độ</li>
+            <li>Phần <b>Thống kê</b> hiển thị hoạt động 10 tuần gần nhất và các chỉ số tổng quan</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 6. Bạn bè -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#007aff"><i class="fas fa-user-friends"></i></div>
+        <div class="gm-section-content">
+          <h3>Bạn bè</h3>
+          <ul>
+            <li>Tìm và kết bạn bằng <b>email</b> — gửi lời mời, chờ chấp nhận</li>
+            <li><b>Chia sẻ lịch</b> với bạn bè để cùng xem và phối hợp</li>
+            <li>Xem tiến độ và hoạt động của bạn bè</li>
+            <li>Nhấn vào bạn bè để <b>nhắn tin trực tiếp</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 7. Nhóm -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#5856d6"><i class="fas fa-users"></i></div>
+        <div class="gm-section-content">
+          <h3>Nhóm làm việc</h3>
+          <ul>
+            <li>Tạo nhóm với tên và mô tả — tối đa <b>10 nhóm</b>, mỗi nhóm <b>20 thành viên</b></li>
+            <li>Thêm thành viên từ <b>danh sách bạn bè</b> hoặc nhập <b>email</b> trực tiếp</li>
+            <li><b>Giao việc</b> cho thành viên, đặt hạn chót, theo dõi tiến độ</li>
+            <li>Phân quyền: <b>Chủ nhóm</b> (toàn quyền), <b>Quản trị</b> (thêm/xoá thành viên), <b>Thành viên</b> (hoàn thành việc được giao)</li>
+            <li>Công việc nhóm tự động đồng bộ vào <b>lịch cá nhân</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 8. Tin nhắn -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#ff2d55"><i class="fas fa-comments"></i></div>
+        <div class="gm-section-content">
+          <h3>Tin nhắn</h3>
+          <ul>
+            <li>Nhắn tin <b>trực tiếp</b> với bạn bè hoặc <b>chat nhóm</b></li>
+            <li>Tin nhắn <b>realtime</b> — nhận ngay lập tức không cần refresh</li>
+            <li>Nhấn giữ tin nhắn của bạn để <b>chỉnh sửa</b> hoặc <b>thu hồi</b></li>
+            <li>Nhấn nút <b>⋮</b> trên thanh chat để <b>xoá đoạn chat</b> (chỉ xoá phía bạn, người khác vẫn thấy bình thường)</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 9. Pomodoro -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#ff6b6b"><i class="fas fa-clock"></i></div>
+        <div class="gm-section-content">
+          <h3>Pomodoro Timer</h3>
+          <ul>
+            <li>Widget đồng hồ <b>Pomodoro</b> nổi ở góc trái màn hình</li>
+            <li>Tập trung làm việc theo chu kỳ <b>25 phút làm — 5 phút nghỉ</b></li>
+            <li>Tự động ghi nhận phiên làm việc vào thống kê</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 10. Liên kết -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#5856d6"><i class="fas fa-link"></i></div>
+        <div class="gm-section-content">
+          <h3>Liên kết & Thông báo</h3>
+          <ul>
+            <li>Kết nối <b>Telegram</b> — nhận nhắc nhở công việc, lịch trình qua bot</li>
+            <li>Đồng bộ <b>Google Calendar</b> — sự kiện hai bên tự động cập nhật</li>
+            <li>Tuỳ chỉnh thời gian nhắc nhở: <b>15 phút trước</b>, nhắc buổi sáng, cuối tuần</li>
+            <li>Bật/tắt từng loại thông báo theo nhu cầu</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 11. Hồ sơ & Cài đặt -->
+      <div class="gm-section">
+        <div class="gm-section-icon" style="background:#8e8e93"><i class="fas fa-cog"></i></div>
+        <div class="gm-section-content">
+          <h3>Hồ sơ & Cài đặt</h3>
+          <ul>
+            <li>Nhấn vào <b>tên/email</b> trên sidebar để vào trang hồ sơ</li>
+            <li>Cập nhật <b>ảnh đại diện</b>, thông tin cá nhân</li>
+            <li>Bật/tắt <b>chế độ tối</b> (Dark Mode) trong Cài đặt</li>
+            <li>Tuỳ chỉnh <b>màu nhấn</b> (Accent Color) cho giao diện</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Cảnh báo & Lưu ý -->
+      <div class="gm-section gm-warning">
+        <div class="gm-section-icon" style="background:#ff3b30"><i class="fas fa-triangle-exclamation"></i></div>
+        <div class="gm-section-content">
+          <h3>Cảnh báo & Lưu ý</h3>
+          <ul>
+            <li>Dữ liệu lưu trên <b>cloud</b> — cần kết nối internet để đồng bộ</li>
+            <li>AI sắp xếp dựa trên công việc <b>chưa hoàn thành</b> — hãy cập nhật trạng thái thường xuyên</li>
+            <li>Ảnh avatar tối đa <b>2MB</b>, định dạng PNG / JPG / WebP</li>
+            <li>Mỗi tài khoản tạo tối đa <b>10 nhóm</b>, mỗi nhóm tối đa <b>20 thành viên</b></li>
+            <li>Khi xoá công việc, nhóm, hoặc thói quen — <b>không thể khôi phục</b></li>
+            <li>Chuỗi thói quen sẽ <b>về 0 nếu hôm nay chưa check-in</b> — hãy duy trì hàng ngày</li>
+            <li>"Xoá đoạn chat" chỉ xoá <b>trên thiết bị của bạn</b> — đổi trình duyệt sẽ thấy lại</li>
+            <li>Google Calendar đồng bộ <b>mỗi lần mở app</b> — thay đổi bên ngoài cần mở app để cập nhật</li>
+            <li>Tin nhắn đã <b>thu hồi</b> sẽ hiển thị "đã thu hồi" cho cả hai bên, không thể hoàn tác</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
-  // Move modal out of sidebar-container to avoid overflow:hidden clipping
+  // Move modals out of sidebar-container to avoid overflow:hidden clipping
   (function() {
-    const modal = document.getElementById('settingsModal');
-    if (modal && modal.closest('#sidebar-container')) {
-      document.body.appendChild(modal);
-    }
+    ['settingsModal', 'guideModal'].forEach(id => {
+      const m = document.getElementById(id);
+      if (m && m.closest('#sidebar-container')) document.body.appendChild(m);
+    });
   })();
 
   function updateSidebarThemeToggle() {
     const isDark = document.body.classList.contains('dark');
     const btn = document.getElementById('sidebarThemeToggle');
     const thumb = document.getElementById('sidebarThemeThumb');
-    if (btn) btn.style.background = isDark ? 'var(--accent, #2563EB)' : '#cbd5e1';
-    if (thumb) thumb.style.transform = isDark ? 'translateX(20px)' : 'translateX(0)';
+    if (btn) btn.style.background = isDark ? '#30d158' : '#d1d1d6';
+    if (thumb) thumb.style.transform = isDark ? 'translateX(18px)' : 'translateX(0)';
   }
   function updateSettingsThemeUI() { updateSidebarThemeToggle(); }
   document.addEventListener('theme-changed', () => updateSidebarThemeToggle());
   updateSidebarThemeToggle();
 
+  let _pendingAccent = null;
+
   function renderAccentPicker() {
     const grid = document.getElementById('accentColorGrid');
     if (!grid) return;
     if (!window.AccentTheme) { setTimeout(renderAccentPicker, 100); return; }
-    const current = AccentTheme.get();
+    const applied = AccentTheme.get();
+    const selected = _pendingAccent || applied;
+
     grid.innerHTML = AccentTheme.PRESETS.map(p => {
-      const isActive = p.hex.toUpperCase() === current.toUpperCase();
-      return `<button style="background:${p.hex} !important;color:${p.hex}" class="${isActive ? 'active' : ''}" onclick="AccentTheme.set('${p.hex}');renderAccentPicker();">
+      const isSel = p.hex.toUpperCase() === selected.toUpperCase();
+      return `<button style="color:${p.hex};background:${isSel ? (document.body.classList.contains('dark') ? '#3a3a3c' : '#f0f0f5') : 'transparent'}" class="${isSel ? 'selected' : ''}" onclick="_pendingAccent='${p.hex}';renderAccentPicker();">
+        <span class="swatch-dot" style="background:${p.hex}"></span>
+        ${isSel ? '<i class="fas fa-check swatch-check"></i>' : ''}
         <span class="swatch-name">${p.name}</span>
-        ${isActive ? '<i class="fas fa-check swatch-check"></i>' : ''}
       </button>`;
     }).join('');
+
+    const saveBtn = document.getElementById('saveAccentBtn');
+    if (saveBtn) {
+      const changed = _pendingAccent && _pendingAccent.toUpperCase() !== applied.toUpperCase();
+      saveBtn.classList.toggle('active', !!changed);
+      if (changed) saveBtn.style.background = _pendingAccent;
+    }
   }
+
+  document.getElementById('saveAccentBtn')?.addEventListener('click', () => {
+    if (_pendingAccent && window.AccentTheme) {
+      AccentTheme.set(_pendingAccent);
+      _pendingAccent = null;
+      renderAccentPicker();
+      if (window.Utils?.showToast) Utils.showToast('Đã lưu màu chủ đạo', 'success');
+    }
+  });
+
   renderAccentPicker();
 
   (function () {
@@ -596,7 +895,19 @@
     const closeModal = () => settingsModal.classList.add("hidden");
     closeBtn?.addEventListener("click", closeModal);
     settingsModal?.querySelector(".sm-overlay")?.addEventListener("click", closeModal);
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) closeModal(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (!settingsModal.classList.contains("hidden")) closeModal();
+        const gm = document.getElementById("guideModal");
+        if (gm && !gm.classList.contains("hidden")) gm.classList.add("hidden");
+      }
+    });
+
+    // Guide modal open from settings
+    document.getElementById("openGuideBtn")?.addEventListener("click", () => {
+      settingsModal.classList.add("hidden");
+      document.getElementById("guideModal")?.classList.remove("hidden");
+    });
 
     function syncAuthUI() {
       const token = localStorage.getItem('auth_token');
@@ -622,9 +933,7 @@
 
     const doLogout = async () => {
       try { if (typeof Utils !== "undefined") await Utils.makeRequest("/api/auth/logout", "POST"); } catch (e) {}
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("token");
-      localStorage.removeItem("user_data");
+      // auth-logout event handler in app.js clears all localStorage
       if (typeof AuthManager !== "undefined") AuthManager.logout();
       else document.dispatchEvent(new CustomEvent('auth-logout'));
       syncAuthUI();

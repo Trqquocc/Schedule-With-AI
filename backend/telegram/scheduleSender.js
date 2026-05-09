@@ -42,8 +42,8 @@ class ScheduleSender {
   async sendMorningSchedules() {
     try {
       const { data: users, error: usersError } = await supabase
-        .from("TelegramConnections")
-        .select("UserID, TelegramChatId, ThongBaoNhiemVu")
+        .from("KetNoiTelegram")
+        .select("MaNguoiDung, TelegramChatId, ThongBaoNhiemVu")
         .eq("TrangThaiKetNoi", true)
         .eq("ThongBaoNhiemVu", true);
 
@@ -62,23 +62,23 @@ class ScheduleSender {
         try {
           const { data: tasks, error: tasksError } = await supabase
             .from("CongViec")
-            .select("TieuDe, MoTa, GioBatDau, GioKetThuc")
-            .eq("UserID", user.UserID)
-            .gte("GioBatDau", startOfDay.toISOString())
-            .lte("GioBatDau", endOfDay.toISOString())
-            .order("GioBatDau");
+            .select("TieuDe, MoTa, GioBatDauCoDinh, GioKetThucCoDinh")
+            .eq("MaNguoiDung", user.MaNguoiDung)
+            .gte("GioBatDauCoDinh", startOfDay.toISOString())
+            .lte("GioBatDauCoDinh", endOfDay.toISOString())
+            .order("GioBatDauCoDinh");
 
           if (tasksError) throw tasksError;
 
           if (!tasks || tasks.length === 0) {
-            console.log(`⏭️ No tasks for user ${user.UserID}`);
+            console.log(`⏭️ No tasks for user ${user.MaNguoiDung}`);
             continue;
           }
 
           const schedule = {
             date: this.formatDate(today),
             tasks: tasks.map((task) => ({
-              time: new Date(task.GioBatDau).toLocaleTimeString("vi-VN", {
+              time: new Date(task.GioBatDauCoDinh).toLocaleTimeString("vi-VN", {
                 hour: "2-digit",
                 minute: "2-digit",
               }),
@@ -87,11 +87,11 @@ class ScheduleSender {
             })),
           };
 
-          const result = await sendSchedule(user.UserID, schedule);
+          const result = await sendSchedule(user.MaNguoiDung, schedule);
           if (result.success) successCount++;
           else failCount++;
         } catch (error) {
-          console.error(` Error for user ${user.UserID}:`, error.message);
+          console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
           failCount++;
         }
       }
@@ -107,8 +107,8 @@ class ScheduleSender {
   async sendAfternoonReminders() {
     try {
       const { data: users, error: usersError } = await supabase
-        .from("TelegramConnections")
-        .select("UserID, TelegramChatId")
+        .from("KetNoiTelegram")
+        .select("MaNguoiDung, TelegramChatId")
         .eq("TrangThaiKetNoi", true)
         .eq("ThongBaoNhiemVu", true);
 
@@ -124,11 +124,11 @@ class ScheduleSender {
         try {
           const { data: tasks, error: tasksError } = await supabase
             .from("CongViec")
-            .select("TieuDe, GioBatDau")
-            .eq("UserID", user.UserID)
-            .gte("GioBatDau", now.toISOString())
-            .lte("GioBatDau", endOfDay.toISOString())
-            .order("GioBatDau");
+            .select("TieuDe, GioBatDauCoDinh")
+            .eq("MaNguoiDung", user.MaNguoiDung)
+            .gte("GioBatDauCoDinh", now.toISOString())
+            .lte("GioBatDauCoDinh", endOfDay.toISOString())
+            .order("GioBatDauCoDinh");
 
           if (tasksError) throw tasksError;
           if (!tasks || tasks.length === 0) continue;
@@ -137,7 +137,7 @@ class ScheduleSender {
           message += `Bạn còn <b>${tasks.length}</b> công việc cần chú ý:\n\n`;
 
           tasks.forEach((task, index) => {
-            const time = new Date(task.GioBatDau).toLocaleTimeString("vi-VN", {
+            const time = new Date(task.GioBatDauCoDinh).toLocaleTimeString("vi-VN", {
               hour: "2-digit",
               minute: "2-digit",
             });
@@ -147,10 +147,10 @@ class ScheduleSender {
 
           message += "\nHãy cố gắng hoàn thành nhé! 💪";
 
-          const result = await sendMessageToUser(user.UserID, message);
+          const result = await sendMessageToUser(user.MaNguoiDung, message);
           if (result.success) successCount++;
         } catch (error) {
-          console.error(` Error for user ${user.UserID}:`, error.message);
+          console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
         }
       }
 
@@ -165,8 +165,8 @@ class ScheduleSender {
   async sendEveningSummaries() {
     try {
       const { data: users, error: usersError } = await supabase
-        .from("TelegramConnections")
-        .select("UserID, TelegramChatId")
+        .from("KetNoiTelegram")
+        .select("MaNguoiDung, TelegramChatId")
         .eq("TrangThaiKetNoi", true)
         .eq("ThongBaoNhiemVu", true);
 
@@ -184,18 +184,18 @@ class ScheduleSender {
         try {
           const { data: tasks, error: tasksError } = await supabase
             .from("CongViec")
-            .select("TrangThai")
-            .eq("UserID", user.UserID)
-            .gte("GioBatDau", startOfDay.toISOString())
-            .lte("GioBatDau", endOfDay.toISOString());
+            .select("TrangThaiThucHien")
+            .eq("MaNguoiDung", user.MaNguoiDung)
+            .gte("GioBatDauCoDinh", startOfDay.toISOString())
+            .lte("GioBatDauCoDinh", endOfDay.toISOString());
 
           if (tasksError) throw tasksError;
           if (!tasks || tasks.length === 0) continue;
 
           const total = tasks.length;
-          const completed = tasks.filter((t) => t.TrangThai === "completed").length;
-          const inProgress = tasks.filter((t) => t.TrangThai === "in_progress").length;
-          const notStarted = tasks.filter((t) => !t.TrangThai || t.TrangThai === "pending").length;
+          const completed = tasks.filter((t) => t.TrangThaiThucHien === 2).length;
+          const inProgress = tasks.filter((t) => t.TrangThaiThucHien === 1).length;
+          const notStarted = tasks.filter((t) => t.TrangThaiThucHien === 0 || t.TrangThaiThucHien == null).length;
 
           let message = "🌆 <b>Tổng kết ngày hôm nay</b>\n\n";
           message += ` Hoàn thành: <b>${completed}</b> công việc\n`;
@@ -215,10 +215,10 @@ class ScheduleSender {
             message += "💪 Ngày mai sẽ tốt hơn! Cố gắng lên!";
           }
 
-          const result = await sendMessageToUser(user.UserID, message);
+          const result = await sendMessageToUser(user.MaNguoiDung, message);
           if (result.success) successCount++;
         } catch (error) {
-          console.error(` Error for user ${user.UserID}:`, error.message);
+          console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
         }
       }
 

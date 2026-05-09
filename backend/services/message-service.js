@@ -22,10 +22,10 @@ function validateMessage({ noiDung, loaiTinNhan, metaData }) {
 
 async function verifyMembership(conversationId, userId) {
   const { data, error } = await supabase
-    .from("ConversationMembers")
-    .select("ID")
-    .eq("ConversationID", conversationId)
-    .eq("UserID", userId)
+    .from("ThanhVienHoiThoai")
+    .select("MaThanhVien")
+    .eq("MaHoiThoai", conversationId)
+    .eq("MaNguoiDung", userId)
     .single();
 
   if (error || !data) throw { status: 403, message: "Không có quyền truy cập cuộc hội thoại này" };
@@ -37,10 +37,10 @@ async function sendMessage(conversationId, senderId, { noiDung, loaiTinNhan = "t
   await verifyMembership(conversationId, senderId);
 
   const { data: msg, error: insertErr } = await supabase
-    .from("Messages")
+    .from("TinNhan")
     .insert({
-      ConversationID: conversationId,
-      SenderID: senderId,
+      MaHoiThoai: conversationId,
+      NguoiGui: senderId,
       NoiDung: trimmedContent,
       LoaiTinNhan: loaiTinNhan,
       MetaData: metaData,
@@ -56,16 +56,16 @@ async function sendMessage(conversationId, senderId, { noiDung, loaiTinNhan = "t
 
   // Update conversation's last message info
   await supabase
-    .from("Conversations")
+    .from("HoiThoai")
     .update({ TinNhanCuoi: trimmedContent, ThoiGianCuoi: now })
-    .eq("ConversationID", conversationId);
+    .eq("MaHoiThoai", conversationId);
 
   // Reset DaDoc=false for all other members
   await supabase
-    .from("ConversationMembers")
+    .from("ThanhVienHoiThoai")
     .update({ DaDoc: false })
-    .eq("ConversationID", conversationId)
-    .neq("UserID", senderId);
+    .eq("MaHoiThoai", conversationId)
+    .neq("MaNguoiDung", senderId);
 
   return msg;
 }
@@ -76,9 +76,9 @@ async function getMessages(conversationId, userId, { before, limit }) {
   await verifyMembership(conversationId, userId);
 
   let query = supabase
-    .from("Messages")
-    .select("MessageID, ConversationID, SenderID, NoiDung, LoaiTinNhan, MetaData, NgayGui, DaXoa")
-    .eq("ConversationID", conversationId)
+    .from("TinNhan")
+    .select("MaTinNhan, MaHoiThoai, NguoiGui, NoiDung, LoaiTinNhan, MetaData, NgayGui, DaXoa")
+    .eq("MaHoiThoai", conversationId)
     .eq("DaXoa", false)
     .order("NgayGui", { ascending: false })
     .limit(parsedLimit);
@@ -92,36 +92,40 @@ async function getMessages(conversationId, userId, { before, limit }) {
 
   const messages = (data || []).reverse();
 
-  const senderIds = [...new Set(messages.map((m) => m.SenderID).filter(Boolean))];
-  let nameMap = {};
+  const senderIds = [...new Set(messages.map((m) => m.NguoiGui).filter(Boolean))];
+  let userMap = {};
   if (senderIds.length > 0) {
     const { data: users } = await supabase
-      .from("Users")
-      .select("UserID, HoTen")
-      .in("UserID", senderIds);
+      .from("NguoiDung")
+      .select("MaNguoiDung, HoTen, AvatarUrl")
+      .in("MaNguoiDung", senderIds);
     if (users) {
-      nameMap = Object.fromEntries(users.map((u) => [u.UserID, u.HoTen]));
+      users.forEach(u => { userMap[u.MaNguoiDung] = u; });
     }
   }
 
-  return messages.map((m) => ({ ...m, senderName: nameMap[m.SenderID] || null }));
+  return messages.map((m) => ({
+    ...m,
+    senderName: userMap[m.NguoiGui]?.HoTen || null,
+    senderAvatar: userMap[m.NguoiGui]?.AvatarUrl || null,
+  }));
 }
 
 async function deleteMessage(messageId, userId) {
   const { data: msg, error: fetchErr } = await supabase
-    .from("Messages")
-    .select("MessageID, SenderID, DaXoa")
-    .eq("MessageID", messageId)
+    .from("TinNhan")
+    .select("MaTinNhan, NguoiGui, DaXoa")
+    .eq("MaTinNhan", messageId)
     .single();
 
   if (fetchErr || !msg) throw { status: 404, message: "Không tìm thấy tin nhắn" };
   if (msg.DaXoa) throw { status: 404, message: "Tin nhắn không tồn tại" };
-  if (msg.SenderID !== userId) throw { status: 403, message: "Không có quyền xóa tin nhắn này" };
+  if (msg.NguoiGui !== userId) throw { status: 403, message: "Không có quyền xóa tin nhắn này" };
 
   const { error } = await supabase
-    .from("Messages")
+    .from("TinNhan")
     .update({ DaXoa: true })
-    .eq("MessageID", messageId);
+    .eq("MaTinNhan", messageId);
 
   if (error) throw error;
 }
@@ -133,19 +137,19 @@ async function editMessage(messageId, userId, noiDung) {
   }
 
   const { data: msg, error: fetchErr } = await supabase
-    .from("Messages")
-    .select("MessageID, SenderID, DaXoa, ConversationID")
-    .eq("MessageID", messageId)
+    .from("TinNhan")
+    .select("MaTinNhan, NguoiGui, DaXoa, MaHoiThoai")
+    .eq("MaTinNhan", messageId)
     .single();
 
   if (fetchErr || !msg) throw { status: 404, message: "Không tìm thấy tin nhắn" };
   if (msg.DaXoa) throw { status: 400, message: "Không thể sửa tin nhắn đã thu hồi" };
-  if (msg.SenderID !== userId) throw { status: 403, message: "Không có quyền sửa tin nhắn này" };
+  if (msg.NguoiGui !== userId) throw { status: 403, message: "Không có quyền sửa tin nhắn này" };
 
   const { error } = await supabase
-    .from("Messages")
+    .from("TinNhan")
     .update({ NoiDung: trimmed })
-    .eq("MessageID", messageId);
+    .eq("MaTinNhan", messageId);
 
   if (error) throw error;
 }

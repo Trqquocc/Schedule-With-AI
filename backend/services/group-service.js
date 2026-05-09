@@ -6,10 +6,10 @@ const MAX_MEMBERS = 20;
 
 async function getMemberRole(groupId, userId) {
   const { data } = await supabase
-    .from("GroupMembers")
+    .from("ThanhVienNhom")
     .select("VaiTro")
-    .eq("GroupID", groupId)
-    .eq("UserID", userId)
+    .eq("MaNhom", groupId)
+    .eq("MaNguoiDung", userId)
     .single();
   return data?.VaiTro || null;
 }
@@ -25,9 +25,9 @@ async function createGroup(ownerId, { tenNhom, moTa }) {
   if (moTa && moTa.length > 500) throw { status: 400, message: "Mô tả tối đa 500 ký tự" };
 
   const { count } = await supabase
-    .from("Groups")
-    .select("GroupID", { count: "exact", head: true })
-    .eq("OwnerID", ownerId);
+    .from("NhomLamViec")
+    .select("MaNhom", { count: "exact", head: true })
+    .eq("MaChuNhom", ownerId);
 
   if (count >= MAX_GROUPS_OWNED) {
     throw { status: 400, message: `Tối đa ${MAX_GROUPS_OWNED} nhóm do bạn tạo` };
@@ -35,16 +35,16 @@ async function createGroup(ownerId, { tenNhom, moTa }) {
 
   const now = new Date().toISOString();
   const { data: group, error } = await supabase
-    .from("Groups")
-    .insert({ TenNhom: tenNhom, MoTa: moTa || null, OwnerID: ownerId, MaxMembers: MAX_MEMBERS, NgayTao: now, NgayCapNhat: now })
+    .from("NhomLamViec")
+    .insert({ TenNhom: tenNhom, MoTa: moTa || null, MaChuNhom: ownerId, SoThanhVienToiDa: MAX_MEMBERS, NgayTao: now, NgayCapNhat: now })
     .select()
     .single();
 
   if (error) throw error;
 
   const { error: memberErr } = await supabase
-    .from("GroupMembers")
-    .insert({ GroupID: group.GroupID, UserID: ownerId, VaiTro: "owner", NgayThamGia: now });
+    .from("ThanhVienNhom")
+    .insert({ MaNhom: group.MaNhom, MaNguoiDung: ownerId, VaiTro: "owner", NgayThamGia: now });
 
   if (memberErr) throw memberErr;
 
@@ -52,34 +52,41 @@ async function createGroup(ownerId, { tenNhom, moTa }) {
   try {
     const convService = require("./conversation-service");
     if (typeof convService.createGroupConversation === "function") {
-      await convService.createGroupConversation(group.GroupID, [ownerId]);
+      await convService.createGroupConversation(group.MaNhom, [ownerId]);
     }
   } catch (_) {}
 
   return group;
 }
 
-async function listMyGroups(userId) {
-  const { data, error } = await supabase
-    .from("GroupMembers")
-    .select(`VaiTro, NgayThamGia, Groups(GroupID, TenNhom, MoTa, AvatarUrl, OwnerID, MaxMembers, NgayTao)`)
-    .eq("UserID", userId);
+async function listMyNhomLamViec(userId) {
+  const { data: memberships, error } = await supabase
+    .from("ThanhVienNhom")
+    .select("MaNhom, VaiTro, NgayThamGia")
+    .eq("MaNguoiDung", userId);
 
   if (error) throw error;
 
-  const groupIds = (data || []).map((m) => m.Groups?.GroupID).filter(Boolean);
+  const groupIds = (memberships || []).map(m => m.MaNhom).filter(Boolean);
   if (groupIds.length === 0) return [];
 
-  const { data: counts } = await supabase.from("GroupMembers").select("GroupID").in("GroupID", groupIds);
+  const { data: groups } = await supabase
+    .from("NhomLamViec")
+    .select("MaNhom, TenNhom, MoTa, AvatarUrl, MaChuNhom, SoThanhVienToiDa, NgayTao")
+    .in("MaNhom", groupIds);
 
+  const groupMap = {};
+  (groups || []).forEach(g => { groupMap[g.MaNhom] = g; });
+
+  const { data: counts } = await supabase.from("ThanhVienNhom").select("MaNhom").in("MaNhom", groupIds);
   const countMap = {};
-  (counts || []).forEach(({ GroupID }) => { countMap[GroupID] = (countMap[GroupID] || 0) + 1; });
+  (counts || []).forEach(({ MaNhom }) => { countMap[MaNhom] = (countMap[MaNhom] || 0) + 1; });
 
-  return (data || []).map((m) => ({
-    ...m.Groups,
+  return (memberships || []).filter(m => groupMap[m.MaNhom]).map(m => ({
+    ...groupMap[m.MaNhom],
     myRole: m.VaiTro,
     joinedAt: m.NgayThamGia,
-    memberCount: countMap[m.Groups?.GroupID] || 0,
+    memberCount: countMap[m.MaNhom] || 0,
   }));
 }
 
@@ -87,16 +94,32 @@ async function getGroupDetail(groupId, userId) {
   const role = await getMemberRole(groupId, userId);
   if (!role) throw { status: 403, message: "Bạn không phải thành viên nhóm này" };
 
-  const { data: group, error: gErr } = await supabase.from("Groups").select("*").eq("GroupID", groupId).single();
+  const { data: group, error: gErr } = await supabase.from("NhomLamViec").select("*").eq("MaNhom", groupId).single();
   if (gErr || !group) throw { status: 404, message: "Không tìm thấy nhóm" };
 
-  const { data: members, error: mErr } = await supabase
-    .from("GroupMembers")
-    .select(`MemberID, VaiTro, NgayThamGia, Users(UserID, HoTen, Email, AvatarUrl, EquippedBadge)`)
-    .eq("GroupID", groupId);
+  const { data: membersRaw, error: mErr } = await supabase
+    .from("ThanhVienNhom")
+    .select("MaThanhVien, MaNguoiDung, VaiTro, NgayThamGia")
+    .eq("MaNhom", groupId);
 
   if (mErr) throw mErr;
-  return { ...group, myRole: role, members: members || [] };
+
+  const userIds = (membersRaw || []).map(m => m.MaNguoiDung).filter(Boolean);
+  let userMap = {};
+  if (userIds.length > 0) {
+    const { data: users } = await supabase
+      .from("NguoiDung")
+      .select("MaNguoiDung, HoTen, Email, AvatarUrl, EquippedBadge")
+      .in("MaNguoiDung", userIds);
+    (users || []).forEach(u => { userMap[u.MaNguoiDung] = u; });
+  }
+
+  const members = (membersRaw || []).map(m => ({
+    ...m,
+    ...(userMap[m.MaNguoiDung] || {}),
+  }));
+
+  return { ...group, myRole: role, members };
 }
 
 async function updateGroup(groupId, userId, { tenNhom, moTa, avatarUrl }) {
@@ -115,7 +138,7 @@ async function updateGroup(groupId, userId, { tenNhom, moTa, avatarUrl }) {
   }
   if (avatarUrl !== undefined) patch.AvatarUrl = avatarUrl || null;
 
-  const { data, error } = await supabase.from("Groups").update(patch).eq("GroupID", groupId).select().single();
+  const { data, error } = await supabase.from("NhomLamViec").update(patch).eq("MaNhom", groupId).select().single();
   if (error || !data) throw error || { status: 404, message: "Không tìm thấy nhóm" };
   return data;
 }
@@ -123,8 +146,8 @@ async function updateGroup(groupId, userId, { tenNhom, moTa, avatarUrl }) {
 async function deleteGroup(groupId, userId) {
   const role = await getMemberRole(groupId, userId);
   if (role !== "owner") throw { status: 403, message: "Chỉ chủ nhóm được xóa" };
-  const { error } = await supabase.from("Groups").delete().eq("GroupID", groupId);
+  const { error } = await supabase.from("NhomLamViec").delete().eq("MaNhom", groupId);
   if (error) throw error;
 }
 
-module.exports = { getMemberRole, isOwnerOrAdmin, createGroup, listMyGroups, getGroupDetail, updateGroup, deleteGroup };
+module.exports = { getMemberRole, isOwnerOrAdmin, createGroup, listMyNhomLamViec, getGroupDetail, updateGroup, deleteGroup };

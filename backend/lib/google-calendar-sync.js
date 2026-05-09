@@ -32,11 +32,11 @@ function buildEventResource(row) {
 
 /**
  * Creates, updates, or deletes a single event in Google Calendar.
- * Stores/clears GoogleEventId in LichTrinh after the operation.
+ * Stores/clears MaSuKienGoogle in LichTrinh after the operation.
  * Failures are logged but do NOT throw — fire-and-forget safe.
  *
  * @param {number} userId
- * @param {object} eventData  LichTrinh row (must have LichID)
+ * @param {object} eventData  LichTrinh row (must have MaLichTrinh)
  * @param {'create'|'update'|'delete'} action
  * @returns {Promise<{ok: boolean, googleEventId?: string, error?: string}>}
  */
@@ -44,27 +44,27 @@ async function syncEventToGoogle(userId, eventData, action) {
   try {
     const { client, calendarId } = await getClientForUser(userId);
     const calApi = google.calendar({ version: 'v3', auth: client });
-    const lichId = eventData.LichID;
+    const lichId = eventData.MaLichTrinh;
 
     if (action === 'delete') {
-      const googleEventId = eventData.GoogleEventId;
+      const googleEventId = eventData.MaSuKienGoogle;
       if (!googleEventId) return { ok: true }; // nothing to delete
 
       await calApi.events.delete({ calendarId, eventId: googleEventId }).catch(() => {});
       await supabase
         .from('LichTrinh')
-        .update({ GoogleEventId: null })
-        .eq('LichID', lichId);
+        .update({ MaSuKienGoogle: null })
+        .eq('MaLichTrinh', lichId);
 
       return { ok: true };
     }
 
     const resource = buildEventResource(eventData);
 
-    if (action === 'update' && eventData.GoogleEventId) {
+    if (action === 'update' && eventData.MaSuKienGoogle) {
       const { data } = await calApi.events.update({
         calendarId,
-        eventId: eventData.GoogleEventId,
+        eventId: eventData.MaSuKienGoogle,
         requestBody: resource,
       });
       return { ok: true, googleEventId: data.id };
@@ -75,8 +75,8 @@ async function syncEventToGoogle(userId, eventData, action) {
 
     await supabase
       .from('LichTrinh')
-      .update({ GoogleEventId: data.id })
-      .eq('LichID', lichId);
+      .update({ MaSuKienGoogle: data.id })
+      .eq('MaLichTrinh', lichId);
 
     return { ok: true, googleEventId: data.id };
   } catch (err) {
@@ -105,7 +105,7 @@ async function syncWeek(userId) {
   const { data: events, error } = await supabase
     .from('LichTrinh')
     .select('*')
-    .eq('UserID', userId)
+    .eq('MaNguoiDung', userId)
     .gte('ThoiGianBatDau', monday.toISOString())
     .lte('ThoiGianBatDau', sunday.toISOString());
 
@@ -116,7 +116,7 @@ async function syncWeek(userId) {
   let errors = 0;
 
   for (const ev of events) {
-    const action = ev.GoogleEventId ? 'update' : 'create';
+    const action = ev.MaSuKienGoogle ? 'update' : 'create';
     const result = await syncEventToGoogle(userId, ev, action);
     result.ok ? synced++ : errors++;
   }

@@ -27,12 +27,14 @@
      * @param {NodeList} tabs - all sibling tab buttons
      */
     switchTab(name, tabs) {
-      // Toggle active class — CSS handles all visual styling
       tabs.forEach((t) => {
         t.classList.toggle("active", t.dataset.tab === name);
       });
 
-      // Show/hide view panels
+      const TAB_TITLES = { stats: "Thống kê", salary: "Tính lương", gamification: "Thành tích" };
+      const h1 = document.querySelector(".salary-page .header h1");
+      if (h1) h1.textContent = TAB_TITLES[name] || "Thống kê";
+
       Object.entries(TAB_VIEWS).forEach(([key, id]) => {
         const el = document.getElementById(id);
         if (!el) return;

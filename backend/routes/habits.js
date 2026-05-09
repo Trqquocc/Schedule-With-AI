@@ -15,9 +15,9 @@ router.get("/", async (req, res) => {
     const todayStr = new Date().toISOString().split("T")[0];
 
     const { data: habits, error } = await supabase
-      .from("Habits")
+      .from("ThoiQuen")
       .select("*")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .eq("DangHoatDong", true)
       .order("NgayTao", { ascending: true });
 
@@ -30,18 +30,18 @@ router.get("/", async (req, res) => {
       return res.json({ success: true, data: [] });
     }
 
-    const habitIds = habits.map((h) => h.HabitID);
+    const habitIds = habits.map((h) => h.MaThoiQuen);
     const { data: todayLogs } = await supabase
-      .from("HabitLogs")
-      .select("HabitID")
-      .in("HabitID", habitIds)
+      .from("NhatKyThoiQuen")
+      .select("MaThoiQuen")
+      .in("MaThoiQuen", habitIds)
       .eq("NgayHoanThanh", todayStr)
       .eq("DaHoanThanh", true);
 
-    const completedToday = new Set((todayLogs || []).map((l) => l.HabitID));
+    const completedToday = new Set((todayLogs || []).map((l) => l.MaThoiQuen));
     const result = habits.map((h) => ({
       ...h,
-      completedToday: completedToday.has(h.HabitID),
+      completedToday: completedToday.has(h.MaThoiQuen),
     }));
 
     res.json({ success: true, data: result });
@@ -62,9 +62,9 @@ router.get("/stats", async (req, res) => {
       .toISOString().split("T")[0];
 
     const { data: habits } = await supabase
-      .from("Habits")
-      .select("HabitID, Streak")
-      .eq("UserID", userId)
+      .from("ThoiQuen")
+      .select("MaThoiQuen, Streak")
+      .eq("MaNguoiDung", userId)
       .eq("DangHoatDong", true);
 
     const totalHabits = (habits || []).length;
@@ -72,13 +72,13 @@ router.get("/stats", async (req, res) => {
       (max, h) => Math.max(max, h.Streak || 0), 0
     );
 
-    const habitIds = (habits || []).map((h) => h.HabitID);
+    const habitIds = (habits || []).map((h) => h.MaThoiQuen);
     let totalCompletionsMonth = 0;
     if (habitIds.length > 0) {
       const { count } = await supabase
-        .from("HabitLogs")
-        .select("LogID", { count: "exact", head: true })
-        .in("HabitID", habitIds)
+        .from("NhatKyThoiQuen")
+        .select("MaNhatKy", { count: "exact", head: true })
+        .in("MaThoiQuen", habitIds)
         .eq("DaHoanThanh", true)
         .gte("NgayHoanThanh", monthStart)
         .lte("NgayHoanThanh", monthEnd);
@@ -100,17 +100,17 @@ router.get("/:id/heatmap", async (req, res) => {
     const year = parseInt(req.query.year) || new Date().getFullYear();
 
     const { data: habit, error: habitErr } = await supabase
-      .from("Habits").select("HabitID")
-      .eq("HabitID", habitId).eq("UserID", userId).single();
+      .from("ThoiQuen").select("MaThoiQuen")
+      .eq("MaThoiQuen", habitId).eq("MaNguoiDung", userId).single();
 
     if (habitErr || !habit) {
       return res.status(404).json({ success: false, message: "Không tìm thấy" });
     }
 
     const { data: logs, error } = await supabase
-      .from("HabitLogs")
+      .from("NhatKyThoiQuen")
       .select("NgayHoanThanh, DaHoanThanh")
-      .eq("HabitID", habitId)
+      .eq("MaThoiQuen", habitId)
       .gte("NgayHoanThanh", `${year}-01-01`)
       .lte("NgayHoanThanh", `${year}-12-31`);
 
@@ -151,9 +151,9 @@ router.post("/", async (req, res) => {
     const mucTieu = Math.max(1, parseInt(target) || 1);
 
     const { data, error } = await supabase
-      .from("Habits")
+      .from("ThoiQuen")
       .insert({
-        UserID: userId,
+        MaNguoiDung: userId,
         TenThoiQuen: name.trim(),
         BieuTuong: icon || "📌",
         TanSuat: freq,
@@ -191,8 +191,8 @@ router.put("/:id", async (req, res) => {
     if (target !== undefined) updates.MucTieu = Math.max(1, parseInt(target) || 1);
 
     const { data, error } = await supabase
-      .from("Habits").update(updates)
-      .eq("HabitID", habitId).eq("UserID", userId)
+      .from("ThoiQuen").update(updates)
+      .eq("MaThoiQuen", habitId).eq("MaNguoiDung", userId)
       .select().single();
 
     if (error || !data) {
@@ -213,8 +213,8 @@ router.delete("/:id", async (req, res) => {
     const habitId = parseInt(req.params.id);
 
     const { error } = await supabase
-      .from("Habits").update({ DangHoatDong: false })
-      .eq("HabitID", habitId).eq("UserID", userId);
+      .from("ThoiQuen").update({ DangHoatDong: false })
+      .eq("MaThoiQuen", habitId).eq("MaNguoiDung", userId);
 
     if (error) {
       return res.status(500).json({ success: false, message: "Lỗi server" });
@@ -239,18 +239,18 @@ router.post("/:id/log", async (req, res) => {
     }
 
     const { data: habit, error: habitErr } = await supabase
-      .from("Habits").select("HabitID, TenThoiQuen, BieuTuong")
-      .eq("HabitID", habitId).eq("UserID", userId).single();
+      .from("ThoiQuen").select("MaThoiQuen, TenThoiQuen, BieuTuong")
+      .eq("MaThoiQuen", habitId).eq("MaNguoiDung", userId).single();
 
     if (habitErr || !habit) {
       return res.status(404).json({ success: false, message: "Không tìm thấy" });
     }
 
     const { error: logErr } = await supabase
-      .from("HabitLogs")
+      .from("NhatKyThoiQuen")
       .upsert(
-        { HabitID: habitId, NgayHoanThanh: date, DaHoanThanh: true },
-        { onConflict: "HabitID,NgayHoanThanh" }
+        { MaThoiQuen: habitId, NgayHoanThanh: date, DaHoanThanh: true },
+        { onConflict: "MaThoiQuen,NgayHoanThanh" }
       );
 
     if (logErr) {
@@ -259,7 +259,7 @@ router.post("/:id/log", async (req, res) => {
     }
 
     const streak = await recalculateStreak(habitId);
-    await supabase.from("Habits").update({ Streak: streak }).eq("HabitID", habitId);
+    await supabase.from("ThoiQuen").update({ Streak: streak }).eq("MaThoiQuen", habitId);
 
     // Sync with LichTrinh: mark matching schedule event as completed
     const startOfDay = `${date}T00:00:00`;
@@ -267,7 +267,7 @@ router.post("/:id/log", async (req, res) => {
     const { data: scheduleEvents } = await supabase
       .from("LichTrinh")
       .select("MaLichTrinh")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .eq("DaHoanThanh", false)
       .ilike("TieuDe", `%${habit.TenThoiQuen}%`)
       .gte("GioBatDau", startOfDay)
@@ -300,23 +300,23 @@ router.delete("/:id/log/:date", async (req, res) => {
     }
 
     const { data: habit, error: habitErr } = await supabase
-      .from("Habits").select("HabitID, TenThoiQuen")
-      .eq("HabitID", habitId).eq("UserID", userId).single();
+      .from("ThoiQuen").select("MaThoiQuen, TenThoiQuen")
+      .eq("MaThoiQuen", habitId).eq("MaNguoiDung", userId).single();
 
     if (habitErr || !habit) {
       return res.status(404).json({ success: false, message: "Không tìm thấy" });
     }
 
     const { error } = await supabase
-      .from("HabitLogs").delete()
-      .eq("HabitID", habitId).eq("NgayHoanThanh", date);
+      .from("NhatKyThoiQuen").delete()
+      .eq("MaThoiQuen", habitId).eq("NgayHoanThanh", date);
 
     if (error) {
       return res.status(500).json({ success: false, message: "Lỗi server" });
     }
 
     const streak = await recalculateStreak(habitId);
-    await supabase.from("Habits").update({ Streak: streak }).eq("HabitID", habitId);
+    await supabase.from("ThoiQuen").update({ Streak: streak }).eq("MaThoiQuen", habitId);
 
     // Reverse sync: unmark matching schedule events
     const startOfDay = `${date}T00:00:00`;
@@ -324,7 +324,7 @@ router.delete("/:id/log/:date", async (req, res) => {
     const { data: scheduleEvents } = await supabase
       .from("LichTrinh")
       .select("MaLichTrinh")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .eq("DaHoanThanh", true)
       .ilike("TieuDe", `%${habit.TenThoiQuen}%`)
       .gte("GioBatDau", startOfDay)

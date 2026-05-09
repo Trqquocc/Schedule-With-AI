@@ -38,18 +38,18 @@ function buildInsertRow(item, source, rank, batchId, userId) {
       ? parseInt(item.task_id, 10)
       : null;
   return {
-    task_id: linkedTaskId,
-    user_id: userId,
-    start_at: item.startAt,
-    end_at: item.endAt,
-    title: item.title,
-    note: buildNote(item),
-    status: "scheduled",
-    is_ai_suggested: false,
-    source,
-    priority_rank: rank,
-    import_batch_id: batchId,
-    meta: {
+    MaCongViec: linkedTaskId,
+    MaNguoiDung: userId,
+    GioBatDau: item.startAt,
+    GioKetThuc: item.endAt,
+    TieuDe: item.title,
+    GhiChu: buildNote(item),
+    TrangThai: "scheduled",
+    AI_DeXuat: false,
+    NguonDuLieu: source,
+    ThuTuUuTien: rank,
+    MaLoNhap: batchId,
+    DuLieuPhu: {
       courseCode: item.courseCode || null,
       campus: item.campus || null,
       location: item.location || null,
@@ -94,13 +94,13 @@ router.post("/apply", async (req, res) => {
         continue;
       }
 
-      // Overlap: existing.start < item.end AND existing.end > item.start (strict)
+      // Overlap: existing.GioBatDau < item.end AND existing.GioKetThuc > item.start (strict)
       const { data: overlaps, error: overlapErr } = await supabase
-        .from("task_instances")
-        .select("id, start_at, end_at, source, priority_rank, title")
-        .eq("user_id", userId)
-        .lt("start_at", item.endAt)
-        .gt("end_at", item.startAt);
+        .from("LichCongViec")
+        .select("MaLich, GioBatDau, GioKetThuc, NguonDuLieu, ThuTuUuTien, TieuDe")
+        .eq("MaNguoiDung", userId)
+        .lt("GioBatDau", item.endAt)
+        .gt("GioKetThuc", item.startAt);
 
       if (overlapErr) {
         console.error("[apply-schedule] overlap query failed:", overlapErr);
@@ -114,9 +114,9 @@ router.post("/apply", async (req, res) => {
       const toDeleteForThisItem = [];
 
       for (const ex of overlaps || []) {
-        const exRank = ex.priority_rank ?? 3;
+        const exRank = ex.ThuTuUuTien ?? 3;
         if (newRank < exRank) {
-          toDeleteForThisItem.push(ex.id);
+          toDeleteForThisItem.push(ex.MaLich);
         } else {
           // Equal rank OR new is lower priority → existing wins
           shouldInsert = false;
@@ -127,11 +127,11 @@ router.post("/apply", async (req, res) => {
               endAt: item.endAt,
             },
             blockedBy: {
-              id: ex.id,
-              title: ex.title,
+              id: ex.MaLich,
+              title: ex.TieuDe,
               priority_rank: exRank,
-              start_at: ex.start_at,
-              end_at: ex.end_at,
+              start_at: ex.GioBatDau,
+              end_at: ex.GioKetThuc,
             },
           });
           break;
@@ -160,10 +160,10 @@ router.post("/apply", async (req, res) => {
     // --- Execute: delete first, insert next ---
     if (deletesAll.size > 0) {
       const { error: delErr } = await supabase
-        .from("task_instances")
+        .from("LichCongViec")
         .delete()
-        .in("id", Array.from(deletesAll))
-        .eq("user_id", userId);
+        .in("MaLich", Array.from(deletesAll))
+        .eq("MaNguoiDung", userId);
       if (delErr) {
         console.error("[apply-schedule] delete failed:", delErr);
         return res.status(500).json({
@@ -176,7 +176,7 @@ router.post("/apply", async (req, res) => {
 
     if (insertsAll.length > 0) {
       const { error: insErr } = await supabase
-        .from("task_instances")
+        .from("LichCongViec")
         .insert(insertsAll);
       if (insErr) {
         console.error("[apply-schedule] insert failed:", insErr);
@@ -200,7 +200,7 @@ router.post("/apply", async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // DELETE /api/schedule/batch/:batch_id
-// Undo an entire apply batch (rows with matching import_batch_id).
+// Undo an entire apply batch (rows with matching MaLoNhap).
 // ---------------------------------------------------------------------------
 router.delete("/batch/:batch_id", async (req, res) => {
   try {
@@ -215,11 +215,11 @@ router.delete("/batch/:batch_id", async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from("task_instances")
+      .from("LichCongViec")
       .delete()
-      .eq("user_id", userId)
-      .eq("import_batch_id", batchId)
-      .select("id");
+      .eq("MaNguoiDung", userId)
+      .eq("MaLoNhap", batchId)
+      .select("MaLich");
 
     if (error) {
       console.error("[apply-schedule] undo failed:", error);

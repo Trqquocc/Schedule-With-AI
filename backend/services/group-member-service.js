@@ -10,18 +10,18 @@ async function addMember(groupId, actorId, targetUserId) {
   if (!allowed) throw { status: 403, message: "Chỉ chủ nhóm/admin được thêm thành viên" };
 
   const { data: friendship } = await supabase
-    .from("Friends")
-    .select("FriendshipID")
-    .or(`and(RequesterID.eq.${actorId},ReceiverID.eq.${targetUserId}),and(RequesterID.eq.${targetUserId},ReceiverID.eq.${actorId})`)
+    .from("BanBe")
+    .select("MaKetBan")
+    .or(`and(NguoiGui.eq.${actorId},NguoiNhan.eq.${targetUserId}),and(NguoiGui.eq.${targetUserId},NguoiNhan.eq.${actorId})`)
     .eq("TrangThai", "accepted")
     .single();
 
   if (!friendship) throw { status: 400, message: "Người dùng phải là bạn bè đã chấp nhận" };
 
   const { count: memberCount } = await supabase
-    .from("GroupMembers")
-    .select("MemberID", { count: "exact", head: true })
-    .eq("GroupID", groupId);
+    .from("ThanhVienNhom")
+    .select("MaThanhVien", { count: "exact", head: true })
+    .eq("MaNhom", groupId);
 
   if (memberCount >= MAX_MEMBERS) throw { status: 400, message: `Nhóm đã đủ ${MAX_MEMBERS} thành viên` };
 
@@ -29,8 +29,8 @@ async function addMember(groupId, actorId, targetUserId) {
   if (existing) throw { status: 400, message: "Người dùng đã là thành viên" };
 
   const { error } = await supabase
-    .from("GroupMembers")
-    .insert({ GroupID: groupId, UserID: targetUserId, VaiTro: "member", NgayThamGia: new Date().toISOString() });
+    .from("ThanhVienNhom")
+    .insert({ MaNhom: groupId, MaNguoiDung: targetUserId, VaiTro: "member", NgayThamGia: new Date().toISOString() });
 
   if (error) throw error;
 
@@ -50,10 +50,10 @@ async function changeMemberRole(groupId, actorId, targetUserId, role) {
   if (targetRole === "owner") throw { status: 400, message: "Không thể đổi vai trò chủ nhóm" };
 
   const { error } = await supabase
-    .from("GroupMembers")
+    .from("ThanhVienNhom")
     .update({ VaiTro: role })
-    .eq("GroupID", groupId)
-    .eq("UserID", targetUserId);
+    .eq("MaNhom", groupId)
+    .eq("MaNguoiDung", targetUserId);
 
   if (error) throw error;
 }
@@ -74,12 +74,50 @@ async function removeMember(groupId, actorId, targetUserId) {
   }
 
   const { error } = await supabase
-    .from("GroupMembers")
+    .from("ThanhVienNhom")
     .delete()
-    .eq("GroupID", groupId)
-    .eq("UserID", targetUserId);
+    .eq("MaNhom", groupId)
+    .eq("MaNguoiDung", targetUserId);
 
   if (error) throw error;
 }
 
-module.exports = { addMember, changeMemberRole, removeMember };
+async function addMemberByEmail(groupId, actorId, email) {
+  const allowed = await isOwnerOrAdmin(groupId, actorId);
+  if (!allowed) throw { status: 403, message: "Chỉ chủ nhóm/admin được thêm thành viên" };
+
+  email = (email || "").trim().toLowerCase();
+  if (!email) throw { status: 400, message: "Email không hợp lệ" };
+
+  const { data: user, error: userErr } = await supabase
+    .from("NguoiDung")
+    .select("MaNguoiDung, HoTen, Email")
+    .ilike("Email", email)
+    .single();
+
+  if (userErr || !user) throw { status: 404, message: "Không tìm thấy người dùng với email này" };
+  if (user.MaNguoiDung === actorId) throw { status: 400, message: "Không thể thêm chính bạn" };
+
+  const existing = await getMemberRole(groupId, user.MaNguoiDung);
+  if (existing) throw { status: 400, message: "Người dùng đã là thành viên" };
+
+  const { count } = await supabase
+    .from("ThanhVienNhom")
+    .select("MaThanhVien", { count: "exact", head: true })
+    .eq("MaNhom", groupId);
+  if (count >= MAX_MEMBERS) throw { status: 400, message: `Nhóm đã đủ ${MAX_MEMBERS} thành viên` };
+
+  const { error } = await supabase
+    .from("ThanhVienNhom")
+    .insert({ MaNhom: groupId, MaNguoiDung: user.MaNguoiDung, VaiTro: "member", NgayThamGia: new Date().toISOString() });
+  if (error) throw error;
+
+  try {
+    const convService = require("./conversation-service");
+    await convService.addMemberToGroupConversation(groupId, user.MaNguoiDung);
+  } catch (_) {}
+
+  return user;
+}
+
+module.exports = { addMember, addMemberByEmail, changeMemberRole, removeMember };

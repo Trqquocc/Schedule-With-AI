@@ -60,16 +60,16 @@ function rowToPrefs(row) {
 // GET /api/notifications/prefs
 router.get("/prefs", async (req, res) => {
   try {
-    const userId = req.user?.UserID ?? req.userId;
+    const userId = req.user?.MaNguoiDung ?? req.userId;
     if (!userId) {
       return res.status(401).json({ success: false, message: "Thiếu userId" });
     }
     const { data, error } = await supabase
-      .from("TelegramConnections")
+      .from("KetNoiTelegram")
       .select(
         "TrangThaiKetNoi, " + Object.keys(COLS).join(", ")
       )
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .maybeSingle();
 
     if (error) {
@@ -96,7 +96,7 @@ router.get("/prefs", async (req, res) => {
 // Body: any subset of the JSON keys in COLS. Unknown keys ignored.
 router.put("/prefs", async (req, res) => {
   try {
-    const userId = req.user?.UserID ?? req.userId;
+    const userId = req.user?.MaNguoiDung ?? req.userId;
     if (!userId) {
       return res.status(401).json({ success: false, message: "Thiếu userId" });
     }
@@ -138,9 +138,9 @@ router.put("/prefs", async (req, res) => {
     update.NgayCapNhat = new Date().toISOString();
 
     const { error } = await supabase
-      .from("TelegramConnections")
+      .from("KetNoiTelegram")
       .update(update)
-      .eq("UserID", userId);
+      .eq("MaNguoiDung", userId);
 
     if (error) {
       if (/column|schema/i.test(error.message || "")) {

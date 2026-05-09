@@ -77,10 +77,10 @@ async function handleCallback(code, userId) {
   const encryptedRefresh = encrypt(tokens.refresh_token);
 
   const { error } = await supabase
-    .from('GoogleCalendarConnections')
+    .from('KetNoiGoogleCalendar')
     .upsert(
       {
-        UserID: userId,
+        MaNguoiDung: userId,
         GoogleEmail: googleEmail,
         RefreshToken: encryptedRefresh,
         CalendarId: 'primary',
@@ -88,7 +88,7 @@ async function handleCallback(code, userId) {
         NgayKetNoi: new Date().toISOString(),
         NgayCapNhat: new Date().toISOString(),
       },
-      { onConflict: 'UserID' }
+      { onConflict: 'MaNguoiDung' }
     );
 
   if (error) throw new Error(`DB upsert failed: ${error.message}`);
@@ -104,9 +104,9 @@ async function handleCallback(code, userId) {
  */
 async function getClientForUser(userId) {
   const { data, error } = await supabase
-    .from('GoogleCalendarConnections')
+    .from('KetNoiGoogleCalendar')
     .select('RefreshToken, CalendarId, TrangThaiKetNoi')
-    .eq('UserID', userId)
+    .eq('MaNguoiDung', userId)
     .single();
 
   if (error || !data) {
@@ -125,9 +125,9 @@ async function getClientForUser(userId) {
     if (tokens.refresh_token) {
       const newEncrypted = encrypt(tokens.refresh_token);
       supabase
-        .from('GoogleCalendarConnections')
+        .from('KetNoiGoogleCalendar')
         .update({ RefreshToken: newEncrypted, NgayCapNhat: new Date().toISOString() })
-        .eq('UserID', userId)
+        .eq('MaNguoiDung', userId)
         .then(({ error: e }) => {
           if (e) console.error('Failed to rotate refresh_token for user', userId, e.message);
         });

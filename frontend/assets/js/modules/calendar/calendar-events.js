@@ -63,7 +63,35 @@
     return true;
   };
 
+  CM.getDemoEvents = function () {
+    const d = (h, m, offset = 0) => {
+      const t = new Date();
+      t.setDate(t.getDate() + offset);
+      t.setHours(h, m, 0, 0);
+      return t;
+    };
+    const colors = { 1: "#ef4444", 2: "#f59e0b", 3: "#3b82f6", 4: "#6b7280" };
+    const demos = [
+      { id: "d1", title: "Standup meeting", start: d(9, 0), end: d(9, 30), p: 2, done: true },
+      { id: "d2", title: "Thiết kế UI Dashboard", start: d(10, 0), end: d(12, 0), p: 1 },
+      { id: "d3", title: "Nghỉ trưa", start: d(12, 0), end: d(13, 0), p: 4 },
+      { id: "d4", title: "Review Pull Request", start: d(14, 0), end: d(15, 30), p: 2 },
+      { id: "d5", title: "Học tiếng Anh", start: d(17, 30), end: d(18, 30), p: 3 },
+      { id: "d6", title: "Viết API endpoints", start: d(9, 0, 1), end: d(11, 30, 1), p: 1 },
+      { id: "d7", title: "Gym", start: d(18, 0, 1), end: d(19, 0, 1), p: 3 },
+    ];
+    return demos.map(e => ({
+      id: e.id, title: e.title, start: e.start, end: e.end,
+      backgroundColor: "#ffffff", borderColor: "#111827", textColor: "#0f172a",
+      extendedProps: {
+        completed: e.done || false, isAIEvent: false, priority: e.p,
+        accent: colors[e.p], originalColor: colors[e.p], note: "", isDemo: true,
+      },
+    }));
+  };
+
   CM.loadEvents = async function () {
+    if (!window.Utils?.isLoggedIn()) return this.getDemoEvents();
     if (!Utils?.makeRequest) return [];
 
     try {

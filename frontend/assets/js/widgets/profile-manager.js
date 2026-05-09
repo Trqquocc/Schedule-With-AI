@@ -257,7 +257,7 @@
     resolveUserId() {
       const fromCurrent =
         this.currentUser?.id ||
-        this.currentUser?.UserID ||
+        this.currentUser?.MaNguoiDung ||
         this.currentUser?.userid ||
         this.currentUser?.userId;
       if (fromCurrent) return fromCurrent;
@@ -265,7 +265,7 @@
         const token = localStorage.getItem("auth_token");
         if (token && token.split(".").length === 3) {
           const payload = JSON.parse(atob(token.split(".")[1]));
-          return payload.UserID || payload.userId || payload.id || null;
+          return payload.MaNguoiDung || payload.userId || payload.id || null;
         }
       } catch (_) {}
       return null;

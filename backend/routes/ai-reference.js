@@ -112,7 +112,6 @@ function buildPrompt({ tasks, dateStart, dateEnd, busy, workingHours, extra }) {
         parts.push(`giờ CỐ ĐỊNH ${t.GioBatDauCoDinh} -> ${t.GioKetThucCoDinh}`);
       }
       if (t.TenLoai) parts.push(`danh mục=${t.TenLoai}`);
-      if (t.Tag) parts.push(`tag=${t.Tag}`);
       if (t.MoTa) parts.push(`note=${t.MoTa.slice(0, 120)}`);
       return `${i + 1}. ${parts.join(" | ")}`;
     })
@@ -232,10 +231,10 @@ router.post("/suggest-schedule", async (req, res) => {
     const { data: tasks, error: tErr } = await supabase
       .from("CongViec")
       .select(
-        "MaCongViec, TieuDe, MoTa, MucDoUuTien, ThoiGianUocTinh, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop, Tag, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LoaiCongViec(TenLoai)"
+        "MaCongViec, TieuDe, MoTa, MucDoUuTien, ThoiGianUocTinh, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LoaiCongViec(TenLoai)"
       )
       .in("MaCongViec", normalizedIds)
-      .eq("UserID", userId);
+      .eq("MaNguoiDung", userId);
     if (tErr) {
       console.error("[ai-reference] load tasks:", tErr);
       return res.status(500).json({ success: false, message: "Lỗi tải task" });
@@ -254,7 +253,7 @@ router.post("/suggest-schedule", async (req, res) => {
     const { data: busyRows, error: bErr } = await supabase
       .from("LichTrinh")
       .select("MaLichTrinh, TieuDe, GioBatDau, GioKetThuc")
-      .eq("UserID", userId)
+      .eq("MaNguoiDung", userId)
       .gte("GioBatDau", bounds.startIso)
       .lte("GioBatDau", bounds.endIso);
     if (bErr) {
@@ -355,7 +354,7 @@ router.post("/apply-proposals", async (req, res) => {
       if (!Number.isFinite(taskId) || !start || !end || !title) continue;
       rows.push({
         MaCongViec: taskId,
-        UserID: userId,
+        MaNguoiDung: userId,
         TieuDe: title,
         GhiChu: typeof p?.note === "string" ? p.note : null,
         GioBatDau: start,

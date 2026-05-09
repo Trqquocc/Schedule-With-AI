@@ -1,22 +1,45 @@
+/* ==============================
+   AI SECTION — strict viewport height (mirrors schedule-section).
+   ============================== */
 #ai-section {
   display: none;
   width: 100%;
-  min-height: 100vh;
-  background: #f9fafb;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app, #f1f5f9);
 }
 
 #ai-section.active {
   display: flex !important;
   flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Lock document scroll when AI section is active */
+html:has(main#ai-section.section.active),
+body:has(main#ai-section.section.active) {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+body:has(main#ai-section.section.active) #main-app,
+body:has(main#ai-section.section.active) #main-app > div,
+body:has(main#ai-section.section.active) #main-app .flex-1.overflow-auto {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
 }
 
 #ai-calendar {
   width: 100% !important;
   max-width: none !important;
   height: 100% !important;
-  min-height: 600px !important;
-  background: white !important;
-  border-radius: 12px;
+  min-height: 0 !important;
+  background: var(--bg-card, #fff) !important;
   overflow: hidden;
 }
 
@@ -162,47 +185,38 @@
 
 @media (max-width: 768px) {
   #ai-calendar {
-    min-height: 500px !important;
-    max-width: 100% !important;
-    border-radius: 8px;
+    min-height: 0 !important;
   }
 
-  #ai-suggest-btn {
-    padding: 10px 16px;
-    font-size: 14px;
-  }
-
-  #ai-suggest-btn span {
+  #ai-ref-suggest-btn span {
     display: none;
   }
 
-  #ai-suggest-btn i {
-    margin: 0;
-  }
-
   #ai-section nav {
-    padding: 12px 16px;
+    padding: 10px 14px;
   }
 
   #ai-calendar-title {
-    font-size: 16px;
-    min-width: 150px;
+    font-size: 14px;
+    min-width: 120px;
+  }
+
+  #ai-ref-sidebar {
+    width: 220px !important;
   }
 }
 
 @media (max-width: 480px) {
   #ai-calendar {
-    min-height: 400px !important;
-    padding: 8px;
+    min-height: 0 !important;
+  }
+
+  #ai-ref-sidebar {
+    display: none !important;
   }
 
   #ai-section nav .flex.gap-2 {
     gap: 4px;
-  }
-
-  #ai-section nav button {
-    padding: 8px 12px;
-    font-size: 12px;
   }
 }
 
@@ -408,61 +422,7 @@
   background-color: #f8fafc;
 }
 
-#aiSuggestionModal .ai-modal-body {
-  min-height: 400px;
-  position: relative;
-}
-
-#aiSuggestionModal .task-list-container {
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 10px;
-}
-
-#aiSuggestionModal .task-item {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-#aiSuggestionModal .task-item:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-}
-
-#aiSuggestionModal .task-item.selected {
-  background-color: #eff6ff;
-  border-color: #2563EB;
-}
-
-#aiSuggestionModal .task-checkbox-label {
-  margin-right: 12px;
-}
-
-#aiSuggestionModal .task-color {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  margin-left: auto;
-}
-
-#aiSuggestionModal .loading-state {
-  text-align: center;
-  padding: 40px;
-}
-
-#aiSuggestionModal .error-state {
-  text-align: center;
-  padding: 40px;
-  color: #ef4444;
-}
+/* AI suggestion modal styles moved to ai-modal-fix.css */
 
 /* ===== DARK MODE – AI SECTION ===== */
 body.dark #ai-section {
@@ -471,6 +431,27 @@ body.dark #ai-section {
 
 body.dark #ai-calendar {
   background: var(--bg-card) !important;
+}
+
+/* AI sidebar dark mode */
+body.dark #ai-ref-sidebar {
+  background: var(--bg-card) !important;
+  border-right-color: var(--border) !important;
+}
+body.dark .ai-ref-section .ai-ref-header {
+  border-bottom-color: var(--border) !important;
+}
+body.dark .ai-ref-card {
+  background: var(--bg-card-alt) !important;
+  border-color: var(--border) !important;
+}
+body.dark .ai-ref-card:hover {
+  border-color: var(--accent) !important;
+  background: var(--bg-card-hover) !important;
+}
+body.dark .ai-ref-card .ai-card-chip {
+  background: rgba(255,255,255,0.06) !important;
+  color: var(--text-muted) !important;
 }
 
 /* AI toolbar nav controls in dark mode */
@@ -507,78 +488,20 @@ body.dark .ai-view-btn.bg-white {
   box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
 }
 
-/* AI suggestion modal dark mode */
-body.dark #aiSuggestionModal .bg-white,
+/* AI event detail modal dark mode (suggestion modal styles in ai-modal-fix.css) */
 body.dark #aiEventDetailModal .bg-white {
   background: var(--bg-card) !important;
 }
-
-body.dark #aiSuggestionModal .border-gray-200,
 body.dark #aiEventDetailModal .border-gray-200 {
   border-color: var(--border) !important;
 }
-
-body.dark #aiSuggestionModal .text-gray-900,
-body.dark #aiSuggestionModal .text-gray-800,
 body.dark #aiEventDetailModal .text-gray-900,
 body.dark #aiEventDetailModal .text-gray-800 {
   color: var(--text-primary) !important;
 }
-
-body.dark #aiSuggestionModal .text-gray-600,
-body.dark #aiSuggestionModal .text-gray-500,
 body.dark #aiEventDetailModal .text-gray-600,
 body.dark #aiEventDetailModal .text-gray-500 {
   color: var(--text-secondary) !important;
-}
-
-body.dark #aiSuggestionModal .bg-gray-50,
-body.dark #aiSuggestionModal .bg-gray-100 {
-  background: var(--bg-card-alt) !important;
-}
-
-/* Priority badges dark mode in AI modal */
-body.dark .priority-1 { background: rgba(20,83,45,0.4) !important; color: #4ade80 !important; }
-body.dark .priority-2 { background: rgba(30,58,138,0.4) !important; color: #60a5fa !important; }
-body.dark .priority-3 { background: rgba(120,53,15,0.4) !important; color: #fbbf24 !important; }
-body.dark .priority-4 { background: rgba(127,29,29,0.4) !important; color: #f87171 !important; }
-
-body.dark .task-item {
-  background: var(--bg-card) !important;
-  border-color: var(--border) !important;
-  color: var(--text-primary) !important;
-}
-
-body.dark .task-item:hover {
-  background: var(--bg-card-hover) !important;
-  border-color: var(--border-hover) !important;
-}
-
-body.dark .task-item.selected {
-  background: rgba(96,165,250,0.1) !important;
-  border-color: var(--accent) !important;
-}
-
-body.dark .task-title {
-  color: var(--text-primary) !important;
-}
-
-body.dark .task-details,
-body.dark .task-time-preference {
-  color: var(--text-muted) !important;
-}
-
-body.dark #aiSuggestionModal .task-item {
-  background: var(--bg-card) !important;
-  border-color: var(--border) !important;
-}
-
-body.dark #aiSuggestionModal .task-item:hover {
-  background: var(--bg-card-hover) !important;
-}
-
-body.dark #aiSuggestionModal .task-list-container {
-  border-color: var(--border) !important;
 }
 
 /* ==============================================================
@@ -639,4 +562,52 @@ body.dark #ai-calendar .fc-event.ai-ref-proposal {
   background: rgba(124, 58, 237, 0.18) !important;
   border-color: #a78bfa !important;
   color: #ddd6fe !important;
+}
+
+/* Dark mode: priority legend */
+body.dark .ai-priority-legend {
+  background: var(--bg-card-alt) !important;
+  border-bottom-color: var(--border) !important;
+}
+body.dark .ai-priority-legend .legend-label {
+  color: var(--text-muted) !important;
+}
+body.dark .ai-priority-legend .legend-text {
+  color: var(--text-secondary) !important;
+}
+
+/* Dark mode: proposal bar */
+body.dark #ai-ref-proposal-bar {
+  background: rgba(37,99,235,0.1) !important;
+  border-bottom-color: var(--border) !important;
+}
+body.dark .proposal-btn-edit,
+body.dark .proposal-btn-regen {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+body.dark .proposal-btn-reject {
+  background: rgba(220,38,38,0.1) !important;
+  border-color: rgba(220,38,38,0.3) !important;
+}
+
+/* Dark mode: edit panel */
+body.dark #ai-ref-edit-panel {
+  background: var(--bg-card-alt) !important;
+  border-bottom-color: var(--border) !important;
+}
+body.dark #ai-ref-edit-instructions {
+  background: var(--bg-input, var(--bg-card)) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Dark mode: view switcher */
+body.dark .ai-ref-section .ai-view-btn {
+  color: var(--text-muted) !important;
+}
+body.dark .ai-ref-section .ai-view-btn.active {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
 }

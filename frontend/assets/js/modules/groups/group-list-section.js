@@ -5,6 +5,8 @@
   const GroupListSection = {
     groups: [],
     initialized: false,
+    _lastLoadTime: 0,
+    _CACHE_TTL: 15000,
 
     _authHeader() {
       const token = localStorage.getItem("auth_token");
@@ -19,7 +21,14 @@
     },
 
     async init() {
-      if (this.initialized) { await this.load(); return; }
+      if (this.initialized) {
+        if (Date.now() - this._lastLoadTime < this._CACHE_TTL) {
+          this._render();
+          return;
+        }
+        await this.load();
+        return;
+      }
       this.initialized = true;
       this._bindEvents();
       await this.load();
@@ -59,6 +68,7 @@
       try {
         const json = await this._api("/api/groups");
         this.groups = json.data || [];
+        this._lastLoadTime = Date.now();
       } catch (_) {
         this.groups = [];
       }
@@ -82,13 +92,13 @@
 
     _card(g) {
       const initial = (g.TenNhom || "N")[0].toUpperCase();
-      const memberText = `${g.memberCount || 0}/${g.MaxMembers || 10} thành viên`;
-      const percent = Math.min(100, Math.round(((g.memberCount || 0) / (g.MaxMembers || 10)) * 100));
+      const memberText = `${g.memberCount || 0}/${g.SoThanhVienToiDa || 10} thành viên`;
+      const percent = Math.min(100, Math.round(((g.memberCount || 0) / (g.SoThanhVienToiDa || 10)) * 100));
       const desc = g.MoTa ? `<p class="text-xs text-slate-500 mt-1 line-clamp-2">${g.MoTa}</p>` : "";
       const date = g.NgayTao ? new Date(g.NgayTao).toLocaleDateString("vi-VN") : "";
 
       return `
-        <div class="group-card" onclick="GroupListSection.openDetail(${g.GroupID})">
+        <div class="group-card" onclick="GroupListSection.openDetail(${g.MaNhom})">
           <div class="flex items-start gap-3 mb-3">
             <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-base font-bold flex-shrink-0"
               style="background:var(--accent-gradient, linear-gradient(135deg, #2563EB, #1d4ed8))">${initial}</div>
@@ -107,7 +117,7 @@
             </div>
           </div>
           <div class="mt-3 flex justify-end">
-            <button onclick="event.stopPropagation(); GroupListSection.deleteGroup(${g.GroupID}, '${g.TenNhom.replace(/'/g, "\\'")}')"
+            <button onclick="event.stopPropagation(); GroupListSection.deleteGroup(${g.MaNhom}, '${g.TenNhom.replace(/'/g, "\\'")}')"
               class="text-xs text-slate-400 hover:text-red-500 transition px-2 py-1">
               <i class="fas fa-trash-alt"></i>
             </button>

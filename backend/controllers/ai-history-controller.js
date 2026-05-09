@@ -23,7 +23,7 @@ async function getHistory(req, res) {
     const { limit = 20, offset = 0 } = req.query;
 
     const { data: records, error } = await supabase
-      .from("PhienAIDeXuat").select("*").eq("UserID", userId)
+      .from("PhienAIDeXuat").select("*").eq("MaNguoiDung", userId)
       .order("NgayDeXuat", { ascending: false })
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
@@ -36,8 +36,8 @@ async function getHistory(req, res) {
       });
     }
 
-    const { count } = await supabase.from("PhienAIDeXuat").select("*", { count: "exact", head: true }).eq("UserID", userId);
-    const { data: allRecords } = await supabase.from("PhienAIDeXuat").select("DaApDung").eq("UserID", userId);
+    const { count } = await supabase.from("PhienAIDeXuat").select("*", { count: "exact", head: true }).eq("MaNguoiDung", userId);
+    const { data: allRecords } = await supabase.from("PhienAIDeXuat").select("DaApDung").eq("MaNguoiDung", userId);
     const appliedCount = (allRecords || []).filter((r) => r.DaApDung).length;
     const pendingCount = (allRecords || []).length - appliedCount;
     const total = count || 0;
@@ -64,7 +64,7 @@ async function updateHistory(req, res) {
     const proposalId = req.params.id;
     const { DaApDung } = req.body;
 
-    const { data: existing } = await supabase.from("PhienAIDeXuat").select("MaPhienDeXuat").eq("MaPhienDeXuat", proposalId).eq("UserID", userId).single();
+    const { data: existing } = await supabase.from("PhienAIDeXuat").select("MaPhienDeXuat").eq("MaPhienDeXuat", proposalId).eq("MaNguoiDung", userId).single();
     if (!existing) return res.status(403).json({ success: false, message: "Không có quyền truy cập proposal này" });
 
     const updateData = {
@@ -83,7 +83,7 @@ async function updateHistory(req, res) {
 async function getStats(req, res) {
   try {
     const userId = req.userId;
-    const { data: records, error } = await supabase.from("PhienAIDeXuat").select("DaApDung, ThoiGianApDung, NgayDeXuat").eq("UserID", userId);
+    const { data: records, error } = await supabase.from("PhienAIDeXuat").select("DaApDung, ThoiGianApDung, NgayDeXuat").eq("MaNguoiDung", userId);
 
     if (error) {
       return res.json({ success: true, data: { totalRequests: 0, appliedRequests: 0, pendingRequests: 0, appliedPercentage: 0, lastUsed: null } });
@@ -131,7 +131,7 @@ async function parseScheduleImage(req, res) {
       return res.status(429).json({ success: false, error: "RATE_LIMITED", message: `Bạn đã đạt giới hạn 10 lần quét/giờ. Vui lòng thử lại sau ${minutes} phút.` });
     }
 
-    const { data: user, error: userErr } = await supabase.from("Users").select("HoTen, Username, HocVan").eq("UserID", req.userId).single();
+    const { data: user, error: userErr } = await supabase.from("NguoiDung").select("HoTen, Username, HocVan").eq("MaNguoiDung", req.userId).single();
     if (userErr || !user) return res.status(404).json({ success: false, error: "USER_NOT_FOUND", message: "Không tìm thấy user" });
 
     const level = (forceLevel && ALLOWED_LEVELS.has(forceLevel) && forceLevel) || user.HocVan || "dai_hoc";

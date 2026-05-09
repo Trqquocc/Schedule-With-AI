@@ -69,8 +69,8 @@
 
       await Promise.all([this.waitForFullCalendar(), this.waitForUtils()]);
 
-      calendarEl.innerHTML    = "";
-      calendarEl.style.minHeight = "700px";
+      calendarEl.innerHTML = "";
+      calendarEl.style.height = "100%";
 
       const existingEvents = await this.loadEventsForAI();
       this.renderCalendar(existingEvents);
@@ -273,6 +273,7 @@
       this.calendar = new FullCalendar.Calendar(containerEl, {
         headerToolbar: false,
         initialView:   this.currentView,
+        locale:        "vi",
         height:        "100%",
         editable:      false,
         selectable:    false,

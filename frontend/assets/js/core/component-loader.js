@@ -74,6 +74,11 @@
               }
             }
 
+            const guideModal = tempDiv.querySelector("#guideModal");
+            if (guideModal) {
+              document.body.appendChild(guideModal);
+            }
+
             const scripts = tempDiv.querySelectorAll("script");
             for (let idx = 0; idx < scripts.length; idx++) {
               const newScript = document.createElement("script");
@@ -226,9 +231,9 @@
 
       this.currentSection = sectionName;
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         this.initializeSection(sectionName);
-      }, 200);
+      });
 
       return true;
     },
@@ -306,17 +311,35 @@
         },
       };
 
+      const guestAllowed = ["schedule", "settings"];
       const initFn = initMap[sectionName];
       if (initFn) {
-        // Skip data-loading inits when not authenticated
-        if (!window.Utils?.isLoggedIn() && sectionName !== 'settings') return;
+        if (!window.Utils?.isLoggedIn() && !guestAllowed.includes(sectionName)) {
+          this._showLoginRequired(sectionName);
+          return;
+        }
         try {
           initFn();
         } catch (err) {
           console.error(` Error initializing ${sectionName}:`, err);
         }
-      } else {
       }
+    },
+
+    _showLoginRequired(sectionName) {
+      const container = document.getElementById(sectionName + "-section");
+      if (!container) return;
+      if (container.querySelector('.login-required-overlay')) return;
+      const overlay = document.createElement("div");
+      overlay.className = "login-required-overlay";
+      overlay.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 24px;">
+          <i class="fas fa-lock" style="font-size:40px;color:rgba(0,0,0,0.15);margin-bottom:16px;"></i>
+          <h3 style="font-size:21px;font-weight:600;color:#1d1d1f;letter-spacing:-0.01em;margin:0 0 8px;">Đăng nhập để tiếp tục</h3>
+          <p style="font-size:14px;color:rgba(0,0,0,0.48);letter-spacing:-0.02em;margin:0 0 24px;max-width:320px;">Tính năng này yêu cầu tài khoản. Đăng nhập hoặc tạo tài khoản miễn phí để sử dụng.</p>
+          <button onclick="if(window.AuthModalController){AuthModalController.init();AuthModalController.open('login');}" style="background:var(--accent,#0071e3);color:#fff;border:none;padding:10px 24px;border-radius:980px;font-size:14px;font-weight:400;cursor:pointer;letter-spacing:-0.02em;">Đăng nhập</button>
+        </div>`;
+      container.appendChild(overlay);
     },
 
     async init() {

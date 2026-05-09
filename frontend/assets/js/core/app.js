@@ -23,93 +23,103 @@
       if (authLoading) authLoading.style.display = "none";
       if (mainApp) mainApp.classList.add("ready");
 
-      // Listen for auth events
       document.addEventListener('auth-success', () => this.onAuthSuccess());
       document.addEventListener('auth-logout', () => this.onAuthLogout());
 
-      if (!this.isAuthenticated()) {
-        // Load sidebar (shows login button) + show auth modal
-        await this.initUnauthenticated();
-        return;
-      }
-
-      await this.initAuthenticated();
+      // Always load UI — calendar works in demo mode, other sections require login
+      await this.initApp();
     },
 
-    async initUnauthenticated() {
-      // Load full UI — sections will be empty (no data without auth)
-      try {
-        await ComponentLoader.init();
-      } catch (e) {}
-      if (window.AppNavigation?.init) AppNavigation.init();
-      if (window.AuthModalController) AuthModalController.init();
-    },
-
-    async initAuthenticated() {
+    async initApp() {
       try {
         await ComponentLoader.init();
       } catch (err) {
-        console.error(" Component loading failed:", err);
-        throw err;
+        console.error("Component loading failed:", err);
       }
 
-      this.updateUserInfo();
-
-      if (window.AppNavigation) {
-        if (typeof AppNavigation.init === "function") {
-          AppNavigation.init();
-        }
+      if (this.isAuthenticated()) {
+        this.updateUserInfo();
+        this.updateSidebarAuthState(true);
+      } else {
+        this.updateSidebarAuthState(false);
       }
 
-      if (window.ModalManager?.init) {
-        ModalManager.init();
-      }
-
-      if (window.StatsManager?.init) {
-        try {
-          await StatsManager.init();
-        } catch (err) {}
-      }
-
-      setTimeout(() => {
-        this.refreshIcons();
-      }, 300);
-
-      this.verifyInitialization();
-      // Init auth modal controller for logout use
+      if (window.AppNavigation?.init) AppNavigation.init();
+      if (window.ModalManager?.init) ModalManager.init();
       if (window.AuthModalController) AuthModalController.init();
+
+      if (this.isAuthenticated() && window.StatsManager?.init) {
+        try { await StatsManager.init(); } catch (_) {}
+      }
+
+      setTimeout(() => this.refreshIcons(), 300);
+      this.verifyInitialization();
     },
 
+    // initAuthenticated removed — initApp handles both guest and auth states
+
     async onAuthSuccess() {
-      // Re-init app after login/register
       this.updateUserInfo();
       if (window.updateSidebarUser) {
         const user = JSON.parse(localStorage.getItem('user_data') || '{}');
         updateSidebarUser(user);
       }
-      // Update sidebar auth area
       this.updateSidebarAuthState(true);
-      // If components not loaded yet, init them
-      if (!ComponentLoader.loadedComponents.has('schedule-section')) {
-        await ComponentLoader.init();
-        if (window.AppNavigation?.init) AppNavigation.init();
-        if (window.ModalManager?.init) ModalManager.init();
-        if (window.StatsManager?.init) StatsManager.init();
+
+      // Remove login-required overlays so sections can render
+      document.querySelectorAll('.login-required-overlay').forEach(el => el.remove());
+
+      // Reload calendar with real data
+      if (window.CalendarModule?.isInitialized) {
+        const events = await CalendarModule.loadEvents();
+        CalendarModule.renderCalendar(events);
       }
+
+      // Reload calendar sidebar tasks
+      if (window.loadUserTasks) loadUserTasks(true);
+
+      // Reset sections so they fully reload with real data
+      ["work", "ai", "salary", "notifications", "habits", "friends", "groups", "chat"].forEach(s => {
+        ComponentLoader.loadedComponents.delete(s + '-section');
+        const el = document.getElementById(s + '-section');
+        if (el) { el.innerHTML = ''; el._sectionLoaded = false; }
+      });
+
+      // Re-init current active section if it was blocked
+      const active = document.querySelector('.section.active');
+      if (active) {
+        const name = active.id.replace('-section', '');
+        if (name !== 'schedule') {
+          await ComponentLoader.loadPageContent(name);
+        }
+      }
+
+      if (window.StatsManager?.init) { try { await StatsManager.init(); } catch (_) {} }
       this.refreshIcons();
     },
 
     onAuthLogout() {
+      ["auth_token", "token", "user_data", "user_id", "user_avatar", "user_avatar_url",
+       "cal_working_hours_v1", "pomodoroConfig", "__calendar_refresh", "__task_refresh_trigger"
+      ].forEach(k => localStorage.removeItem(k));
+
+      window.RealtimeBadgeWatcher?.stop();
       this.updateSidebarAuthState(false);
-      // Reset loaded state so sections reload on next login
-      ComponentLoader.loadedComponents.delete('schedule-section');
-      ComponentLoader.loadedComponents.delete('work-section');
-      ComponentLoader.loadedComponents.delete('ai-section');
-      ComponentLoader.loadedComponents.delete('salary-section');
-      ComponentLoader.loadedComponents.delete('notifications-section');
-      ComponentLoader.loadedComponents.delete('habits-section');
-      // Clear section contents (show empty UI, no forced modal)
-      document.querySelectorAll('.section').forEach(s => { s.innerHTML = ''; });
+
+      // Reload calendar with demo data
+      if (window.CalendarModule?.isInitialized && window.CalendarModule.getDemoEvents) {
+        CalendarModule.renderCalendar(CalendarModule.getDemoEvents());
+      }
+
+      // Clear authenticated sections, reset loaded state
+      ["work", "ai", "salary", "notifications", "habits", "friends", "groups", "chat"].forEach(s => {
+        ComponentLoader.loadedComponents.delete(s + '-section');
+        const el = document.getElementById(s + '-section');
+        if (el) { el.innerHTML = ''; el._sectionLoaded = false; }
+      });
+
+      // Switch to calendar section
+      if (window.AppNavigation?.switchSection) AppNavigation.switchSection('schedule');
     },
 
     updateSidebarAuthState(isLoggedIn) {
