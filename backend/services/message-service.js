@@ -1,4 +1,5 @@
 const { supabase } = require("../config/database");
+const { moderateContent } = require("../lib/content-moderation");
 
 const VALID_MESSAGE_TYPES = ["text", "task_share", "schedule_share"];
 const MAX_CONTENT_LENGTH = 2000;
@@ -16,6 +17,10 @@ function validateMessage({ noiDung, loaiTinNhan, metaData }) {
   }
   if (metaData && JSON.stringify(metaData).length > MAX_METADATA_LENGTH) {
     throw { status: 400, message: "MetaData vượt quá giới hạn cho phép" };
+  }
+  const modResult = moderateContent(trimmed);
+  if (modResult.blocked) {
+    throw { status: 403, message: `Tin nhắn bị từ chối: nội dung vi phạm quy định (${modResult.label})` };
   }
   return trimmed;
 }
@@ -134,6 +139,10 @@ async function editMessage(messageId, userId, noiDung) {
   const trimmed = typeof noiDung === "string" ? noiDung.trim() : "";
   if (!trimmed || trimmed.length > MAX_CONTENT_LENGTH) {
     throw { status: 400, message: "Nội dung tin nhắn phải từ 1-2000 ký tự" };
+  }
+  const modResult = moderateContent(trimmed);
+  if (modResult.blocked) {
+    throw { status: 403, message: `Tin nhắn bị từ chối: nội dung vi phạm quy định (${modResult.label})` };
   }
 
   const { data: msg, error: fetchErr } = await supabase
