@@ -146,6 +146,17 @@ async function updateGroup(groupId, userId, { tenNhom, moTa, avatarUrl }) {
 async function deleteGroup(groupId, userId) {
   const role = await getMemberRole(groupId, userId);
   if (role !== "owner") throw { status: 403, message: "Chỉ chủ nhóm được xóa" };
+
+  // Cascade delete related data
+  const { data: convos } = await supabase.from("HoiThoai").select("MaHoiThoai").eq("MaNhom", groupId);
+  const convoIds = (convos || []).map((c) => c.MaHoiThoai);
+  if (convoIds.length > 0) {
+    await supabase.from("TinNhan").delete().in("MaHoiThoai", convoIds);
+    await supabase.from("HoiThoai").delete().eq("MaNhom", groupId);
+  }
+  await supabase.from("CongViecNhom").delete().eq("MaNhom", groupId);
+  await supabase.from("ThanhVienNhom").delete().eq("MaNhom", groupId);
+
   const { error } = await supabase.from("NhomLamViec").delete().eq("MaNhom", groupId);
   if (error) throw error;
 }
