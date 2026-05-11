@@ -53,7 +53,7 @@ function mapSalaryFields(task) {
  * Batch-fetches tags to avoid N+1.
  */
 async function listTasks(userId, query) {
-  const { status } = query || {};
+  const { status, category, priority, tag } = query || {};
 
   let dbQuery = supabase
     .from("CongViec")
@@ -63,6 +63,12 @@ async function listTasks(userId, query) {
   if (status) {
     const statusNumber = STATUS_MAP[status.toLowerCase()];
     if (statusNumber !== undefined) dbQuery = dbQuery.eq("TrangThaiThucHien", statusNumber);
+  }
+  if (category) {
+    dbQuery = dbQuery.eq("MaLoai", parseInt(category, 10));
+  }
+  if (priority) {
+    dbQuery = dbQuery.eq("MucDoUuTien", parseInt(priority, 10));
   }
 
   dbQuery = dbQuery.order("NgayTao", { ascending: false });
@@ -85,10 +91,22 @@ async function listTasks(userId, query) {
     }
   }
 
-  const gtSync = require("./group-task-sync-service");
-  const groupInfoMap = await gtSync.getGroupInfoForTasks(taskIds);
+  let filteredTasks = tasks || [];
+  if (tag) {
+    const tagId = parseInt(tag, 10);
+    const taggedTaskIds = new Set(
+      Object.entries(taskTagsMap)
+        .filter(([, tags]) => tags.some((t) => t.MaNhanDan === tagId))
+        .map(([id]) => parseInt(id, 10))
+    );
+    filteredTasks = filteredTasks.filter((t) => taggedTaskIds.has(t.MaCongViec));
+  }
 
-  return (tasks || []).map((task) => ({
+  const filteredIds = filteredTasks.map((t) => t.MaCongViec);
+  const gtSync = require("./group-task-sync-service");
+  const groupInfoMap = await gtSync.getGroupInfoForTasks(filteredIds);
+
+  return filteredTasks.map((task) => ({
     ID: task.MaCongViec,
     MaNguoiDung: task.MaNguoiDung,
     MaLoai: task.MaLoai,
@@ -160,6 +178,8 @@ async function deleteTask(taskId, userId, force) {
     .eq("MaCongViec", taskId);
 
   if (!scheduleCount || scheduleCount === 0) {
+    await supabase.from("CongViecPhu").delete().eq("MaCongViec", taskId);
+    await supabase.from("CongViecNhanDan").delete().eq("MaCongViec", taskId);
     await supabase.from("CongViec").delete().eq("MaCongViec", taskId).eq("MaNguoiDung", userId);
     return { deleted: true, scheduleCount: 0 };
   }
@@ -174,6 +194,8 @@ async function deleteTask(taskId, userId, force) {
     };
   }
 
+  await supabase.from("CongViecPhu").delete().eq("MaCongViec", taskId);
+  await supabase.from("CongViecNhanDan").delete().eq("MaCongViec", taskId);
   await supabase.from("LichTrinh").delete().eq("MaCongViec", taskId);
   await supabase.from("CongViec").delete().eq("MaCongViec", taskId).eq("MaNguoiDung", userId);
   return { deleted: true, scheduleCount };

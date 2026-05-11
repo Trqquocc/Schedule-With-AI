@@ -187,6 +187,12 @@ async function updateTask(taskId, userId, d) {
     await gtSync.syncStatusToGroupTask(parseInt(taskId, 10), updateData.TrangThaiThucHien);
     if (updateData.TrangThaiThucHien === 2) {
       await supabase.from("LichTrinh").update({ DaHoanThanh: true }).eq("MaCongViec", parseInt(taskId, 10));
+      try {
+        const { refreshProfile } = require("./gamification-service");
+        await refreshProfile(userId);
+      } catch (e) {
+        console.error("[tasks] auto XP refresh failed:", e.message);
+      }
     }
   }
 }
