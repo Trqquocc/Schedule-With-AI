@@ -1,69 +1,94 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <style>
-    #sidebar-container,
-    #sidebar-container * {
-      box-sizing: border-box !important;
-    }
-
-    #sidebar-container {
-      position: fixed !important;
-      left: 0 !important;
-      top: 0 !important;
-      width: 256px !important;
-      height: 100vh !important;
-      overflow: hidden !important;
-      z-index: 999 !important;
-    }
-
-    #sidebar-container aside {
-      position: relative !important;
-      left: 0 !important;
-      right: 0 !important;
-      top: 0 !important;
-      margin-left: 0 !important;
-      box-sizing: border-box !important;
-      width: 256px !important;
-      height: 100vh !important;
-    }
-  </style>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản lý công việc</title>
+    <meta name="description" content="Schedule With AI — Ứng dụng quản lý lịch trình và công việc tích hợp Trí tuệ nhân tạo. Lập lịch tự động bằng Google Gemini AI." />
+    <title>Schedule With AI — Quản lý công việc</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-
+    <!-- Preconnect CDN origins -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+
+    <!-- Tailwind CDN (deferred — auth-loading uses inline critical CSS below) -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
+
+    <!-- Font Awesome (async — non-render-blocking) -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    </noscript>
 
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-
+    <!-- Critical CSS (blocking — needed for initial paint) -->
     <link rel="stylesheet" href="assets/css/main.css" />
-    <link rel="stylesheet" href="assets/css/calendar.css" />
-    <link rel="stylesheet" href="assets/css/ai-calendar.css" />
-    <link rel="stylesheet" href="assets/css/work.css" />
-    <link rel="stylesheet" href="assets/css/ai-modal-fix.css" />
     <link rel="stylesheet" href="assets/css/login.css" />
-    <link rel="stylesheet" href="assets/css/salary.css" />
-    <link rel="stylesheet" href="assets/css/connections.css" />
     <link rel="stylesheet" href="assets/css/auth-modal.css" />
-    <link rel="stylesheet" href="assets/css/tags.css" />
-    <link rel="stylesheet" href="assets/css/pomodoro.css" />
-    <link rel="stylesheet" href="assets/css/calendar-shares.css" />
-    <link rel="stylesheet" href="assets/css/friends.css" />
-    <link rel="stylesheet" href="assets/css/habits.css" />
-    <link rel="stylesheet" href="assets/css/groups.css" />
-    <link rel="stylesheet" href="assets/css/chat.css" />
-    <link rel="stylesheet" href="assets/css/gamification.css" />
+
+    <!-- Non-critical CSS (async — loaded after initial paint) -->
+    <link rel="stylesheet" href="assets/css/calendar.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/ai-calendar.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/work.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/ai-modal-fix.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/salary.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/connections.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/tags.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/pomodoro.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/calendar-shares.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/friends.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/habits.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/groups.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/chat.css" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/gamification.css" media="print" onload="this.media='all'" />
 
     <style>
+      /* Critical inline CSS — renders auth-loading before Tailwind/external CSS loads */
+      .hidden { display: none !important; }
+      .modal { display: none; }
+      .text-center { text-align: center; }
+      .mx-auto { margin-left: auto; margin-right: auto; }
+      .mt-4 { margin-top: 1rem; }
+      .text-gray-600 { color: #4B5563; }
+      .flex { display: flex; }
+      .min-h-screen { min-height: 100vh; }
+      .flex-1 { flex: 1 1 0%; }
+      .flex-col { flex-direction: column; }
+      .overflow-auto { overflow: auto; }
+
+      #sidebar-container,
+      #sidebar-container * {
+        box-sizing: border-box !important;
+      }
+
+      #sidebar-container {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 256px !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+        z-index: 999 !important;
+      }
+
+      #sidebar-container aside {
+        position: relative !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: 0 !important;
+        margin-left: 0 !important;
+        box-sizing: border-box !important;
+        width: 256px !important;
+        height: 100vh !important;
+      }
+
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
@@ -200,51 +225,52 @@
     <div id="pomodoroWidgetContainer"></div>
 
     <!-- Theme (must load first) -->
-    <script src="assets/js/theme/theme.js"></script>
-    <script src="assets/js/theme/accent-theme.js"></script>
-    <script src="assets/js/theme/priority-theme.js"></script>
+    <script src="assets/js/theme/theme.js" defer></script>
+    <script src="assets/js/theme/accent-theme.js" defer></script>
+    <script src="assets/js/theme/priority-theme.js" defer></script>
 
     <!-- Core -->
-    <script src="assets/js/core/utils.js"></script>
-    <script src="assets/js/core/modal-manager.js"></script>
-    <script src="assets/js/core/app-navigation.js"></script>
-    <script src="assets/js/core/component-loader.js"></script>
+    <script src="assets/js/core/utils.js" defer></script>
+    <script src="assets/js/core/modal-manager.js" defer></script>
+    <script src="assets/js/core/app-navigation.js" defer></script>
+    <script src="assets/js/core/component-loader.js" defer></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <!-- FullCalendar (single load — v6.1.10) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js" defer></script>
 
     <!-- Modules: Calendar -->
-    <script src="assets/js/modules/calendar/calendar-share-manager.js"></script>
-    <script src="assets/js/modules/calendar/calendar-module.js"></script>
-    <script src="assets/js/modules/calendar/calendar-events.js"></script>
-    <script src="assets/js/modules/calendar/calendar-interactions.js"></script>
-    <script src="assets/js/modules/calendar/calendar-event-detail.js"></script>
-    <script src="assets/js/modules/calendar/calendar-bulk-complete.js"></script>
-    <script src="assets/js/modules/calendar/calendar-heatmap.js"></script>
+    <script src="assets/js/modules/calendar/calendar-share-manager.js" defer></script>
+    <script src="assets/js/modules/calendar/calendar-module.js" defer></script>
+    <script src="assets/js/modules/calendar/calendar-events.js" defer></script>
+    <script src="assets/js/modules/calendar/calendar-interactions.js" defer></script>
+    <script src="assets/js/modules/calendar/calendar-event-detail.js" defer></script>
+    <script src="assets/js/modules/calendar/calendar-bulk-complete.js" defer></script>
+    <script src="assets/js/modules/calendar/calendar-heatmap.js" defer></script>
 
     <!-- Modules: Work -->
-    <script src="assets/js/modules/work/task-sorter.js"></script>
-    <script src="assets/js/modules/work/sort-controls.js"></script>
-    <script src="assets/js/widgets/tag-input-widget.js"></script>
-    <script src="assets/js/modules/work/work-manager.js"></script>
-    <script src="assets/js/modules/work/work-manager-render.js"></script>
-    <script src="assets/js/modules/work/work-manager-actions.js"></script>
+    <script src="assets/js/modules/work/task-sorter.js" defer></script>
+    <script src="assets/js/modules/work/sort-controls.js" defer></script>
+    <script src="assets/js/widgets/tag-input-widget.js" defer></script>
+    <script src="assets/js/modules/work/work-manager.js" defer></script>
+    <script src="assets/js/modules/work/work-manager-render.js" defer></script>
+    <script src="assets/js/modules/work/work-manager-actions.js" defer></script>
 
     <!-- Modules: AI -->
-    <script src="assets/js/modules/ai/ai-suggestion-handler.js"></script>
-    <script src="assets/js/modules/ai/ai-suggestion-render.js"></script>
-    <script src="assets/js/modules/ai/ai-module.js"></script>
-    <script src="assets/js/modules/ai/ai-module-render.js"></script>
-    <script src="assets/js/modules/ai/ai-reference-module.js"></script>
-    <script src="assets/js/modules/ai/ai-task-edit.js"></script>
+    <script src="assets/js/modules/ai/ai-suggestion-handler.js" defer></script>
+    <script src="assets/js/modules/ai/ai-suggestion-render.js" defer></script>
+    <script src="assets/js/modules/ai/ai-module.js" defer></script>
+    <script src="assets/js/modules/ai/ai-module-render.js" defer></script>
+    <script src="assets/js/modules/ai/ai-reference-module.js" defer></script>
+    <script src="assets/js/modules/ai/ai-task-edit.js" defer></script>
 
     <!-- Modules: Salary & Stats -->
-    <script src="assets/js/modules/salary/salary-manager.js"></script>
-    <script src="assets/js/modules/salary/salary-full-time-calendar.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-    <script src="assets/js/modules/salary/stats-charts.js"></script>
-    <script src="assets/js/modules/salary/stats-advanced-charts.js"></script>
-    <script src="assets/js/modules/salary/stats-manager.js"></script>
-    <script src="assets/js/modules/salary/tab-manager.js"></script>
+    <script src="assets/js/modules/salary/salary-manager.js" defer></script>
+    <script src="assets/js/modules/salary/salary-full-time-calendar.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js" defer></script>
+    <script src="assets/js/modules/salary/stats-charts.js" defer></script>
+    <script src="assets/js/modules/salary/stats-advanced-charts.js" defer></script>
+    <script src="assets/js/modules/salary/stats-manager.js" defer></script>
+    <script src="assets/js/modules/salary/tab-manager.js" defer></script>
     <!-- Export libraries (PDF + Excel) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
@@ -260,50 +286,50 @@
     <div id="aiTaskEditModal" class="modal hidden"></div>
 
     <!-- Widgets -->
-    <script src="assets/js/widgets/schedule-image-upload.js"></script>
-    <script src="assets/js/widgets/profile-manager.js"></script>
+    <script src="assets/js/widgets/schedule-image-upload.js" defer></script>
+    <script src="assets/js/widgets/profile-manager.js" defer></script>
 
     <!-- Modules: Habits & Connections -->
-    <script src="assets/js/modules/habits/google-calendar-connection.js"></script>
-    <script src="assets/js/modules/habits/connections-section.js"></script>
-    <script src="assets/js/modules/habits/notifications-section.js"></script>
-    <script src="assets/js/modules/habits/habits-section.js"></script>
+    <script src="assets/js/modules/habits/google-calendar-connection.js" defer></script>
+    <script src="assets/js/modules/habits/connections-section.js" defer></script>
+    <script src="assets/js/modules/habits/notifications-section.js" defer></script>
+    <script src="assets/js/modules/habits/habits-section.js" defer></script>
 
     <!-- Modules: Friends -->
-    <script src="assets/js/modules/friends/friends-section.js"></script>
+    <script src="assets/js/modules/friends/friends-section.js" defer></script>
 
     <!-- Modules: Groups -->
-    <script src="assets/js/modules/groups/group-detail-render.js"></script>
-    <script src="assets/js/modules/groups/group-list-section.js"></script>
-    <script src="assets/js/modules/groups/group-detail-section.js"></script>
+    <script src="assets/js/modules/groups/group-detail-render.js" defer></script>
+    <script src="assets/js/modules/groups/group-list-section.js" defer></script>
+    <script src="assets/js/modules/groups/group-detail-section.js" defer></script>
 
     <!-- Modules: Gamification -->
-    <script src="assets/js/modules/gamification/gamification-badges.js"></script>
-    <script src="assets/js/modules/gamification/badge-display-helper.js"></script>
-    <script src="assets/js/modules/gamification/gamification-section.js"></script>
+    <script src="assets/js/modules/gamification/gamification-badges.js" defer></script>
+    <script src="assets/js/modules/gamification/badge-display-helper.js" defer></script>
+    <script src="assets/js/modules/gamification/gamification-section.js" defer></script>
 
     <!-- Modules: Chat -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/modules/chat/chat-utils.js"></script>
-    <script src="assets/js/modules/chat/chat-message-renderer.js"></script>
-    <script src="assets/js/modules/chat/chat-realtime-client.js"></script>
-    <script src="assets/js/modules/chat/chat-conversation.js"></script>
-    <script src="assets/js/modules/chat/chat-list-section.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="assets/js/modules/chat/chat-utils.js" defer></script>
+    <script src="assets/js/modules/chat/chat-message-renderer.js" defer></script>
+    <script src="assets/js/modules/chat/chat-realtime-client.js" defer></script>
+    <script src="assets/js/modules/chat/chat-conversation.js" defer></script>
+    <script src="assets/js/modules/chat/chat-list-section.js" defer></script>
 
     <!-- Core: Real-time badge watcher -->
-    <script src="assets/js/core/realtime-badge-watcher.js"></script>
+    <script src="assets/js/core/realtime-badge-watcher.js" defer></script>
 
     <!-- Widgets: Chat & Pomodoro -->
-    <script src="assets/js/widgets/chat-advisor/chat-advisor-widget.js"></script>
-    <script src="assets/js/widgets/pomodoro/pomodoro-widget-render.js"></script>
-    <script src="assets/js/widgets/pomodoro/pomodoro-widget.js"></script>
+    <script src="assets/js/widgets/chat-advisor/chat-advisor-widget.js" defer></script>
+    <script src="assets/js/widgets/pomodoro/pomodoro-widget-render.js" defer></script>
+    <script src="assets/js/widgets/pomodoro/pomodoro-widget.js" defer></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
     <!-- Auth & App (must load last) -->
-    <script src="assets/js/auth/auth.js"></script>
-    <script src="assets/js/auth/auth-modal-controller.js"></script>
-    <script src="assets/js/core/app.js"></script>
+    <script src="assets/js/auth/auth.js" defer></script>
+    <script src="assets/js/auth/auth-modal-controller.js" defer></script>
+    <script src="assets/js/core/app.js" defer></script>
 
     <script>
       // Load auth modal HTML early, then start app
