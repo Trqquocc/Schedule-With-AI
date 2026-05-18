@@ -77,6 +77,24 @@ async function handleCreate(bot, msg, text) {
         ? new Date(start.getTime() + durationMin * 60 * 1000)
         : null;
 
+    // Check for schedule conflicts before creating.
+    if (start && end) {
+      const conflicts = await findConflicts(conn.MaNguoiDung, start, end);
+      if (conflicts.length) {
+        const lines = conflicts.map((c) => {
+          const s = new Date(c.GioBatDau).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+          const e = new Date(c.GioKetThuc).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" });
+          return `• <b>${esc(c.TieuDe)}</b>\n  ⏰ ${s} → ${e}`;
+        });
+        await bot.sendMessage(
+          chatId,
+          `⚠️ <b>Trùng lịch!</b>\n\nKhung giờ này đã có công việc:\n\n${lines.join("\n\n")}\n\nVui lòng chọn giờ khác.`,
+          { parse_mode: "HTML" }
+        );
+        return;
+      }
+    }
+
     // Combine Gemini-extracted description with user's explicit -note text.
     const description = [parsed.description, userNote].filter(Boolean).join("\n").trim();
 
@@ -239,6 +257,18 @@ function fallbackParse(text) {
     startIso: null,
     durationMin: 30,
   };
+}
+
+// Find existing schedules that overlap with [start, end).
+async function findConflicts(userId, start, end) {
+  const { data } = await supabase
+    .from("LichTrinh")
+    .select("TieuDe, GioBatDau, GioKetThuc")
+    .eq("MaNguoiDung", userId)
+    .eq("DaHoanThanh", false)
+    .lt("GioBatDau", end.toISOString())
+    .gt("GioKetThuc", start.toISOString());
+  return data || [];
 }
 
 module.exports = { register };
