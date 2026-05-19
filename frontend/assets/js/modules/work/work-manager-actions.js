@@ -47,8 +47,12 @@
 
       const row = e.target.closest(".task-row");
       if (row && row.dataset.taskId) {
-        const isCompleted = row.classList.contains("completed-row");
-        this.updateTaskStatus(row.dataset.taskId, !isCompleted);
+        const cb = row.querySelector(".task-checkbox");
+        if (cb) {
+          cb.checked = !cb.checked;
+          row.classList.toggle("selected-row", cb.checked);
+          this.updateBulkBar();
+        }
       }
     };
 
@@ -58,7 +62,10 @@
     const selectAllPending = document.getElementById("select-all-pending");
     if (selectAllPending) {
       const selectAllHandler = (e) => {
-        document.querySelectorAll(".pending-checkbox").forEach((cb) => (cb.checked = e.target.checked));
+        document.querySelectorAll(".pending-checkbox").forEach((cb) => {
+          cb.checked = e.target.checked;
+          cb.closest(".task-row")?.classList.toggle("selected-row", cb.checked);
+        });
         this.updateBulkBar();
       };
       selectAllPending._handler = selectAllHandler;
@@ -69,7 +76,10 @@
     const selectAllCompleted = document.getElementById("select-all-completed");
     if (selectAllCompleted) {
       const selectAllHandler = (e) => {
-        document.querySelectorAll(".completed-checkbox").forEach((cb) => (cb.checked = e.target.checked));
+        document.querySelectorAll(".completed-checkbox").forEach((cb) => {
+          cb.checked = e.target.checked;
+          cb.closest(".task-row")?.classList.toggle("selected-row", cb.checked);
+        });
         this.updateBulkBar();
       };
       selectAllCompleted._handler = selectAllHandler;
@@ -77,9 +87,10 @@
       this.eventListeners.push({ element: selectAllCompleted, event: "change", handler: selectAllHandler });
     }
 
-    // Individual checkbox → refresh bulk bar.
     container.addEventListener("change", (e) => {
       if (e.target.classList?.contains("task-checkbox")) {
+        const row = e.target.closest(".task-row");
+        if (row) row.classList.toggle("selected-row", e.target.checked);
         this.updateBulkBar();
       }
     });

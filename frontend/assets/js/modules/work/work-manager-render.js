@@ -347,7 +347,10 @@
   };
 
   WM.clearBulkSelection = function () {
-    document.querySelectorAll(".task-checkbox").forEach((cb) => (cb.checked = false));
+    document.querySelectorAll(".task-checkbox").forEach((cb) => {
+      cb.checked = false;
+      cb.closest(".task-row")?.classList.remove("selected-row");
+    });
     const sa1 = document.getElementById("select-all-pending");
     const sa2 = document.getElementById("select-all-completed");
     if (sa1) sa1.checked = false;

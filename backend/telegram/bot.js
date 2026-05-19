@@ -1,6 +1,7 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const { supabase } = require("../config/database");
+const { getConnection, esc, todayBoundsVN } = require("./helpers");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
@@ -57,13 +58,8 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   }
 
   try {
-    const { data } = await supabase
-      .from("KetNoiTelegram")
-      .select("TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
-      .eq("TelegramChatId", chatId.toString())
-      .single();
+    const data = await getConnection(chatId);
 
-    // Row tồn tại nhưng TrangThaiKetNoi=false (user đã /disconnect) → xem như chưa kết nối.
     if (data && data.TrangThaiKetNoi) {
       await bot.sendMessage(chatId,
         `✅ <b>Tài khoản đã kết nối</b>\n\n` +
@@ -105,11 +101,7 @@ bot.onText(/\/help/, async (msg) => {
 bot.onText(/\/status/, async (msg) => {
   const chatId = msg.chat.id;
   try {
-    const { data } = await supabase
-      .from("KetNoiTelegram")
-      .select("MaNguoiDung, TelegramChatId, TelegramUsername, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY, NgayKetNoi")
-      .eq("TelegramChatId", chatId.toString())
-      .single();
+    const data = await getConnection(chatId);
 
     if (data && data.TrangThaiKetNoi) {
       const taskStatus = data.ThongBaoNhiemVu ? "✅" : "❌";
@@ -128,93 +120,11 @@ bot.onText(/\/status/, async (msg) => {
   }
 });
 
-// /settings
-bot.onText(/\/settings/, async (msg) => {
-  const chatId = msg.chat.id;
-  try {
-    const { data } = await supabase
-      .from("KetNoiTelegram")
-      .select("MaNguoiDung, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
-      .eq("TelegramChatId", chatId.toString())
-      .single();
-
-    if (!data || !data.TrangThaiKetNoi) {
-      await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nVào website để lấy mã kết nối mới.");
-      return;
-    }
-
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: `${data.ThongBaoNhiemVu ? "✅" : "☐"} Nhiệm vụ`, callback_data: "toggle_tasks" }],
-        [{ text: `${data.ThongBaoSuKien ? "✅" : "☐"} Sự kiện`, callback_data: "toggle_events" }],
-        [{ text: `${data.ThongBaoGoiY ? "✅" : "☐"} Gợi ý AI`, callback_data: "toggle_ai" }],
-      ],
-    };
-
-    await bot.sendMessage(chatId, "⚙️ <b>Cài đặt thông báo</b>\n\nChọn loại thông báo bạn muốn nhận:", {
-      parse_mode: "HTML",
-      reply_markup: keyboard,
-    });
-  } catch (error) {
-    console.error("❌ Error in settings:", error);
-    await bot.sendMessage(chatId, "❌ Lỗi lấy cài đặt.");
-  }
-});
-
-// Callback inline keyboard
-bot.on("callback_query", async (query) => {
-  const chatId = query.message.chat.id;
-  const action = query.data;
-
-  try {
-    const { data: conn } = await supabase
-      .from("KetNoiTelegram")
-      .select("MaNguoiDung, TrangThaiKetNoi, ThongBaoNhiemVu, ThongBaoSuKien, ThongBaoGoiY")
-      .eq("TelegramChatId", chatId.toString())
-      .single();
-
-    if (!conn || !conn.TrangThaiKetNoi) {
-      await bot.answerCallbackQuery(query.id, { text: "❌ Kết nối đã bị ngắt" });
-      return;
-    }
-
-    const updateData = {
-      ThongBaoNhiemVu: conn.ThongBaoNhiemVu,
-      ThongBaoSuKien: conn.ThongBaoSuKien,
-      ThongBaoGoiY: conn.ThongBaoGoiY,
-    };
-
-    if (action === "toggle_tasks") updateData.ThongBaoNhiemVu = !conn.ThongBaoNhiemVu;
-    else if (action === "toggle_events") updateData.ThongBaoSuKien = !conn.ThongBaoSuKien;
-    else if (action === "toggle_ai") updateData.ThongBaoGoiY = !conn.ThongBaoGoiY;
-
-    await supabase.from("KetNoiTelegram").update(updateData).eq("MaNguoiDung", conn.MaNguoiDung);
-
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: `${updateData.ThongBaoNhiemVu ? "✅" : "☐"} Nhiệm vụ`, callback_data: "toggle_tasks" }],
-        [{ text: `${updateData.ThongBaoSuKien ? "✅" : "☐"} Sự kiện`, callback_data: "toggle_events" }],
-        [{ text: `${updateData.ThongBaoGoiY ? "✅" : "☐"} Gợi ý AI`, callback_data: "toggle_ai" }],
-      ],
-    };
-
-    await bot.editMessageReplyMarkup(keyboard, { chat_id: chatId, message_id: query.message.message_id });
-    await bot.answerCallbackQuery(query.id, { text: "✅ Đã cập nhật" });
-  } catch (error) {
-    console.error("❌ Error handling callback:", error);
-    await bot.answerCallbackQuery(query.id, { text: "❌ Lỗi cập nhật" });
-  }
-});
-
 // /disconnect
 bot.onText(/\/disconnect/, async (msg) => {
   const chatId = msg.chat.id;
   try {
-    const { data } = await supabase
-      .from("KetNoiTelegram")
-      .select("MaNguoiDung, TrangThaiKetNoi")
-      .eq("TelegramChatId", chatId.toString())
-      .single();
+    const data = await getConnection(chatId);
 
     if (!data) {
       await bot.sendMessage(chatId, "❌ Không tìm thấy kết nối.");
@@ -238,11 +148,7 @@ bot.onText(/\/disconnect/, async (msg) => {
 bot.onText(/\/schedule/, async (msg) => {
   const chatId = msg.chat.id;
   try {
-    const { data: conn } = await supabase
-      .from("KetNoiTelegram")
-      .select("MaNguoiDung, TrangThaiKetNoi")
-      .eq("TelegramChatId", chatId.toString())
-      .single();
+    const conn = await getConnection(chatId);
 
     if (!conn || !conn.TrangThaiKetNoi) {
       await bot.sendMessage(chatId, "❌ Bạn chưa kết nối.\n\nVào website để lấy mã kết nối mới.");
@@ -329,10 +235,7 @@ async function sendSchedule(userId, schedule) {
 // sendTodaySchedule
 async function sendTodaySchedule(userId, chatId) {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    const { startIso, endIso } = todayBoundsVN();
 
     const { data: records } = await supabase
       .from("LichTrinh")
@@ -341,11 +244,11 @@ async function sendTodaySchedule(userId, chatId) {
         "CongViec(TieuDe, MoTa, MucDoUuTien)"
       )
       .eq("MaNguoiDung", userId)
-      .gte("GioBatDau", todayStart.toISOString())
-      .lte("GioBatDau", todayEnd.toISOString())
+      .gte("GioBatDau", startIso)
+      .lte("GioBatDau", endIso)
       .order("GioBatDau", { ascending: true });
 
-    const todayLabel = todayStart.toLocaleDateString("vi-VN", {
+    const todayLabel = new Date().toLocaleDateString("vi-VN", {
       weekday: "long", day: "2-digit", month: "2-digit", year: "numeric",
     });
 
@@ -362,7 +265,6 @@ async function sendTodaySchedule(userId, chatId) {
       hour: "2-digit", minute: "2-digit", hour12: false,
     });
     const prioIcon = (p) => (p >= 3 ? "🔴" : p === 2 ? "🟡" : p === 1 ? "🟢" : "⚪");
-    const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     // Title rule: ưu tiên tên từ CongViec (tên công việc đầy đủ), chỉ fallback
     // LichTrinh.TieuDe khi sự kiện không gắn công việc (thường là mã/tên tắt).
     const pickTitle = (r) => {
@@ -544,5 +446,6 @@ bot.on("webhook_error", (error) => console.error("❌ Webhook error:", error));
 // link/settings/schedule core).
 try { require("./commands/daily").register(bot); } catch (e) { console.error("[daily] register:", e.message); }
 try { require("./commands/tao-cong-viec").register(bot); } catch (e) { console.error("[taocongviec] register:", e.message); }
+try { require("./commands/settings").register(bot); } catch (e) { console.error("[settings] register:", e.message); }
 
 module.exports = { bot, verifyToken, autoConnectUser, sendMessageToUser, sendSchedule, sendTodaySchedule, broadcastMessage, isUserConnected, initializeSchedules };

@@ -11,6 +11,7 @@ const express = require("express");
 const router = express.Router();
 const { supabase } = require("../config/database");
 const { SYSTEM_PROMPT } = require("../lib/chat-advisor-prompt");
+const { checkRateLimit } = require("../utils/rate-limit");
 
 const apiKey =
   (process.env.GEMINI_API_KEY_CHAT_ADVISOR || "").trim() ||
@@ -139,6 +140,26 @@ router.get("/context-snapshot", async (req, res) => {
 // Streaming chat endpoint — Server-Sent Events.
 // Request: { message: string, attachContext?: object }
 // Events: `data: {"chunk":"..."}` for each chunk, then `data: {"done":true,"messageId":N}`.
+function sanitizeContext(ctx) {
+  if (!ctx || typeof ctx !== "object") return null;
+  const safe = {};
+  if (Array.isArray(ctx.activeTasks)) {
+    safe.activeTasks = ctx.activeTasks.slice(0, 10).map((t) => ({
+      TieuDe: String(t.TieuDe || "").slice(0, 200),
+      MucDoUuTien: Number(t.MucDoUuTien) || 0,
+      ThoiGianUocTinh: Number(t.ThoiGianUocTinh) || 0,
+    }));
+  }
+  if (ctx.weekStats && typeof ctx.weekStats === "object") {
+    safe.weekStats = {
+      total: Number(ctx.weekStats.total) || 0,
+      done: Number(ctx.weekStats.done) || 0,
+      completionRate: Number(ctx.weekStats.completionRate) || 0,
+    };
+  }
+  return Object.keys(safe).length > 0 ? safe : null;
+}
+
 router.post("/stream", async (req, res) => {
   const userId = req.user?.MaNguoiDung ?? req.userId;
   const { message, attachContext } = req.body || {};
@@ -148,6 +169,12 @@ router.post("/stream", async (req, res) => {
   }
   if (typeof message !== "string" || !message.trim()) {
     return res.status(400).json({ success: false, message: "Thiếu nội dung tin nhắn." });
+  }
+
+  const rl = checkRateLimit(`advisor:${userId}`, 20);
+  if (!rl.allowed) {
+    const waitMin = Math.ceil(rl.resetInMs / 60000);
+    return res.status(429).json({ success: false, message: `Bạn đã gửi quá nhiều tin nhắn. Thử lại sau ${waitMin} phút.` });
   }
 
   // SSE headers — flush immediately so the client sees the stream open.
@@ -162,11 +189,12 @@ router.post("/stream", async (req, res) => {
   try {
     // Persist user message first so refresh-during-stream still keeps it.
     const userMsg = String(message).slice(0, 4000);
-    await insertMessage(userId, "user", userMsg, attachContext || null);
+    const safeCtx = sanitizeContext(attachContext);
+    await insertMessage(userId, "user", userMsg, safeCtx);
 
-    // Compose context block (one-shot) if user attached a snapshot.
-    const contextBlock = attachContext
-      ? `\n\n[CONTEXT ĐÍNH KÈM — dữ liệu thật của user]\n${JSON.stringify(attachContext).slice(0, 3000)}`
+    // Compose context block (one-shot) if user attached a sanitized snapshot.
+    const contextBlock = safeCtx
+      ? `\n\n[CONTEXT ĐÍNH KÈM — dữ liệu thật của user]\n${JSON.stringify(safeCtx)}`
       : "";
 
     const prior = await fetchHistory(userId, CONTEXT_WINDOW);
@@ -209,10 +237,10 @@ router.post("/stream", async (req, res) => {
       send({
         error:
           finishReason === "SAFETY"
-            ? "Gemini chặn nội dung vì lý do an toàn. Thử hỏi lại bằng cách khác."
+            ? "Nội dung bị chặn vì lý do an toàn. Thử hỏi lại bằng cách khác."
             : finishReason === "RECITATION"
-            ? "Gemini chặn vì phản hồi trích dẫn nội dung bản quyền."
-            : `Stream bị ngắt: ${streamErr.message}`,
+            ? "Phản hồi bị chặn vì trích dẫn nội dung bản quyền."
+            : "Phản hồi bị gián đoạn. Vui lòng thử lại.",
         messageId: persisted?.MaTinNhan ?? null,
       });
     } else if (finishReason === "MAX_TOKENS") {
@@ -226,7 +254,7 @@ router.post("/stream", async (req, res) => {
     res.end();
   } catch (err) {
     console.error("POST /chat-advisor/stream:", err);
-    send({ error: err.message || "Lỗi stream" });
+    send({ error: "Lỗi xử lý tin nhắn. Vui lòng thử lại." });
     res.end();
   }
 });

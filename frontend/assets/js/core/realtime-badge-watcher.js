@@ -5,6 +5,7 @@
   const POLL_INTERVAL = 15000;
   let _prevFriendCount = -1;
   let _prevUnreadCount = -1;
+  let _prevScheduleDigest = null;
   let _timer = null;
 
   function authHeader() {
@@ -89,8 +90,30 @@
     } catch (_) {}
   }
 
+  async function pollScheduleSync() {
+    const headers = authHeader();
+    if (!headers) return;
+    try {
+      const res = await fetch("/api/schedule/sync-check", { headers });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (!json.success) return;
+
+      const digest = json.digest;
+      if (_prevScheduleDigest !== null && digest !== _prevScheduleDigest) {
+        if (window.CalendarModule?.refreshEventsInPlace) {
+          window.CalendarModule.refreshEventsInPlace();
+        }
+        if (window.WorkManager?.checkAndReload) {
+          window.WorkManager.checkAndReload();
+        }
+      }
+      _prevScheduleDigest = digest;
+    } catch (_) {}
+  }
+
   async function poll() {
-    await Promise.all([pollFriendRequests(), pollUnreadMessages()]);
+    await Promise.all([pollFriendRequests(), pollUnreadMessages(), pollScheduleSync()]);
   }
 
   function start() {
@@ -109,6 +132,7 @@
   document.addEventListener("auth-success", () => {
     _prevFriendCount = -1;
     _prevUnreadCount = -1;
+    _prevScheduleDigest = null;
     start();
   });
   document.addEventListener("auth-logout", stop);

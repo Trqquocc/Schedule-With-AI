@@ -1,8 +1,5 @@
-// /daily — list today's events with inline ✅ buttons to mark complete.
-// Callback data format: "daily_done:{MaLichTrinh}" so the same callback
-// handler in bot.js can route by prefix.
-
 const { supabase } = require("../../config/database");
+const { getConnection, todayBoundsVN } = require("../helpers");
 
 function register(bot) {
   bot.onText(/^\/daily\b/, (msg) => handleDaily(bot, msg));
@@ -17,12 +14,7 @@ async function handleDaily(bot, msg) {
   const chatId = msg.chat.id;
 
   try {
-    const { data: conn } = await supabase
-      .from("KetNoiTelegram")
-      .select("MaNguoiDung")
-      .eq("TelegramChatId", chatId.toString())
-      .maybeSingle();
-
+    const conn = await getConnection(chatId);
     if (!conn) {
       await bot.sendMessage(chatId, "❌ Bạn chưa kết nối. Gõ /start.");
       return;
@@ -55,12 +47,7 @@ async function handleDaily(bot, msg) {
     const keyboard = {
       inline_keyboard: events
         .filter((e) => !e.DaHoanThanh)
-        .map((e, i) => [
-          {
-            text: `✅ Hoàn thành #${i + 1}`,
-            callback_data: `daily_done:${e.MaLichTrinh}`,
-          },
-        ]),
+        .map((e, i) => [{ text: `✅ Hoàn thành #${i + 1}`, callback_data: `daily_done:${e.MaLichTrinh}` }]),
     };
 
     await bot.sendMessage(chatId, header + "\n" + lines.join("\n"), {
@@ -75,50 +62,38 @@ async function handleDaily(bot, msg) {
 
 async function handleComplete(bot, query) {
   const chatId = query.message.chat.id;
-  const id = Number(query.data.split(":")[1]);
-  if (!id) {
+  const rawId = (query.data || "").split(":")[1];
+  const id = Number(rawId);
+  if (!rawId || !Number.isInteger(id) || id <= 0) {
     await bot.answerCallbackQuery(query.id, { text: "❌ ID không hợp lệ" });
     return;
   }
 
   try {
-    const { data: conn } = await supabase
-      .from("KetNoiTelegram")
-      .select("MaNguoiDung")
-      .eq("TelegramChatId", chatId.toString())
-      .maybeSingle();
-
+    const conn = await getConnection(chatId);
     if (!conn) {
       await bot.answerCallbackQuery(query.id, { text: "❌ Chưa kết nối" });
       return;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("LichTrinh")
       .update({ DaHoanThanh: true })
       .eq("MaLichTrinh", id)
-      .eq("MaNguoiDung", conn.MaNguoiDung);
+      .eq("MaNguoiDung", conn.MaNguoiDung)
+      .select("MaLichTrinh");
 
     if (error) throw error;
-
+    if (!data || data.length === 0) {
+      await bot.answerCallbackQuery(query.id, { text: "❌ Không tìm thấy công việc" });
+      return;
+    }
     await bot.answerCallbackQuery(query.id, { text: "✅ Đã hoàn thành!" });
-
-    // Refresh the list in place.
-    const fakeMsg = { chat: { id: chatId } };
-    await handleDaily(bot, fakeMsg);
+    await handleDaily(bot, { chat: { id: chatId } });
   } catch (err) {
     console.error("[/daily done] failed:", err);
     await bot.answerCallbackQuery(query.id, { text: "❌ Lỗi cập nhật" });
   }
-}
-
-function todayBoundsVN() {
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  return { startIso: start.toISOString(), endIso: end.toISOString() };
 }
 
 module.exports = { register };

@@ -151,6 +151,34 @@ router.post("/complete-day", async (req, res) => {
   }
 });
 
+// GET /api/schedule/sync-check
+// Lightweight digest of today's schedule completion state.
+// Frontend polls this to detect external changes (e.g. Telegram bot).
+router.get("/sync-check", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
+    const range = dayRangeUtc(today);
+    if (!range) return res.json({ success: true, digest: "0:0" });
+    const [startIso, endIso] = range;
+
+    const { data, error } = await supabase
+      .from("LichTrinh")
+      .select("DaHoanThanh")
+      .eq("MaNguoiDung", userId)
+      .gte("GioBatDau", startIso)
+      .lt("GioBatDau", endIso);
+
+    if (error) return res.status(500).json({ success: false });
+
+    const total = (data || []).length;
+    const completed = (data || []).filter((r) => r.DaHoanThanh === true).length;
+    return res.json({ success: true, digest: `${total}:${completed}` });
+  } catch (_) {
+    return res.status(500).json({ success: false });
+  }
+});
+
 module.exports = router;
 // Exposed for unit testing.
 module.exports.__test = { dayRangeUtc, isValidDateStr };
