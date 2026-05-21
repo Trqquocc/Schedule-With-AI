@@ -147,6 +147,30 @@
     // ---- completed section ----
     if (completedTasks.length > 0) {
       html += `
+        <div
+          id="bulk-action-bar-bottom"
+          class="hidden mb-4 items-center justify-between px-4 py-3 rounded-xl border"
+          style="border-color:#e2e8f0;background:linear-gradient(135deg,#fef2f2 0%,#eff6ff 100%);display:none"
+        >
+          <div class="flex items-center gap-2 text-sm" style="color:#1e293b">
+            <i class="fas fa-check-square" style="color:#dc2626"></i>
+            <span>Đã chọn <span id="bulk-selected-count-bottom" class="font-bold">0</span> công việc</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="bulk-complete-btn-bottom" class="hidden flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:#10b981" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+              <i class="fas fa-check"></i> Hoàn thành
+            </button>
+            <button id="bulk-restore-btn-bottom" class="hidden flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:#f59e0b" onmouseover="this.style.background='#d97706'" onmouseout="this.style.background='#f59e0b'">
+              <i class="fas fa-undo"></i> Khôi phục
+            </button>
+            <button id="bulk-delete-btn-bottom" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:#dc2626" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">
+              <i class="fas fa-trash"></i> Xoá
+            </button>
+            <button id="bulk-clear-btn-bottom" class="px-3 py-1.5 rounded-lg text-xs font-semibold border" style="border-color:#e2e8f0;color:#64748b;background:#fff">
+              Bỏ chọn
+            </button>
+          </div>
+        </div>
         <div>
           <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <i class="fas fa-check-circle mr-2 text-green-500"></i>
@@ -323,27 +347,31 @@
   };
 
   WM.updateBulkBar = function () {
-    const bar = document.getElementById("bulk-action-bar");
-    if (!bar) return;
-    const ids      = this.getSelectedTaskIds();
-    const countEl  = document.getElementById("bulk-selected-count");
-    if (countEl) countEl.textContent = ids.length;
-    if (ids.length > 0) { bar.classList.remove("hidden"); bar.style.display = "flex"; }
-    else                { bar.classList.add("hidden");    bar.style.display = "none"; }
-
+    const ids = this.getSelectedTaskIds();
     const { pending, completed } = this.getSelectedByStatus();
-    document.getElementById("bulk-complete-btn")?.classList.toggle("hidden", pending.length   === 0);
-    document.getElementById("bulk-restore-btn")?.classList.toggle("hidden",  completed.length === 0);
+
+    ["", "-bottom"].forEach((suffix) => {
+      const bar = document.getElementById("bulk-action-bar" + suffix);
+      if (!bar) return;
+      const countEl = document.getElementById("bulk-selected-count" + suffix);
+      if (countEl) countEl.textContent = ids.length;
+      if (ids.length > 0) { bar.classList.remove("hidden"); bar.style.display = "flex"; }
+      else                { bar.classList.add("hidden");    bar.style.display = "none"; }
+      document.getElementById("bulk-complete-btn" + suffix)?.classList.toggle("hidden", pending.length === 0);
+      document.getElementById("bulk-restore-btn" + suffix)?.classList.toggle("hidden", completed.length === 0);
+    });
   };
 
   WM.setupBulkActionBar = function () {
-    const bar = document.getElementById("bulk-action-bar");
-    if (!bar || bar._bound) return;
-    bar._bound = true;
-    document.getElementById("bulk-complete-btn")?.addEventListener("click", () => this.bulkComplete());
-    document.getElementById("bulk-restore-btn")?.addEventListener("click",  () => this.bulkRestore());
-    document.getElementById("bulk-delete-btn")?.addEventListener("click",   () => this.bulkDelete());
-    document.getElementById("bulk-clear-btn")?.addEventListener("click",    () => this.clearBulkSelection());
+    ["", "-bottom"].forEach((suffix) => {
+      const bar = document.getElementById("bulk-action-bar" + suffix);
+      if (!bar || bar._bound) return;
+      bar._bound = true;
+      document.getElementById("bulk-complete-btn" + suffix)?.addEventListener("click", () => this.bulkComplete());
+      document.getElementById("bulk-restore-btn" + suffix)?.addEventListener("click",  () => this.bulkRestore());
+      document.getElementById("bulk-delete-btn" + suffix)?.addEventListener("click",   () => this.bulkDelete());
+      document.getElementById("bulk-clear-btn" + suffix)?.addEventListener("click",    () => this.clearBulkSelection());
+    });
   };
 
   WM.clearBulkSelection = function () {

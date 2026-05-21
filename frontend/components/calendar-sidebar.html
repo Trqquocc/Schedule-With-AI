@@ -156,6 +156,24 @@
       }
     }
 
+    window.removeTaskFromSidebar = function (taskId) {
+      const id = String(taskId);
+      _pendingCache = _pendingCache.filter((t) => {
+        const tid = String(t.MaCongViec || t.ID || t.id);
+        return tid !== id;
+      });
+      const el = document.querySelector(`.task-item[data-task-id="${id}"]`);
+      if (el) {
+        el.style.transition = "opacity .25s, transform .25s";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(20px)";
+        setTimeout(() => {
+          el.remove();
+          if (_pendingCache.length === 0) renderTasksList();
+        }, 260);
+      }
+    };
+
     window.loadUserTasks = async function (forceRefresh = false) {
       const container = document.getElementById("task-list");
       if (!container) return;

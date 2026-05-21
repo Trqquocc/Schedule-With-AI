@@ -356,8 +356,7 @@
 
         await Utils.makeRequest(`/api/tasks/${taskId}`, "PUT", { TrangThaiThucHien: 1 });
         Utils.showToast?.("Đã lên lịch thành công!", "success");
-        if (window.loadUserTasks) window.loadUserTasks(true);
-        this.triggerSidebarRefresh();
+        if (window.removeTaskFromSidebar) window.removeTaskFromSidebar(taskId);
         if (window.GroupDetailSection?.current) {
           window.GroupDetailSection.load(window.GroupDetailSection.current.MaNhom);
         }

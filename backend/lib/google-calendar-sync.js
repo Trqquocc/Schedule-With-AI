@@ -10,7 +10,7 @@ const { getClientForUser } = require('./google-calendar-client');
 
 /**
  * Converts a LichTrinh row into a Google Calendar event resource.
- * @param {object} row  LichTrinh row
+ * @param {object} row  LichTrinh row (optionally with joined CongViec)
  * @returns {object} Google Calendar event body
  */
 function buildEventResource(row) {
@@ -22,9 +22,12 @@ function buildEventResource(row) {
     ? new Date(row.GioKetThuc).toISOString()
     : new Date(new Date(startIso).getTime() + 60 * 60 * 1000).toISOString();
 
+  const title = row.TieuDe || row.CongViec?.TieuDe || '(Công việc)';
+  const description = row.GhiChu || row.CongViec?.MoTa || '';
+
   return {
-    summary: row.TieuDe || '(Công việc)',
-    description: row.MoTa || '',
+    summary: title,
+    description,
     start: { dateTime: startIso, timeZone: 'Asia/Ho_Chi_Minh' },
     end:   { dateTime: endIso,   timeZone: 'Asia/Ho_Chi_Minh' },
   };
@@ -38,17 +41,26 @@ function buildEventResource(row) {
  * @param {number} userId
  * @param {object} eventData  LichTrinh row (must have MaLichTrinh)
  * @param {'create'|'update'|'delete'} action
+ * @param {{calApi, calendarId}?} sharedApi  Pre-built API client (used by syncWeek batch)
  * @returns {Promise<{ok: boolean, googleEventId?: string, error?: string}>}
  */
-async function syncEventToGoogle(userId, eventData, action) {
+async function syncEventToGoogle(userId, eventData, action, sharedApi) {
   try {
-    const { client, calendarId } = await getClientForUser(userId);
-    const calApi = google.calendar({ version: 'v3', auth: client });
+    let calApi, calendarId;
+    if (sharedApi) {
+      calApi = sharedApi.calApi;
+      calendarId = sharedApi.calendarId;
+    } else {
+      const userClient = await getClientForUser(userId);
+      calApi = google.calendar({ version: 'v3', auth: userClient.client });
+      calendarId = userClient.calendarId;
+    }
+
     const lichId = eventData.MaLichTrinh;
 
     if (action === 'delete') {
       const googleEventId = eventData.MaSuKienGoogle;
-      if (!googleEventId) return { ok: true }; // nothing to delete
+      if (!googleEventId) return { ok: true };
 
       await calApi.events.delete({ calendarId, eventId: googleEventId }).catch(() => {});
       await supabase
@@ -61,16 +73,30 @@ async function syncEventToGoogle(userId, eventData, action) {
 
     const resource = buildEventResource(eventData);
 
+    // Try update if Google event ID exists
     if (action === 'update' && eventData.MaSuKienGoogle) {
-      const { data } = await calApi.events.update({
-        calendarId,
-        eventId: eventData.MaSuKienGoogle,
-        requestBody: resource,
-      });
-      return { ok: true, googleEventId: data.id };
+      try {
+        const { data } = await calApi.events.update({
+          calendarId,
+          eventId: eventData.MaSuKienGoogle,
+          requestBody: resource,
+        });
+        return { ok: true, googleEventId: data.id };
+      } catch (updateErr) {
+        const code = updateErr.code || updateErr.response?.status;
+        if (code === 404 || code === 410) {
+          // Google event was deleted externally — clear stale ID and fall through to create
+          await supabase
+            .from('LichTrinh')
+            .update({ MaSuKienGoogle: null })
+            .eq('MaLichTrinh', lichId);
+        } else {
+          throw updateErr;
+        }
+      }
     }
 
-    // create (or re-create if GoogleEventId missing on update)
+    // Create new event (or re-create after stale ID cleared)
     const { data } = await calApi.events.insert({ calendarId, requestBody: resource });
 
     await supabase
@@ -80,7 +106,7 @@ async function syncEventToGoogle(userId, eventData, action) {
 
     return { ok: true, googleEventId: data.id };
   } catch (err) {
-    console.error(`syncEventToGoogle error (userId=${userId}, action=${action}):`, err.message);
+    console.error(`syncEventToGoogle error (userId=${userId}, action=${action}, eventId=${eventData.MaLichTrinh}):`, err.message);
     return { ok: false, error: err.message };
   }
 }
@@ -102,9 +128,13 @@ async function syncWeek(userId) {
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
+  // Authenticate once for the whole batch
+  const { client, calendarId } = await getClientForUser(userId);
+  const calApi = google.calendar({ version: 'v3', auth: client });
+
   const { data: events, error } = await supabase
     .from('LichTrinh')
-    .select('*')
+    .select('*, CongViec(TieuDe, MoTa)')
     .eq('MaNguoiDung', userId)
     .gte('GioBatDau', monday.toISOString())
     .lte('GioBatDau', sunday.toISOString());
@@ -117,7 +147,7 @@ async function syncWeek(userId) {
 
   for (const ev of events) {
     const action = ev.MaSuKienGoogle ? 'update' : 'create';
-    const result = await syncEventToGoogle(userId, ev, action);
+    const result = await syncEventToGoogle(userId, ev, action, { calApi, calendarId });
     result.ok ? synced++ : errors++;
   }
 

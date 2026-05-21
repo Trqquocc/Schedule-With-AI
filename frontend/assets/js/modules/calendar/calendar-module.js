@@ -163,7 +163,7 @@
           this.calendar.unselect();
         },
 
-        eventDragStart: () => { document.body.classList.add("calendar-dragging"); },
+        eventDragStart: () => { document.body.classList.add("calendar-dragging"); document.querySelectorAll(".evt-tooltip").forEach((t) => t.remove()); },
 
         eventDragStop: (info) => {
           document.body.classList.remove("calendar-dragging");
@@ -441,6 +441,7 @@
       };
 
       const show = () => {
+        if (document.body.classList.contains("calendar-dragging")) return;
         document.querySelectorAll(".evt-tooltip").forEach((t) => t.remove());
         if (tip) return;
 
