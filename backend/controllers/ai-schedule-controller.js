@@ -17,6 +17,24 @@ const {
 } = require("../services/ai-schedule-service");
 const { buildGeminiPrompt } = require("../services/ai-prompt-service");
 
+function computeWorkloadAnalysis(suggestions) {
+  const dayMinutes = {};
+  for (const s of suggestions) {
+    const day = new Date(s.scheduledTime).toISOString().split("T")[0];
+    dayMinutes[day] = (dayMinutes[day] || 0) + (s.durationMinutes || 60);
+  }
+  const overloadedDays = [];
+  const warnings = [];
+  for (const [day, mins] of Object.entries(dayMinutes)) {
+    if (mins > 360) {
+      overloadedDays.push(day);
+      const d = new Date(day);
+      warnings.push(`${d.getDate()}/${d.getMonth() + 1}: ${(mins / 60).toFixed(1)}h — quá tải`);
+    }
+  }
+  return { overloadedDays, warnings };
+}
+
 /** POST /api/ai/suggest-schedule — supports SSE streaming via Accept: text/event-stream */
 async function suggestSchedule(req, res) {
   const useSSE = req.headers.accept === "text/event-stream";
@@ -51,12 +69,10 @@ async function suggestSchedule(req, res) {
       return res.status(404).json({ success: false, message: "Không tìm thấy công việc được chọn" });
     }
 
+    if (useSSE) sendSSE("status", { step: "checking_conflicts" });
     let existingEvents = [];
-    if (options.avoidConflict) {
-      if (useSSE) sendSSE("status", { step: "checking_conflicts" });
-      try { existingEvents = await getExistingEvents(userId, startDate, endDate); }
-      catch (_) { existingEvents = []; }
-    }
+    try { existingEvents = await getExistingEvents(userId, startDate, endDate); }
+    catch (_) { existingEvents = []; }
 
     if (useSSE) sendSSE("status", { step: "generating_schedule" });
 
@@ -98,6 +114,7 @@ async function suggestSchedule(req, res) {
           totalHours: Math.round(aiResult.suggestions.reduce((sum, s) => sum + s.durationMinutes, 0) / 60),
           daysUsed: new Set(aiResult.suggestions.map((s) => new Date(s.scheduledTime).toDateString())).size,
         },
+        workloadAnalysis: computeWorkloadAnalysis(aiResult.suggestions),
         mode,
       },
       message: mode === "gemini" ? "AI đã tạo lịch trình thành công" : "Đã tạo lịch trình (chế độ mô phỏng)",

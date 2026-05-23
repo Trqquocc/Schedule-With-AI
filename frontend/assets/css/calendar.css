@@ -71,10 +71,10 @@ body:has(main#schedule-section.section.active) #main-app .flex-1.overflow-auto {
 }
 
 #calendar-sidebar .mini-cal-day {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -109,11 +109,11 @@ body:has(main#schedule-section.section.active) #main-app .flex-1.overflow-auto {
 #calendar-sidebar .mini-cal-day.has-event::after {
   content: "";
   position: absolute;
-  bottom: 2px;
+  bottom: 1px;
   left: 50%;
   transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
   background: var(--accent, #2563EB);
 }
@@ -123,9 +123,9 @@ body:has(main#schedule-section.section.active) #main-app .flex-1.overflow-auto {
 
 #calendar-sidebar #mini-prev,
 #calendar-sidebar #mini-next {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -344,6 +344,10 @@ body:has(main#schedule-section.section.active) #main-app .flex-1.overflow-auto {
 .fc .fc-timegrid-slot {
   height: 3em;
   border-bottom: 1px solid #e5e7eb;
+}
+
+#calendar.slot-15 .fc .fc-timegrid-slot {
+  height: 1.8em;
 }
 
 .fc .fc-timegrid-slot-label {
@@ -591,6 +595,10 @@ body:has(main#schedule-section.section.active) #main-app .flex-1.overflow-auto {
 
   .fc .fc-timegrid-slot {
     height: 2.5em;
+  }
+
+  #calendar.slot-15 .fc .fc-timegrid-slot {
+    height: 1.5em;
   }
 
   .fc .fc-timegrid-axis {
@@ -970,6 +978,22 @@ body:has(main#schedule-section.section.active) #main-app .flex-1.overflow-auto {
   animation: toastSlide 0.3s ease-out;
 }
 
+/* ===== SLOT DURATION TOGGLE ===== */
+.cal-slot-toggle-btn {
+  color: #475569;
+  background: #f1f5f9;
+}
+.cal-slot-toggle-btn:hover {
+  background: #e2e8f0 !important;
+}
+.cal-slot-toggle-btn.active {
+  color: var(--accent, #2563EB);
+  background: #eff6ff;
+}
+.cal-slot-toggle-btn.active:hover {
+  background: #dbeafe !important;
+}
+
 /* ===== CALENDAR TOOLBAR ===== */
 .cal-toolbar {
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
@@ -1005,6 +1029,18 @@ body.dark .ai-toolbar {
 body.dark .cal-toolbar h2,
 body.dark .ai-toolbar h2 {
   color: var(--text-primary) !important;
+}
+
+body.dark .cal-slot-toggle-btn {
+  color: var(--text-secondary) !important;
+  background: var(--bg-card-alt) !important;
+}
+body.dark .cal-slot-toggle-btn:hover {
+  background: var(--bg-card-hover) !important;
+}
+body.dark .cal-slot-toggle-btn.active {
+  color: var(--accent, #60a5fa) !important;
+  background: rgba(37,99,235,0.12) !important;
 }
 
 body.dark #cal-today-btn { color: var(--accent) !important; }
@@ -1413,9 +1449,23 @@ body.dark .priority-legend span {
   opacity: 0.5;
 }
 
-/* AI suggested: dashed outer border */
+/* AI suggested: dashed border + badge */
 .fc-event.event-ai-suggested {
   border-style: dashed !important;
+  border-color: #8B5CF6 !important;
+}
+.fc-event.event-ai-suggested .sched-evt-title::before {
+  content: "AI";
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #8B5CF6;
+  color: #fff;
+  margin-right: 5px;
+  vertical-align: middle;
 }
 
 /* Subtask chip stack — keep light bg, tighten border */

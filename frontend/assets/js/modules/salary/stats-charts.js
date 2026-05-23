@@ -49,13 +49,55 @@
     return { backgroundColor: c.tooltipBg, titleColor: "#f1f5f9", bodyColor: "#cbd5e1", padding: 10, cornerRadius: 8 };
   }
 
-  function renderBar(dailyData) {
+  function groupByWeek(dailyData) {
+    const map = {};
+    dailyData.forEach((d) => {
+      const dt = new Date(d.date);
+      const mon = new Date(dt);
+      mon.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+      const key = mon.toISOString().split("T")[0];
+      if (!map[key]) map[key] = { total: 0, completed: 0 };
+      map[key].total += d.total || 0;
+      map[key].completed += d.completed || 0;
+    });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => ({ date: k, ...v }));
+  }
+
+  function groupByMonth(dailyData) {
+    const map = {};
+    dailyData.forEach((d) => {
+      const key = d.date.slice(0, 7);
+      if (!map[key]) map[key] = { total: 0, completed: 0 };
+      map[key].total += d.total || 0;
+      map[key].completed += d.completed || 0;
+    });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => ({ date: k, ...v }));
+  }
+
+  function renderBar(dailyData, period) {
     const ctx = document.getElementById("bar-chart");
     if (!ctx) return;
     if (barChart) barChart.destroy();
 
-    const slice = dailyData.slice(-14);
-    const labels = slice.map((item) => new Date(item.date).toLocaleDateString("vi-VN", { month: "numeric", day: "numeric" }));
+    let grouped;
+    let labelFn;
+    let tooltipPrefix;
+
+    if (period === "year") {
+      grouped = groupByMonth(dailyData);
+      labelFn = (item) => { const [y, m] = item.date.split("-"); return `T${parseInt(m)}/${y}`; };
+      tooltipPrefix = "";
+    } else if (period === "month") {
+      grouped = groupByWeek(dailyData);
+      labelFn = (item) => { const d = new Date(item.date); return `${d.getDate()}/${d.getMonth() + 1}`; };
+      tooltipPrefix = "Tuần ";
+    } else {
+      grouped = dailyData;
+      labelFn = (item) => new Date(item.date).toLocaleDateString("vi-VN", { weekday: "short", day: "numeric" });
+      tooltipPrefix = "";
+    }
+
+    const labels = grouped.map(labelFn);
     const c = colors();
 
     barChart = new Chart(ctx, {
@@ -63,13 +105,13 @@
       data: {
         labels,
         datasets: [
-          { label: "Hoàn thành", data: slice.map((i) => i.completed || 0), backgroundColor: c.completed, hoverBackgroundColor: c.completedHover, borderRadius: { topLeft: 6, topRight: 6 }, borderSkipped: false, maxBarThickness: 22 },
-          { label: "Chờ xử lý", data: slice.map((i) => (i.total || 0) - (i.completed || 0)), backgroundColor: c.pending, hoverBackgroundColor: c.pendingHover, borderRadius: { topLeft: 6, topRight: 6 }, borderSkipped: false, maxBarThickness: 22 },
+          { label: "Hoàn thành", data: grouped.map((i) => i.completed || 0), backgroundColor: c.completed, hoverBackgroundColor: c.completedHover, borderRadius: { topLeft: 6, topRight: 6 }, borderSkipped: false, maxBarThickness: 28 },
+          { label: "Chờ xử lý", data: grouped.map((i) => (i.total || 0) - (i.completed || 0)), backgroundColor: c.pending, hoverBackgroundColor: c.pendingHover, borderRadius: { topLeft: 6, topRight: 6 }, borderSkipped: false, maxBarThickness: 28 },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
-        plugins: { legend: legendOpts(c), tooltip: { ...tooltipOpts(c), callbacks: { title: (items) => `Ngày ${items[0].label}`, label: (ctx) => `  ${ctx.dataset.label}: ${ctx.parsed.y}` } } },
+        plugins: { legend: legendOpts(c), tooltip: { ...tooltipOpts(c), callbacks: { title: (items) => `${tooltipPrefix}${items[0].label}`, label: (ctx) => `  ${ctx.dataset.label}: ${ctx.parsed.y}` } } },
         scales: {
           x: { stacked: false, grid: { display: false }, ticks: { color: c.tickColor, font: { size: 10 }, maxRotation: 45 }, border: { display: false } },
           y: { beginAtZero: true, stacked: false, grid: { color: c.gridColor, drawTicks: false }, ticks: { stepSize: 1, color: c.tickColor, font: { size: 10 }, padding: 6 }, border: { display: false } },

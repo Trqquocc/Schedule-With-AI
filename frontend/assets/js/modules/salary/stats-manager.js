@@ -47,7 +47,7 @@
     set("side-streak", (stats.streak || 0) + " ngày");
   }
 
-  function renderStatsView(data) {
+  function renderStatsView(data, period) {
     cachedData = data;
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -58,7 +58,7 @@
     updateSidebarStats(data);
 
     if (window.StatsCharts) {
-      StatsCharts.renderBar(data.daily || []);
+      StatsCharts.renderBar(data.daily || [], period);
       StatsCharts.renderDonut(data.completed || 0, data.pending || 0);
       StatsCharts.renderPriority(data.priority);
       StatsCharts.renderCategory(data.categories);
@@ -66,7 +66,8 @@
 
     if (window.StatsAdvancedCharts) {
       StatsAdvancedCharts.renderStreak(data.streak || 0);
-      StatsAdvancedCharts.renderComparison(data.daily || []);
+      const compMode = period === "year" ? "monthly" : "weekly";
+      StatsAdvancedCharts.renderComparison(data.daily || [], compMode);
     }
 
     window.StatsExport?.init?.();
@@ -94,7 +95,7 @@
 
         try {
           const result = await loadStatsData(fmt(from), fmt(today));
-          if (result.success) updateSidebarStats(result.data);
+          if (result.success) renderStatsView(result.data, period);
         } catch (e) {
           console.error("Stats quick tab error:", e);
         }

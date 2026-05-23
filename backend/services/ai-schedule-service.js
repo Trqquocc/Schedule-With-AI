@@ -8,6 +8,7 @@
 const { supabase } = require("../config/database");
 const { geminiModel, geminiAvailable, genAI } = require("./ai-gemini-client");
 const { analyzeRecurringPatterns, buildGeminiPrompt } = require("./ai-prompt-service");
+const { generateSmartFallback } = require("./ai-schedule-fallback");
 
 // ---------------------------------------------------------------------------
 // DB helpers
@@ -31,19 +32,23 @@ async function getTaskDetailsFromDatabase(taskIds, userId) {
     if (!taskIds || taskIds.length === 0) return [];
     const { data: tasks, error } = await supabase
       .from("CongViec")
-      .select("MaCongViec, TieuDe, ThoiGianUocTinh, MucDoUuTien, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop")
+      .select("MaCongViec, TieuDe, MoTa, ThoiGianUocTinh, MucDoUuTien, MucDoPhucTap, MucDoTapTrung, ThoiDiemThichHop, CoThoiGianCoDinh, GioBatDauCoDinh, GioKetThucCoDinh, LoaiCongViec(TenLoai)")
       .in("MaCongViec", taskIds)
-      .eq("MaNguoiDung", userId)
-      .eq("TrangThaiThucHien", 0);
+      .eq("MaNguoiDung", userId);
     if (error) { console.error("Error fetching task details:", error); return []; }
     return (tasks || []).map((task) => ({
       id: task.MaCongViec,
       title: task.TieuDe,
+      description: (task.MoTa || "").slice(0, 100),
+      category: task.LoaiCongViec?.TenLoai || null,
       estimatedMinutes: task.ThoiGianUocTinh || 60,
       priority: task.MucDoUuTien || 2,
       complexity: task.MucDoPhucTap || 2,
       focusLevel: task.MucDoTapTrung || 2,
       suitableTime: TIME_MAP[task.ThoiDiemThichHop] || "anytime",
+      isFixed: !!task.CoThoiGianCoDinh,
+      fixedStart: task.GioBatDauCoDinh || null,
+      fixedEnd: task.GioKetThucCoDinh || null,
       color: getColorByPriority(task.MucDoUuTien || 2),
     }));
   } catch (error) {
@@ -119,75 +124,6 @@ async function callGeminiAI(prompt) {
 // Simulation fallback
 // ---------------------------------------------------------------------------
 
-const DAILY_SLOTS = [
-  { hour: 9, label: "sáng" },
-  { hour: 13, label: "chiều" },
-  { hour: 16, label: "chiều muộn" },
-  { hour: 19, label: "tối" },
-];
-
-/** Generate a simulated schedule without AI (fallback). */
-async function generateSimulatedSchedule(taskDetails, startDate, endDate, options, existingEvents) {
-  const suggestions = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-  const days = Math.max(1, Math.min(daysDiff, 7));
-  const sortedTasks = [...taskDetails].sort((a, b) => b.priority - a.priority);
-
-  for (let i = 0; i < sortedTasks.length; i++) {
-    const task = sortedTasks[i];
-    const dayIndex = i % days;
-    const scheduleDate = new Date(start);
-    scheduleDate.setDate(scheduleDate.getDate() + dayIndex);
-
-    let slotIndex = 0;
-    switch (task.suitableTime) {
-      case "morning": slotIndex = 0; break;
-      case "noon": slotIndex = 1; break;
-      case "afternoon": slotIndex = 2; break;
-      case "evening": slotIndex = 3; break;
-      default: slotIndex = i % DAILY_SLOTS.length;
-    }
-
-    const slot = DAILY_SLOTS[slotIndex];
-    scheduleDate.setHours(slot.hour, 0, 0, 0);
-
-    if (options.avoidConflict && existingEvents.length > 0) {
-      const taskEnd = new Date(scheduleDate.getTime() + task.estimatedMinutes * 60000);
-      const hasConflict = existingEvents.some((ev) => {
-        const es = new Date(ev.start); const ee = new Date(ev.end);
-        return scheduleDate < ee && taskEnd > es;
-      });
-      if (hasConflict) scheduleDate.setHours(DAILY_SLOTS[(slotIndex + 1) % DAILY_SLOTS.length].hour);
-    }
-
-    const reasons = [
-      `Ưu tiên ${task.priority}, xếp vào buổi ${slot.label}`,
-      `Phù hợp với thời điểm ${task.suitableTime}`,
-      `Công việc quan trọng, cần hoàn thành sớm`,
-      `Phân bố hợp lý trong kế hoạch tuần`,
-    ];
-
-    suggestions.push({
-      taskId: task.id,
-      scheduledTime: scheduleDate.toISOString(),
-      durationMinutes: task.estimatedMinutes,
-      reason: reasons[Math.floor(Math.random() * reasons.length)],
-      color: task.color,
-    });
-  }
-
-  const uniqueDays = new Set(suggestions.map((s) => new Date(s.scheduledTime).toDateString())).size;
-  const totalMinutes = suggestions.reduce((sum, s) => sum + s.durationMinutes, 0);
-
-  return {
-    suggestions,
-    summary: `Đã tạo ${suggestions.length} khung giờ trong ${uniqueDays} ngày. Tổng thời lượng: ${Math.round(totalMinutes / 60)} giờ.`,
-    statistics: { totalTasks: suggestions.length, totalHours: Math.round(totalMinutes / 60), daysUsed: uniqueDays },
-  };
-}
-
 /** Generate simulated schedule respecting recurring-pattern instructions. */
 async function generateSimulatedScheduleWithInstructions(
   taskDetails, startDate, endDate, options, existingEvents, additionalInstructions = ""
@@ -234,7 +170,7 @@ async function generateSimulatedScheduleWithInstructions(
   }
 
   if (suggestions.length === 0) {
-    const base = await generateSimulatedSchedule(taskDetails, startDate, endDate, options, existingEvents);
+    const base = generateSmartFallback(taskDetails, startDate, endDate, existingEvents);
     return { ...base, summary: base.summary + " (Chế độ mặc định)" };
   }
 
@@ -292,7 +228,6 @@ module.exports = {
   getTaskDetailsFromDatabase,
   getExistingEvents,
   callGeminiAI,
-  generateSimulatedSchedule,
   generateSimulatedScheduleWithInstructions,
   saveAiSuggestions,
 };

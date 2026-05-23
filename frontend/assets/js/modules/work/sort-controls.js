@@ -66,21 +66,34 @@
     const bg = active ? "#2563EB" : "#fff";
     const color = active ? "#fff" : "#374151";
     const border = active ? "#2563EB" : "#e2e8f0";
-    const label = compact ? c.short : c.label;
-    const pad = compact ? "px-2 py-1" : "px-3 py-1.5";
-    const gap = compact ? "gap-1" : "gap-1.5";
-    const iconSize = compact ? "text-[10px]" : "text-[11px]";
+    if (compact) {
+      const dirSpan = dirIcon
+        ? `<i class="fas ${dirIcon} text-[8px] opacity-80"></i>`
+        : "";
+      return `
+        <button type="button"
+          class="sort-chip flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[10px] font-medium transition-all select-none flex-shrink-0"
+          data-sort-key="${c.key}"
+          aria-pressed="${active ? "true" : "false"}"
+          title="${c.label}"
+          style="background:${bg};color:${color};border-color:${border};white-space:nowrap;line-height:1.4">
+          <i class="fas ${c.icon} text-[9px]"></i>
+          <span>${c.short}</span>${dirSpan}
+        </button>
+      `;
+    }
+    const label = c.label;
     const dirSpan = dirIcon
       ? `<i class="fas ${dirIcon} text-[9px] opacity-80"></i>`
       : "";
     return `
       <button type="button"
-        class="sort-chip flex items-center ${gap} ${pad} rounded-md border text-[11px] font-semibold transition-all select-none"
+        class="sort-chip flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-[11px] font-semibold transition-all select-none flex-shrink-0"
         data-sort-key="${c.key}"
         aria-pressed="${active ? "true" : "false"}"
         title="${c.label}"
         style="background:${bg};color:${color};border-color:${border};white-space:nowrap">
-        <i class="fas ${c.icon} ${iconSize}"></i>
+        <i class="fas ${c.icon} text-[11px]"></i>
         <span>${label}</span>
         ${dirSpan}
       </button>
@@ -95,13 +108,13 @@
     if (compact) {
       const clearBtn = `
         <button type="button"
-          class="sort-clear ${resetVisible} flex items-center justify-center w-6 h-6 rounded-md border"
+          class="sort-clear ${resetVisible} flex items-center justify-center w-5 h-5 rounded border flex-shrink-0"
           style="border-color:#e2e8f0;color:#94a3b8;background:#fff"
           title="Bỏ sắp xếp">
-          <i class="fas fa-times text-[10px]"></i>
+          <i class="fas fa-times text-[8px]"></i>
         </button>`;
       return `
-        <div class="sort-controls flex items-center gap-1 flex-nowrap overflow-x-auto">
+        <div class="sort-controls flex items-center gap-1 flex-nowrap">
           ${chips}
           ${clearBtn}
         </div>

@@ -1,4 +1,5 @@
-// realtime-badge-watcher.js — Polls for friend requests & unread messages, updates sidebar badges, plays notification sound
+// realtime-badge-watcher.js — Global realtime subscription + polling fallback
+// for friend requests, unread messages, and schedule sync badges.
 (function () {
   "use strict";
 
@@ -8,9 +9,24 @@
   let _prevScheduleDigest = null;
   let _timer = null;
 
+  // Global realtime state
+  let _supaClient = null;
+  let _globalChannel = null;
+  let _myConvIds = new Set();
+  let _myUserId = null;
+
   function authHeader() {
     const token = localStorage.getItem("auth_token");
     return token ? { Authorization: "Bearer " + token } : null;
+  }
+
+  function resolveUserId() {
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.userId || payload.id || payload.sub || null;
+    } catch (_) { return null; }
   }
 
   function playNotificationSound() {
@@ -51,6 +67,80 @@
     badge.classList.toggle("hidden", count === 0);
   }
 
+  // ------------------------------------------------------------------
+  // Global Supabase Realtime subscription for instant message alerts
+  // ------------------------------------------------------------------
+
+  async function initRealtimeSubscription() {
+    _myUserId = resolveUserId();
+    if (!_myUserId) return;
+
+    if (!window.supabase?.createClient) return;
+
+    try {
+      let url, key;
+      if (window.__SUPABASE_URL__ && window.__SUPABASE_ANON_KEY__) {
+        url = window.__SUPABASE_URL__;
+        key = window.__SUPABASE_ANON_KEY__;
+      } else {
+        const res = await fetch("/api/config/public");
+        if (!res.ok) return;
+        const cfg = await res.json();
+        url = cfg.data?.supabaseUrl;
+        key = cfg.data?.supabaseAnonKey;
+      }
+      if (!url || !key) return;
+
+      _supaClient = window.supabase.createClient(url, key);
+
+      _globalChannel = _supaClient
+        .channel("global-msg-notify")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "TinNhan" },
+          (payload) => onRealtimeMessage(payload.new)
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn("[BadgeWatcher] Realtime subscription failed:", e.message);
+    }
+  }
+
+  function onRealtimeMessage(msg) {
+    if (!msg) return;
+    if (String(msg.NguoiGui) === String(_myUserId)) return;
+    if (_myConvIds.size > 0 && !_myConvIds.has(String(msg.MaHoiThoai))) return;
+
+    // Skip if user is actively viewing this conversation
+    // (ChatConversation.onNewMessage handles sound + append there)
+    const activeConvId = window.ChatConversation?._convId;
+    if (activeConvId && String(msg.MaHoiThoai) === String(activeConvId)) return;
+
+    playNotificationSound();
+
+    // Immediate badge bump (next poll corrects exact count)
+    if (_prevUnreadCount >= 0) {
+      updateBadge("sidebar-chat-badge", _prevUnreadCount + 1);
+    }
+
+    // Refresh chat list if the section is open
+    window.ChatListSection?.refresh();
+  }
+
+  function destroyRealtimeSubscription() {
+    if (_globalChannel && _supaClient) {
+      try { _supaClient.removeChannel(_globalChannel); } catch (_) {}
+    }
+    _globalChannel = null;
+    _supaClient = null;
+    _myConvIds = new Set();
+    _myUserId = null;
+  }
+
+  // ------------------------------------------------------------------
+  // Polling (fallback + periodic sync)
+  // ------------------------------------------------------------------
+
   async function pollFriendRequests() {
     const headers = authHeader();
     if (!headers) return;
@@ -80,10 +170,17 @@
       if (!res.ok) return;
       const json = await res.json();
       const convs = json.data || [];
+
+      // Keep the global conversation ID set current for realtime filtering
+      _myConvIds = new Set(
+        convs.map((c) => String(c.conversationId || c.MaHoiThoai))
+      );
+
       const count = convs.filter((c) => c.isRead === false).length;
       updateBadge("sidebar-chat-badge", count);
 
-      if (_prevUnreadCount >= 0 && count > _prevUnreadCount) {
+      // Only play sound from poll if realtime is NOT active (avoid double sound)
+      if (!_globalChannel && _prevUnreadCount >= 0 && count > _prevUnreadCount) {
         playNotificationSound();
       }
       _prevUnreadCount = count;
@@ -118,8 +215,10 @@
 
   function start() {
     if (_timer) return;
+    _myUserId = resolveUserId();
     poll();
     _timer = setInterval(poll, POLL_INTERVAL);
+    initRealtimeSubscription();
   }
 
   function stop() {
@@ -127,6 +226,7 @@
       clearInterval(_timer);
       _timer = null;
     }
+    destroyRealtimeSubscription();
   }
 
   document.addEventListener("auth-success", () => {

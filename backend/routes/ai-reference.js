@@ -29,18 +29,24 @@ const apiKey =
   (process.env.GEMINI_API_KEY || "").trim();
 
 let model = null;
+let fallbackModel = null;
+const GEMINI_GEN_CONFIG = {
+  temperature: 0.6,
+  topP: 0.85,
+  topK: 40,
+  maxOutputTokens: 4096,
+};
 if (apiKey) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
     const genAI = new GoogleGenerativeAI(apiKey);
     model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      generationConfig: {
-        temperature: 0.6,
-        topP: 0.85,
-        topK: 40,
-        maxOutputTokens: 4096,
-      },
+      generationConfig: GEMINI_GEN_CONFIG,
+    });
+    fallbackModel = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      generationConfig: GEMINI_GEN_CONFIG,
     });
     console.log(
       "[ai-reference] Gemini initialized (" +
@@ -52,6 +58,35 @@ if (apiKey) {
   } catch (e) {
     console.error("[ai-reference] Gemini init failed:", e.message);
   }
+}
+
+async function callGeminiWithRetry(prompt, maxRetries = 2) {
+  const models = [model, fallbackModel].filter(Boolean);
+  let lastError = null;
+  for (const m of models) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const geminiPromise = m.generateContent(prompt).then(async (r) => {
+          return (await r.response).text();
+        });
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Gemini timeout (30s)")), 30000)
+        );
+        return await Promise.race([geminiPromise, timeout]);
+      } catch (e) {
+        lastError = e;
+        const is503 = e.message && e.message.includes("503");
+        const is429 = e.message && e.message.includes("429");
+        if ((is503 || is429) && attempt < maxRetries) {
+          const delay = 1000 * Math.pow(2, attempt);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        break;
+      }
+    }
+  }
+  throw lastError;
 }
 
 function isValidDateStr(s) {
@@ -272,20 +307,17 @@ router.post("/suggest-schedule", async (req, res) => {
     });
 
     let parsed = null;
+    let rawText = "";
     try {
-      const geminiPromise = model.generateContent(prompt).then(async (result) => {
-        return (await result.response).text();
-      });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Gemini timeout (30s)")), 30000)
-      );
-      const text = await Promise.race([geminiPromise, timeout]);
-      parsed = extractJson(text);
+      rawText = await callGeminiWithRetry(prompt);
+      parsed = extractJson(rawText);
     } catch (e) {
       console.error("[ai-reference] Gemini call:", e.message);
-      return res
-        .status(502)
-        .json({ success: false, message: `Gemini không phản hồi: ${e.message}` });
+      const is503 = e.message && e.message.includes("503");
+      const userMsg = is503
+        ? "AI đang quá tải, vui lòng thử lại sau ít phút."
+        : `Gemini không phản hồi: ${e.message}`;
+      return res.status(502).json({ success: false, message: userMsg });
     }
 
     if (!parsed || !Array.isArray(parsed.proposals)) {

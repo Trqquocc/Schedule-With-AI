@@ -36,20 +36,22 @@
     rendered.forEach((task) => {
       const priorityClass = `priority-${task.priority}`;
       const duration = task.estimatedMinutes || 60;
+      const catHtml = task.category ? `<span class="task-category"><i class="fas fa-folder"></i>${this.escapeHtml(task.category)}</span>` : "";
       html += `
-        <div class="task-item selectable" data-task-id="${task.id}" data-selected="false">
-          <label class="task-checkbox-label">
-            <input type="checkbox" class="task-checkbox" value="${task.id}" data-task-id="${task.id}" style="display:none;">
-            <span class="checkmark"></span>
-          </label>
-          <div class="task-content">
+        <div class="task-item selectable" data-task-id="${task.id}" data-selected="false" style="cursor:pointer">
+          <input type="checkbox" class="task-checkbox" value="${task.id}" data-task-id="${task.id}" style="display:none">
+          <div class="selection-checkbox" style="flex-shrink:0;font-size:18px;margin-right:8px">
+            <i class="fas fa-check-circle" style="color:#ccc"></i>
+          </div>
+          <div class="task-content" style="flex:1;min-width:0">
             <div class="task-title">${this.escapeHtml(task.title)}</div>
             <div class="task-details">
               <span class="task-priority ${priorityClass}">Ưu tiên ${task.priority}</span>
               <span class="task-duration"><i class="far fa-clock"></i>${duration} phút</span>
+              ${catHtml}
             </div>
           </div>
-          <div class="task-color" style="background-color:${task.color}"></div>
+          <div class="task-color" style="background-color:${task.color};width:4px;border-radius:2px;align-self:stretch;flex-shrink:0"></div>
         </div>`;
     });
 
@@ -89,108 +91,142 @@
         const tasks = await this.loadPendingTasks();
         tasks.forEach((task) => {
           if (originalFormData.tasks.includes(parseInt(task.id))) {
-            taskDetailsMap[task.id] = task.title;
+            taskDetailsMap[task.id] = task;
           }
         });
       } catch (e) { /* non-critical */ }
     }
 
-    let previewHTML = `
-      <div class="ai-preview-container" style="padding:20px;">
-        <div class="preview-header" style="text-align:center;margin-bottom:25px;">
-          <div style="font-size:48px;color:#8B5CF6;margin-bottom:10px;"><i class="fas fa-robot"></i></div>
-          <h3 style="font-size:24px;font-weight:600;color:#1f2937;margin-bottom:8px;">Lịch Trình AI Đề Xuất</h3>
-          <p style="color:#6b7280;font-size:16px;">${summary || "Lịch trình được tạo tự động bởi AI"}</p>
-        </div>
+    const totalHours = statistics?.totalHours || Math.round(suggestions.reduce((sum, s) => sum + (s.durationMinutes || 60), 0) / 60);
+    const daysUsed = statistics?.daysUsed || new Set(suggestions.map((s) => new Date(s.scheduledTime).toDateString())).size;
 
-        <div class="preview-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:30px;">
-          <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);text-align:center;">
-            <div style="font-size:32px;font-weight:700;color:#8B5CF6;">${statistics?.totalTasks || suggestions.length}</div>
-            <div style="font-size:14px;color:#6b7280;">Công việc</div>
-          </div>
-          <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);text-align:center;">
-            <div style="font-size:32px;font-weight:700;color:#10B981;">${statistics?.totalHours || Math.round(suggestions.reduce((sum, s) => sum + (s.durationMinutes || 60), 0) / 60)}</div>
-            <div style="font-size:14px;color:#6b7280;">Giờ làm việc</div>
-          </div>
-          <div style="background:white;padding:15px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);text-align:center;">
-            <div style="font-size:32px;font-weight:700;color:#F59E0B;">${statistics?.daysUsed || new Set(suggestions.map((s) => new Date(s.scheduledTime).toDateString())).size}</div>
-            <div style="font-size:14px;color:#6b7280;">Ngày</div>
-          </div>
-        </div>
+    const workloadWarnings = (statistics?.workloadAnalysis?.warnings || []);
+    const warningHtml = workloadWarnings.length > 0
+      ? `<div style="margin:12px 0;padding:10px 14px;background:#fef3c7;border-radius:8px;border-left:4px solid #f59e0b;font-size:13px;color:#92400e;">
+          <i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>
+          <strong>Cảnh báo quá tải:</strong> ${workloadWarnings.join("; ")}
+        </div>` : "";
 
-        <div class="suggestions-list-container" style="max-height:350px;overflow-y:auto;margin-bottom:25px;padding-right:10px;">
-          <h4 style="font-size:18px;font-weight:600;margin-bottom:15px;color:#374151;">
-            <i class="fas fa-list-check"></i> Danh sách đề xuất (${suggestions.length})
-          </h4>`;
-
-    suggestions.forEach((s, index) => {
-      const date    = new Date(s.scheduledTime);
+    let listHtml = "";
+    suggestions.forEach((s, i) => {
+      const date = new Date(s.scheduledTime);
       const dateStr = date.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit" });
       const timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-      const taskTitle = taskDetailsMap[s.taskId] || s.taskTitle || `Công việc #${s.taskId}`;
+      const task = taskDetailsMap[s.taskId] || {};
+      const title = task.title || s.taskTitle || `Công việc #${s.taskId}`;
+      const color = s.color || task.color || "#8B5CF6";
 
-      previewHTML += `
-        <div class="suggestion-item" style="background:white;border-left:4px solid ${s.color || "#8B5CF6"};border-radius:6px;padding:15px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,0.05);display:flex;align-items:flex-start;">
-          <div style="margin-right:15px;">
-            <div style="width:36px;height:36px;background:${s.color || "#8B5CF6"};color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;">${index + 1}</div>
-          </div>
-          <div style="flex:1;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
-              <strong style="font-size:16px;">${taskTitle}</strong>
-              <span style="font-size:14px;color:#6b7280;">${s.durationMinutes || 60} phút</span>
-            </div>
-            <div style="font-size:14px;color:#4b5563;margin-bottom:5px;">
-              <i class="far fa-calendar" style="margin-right:5px;"></i>${dateStr} • ${timeStr}
-            </div>
-            ${s.reason ? `<div style="font-size:13px;color:#6b7280;background:#f9fafb;padding:8px;border-radius:4px;margin-top:5px;"><i class="fas fa-lightbulb" style="margin-right:5px;color:#F59E0B;"></i>${s.reason}</div>` : ""}
+      listHtml += `
+        <div style="background:#fff;border-left:4px solid ${color};border-radius:6px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;gap:10px;align-items:flex-start">
+          <div style="width:28px;height:28px;background:${color};color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">${i + 1}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px;margin-bottom:2px">${this.escapeHtml(title)}</div>
+            <div style="font-size:12px;color:#6b7280"><i class="far fa-calendar" style="margin-right:4px"></i>${dateStr} • ${timeStr} • ${s.durationMinutes || 60}p</div>
+            ${s.reason ? `<div style="font-size:11px;color:#6b7280;background:#f8fafc;padding:5px 8px;border-radius:4px;margin-top:4px"><i class="fas fa-lightbulb" style="color:#f59e0b;margin-right:4px"></i>${s.reason}</div>` : ""}
           </div>
         </div>`;
     });
 
-    previewHTML += `
+    modalBody.innerHTML = `
+      <div class="ai-preview-container" style="padding:16px">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:36px;color:#8B5CF6;margin-bottom:6px"><i class="fas fa-robot"></i></div>
+          <h3 style="font-size:20px;font-weight:700;color:#1f2937;margin-bottom:4px">Lịch Trình AI Đề Xuất</h3>
+          <p style="color:#6b7280;font-size:14px">${this.escapeHtml(summary || "")}</p>
         </div>
 
-        <div class="preview-actions" style="display:flex;justify-content:center;gap:12px;margin-top:30px;">
-          <button id="aiApplyBtn" class="btn btn-success" style="padding:12px 24px;background:#10B981;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;">
-            <i class="fas fa-check-circle"></i> Áp dụng lịch trình
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+          <div style="background:#f5f3ff;padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:#8B5CF6">${statistics?.totalTasks || suggestions.length}</div>
+            <div style="font-size:12px;color:#6b7280">Công việc</div>
+          </div>
+          <div style="background:#ecfdf5;padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:#10B981">${totalHours}</div>
+            <div style="font-size:12px;color:#6b7280">Giờ</div>
+          </div>
+          <div style="background:#fffbeb;padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:#F59E0B">${daysUsed}</div>
+            <div style="font-size:12px;color:#6b7280">Ngày</div>
+          </div>
+        </div>
+
+        ${warningHtml}
+
+        <div id="aiPreviewCalendar" style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:14px;min-height:300px;background:#fff"></div>
+
+        <details style="margin-bottom:14px">
+          <summary style="cursor:pointer;font-size:14px;font-weight:600;color:#374151;padding:8px 0">
+            <i class="fas fa-list-check" style="margin-right:6px"></i>Chi tiết (${suggestions.length})
+          </summary>
+          <div style="max-height:250px;overflow-y:auto;padding:8px 0">${listHtml}</div>
+        </details>
+
+        <div style="display:flex;justify-content:center;gap:10px;margin-top:16px">
+          <button id="aiApplyBtn" style="padding:10px 22px;background:#10B981;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:14px">
+            <i class="fas fa-check-circle"></i> Áp dụng vào lịch trình
           </button>
-          <button id="aiEditBtn" class="btn btn-secondary" style="padding:12px 24px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;">
-            <i class="fas fa-edit"></i> Chỉnh sửa yêu cầu
+          <button id="aiEditBtn" style="padding:10px 22px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:14px">
+            <i class="fas fa-edit"></i> Chỉnh sửa
           </button>
-          <button id="aiBackBtn" class="btn btn-outline" style="padding:12px 24px;background:transparent;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;">
+          <button id="aiBackBtn" style="padding:10px 22px;background:transparent;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:14px">
             <i class="fas fa-arrow-left"></i> Quay lại
           </button>
         </div>
 
-        <div id="aiEditSection" style="display:none;margin-top:30px;padding:20px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-          <h5 style="font-size:16px;font-weight:600;margin-bottom:12px;color:#374151;">
-            <i class="fas fa-comment-dots"></i> Hướng dẫn chỉnh sửa cho AI
-          </h5>
-          <p style="font-size:14px;color:#6b7280;margin-bottom:15px;">Mô tả chi tiết các thay đổi bạn muốn AI điều chỉnh trong lịch trình</p>
-          <textarea id="aiAdditionalInstructions"
-            placeholder="Ví dụ:&#10;• Chuyển công việc sang buổi sáng&#10;• Giảm thời gian công việc xuống 45 phút&#10;• Tránh xếp việc vào thứ 6 chiều&#10;• Ưu tiên công việc quan trọng trước"
-            style="width:100%;height:120px;padding:12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;resize:vertical;margin-bottom:15px;">${originalFormData?.additionalInstructions || ""}</textarea>
-          <div style="display:flex;gap:10px;">
-            <button id="aiResubmitBtn" class="btn btn-primary" style="padding:10px 20px;background:#3B82F6;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;">
-              <i class="fas fa-paper-plane"></i> Gửi lại cho AI
-            </button>
-            <button id="aiCancelEditBtn" class="btn btn-outline" style="padding:10px 20px;background:transparent;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;font-weight:600;cursor:pointer;">Hủy</button>
+        <div id="aiEditSection" style="display:none;margin-top:20px;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb">
+          <h5 style="font-size:15px;font-weight:600;margin-bottom:10px;color:#374151"><i class="fas fa-comment-dots"></i> Hướng dẫn chỉnh sửa</h5>
+          <textarea id="aiAdditionalInstructions" placeholder="Ví dụ: Chuyển công việc sang buổi sáng, tránh thứ 6 chiều..."
+            style="width:100%;height:90px;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;margin-bottom:10px">${originalFormData?.additionalInstructions || ""}</textarea>
+          <div style="display:flex;gap:8px">
+            <button id="aiResubmitBtn" style="padding:8px 16px;background:#3B82F6;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px"><i class="fas fa-paper-plane"></i> Gửi lại</button>
+            <button id="aiCancelEditBtn" style="padding:8px 16px;background:transparent;color:#6b7280;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px">Hủy</button>
           </div>
-        </div>
-
-        <div style="margin-top:20px;padding:12px;background:#e0e7ff;border-radius:6px;border-left:4px solid #8B5CF6;font-size:14px;color:#4f46e5;">
-          <i class="fas fa-info-circle" style="margin-right:8px;"></i>
-          Lịch trình sẽ được thêm vào tab Lịch AI và hiển thị trên calendar
         </div>
       </div>`;
 
-    modalBody.innerHTML = previewHTML;
-
-    // Hide the original form footer so only preview action buttons show
     const modalFooter = modal.querySelector(".ai-modal-footer");
     if (modalFooter) modalFooter.style.display = "none";
 
+    this._mountPreviewCalendar(suggestions, taskDetailsMap, originalFormData);
     this.setupPreviewEventListeners(originalFormData, suggestions);
+  };
+
+  AH._mountPreviewCalendar = function (suggestions, taskDetailsMap, formData) {
+    const el = document.getElementById("aiPreviewCalendar");
+    if (!el || typeof FullCalendar === "undefined") return;
+
+    const events = suggestions.map((s) => {
+      const task = taskDetailsMap[s.taskId] || {};
+      const start = new Date(s.scheduledTime);
+      const end = new Date(start.getTime() + (s.durationMinutes || 60) * 60000);
+      return {
+        title: task.title || s.taskTitle || `#${s.taskId}`,
+        start, end,
+        backgroundColor: s.color || "#8B5CF6",
+        borderColor: s.color || "#8B5CF6",
+        textColor: "#fff",
+      };
+    });
+
+    const startDate = formData?.startDate ? formData.startDate.split("T")[0] : new Date().toISOString().split("T")[0];
+
+    if (this._previewCal) { try { this._previewCal.destroy(); } catch (_) {} }
+    this._previewCal = new FullCalendar.Calendar(el, {
+      initialView: "timeGridWeek",
+      initialDate: startDate,
+      locale: "vi",
+      height: 350,
+      headerToolbar: { left: "prev,next", center: "title", right: "" },
+      allDaySlot: false,
+      slotMinTime: "07:00:00",
+      slotMaxTime: "22:00:00",
+      slotDuration: "00:30:00",
+      editable: false,
+      selectable: false,
+      events,
+      eventContent: (arg) => ({ html: `<div style="padding:2px 4px;font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${arg.event.title}</div>` }),
+    });
+    this._previewCal.render();
   };
 
   AH.setupPreviewEventListeners = function (originalFormData, suggestions) {

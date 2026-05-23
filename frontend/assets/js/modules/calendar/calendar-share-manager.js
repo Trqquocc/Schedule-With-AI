@@ -73,6 +73,14 @@ window.CalendarShareManager = {
     await this._apiFetch(`/api/calendar-shares/${shareId}`, { method: "DELETE" });
     await this.loadShares();
     this.renderShareModal();
+    // Remove shared events from calendar immediately so the safety check
+    // in refreshEventsInPlace doesn't block the refresh
+    const cal = window.CalendarModule?.calendar;
+    if (cal) {
+      cal.getEvents()
+        .filter((e) => e.id?.toString().startsWith("shared-"))
+        .forEach((e) => e.remove());
+    }
     window.CalendarModule?.refreshEventsInPlace?.();
   },
 

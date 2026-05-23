@@ -32,64 +32,36 @@ class ScheduleUpdater {
 
       if (error) throw error;
 
-      this.groupAndScheduleJobs(users || []);
+      this.scheduleAllUsers(users || []);
     } catch (error) {
       console.error("❌ Error restarting schedules:", error);
     }
   }
 
   /**
-   * Nhóm người dùng theo giờ và tạo schedule jobs
+   * Create per-user cron jobs (no group jobs to avoid duplicates
+   * when updateUserSchedule later adds individual jobs for the same user).
    */
-  groupAndScheduleJobs(users) {
-    const schedulesByTime = {
-      morning: new Map(),
-      afternoon: new Map(),
-      evening: new Map(),
-    };
+  scheduleAllUsers(users) {
+    for (const user of users) {
+      const uid = user.MaNguoiDung;
 
-    users.forEach((user) => {
       if (user.GioLichNgay) {
-        const timeKey = this.formatTimeForCron(user.GioLichNgay);
-        if (!schedulesByTime.morning.has(timeKey)) schedulesByTime.morning.set(timeKey, []);
-        schedulesByTime.morning.get(timeKey).push(user);
+        this.createJob(`user-${uid}-morning`, this.formatTimeForCron(user.GioLichNgay), async () => {
+          await this.sendScheduleToUser(uid, "morning");
+        });
       }
       if (user.GioNhacNhiemVu) {
-        const timeKey = this.formatTimeForCron(user.GioNhacNhiemVu);
-        if (!schedulesByTime.afternoon.has(timeKey)) schedulesByTime.afternoon.set(timeKey, []);
-        schedulesByTime.afternoon.get(timeKey).push(user);
+        this.createJob(`user-${uid}-afternoon`, this.formatTimeForCron(user.GioNhacNhiemVu), async () => {
+          await this.sendReminderToUser(uid);
+        });
       }
       if (user.GioTongKetNgay) {
-        const timeKey = this.formatTimeForCron(user.GioTongKetNgay);
-        if (!schedulesByTime.evening.has(timeKey)) schedulesByTime.evening.set(timeKey, []);
-        schedulesByTime.evening.get(timeKey).push(user);
+        this.createJob(`user-${uid}-evening`, this.formatTimeForCron(user.GioTongKetNgay), async () => {
+          await this.sendSummaryToUser(uid);
+        });
       }
-    });
-
-    this.createJobsFromNhomLamViec(schedulesByTime);
-  }
-
-  /**
-   * Tạo cron jobs từ các nhóm đã phân loại
-   */
-  createJobsFromNhomLamViec(schedulesByTime) {
-    schedulesByTime.morning.forEach((users, cronTime) => {
-      this.createJob(`morning-${cronTime}`, cronTime, async () => {
-        await this.sendSchedulesForUsers(users, "morning");
-      });
-    });
-
-    schedulesByTime.afternoon.forEach((users, cronTime) => {
-      this.createJob(`afternoon-${cronTime}`, cronTime, async () => {
-        await this.sendRemindersForUsers(users);
-      });
-    });
-
-    schedulesByTime.evening.forEach((users, cronTime) => {
-      this.createJob(`evening-${cronTime}`, cronTime, async () => {
-        await this.sendSummariesForUsers(users);
-      });
-    });
+    }
   }
 
   /**
@@ -159,36 +131,6 @@ class ScheduleUpdater {
     } catch (error) {
       console.error(`❌ Error updating schedule for user ${userId}:`, error);
       return { success: false, message: error.message };
-    }
-  }
-
-  async sendSchedulesForUsers(users, timeOfDay) {
-    for (const user of users) {
-      try {
-        await this.sendScheduleToUser(user.MaNguoiDung, timeOfDay);
-      } catch (error) {
-        console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
-      }
-    }
-  }
-
-  async sendRemindersForUsers(users) {
-    for (const user of users) {
-      try {
-        await this.sendReminderToUser(user.MaNguoiDung);
-      } catch (error) {
-        console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
-      }
-    }
-  }
-
-  async sendSummariesForUsers(users) {
-    for (const user of users) {
-      try {
-        await this.sendSummaryToUser(user.MaNguoiDung);
-      } catch (error) {
-        console.error(` Error for user ${user.MaNguoiDung}:`, error.message);
-      }
     }
   }
 

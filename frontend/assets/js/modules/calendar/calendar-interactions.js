@@ -289,14 +289,6 @@
       if (!result.success) throw new Error(result.message || "Cập nhật thất bại");
 
       Utils.showToast?.("Đã cập nhật thời gian sự kiện", "success");
-
-      const eventEl = document.querySelector(`[data-event-id="${eventId}"]`);
-      if (eventEl) {
-        eventEl.classList.add("bg-green-50", "border-green-200");
-        setTimeout(() => eventEl.classList.remove("bg-green-50", "border-green-200"), 1500);
-      }
-
-      this.refreshEventsInPlace().catch(() => {});
     } catch (error) {
       console.error("Error in eventUpdate:", error);
       let errorMessage = "Lỗi khi cập nhật thời gian";
@@ -356,7 +348,6 @@
 
         await Utils.makeRequest(`/api/tasks/${taskId}`, "PUT", { TrangThaiThucHien: 1 });
         Utils.showToast?.("Đã lên lịch thành công!", "success");
-        if (window.removeTaskFromSidebar) window.removeTaskFromSidebar(taskId);
         if (window.GroupDetailSection?.current) {
           window.GroupDetailSection.load(window.GroupDetailSection.current.MaNhom);
         }

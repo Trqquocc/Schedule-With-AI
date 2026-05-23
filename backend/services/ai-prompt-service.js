@@ -85,9 +85,28 @@ const DAY_NAMES = { 1: "Chủ nhật", 2: "Thứ hai", 3: "Thứ ba", 4: "Thứ 
 const DAY_ABBR  = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 function buildGeminiPrompt(taskDetails, startDate, endDate, options, existingEvents, additionalInstructions = "") {
-  const taskList = taskDetails.map((task) =>
-    `\n    - Công việc "${task.title}" (ID: ${task.id}):\n      + Thời lượng: ${task.estimatedMinutes} phút\n      + Ưu tiên: ${task.priority}/4\n      + Thời điểm thích hợp: ${task.suitableTime}\n      + Độ phức tạp: ${task.complexity}/5\n      + Màu: ${task.color}`
-  ).join("\n");
+  const taskList = taskDetails.map((task) => {
+    let info = `\n    - Công việc "${task.title}" (ID: ${task.id}):`;
+    if (task.description) info += `\n      + Mô tả: ${task.description}`;
+    if (task.category) info += `\n      + Loại: ${task.category}`;
+    info += `\n      + Thời lượng: ${task.estimatedMinutes} phút`;
+    info += `\n      + Ưu tiên: ${task.priority}/4`;
+    info += `\n      + Thời điểm thích hợp: ${task.suitableTime}`;
+    info += `\n      + Độ phức tạp: ${task.complexity}/5`;
+    if (task.isFixed && task.fixedStart) {
+      const fs = new Date(task.fixedStart);
+      const fe = task.fixedEnd ? new Date(task.fixedEnd) : null;
+      const fmtDt = (d) => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+      info += `\n      + ⚠ THỜI GIAN CỐ ĐỊNH: ${fmtDt(fs)}${fe ? ` - ${fmtDt(fe)}` : ""} (KHÔNG ĐƯỢC thay đổi, PHẢI xếp đúng giờ này)`;
+      const catLower = (task.category || "").toLowerCase();
+      if (catLower.includes("học") || catLower.includes("study")) {
+        info += `\n      + Loại lịch: LỊCH HỌC (bắt buộc, không thể dời)`;
+      } else if (catLower.includes("làm") || catLower.includes("work")) {
+        info += `\n      + Loại lịch: LỊCH LÀM (ưu tiên giữ nguyên, có thể linh hoạt nếu cần)`;
+      }
+    }
+    return info;
+  }).join("\n");
 
   const existingSchedule = existingEvents.map((event) =>
     `\n    - "${event.title}": ${new Date(event.start).toLocaleString("vi-VN")}`
@@ -100,7 +119,7 @@ function buildGeminiPrompt(taskDetails, startDate, endDate, options, existingEve
       ).join("\n")}\n`
     : "";
 
-  return `Bạn là trợ lý lập lịch thông minh chuyên biệt. NHIỆM VỤ: Sắp xếp TẤT CẢ ${taskDetails.length} công việc dưới đây vào lịch.\n\nQUAN TRỌNG: BẠN PHẢI TẠO SUGGESTIONS CHO TẤT CẢ CÁC CÔNG VIỆC SAU, KHÔNG ĐƯỢC BỎ SÓT CÔNG VIỆC NÀO:\n\nCÁC CÔNG VIỆC BẮT BUỘC PHẢI SẮP XẾP (${taskDetails.length} cái):\n${taskList}\n\nKHOẢNG THỜI GIAN: Từ ${startDate} đến ${endDate}\n\nLỊCH HIỆN CÓ (TRÁNH TRÙNG):\n${existingEvents.length > 0 ? existingSchedule : "Không có lịch hiện tại"}\n${recurringPatternsText}\nYÊU CẦU CẤU HÌNH CHUNG:\n1. ${options.considerPriority ? "Ưu tiên việc quan trọng trước" : "Không cần ưu tiên"}\n2. ${options.avoidConflict ? "Tránh trùng với lịch hiện tại" : "Không cần tránh trùng"}\n3. ${options.balanceWorkload ? "Cân bằng công việc giữa các ngày" : "Không cần cân bằng"}\n4. Mỗi ngày không quá 8 tiếng làm việc\n5. Làm việc trong khung giờ 08:00 đến 22:00\n\nYÊU CẦU TỪ NGƯỜI DÙNG:\n${additionalInstructions.trim() ? additionalInstructions : "(Không có yêu cầu đặc biệt)"}\n\nĐỊNH DẠNG RESPONSE (CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG GIẢI THÍCH):\n\n{\n  "suggestions": [\n    {\n      "taskId": 3013,\n      "scheduledTime": "2025-12-15T06:00:00",\n      "durationMinutes": 60,\n      "reason": "Công việc ABCD 6h sáng T2",\n      "isRecurring": true\n    }\n  ],\n  "summary": "Đã tạo X events",\n  "statistics": {\n    "totalTasks": 1,\n    "totalHours": 7,\n    "daysUsed": 7,\n    "recurringEvents": 7\n  }\n}\n\nLUẬT BẮT BUỘC:\n1. LUÔN trả JSON hợp lệ, không kèm giải thích\n2. scheduledTime PHẢI nằm trong khoảng: ${startDate} - ${endDate}\n3. Nếu là lặp lại, PHẢI có nhiều entries\n4. Mỗi entry = 1 event cụ thể tại 1 ngày/giờ\n5. "reason" bằng Tiếng Việt`;
+  return `Bạn là trợ lý lập lịch thông minh chuyên biệt. NHIỆM VỤ: Sắp xếp TẤT CẢ ${taskDetails.length} công việc dưới đây vào lịch.\n\nQUAN TRỌNG: BẠN PHẢI TẠO SUGGESTIONS CHO TẤT CẢ CÁC CÔNG VIỆC SAU, KHÔNG ĐƯỢC BỎ SÓT CÔNG VIỆC NÀO:\n\nCÁC CÔNG VIỆC BẮT BUỘC PHẢI SẮP XẾP (${taskDetails.length} cái):\n${taskList}\n\nKHOẢNG THỜI GIAN: Từ ${startDate} đến ${endDate}\n\nLỊCH HIỆN CÓ (TRÁNH TRÙNG):\n${existingEvents.length > 0 ? existingSchedule : "Không có lịch hiện tại"}\n${recurringPatternsText}\nYÊU CẦU CẤU HÌNH CHUNG:\n1. ${options.considerPriority ? "Ưu tiên việc quan trọng trước" : "Không cần ưu tiên"}\n2. ${options.avoidConflict ? "Tránh trùng với lịch hiện tại" : "Không cần tránh trùng"}\n3. ${options.balanceWorkload ? "Cân bằng công việc giữa các ngày" : "Không cần cân bằng"}\n4. Mỗi ngày không quá 8 tiếng làm việc\n5. Làm việc trong khung giờ 08:00 đến 22:00\n\nYÊU CẦU TỪ NGƯỜI DÙNG:\n${additionalInstructions.trim() ? additionalInstructions : "(Không có yêu cầu đặc biệt)"}\n\nĐỊNH DẠNG RESPONSE (CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG GIẢI THÍCH):\n\n{\n  "suggestions": [\n    {\n      "taskId": 3013,\n      "scheduledTime": "2025-12-15T06:00:00",\n      "durationMinutes": 60,\n      "reason": "Độ phức tạp cao, xếp vào buổi sáng khi năng lượng cao",\n      "isRecurring": true\n    }\n  ],\n  "summary": "Đã tạo X events",\n  "statistics": {\n    "totalTasks": 1,\n    "totalHours": 7,\n    "daysUsed": 7,\n    "recurringEvents": 7\n  },\n  "workloadAnalysis": {\n    "overloadedDays": ["2026-01-15"],\n    "warnings": ["Ngày 15/01 có 7.5h — quá tải"]\n  }\n}\n\nLUẬT BẮT BUỘC:\n1. LUÔN trả JSON hợp lệ, không kèm giải thích\n2. scheduledTime PHẢI nằm trong khoảng: ${startDate} - ${endDate}\n3. Nếu là lặp lại, PHẢI có nhiều entries\n4. Mỗi entry = 1 event cụ thể tại 1 ngày/giờ\n5. "reason" bằng Tiếng Việt\n6. "reason" PHẢI cụ thể: giải thích TẠI SAO chọn thời điểm này (ví dụ: "Độ phức tạp cao, xếp vào buổi sáng khi năng lượng cao" hoặc "Ưu tiên cao, cần hoàn thành sớm nên xếp đầu ngày")\n7. Nếu một ngày có quá 6 giờ làm việc, PHẢI cảnh báo trong summary\n8. Công việc có THỜI GIAN CỐ ĐỊNH (lịch học, lịch làm): PHẢI xếp ĐÚNG ngày giờ đã chỉ định, KHÔNG ĐƯỢC thay đổi thời gian. Sử dụng scheduledTime = đúng giờ cố định đó\n9. Các công việc linh hoạt phải tránh trùng với công việc cố định`;
 }
 
 // ---------------------------------------------------------------------------

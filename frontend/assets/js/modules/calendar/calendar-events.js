@@ -99,11 +99,8 @@
       if (!res.success || !Array.isArray(res.data)) return [];
 
       const normalEvents = res.data
-        .filter((ev) => {
-          const isAI = ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1" || ev.AI_DeXuat === true;
-          return !isAI;
-        })
         .map((ev) => {
+          const isAI = ev.AI_DeXuat === 1 || ev.AI_DeXuat === "1" || ev.AI_DeXuat === true;
           const color = this.getPriorityColor(ev.MucDoUuTien);
           const completed =
             ev.DaHoanThanh === true || ev.DaHoanThanh === 1 || ev.DaHoanThanh === "1" ||
@@ -131,7 +128,8 @@
               completed: completed,
               taskId: ev.MaCongViec || ev.extendedProps?.taskId || null,
               isFromDrag: ev.isFromDrag || false,
-              isAIEvent: false,
+              isAIEvent: isAI,
+              aiSuggested: isAI,
               priority: ev.MucDoUuTien || 2,
               category: ev.TenLoai || ev.extendedProps?.category || null,
               accent: color,

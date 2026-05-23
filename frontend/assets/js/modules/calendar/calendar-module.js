@@ -18,6 +18,7 @@
     initPromise: null,
     currentView: "timeGridWeek",
     isDragging: false,
+    slotDuration: parseInt(localStorage.getItem("cal-slot-duration")) === 15 ? 15 : 30,
 
     async init() {
       if (this.isInitialized && this.calendar) this.destroy();
@@ -136,7 +137,7 @@
         allDaySlot: false,
         slotMinTime: wh.start,
         slotMaxTime: wh.end,
-        slotDuration: "00:30:00",
+        slotDuration: this.slotDuration === 15 ? "00:15:00" : "00:30:00",
         scrollTime: wh.start,
         buttonText: { today: "Hôm nay", month: "Tháng", week: "Tuần", day: "Ngày", list: "Danh sách" },
         allDayText: "Cả ngày",
@@ -216,7 +217,8 @@
           const start = info.event.start;
           const end = info.event.end || new Date(start.getTime() + 3600000);
           const mins = Math.round((end - start) / 60000);
-          if (mins <= 30) evEl.setAttribute("data-size", "xs");
+          const xsThreshold = this.slotDuration === 15 ? 15 : 30;
+          if (mins <= xsThreshold) evEl.setAttribute("data-size", "xs");
           else if (mins <= 60) evEl.setAttribute("data-size", "sm");
           else if (mins <= 90) evEl.setAttribute("data-size", "md");
 
@@ -272,13 +274,15 @@
 
         views: {
           dayGridMonth: { dayMaxEventRows: 4 },
-          timeGridWeek: { slotDuration: "00:30:00" },
+          timeGridWeek: { slotDuration: this.slotDuration === 15 ? "00:15:00" : "00:30:00" },
           timeGridDay:  { slotDuration: "00:15:00" },
         },
       });
 
       this.calendar.render();
       window.calendar = this.calendar;
+      el.classList.toggle("slot-15", this.slotDuration === 15);
+      this._syncSlotToggleUI();
       this.updateCalendarTitle();
       this.initMiniCalendar();
       this.setupDropZone?.();
@@ -312,6 +316,16 @@
       });
 
       this.setActiveView(this.currentView);
+
+      const slotBtn = document.getElementById("cal-slot-toggle");
+      if (slotBtn) {
+        const newSlotBtn = slotBtn.cloneNode(true);
+        slotBtn.parentNode.replaceChild(newSlotBtn, slotBtn);
+        newSlotBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          this.toggleSlotDuration();
+        });
+      }
     },
 
     changeView(view) {
@@ -380,21 +394,21 @@
         }
 
         sidebar.innerHTML = `
-          <div class="p-4 select-none">
-            <div class="flex items-center justify-between mb-3">
-              <button id="mini-prev" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 transition">
-                <i class="fas fa-chevron-left text-xs"></i>
+          <div class="px-3 pt-2.5 pb-1.5 select-none">
+            <div class="flex items-center justify-between mb-1.5">
+              <button id="mini-prev" class="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 transition">
+                <i class="fas fa-chevron-left" style="font-size:10px"></i>
               </button>
-              <span class="text-sm font-bold text-gray-800">${monthNames[month]} ${year}</span>
-              <button id="mini-next" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 transition">
-                <i class="fas fa-chevron-right text-xs"></i>
+              <span class="text-xs font-bold text-gray-800">${monthNames[month]} ${year}</span>
+              <button id="mini-next" class="w-6 h-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 transition">
+                <i class="fas fa-chevron-right" style="font-size:10px"></i>
               </button>
             </div>
-            <div class="grid grid-cols-7 gap-0.5 mb-1">
-              ${days.map((dd) => `<div class="text-center text-xs font-semibold text-gray-400 py-1">${dd}</div>`).join("")}
+            <div class="grid grid-cols-7 gap-0 justify-items-center">
+              ${days.map((dd) => `<div class="text-center font-semibold text-gray-400" style="font-size:10px;line-height:20px">${dd}</div>`).join("")}
             </div>
-            <div class="grid grid-cols-7 gap-0.5">${cells}</div>
-            <button id="mini-today" class="mt-3 w-full text-xs font-semibold py-1.5 rounded-lg transition" style="color:var(--accent, #2563EB)"
+            <div class="grid grid-cols-7 gap-0 justify-items-center">${cells}</div>
+            <button id="mini-today" class="mt-1 w-full font-semibold py-1 rounded-md transition" style="font-size:11px;color:var(--accent, #2563EB)"
               onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='transparent'">Hôm nay</button>
           </div>`;
 
@@ -476,6 +490,34 @@
       el.addEventListener("mouseenter", show);
       el.addEventListener("mouseleave", hide);
       el.addEventListener("mousedown", hide);
+    },
+
+    // ------------------------------------------------------------------
+    // Slot duration toggle (15' / 30')
+    // ------------------------------------------------------------------
+
+    toggleSlotDuration() {
+      this.slotDuration = this.slotDuration === 15 ? 30 : 15;
+      localStorage.setItem("cal-slot-duration", this.slotDuration);
+
+      const el = document.getElementById("calendar");
+      if (el) el.classList.toggle("slot-15", this.slotDuration === 15);
+
+      if (this.calendar) {
+        const dur = this.slotDuration === 15 ? "00:15:00" : "00:30:00";
+        this.calendar.setOption("slotDuration", dur);
+        const views = this.calendar.getOption("views") || {};
+        views.timeGridWeek = { ...(views.timeGridWeek || {}), slotDuration: dur };
+        this.calendar.setOption("views", views);
+      }
+      this._syncSlotToggleUI();
+    },
+
+    _syncSlotToggleUI() {
+      const label = document.getElementById("cal-slot-label");
+      if (label) label.textContent = this.slotDuration + "'";
+      const btn = document.getElementById("cal-slot-toggle");
+      if (btn) btn.classList.toggle("active", this.slotDuration === 15);
     },
 
     // ------------------------------------------------------------------

@@ -139,11 +139,17 @@
     if ($("pref-ngay-luong"))      $("pref-ngay-luong").value      = String(state.ngayNhanLuong || 1);
     if ($("pref-thongbao-15phut")) $("pref-thongbao-15phut").checked = !!state.thongBao15Phut;
     if ($("pref-phut-nhac-truoc")) $("pref-phut-nhac-truoc").value = String(state.phutNhacTruoc || 15);
+    toggleSalaryDaySection(!!state.thongBaoLuong);
+  }
+
+  function toggleSalaryDaySection(visible) {
+    $("salary-day-section")?.classList.toggle("hidden", !visible);
   }
 
   function onPrefChange(e) {
     const key = e.target.dataset.pref;
     scheduleSave({ [key]: e.target.checked });
+    if (key === "thongBaoLuong") toggleSalaryDaySection(e.target.checked);
   }
   function onTimeChange(e) {
     const map = { "time-lich-ngay": "gioLichNgay", "time-nhac-nhiem-vu": "gioNhacNhiemVu", "time-tong-ket": "gioTongKetNgay" };

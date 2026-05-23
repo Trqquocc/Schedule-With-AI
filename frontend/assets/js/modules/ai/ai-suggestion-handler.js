@@ -273,18 +273,15 @@
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        if (window.AIModule && window.AIModule.refreshFromDatabase) {
-          try { await AIModule.refreshFromDatabase(); } catch (err) { console.error("Error refreshing calendar:", err); }
-        } else {
-          setTimeout(() => location.reload(), 1000);
-          return;
+        if (window.CalendarModule?.refreshEventsInPlace) {
+          try { await CalendarModule.refreshEventsInPlace(); } catch (_) {}
+        }
+        if (window.AIModule?.refreshFromDatabase) {
+          try { await AIModule.refreshFromDatabase(); } catch (_) {}
         }
 
-        this.showSuccess(`✅ Đã áp dụng ${suggestions.length} lịch trình AI!`);
-        setTimeout(() => {
-          this.closeModal();
-          setTimeout(() => { document.querySelector('[data-tab="ai"]')?.click(); }, 300);
-        }, 1500);
+        this.showSuccess(`Đã áp dụng ${suggestions.length} lịch trình AI vào calendar!`);
+        setTimeout(() => { this.closeModal(); }, 1200);
       } catch (error) {
         console.error("Error applying suggestions:", error);
         this.showError("Lỗi áp dụng lịch trình: " + error.message);
@@ -462,6 +459,7 @@
     // ------------------------------------------------------------------
 
     closeModal() {
+      if (this._previewCal) { try { this._previewCal.destroy(); } catch (_) {} this._previewCal = null; }
       this.resetModalForm();
       const modalFooter = document.querySelector("#aiSuggestionModal .ai-modal-footer");
       if (modalFooter) modalFooter.style.display = "flex";
