@@ -32,7 +32,7 @@
             style="border-color:#e2e8f0;background:#fff;color:#374151"
             onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'"
             onmouseout="this.style.background='#fff';this.style.borderColor='#e2e8f0'"
-            onclick="if(!Utils.requireAuth())return;(window.ScheduleImageUpload && window.ScheduleImageUpload.open()) || (window.ComponentLoader && window.ComponentLoader.loadComponent('scheduleImportModal','components/modals/schedule-import-modal.html',{executeScripts:true}).then(()=>window.ScheduleImageUpload && window.ScheduleImageUpload.open()))"
+            onclick="if(!Utils.requireAuth())return;if(window.ScheduleImageUpload){window.ScheduleImageUpload.open().catch(e=>console.error('[ImportBtn]',e))}else{console.error('[ImportBtn] ScheduleImageUpload not loaded')}"
             title="Import lịch học/làm từ ảnh"
           >
             <i class="fas fa-camera text-xs"></i>
@@ -238,6 +238,15 @@
             if (createBtn) {
               ev.preventDefault();
               if (window.ModalManager) window.ModalManager.showCreateTaskModal();
+              return;
+            }
+            const importBtn = ev.target.closest && ev.target.closest("#schedule-import-btn");
+            if (importBtn) {
+              ev.preventDefault();
+              if (!window.Utils?.requireAuth()) return;
+              if (window.ScheduleImageUpload) {
+                window.ScheduleImageUpload.open().catch(function(e) { console.error('[ImportBtn]', e); });
+              }
               return;
             }
             const prioBtn = ev.target.closest && ev.target.closest("#priority-manager-btn");

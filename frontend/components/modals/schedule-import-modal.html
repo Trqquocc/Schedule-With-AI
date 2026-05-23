@@ -128,10 +128,12 @@
         </div>
       </div>
 
-      <!-- Step 2: dropzone -->
-      <div
+      <!-- Step 2: dropzone — using <label> so click triggers file picker natively -->
+      <label
         id="scheduleImportDropzone"
+        for="scheduleImportFileInput"
         style="
+          display: block;
           border: 2px dashed var(--border-hover);
           border-radius: var(--radius-lg);
           padding: 24px;
@@ -144,8 +146,13 @@
         <i class="fas fa-cloud-upload-alt" style="font-size:28px; color: var(--text-muted); margin-bottom:6px;"></i>
         <p style="font-size:14px; font-weight:600; color:var(--text-primary);">Kéo ảnh vào đây, bấm chọn, hoặc Ctrl+V</p>
         <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">JPG / PNG / WEBP — tối đa 8MB</p>
-        <input type="file" id="scheduleImportFileInput" class="hidden" accept="image/jpeg,image/png,image/webp">
-      </div>
+      </label>
+      <input
+        type="file"
+        id="scheduleImportFileInput"
+        accept="image/jpeg,image/png,image/webp"
+        style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;"
+      >
 
       <!-- Thumbnail + parse action -->
       <div id="scheduleImportThumbWrap" class="hidden" style="margin-top:12px; display:flex; align-items:center; gap:12px;">

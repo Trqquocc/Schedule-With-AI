@@ -38,16 +38,94 @@
   }
 
   async function open() {
-    if (!document.getElementById("scheduleImportDropzone")) {
-      await window.ComponentLoader.loadComponent(MODAL_ID, MODAL_PATH, {
-        executeScripts: true,
+    try {
+      console.log("[ScheduleImageUpload] open() called");
+
+      // Verify host container exists in DOM
+      let host = document.getElementById(MODAL_ID);
+      if (!host) {
+        console.warn("[ScheduleImageUpload] Host #" + MODAL_ID + " not found — creating");
+        host = document.createElement("div");
+        host.id = MODAL_ID;
+        host.className = "modal hidden";
+        document.body.appendChild(host);
+      }
+
+      // Load modal HTML if dropzone not present
+      if (!document.getElementById("scheduleImportDropzone")) {
+        state.wiredDom = false;
+
+        if (!window.ComponentLoader || !window.ComponentLoader.loadComponent) {
+          console.error("[ScheduleImageUpload] ComponentLoader not available — loading inline");
+          try {
+            const res = await fetch(MODAL_PATH);
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            host.innerHTML = await res.text();
+          } catch (err) {
+            console.error("[ScheduleImageUpload] Fallback fetch failed:", err);
+            alert("Không thể tải modal Import lịch. Vui lòng F5 lại trang.");
+            return;
+          }
+        } else {
+          const loaded = await window.ComponentLoader.loadComponent(MODAL_ID, MODAL_PATH, {
+            executeScripts: true,
+            forceReload: true,
+          });
+          if (!loaded) {
+            console.error("[ScheduleImageUpload] ComponentLoader.loadComponent returned false");
+            alert("Không tải được modal. Hãy F5 và thử lại.");
+            return;
+          }
+        }
+
+        // Wait 1 frame for DOM to settle, then re-check
+        await new Promise(r => requestAnimationFrame(r));
+        if (!document.getElementById("scheduleImportDropzone")) {
+          console.error("[ScheduleImageUpload] Modal HTML loaded but dropzone still missing");
+          return;
+        }
+        init();
+      }
+
+      // Final guard
+      host = document.getElementById(MODAL_ID);
+      if (!host) {
+        console.error("[ScheduleImageUpload] Host element disappeared");
+        return;
+      }
+
+      // Diagnostic info
+      console.log("[ScheduleImageUpload] Host info:", {
+        id: host.id,
+        className: host.className,
+        innerHTMLLength: host.innerHTML.length,
+        parentTag: host.parentElement?.tagName,
+        parentDisplay: host.parentElement ? getComputedStyle(host.parentElement).display : null,
       });
-      init();
+
+      host.classList.remove("hidden");
+      host.classList.add("active");
+
+      // FORCE inline style to bypass any CSS specificity issue
+      host.style.cssText = "position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);";
+
+      // Check computed style after
+      const cs = getComputedStyle(host);
+      console.log("[ScheduleImageUpload] After show — computed:", {
+        display: cs.display,
+        visibility: cs.visibility,
+        opacity: cs.opacity,
+        zIndex: cs.zIndex,
+        width: cs.width,
+        height: cs.height,
+      });
+
+      resetForNextScan();
+      console.log("[ScheduleImageUpload] Modal opened successfully");
+    } catch (err) {
+      console.error("[ScheduleImageUpload] open() error:", err);
+      alert("Lỗi mở modal Import lịch: " + (err?.message || err));
     }
-    const host = $(MODAL_ID);
-    host.classList.remove("hidden");
-    host.classList.add("active");
-    resetForNextScan();
   }
 
   function close() {
@@ -55,6 +133,7 @@
     if (!host) return;
     host.classList.add("hidden");
     host.classList.remove("active");
+    host.style.cssText = "";  // remove forced inline styles
   }
 
   function resetForNextScan() {
@@ -75,7 +154,14 @@
     const dz = $("scheduleImportDropzone");
     const fi = $("scheduleImportFileInput");
 
-    dz.addEventListener("click", () => fi.click());
+    if (!dz || !fi) {
+      console.error("[ScheduleImageUpload] wireEvents: missing dropzone or file input", { dz: !!dz, fi: !!fi });
+      return;
+    }
+    console.log("[ScheduleImageUpload] wireEvents() — dropzone and file input found, attaching listeners");
+
+    // Note: dropzone is a <label for="scheduleImportFileInput"> — clicking
+    // triggers file picker natively, no JS needed. Just handle drag/drop here.
     dz.addEventListener("dragover", (e) => {
       e.preventDefault();
       dz.style.background = "var(--accent-light)";
@@ -132,20 +218,38 @@
 
   // ---- File handling + resize -----------------------------------------
   async function handleFilePicked(file) {
+    console.log("[ScheduleImageUpload] handleFilePicked:", { name: file.name, type: file.type, size: file.size });
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      console.error("[ScheduleImageUpload] Unsupported file type:", file.type);
       showStatus("error", "Định dạng ảnh không hỗ trợ (chỉ JPG/PNG/WEBP)");
       return;
     }
-    state.file = file;
-    const resized = await resizeImage(file);
-    state.base64 = resized.base64;
-    state.mimeType = resized.mimeType;
+    try {
+      state.file = file;
+      console.log("[ScheduleImageUpload] Resizing image...");
+      const resized = await resizeImage(file);
+      console.log("[ScheduleImageUpload] Resize done:", { width: resized.width, height: resized.height, bytes: resized.bytes });
+      state.base64 = resized.base64;
+      state.mimeType = resized.mimeType;
 
-    $("scheduleImportThumb").src = `data:${resized.mimeType};base64,${resized.base64}`;
-    $("scheduleImportFileName").textContent = file.name;
-    $("scheduleImportFileMeta").textContent =
-      `${(resized.bytes / 1024).toFixed(0)} KB sau nén — ${resized.width}×${resized.height}`;
-    $("scheduleImportThumbWrap").classList.remove("hidden");
+      const thumb = $("scheduleImportThumb");
+      const name = $("scheduleImportFileName");
+      const meta = $("scheduleImportFileMeta");
+      const wrap = $("scheduleImportThumbWrap");
+      if (!thumb || !name || !meta || !wrap) {
+        console.error("[ScheduleImageUpload] Missing UI elements:", { thumb: !!thumb, name: !!name, meta: !!meta, wrap: !!wrap });
+        showStatus("error", "Giao diện không sẵn sàng. Vui lòng tải lại trang.");
+        return;
+      }
+      thumb.src = `data:${resized.mimeType};base64,${resized.base64}`;
+      name.textContent = file.name;
+      meta.textContent = `${(resized.bytes / 1024).toFixed(0)} KB sau nén — ${resized.width}×${resized.height}`;
+      wrap.classList.remove("hidden");
+      console.log("[ScheduleImageUpload] Thumbnail shown — ready to parse");
+    } catch (err) {
+      console.error("[ScheduleImageUpload] handleFilePicked error:", err);
+      showStatus("error", "Lỗi xử lý ảnh: " + (err?.message || err));
+    }
   }
 
   function resizeImage(file) {
@@ -187,38 +291,55 @@
   }
 
   async function parse() {
+    console.log("[ScheduleImageUpload] parse() called");
     if (!state.base64) {
+      console.warn("[ScheduleImageUpload] No image base64 in state");
       showStatus("error", "Vui lòng chọn ảnh trước");
       return;
     }
     showStatus("loading", "Đang phân tích ảnh…");
     setButtonsDisabled(true);
 
-    const { windowStart, windowEnd } = weekWindow();
-    const res = await window.Utils.makeRequest(
-      "/api/ai/parse-schedule-image",
-      "POST",
-      {
-        imageBase64: state.base64,
-        mimeType: state.mimeType,
-        type: state.type,
-        windowStart,
-        windowEnd,
-        forceLevel: state.level,
+    try {
+      const { windowStart, windowEnd } = weekWindow();
+      console.log("[ScheduleImageUpload] Calling /api/ai/parse-schedule-image", {
+        type: state.type, level: state.level, windowStart, windowEnd,
+        base64Length: state.base64.length, mimeType: state.mimeType,
+      });
+
+      const res = await window.Utils.makeRequest(
+        "/api/ai/parse-schedule-image",
+        "POST",
+        {
+          imageBase64: state.base64,
+          mimeType: state.mimeType,
+          type: state.type,
+          windowStart,
+          windowEnd,
+          forceLevel: state.level,
+        }
+      );
+
+      console.log("[ScheduleImageUpload] API response:", res);
+      setButtonsDisabled(false);
+
+      if (!res || !res.success) {
+        const errMsg = res?.message || res?.error || "Phân tích thất bại (không có response)";
+        console.error("[ScheduleImageUpload] Parse failed:", errMsg, res);
+        showStatus("error", errMsg);
+        return;
       }
-    );
-
-    setButtonsDisabled(false);
-
-    if (!res || !res.success) {
-      showStatus("error", res?.message || "Phân tích thất bại");
-      return;
+      state.items = res.data.items || [];
+      state.warnings = res.data.warnings || [];
+      state.groups = buildNhomLamViec(state.items);
+      console.log("[ScheduleImageUpload] Parsed items:", state.items.length, "groups:", state.groups.length);
+      hideStatus();
+      renderItems();
+    } catch (err) {
+      console.error("[ScheduleImageUpload] parse() exception:", err);
+      setButtonsDisabled(false);
+      showStatus("error", "Lỗi gọi API: " + (err?.message || err));
     }
-    state.items = res.data.items || [];
-    state.warnings = res.data.warnings || [];
-    state.groups = buildNhomLamViec(state.items);
-    hideStatus();
-    renderItems();
   }
 
   // ---- Grouping: 1 course = 1 task, many sessions ---------------------
